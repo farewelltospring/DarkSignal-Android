@@ -18,6 +18,7 @@ import org.thoughtcrime.securesms.avatar.AvatarRenderer;
 import org.thoughtcrime.securesms.avatar.Avatars;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor;
 import org.thoughtcrime.securesms.util.NameUtil;
+import org.thoughtcrime.securesms.util.ThemeUtil;
 
 import java.util.Objects;
 
@@ -39,7 +40,7 @@ public class GeneratedContactPhoto implements FallbackContactPhoto {
 
   @Override
   public Drawable asDrawable(@NonNull Context context, @NonNull AvatarColor color) {
-    return asDrawable(context, color,false);
+    return asDrawable(context, color, ThemeUtil.isDarkTheme(context));
   }
 
   @Override

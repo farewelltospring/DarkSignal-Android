@@ -39,6 +39,7 @@ import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.ui.bottomsheet.RecipientBottomSheetDialogFragment;
 import org.thoughtcrime.securesms.util.AvatarUtil;
 import org.thoughtcrime.securesms.util.BlurTransformation;
+import org.thoughtcrime.securesms.util.ThemeUtil;
 import org.thoughtcrime.securesms.util.Util;
 import org.thoughtcrime.securesms.util.ViewUtil;
 
@@ -81,6 +82,7 @@ public final class AvatarImageView extends AppCompatImageView {
     if (attrs != null) {
       TypedArray typedArray = context.getTheme().obtainStyledAttributes(attrs, R.styleable.AvatarImageView, 0, 0);
       inverted = typedArray.getBoolean(R.styleable.AvatarImageView_inverted, false);
+      inverted = ThemeUtil.isDarkTheme(context);
       size     = typedArray.getInt(R.styleable.AvatarImageView_fallbackImageSize, SIZE_LARGE);
       typedArray.recycle();
     }
