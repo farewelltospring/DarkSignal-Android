@@ -398,6 +398,10 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     if (audioViewStub.resolved()) {
       audioViewStub.get().setOnLongClickListener(passthroughClickListener);
     }
+    // Only need to punch a hole in the QuoteView if there's a gradient underneath
+    if (quoteView != null && messageRecord.getRecipient().getChatColors().isGradient()) {
+      bodyBubble.setQuoteViewHolepunch();
+    }
   }
 
   @Override
@@ -2031,6 +2035,20 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
 
   public @NonNull ProjectionList getSnapshotProjections(@NonNull ViewGroup coordinateRoot, boolean clipOutMedia) {
     colorizerProjections.clear();
+
+    if (!messageRecord.isOutgoing() && hasQuote(messageRecord)) {
+      // create a holepunch for the quoteview. just in case
+      Projection quoteViewToRoot = quoteView.getProjection(coordinateRoot).translateX(quoteView.getTranslationX());
+
+      float translationX = Util.halfOffsetFromScale(quoteView.getWidth(), quoteView.getScaleX());
+      float translationY = Util.halfOffsetFromScale(quoteView.getHeight(), quoteView.getScaleY());
+
+      colorizerProjections.add(
+          quoteViewToRoot.scale(quoteView.getScaleX())
+                          .translateX(translationX)
+                          .translateY(translationY)
+      );
+    }
 
     if (messageRecord.isOutgoing()      &&
         !hasNoBubble(messageRecord)     &&
