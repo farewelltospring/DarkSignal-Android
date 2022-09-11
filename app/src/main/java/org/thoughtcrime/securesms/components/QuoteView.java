@@ -4,6 +4,7 @@ package org.thoughtcrime.securesms.components;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -13,9 +14,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -29,6 +32,7 @@ import org.thoughtcrime.securesms.attachments.Attachment;
 import org.thoughtcrime.securesms.components.emoji.EmojiImageView;
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation;
 import org.thoughtcrime.securesms.components.quotes.QuoteViewColorTheme;
+import org.thoughtcrime.securesms.conversation.colors.ChatColors;
 import org.thoughtcrime.securesms.database.model.Mention;
 import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader.DecryptableUri;
 import org.thoughtcrime.securesms.mms.GlideRequests;
@@ -102,6 +106,7 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
   private CornerMask      cornerMask;
   private QuoteModel.Type quoteType;
   private boolean         isWallpaperEnabled;
+  private ChatColors      chatColors;
 
   private int thumbHeight;
   private int thumbWidth;
@@ -207,6 +212,21 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
                        @Nullable String storyReaction,
                        @NonNull QuoteModel.Type quoteType)
   {
+    setQuote(glideRequests, id, author, body, originalMissing, attachments,
+             storyReaction, quoteType, null);
+
+  }
+
+  public void setQuote(GlideRequests glideRequests,
+                       long id,
+                       @NonNull Recipient author,
+                       @Nullable CharSequence body,
+                       boolean originalMissing,
+                       @NonNull SlideDeck attachments,
+                       @Nullable String storyReaction,
+                       @NonNull QuoteModel.Type quoteType,
+                       @Nullable ChatColors chatColors)
+  {
     if (this.author != null) this.author.removeForeverObserver(this);
 
     this.id          = id;
@@ -214,6 +234,7 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
     this.body        = body;
     this.attachments = attachments;
     this.quoteType   = quoteType;
+    this.chatColors  = chatColors;
 
     this.author.observeForever(this);
     setQuoteAuthor(author);
@@ -505,5 +526,21 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
     mediaDescriptionText.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
     missingLinkText.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
     footerView.setBackgroundColor(quoteViewColorTheme.getBackgroundColor(getContext()));
+
+    if (author != null && chatColors != null) {
+      this.setBackgroundColor(0xffffffff);
+      if (getAuthor().isSelf()) {
+        this.setBackgroundColor(chatColors.asSingleColor());
+      } else {
+        this.getBackground().setColorFilter(getDefaultBubbleColor(isWallpaperEnabled), PorterDuff.Mode.SRC_IN);
+      }
+      //this.setBackgroundColor(getAuthor().isSelf() ? chatColors.asSingleColor() : getDefaultBubbleColor(isWallpaperEnabled));
+    }
+  }
+
+  private @ColorInt int getDefaultBubbleColor(boolean hasWallpaper) {
+    int defaultBubbleColor             = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_normal);
+    int defaultBubbleColorForWallpaper = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_wallpaper);
+    return hasWallpaper ? defaultBubbleColorForWallpaper : defaultBubbleColor;
   }
 }
