@@ -41,9 +41,9 @@ enum class QuoteViewColorTheme(
       return when {
         isPreview && hasWallpaper -> INCOMING_WALLPAPER
         isPreview && !hasWallpaper -> INCOMING_NORMAL
-        isOutgoing && hasWallpaper -> OUTGOING_WALLPAPER
+        isOutgoing && hasWallpaper -> INCOMING_WALLPAPER //OUTGOING_WALLPAPER
         !isOutgoing && hasWallpaper -> INCOMING_WALLPAPER
-        isOutgoing && !hasWallpaper -> OUTGOING_NORMAL
+        isOutgoing && !hasWallpaper -> INCOMING_NORMAL //OUTGOING_NORMAL
         else -> INCOMING_NORMAL
       }
     }
