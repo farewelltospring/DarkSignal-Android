@@ -452,6 +452,10 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
     return id;
   }
 
+  public boolean hasAuthor() {
+    return author != null;
+  }
+
   public Recipient getAuthor() {
     return author.get();
   }
