@@ -497,7 +497,7 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
 
     QuoteViewColorTheme quoteViewColorTheme = QuoteViewColorTheme.resolveTheme(isOutgoing, isPreview, isWallpaperEnabled);
 
-    quoteBarView.setBackgroundColor(quoteViewColorTheme.getBarColor(getContext()));
+    quoteBarView.setBackgroundColor(0x80ffffff);
     background.setBackgroundColor(quoteViewColorTheme.getBackgroundColor(getContext()));
     authorView.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
     bodyView.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
