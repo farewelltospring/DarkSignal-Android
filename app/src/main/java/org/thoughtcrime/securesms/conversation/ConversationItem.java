@@ -1532,7 +1532,8 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
                          quote.isOriginalMissing(),
                          quote.getAttachment(),
                          isStoryReaction(current) ? current.getBody() : null,
-                         quote.getQuoteType());
+                         quote.getQuoteType(),
+                         chatColors);
 
       quoteView.setWallpaperEnabled(hasWallpaper);
       quoteView.setVisibility(View.VISIBLE);
@@ -2108,6 +2109,22 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
                             .translateY(-Util.halfOffsetFromScale(footer.getHeight(), bodyBubble.getScaleY()))
         );
       }
+    }
+
+    if (!messageRecord.isOutgoing() &&
+        hasQuote(messageRecord) &&
+        quoteView != null &&
+        bodyBubble.getVisibility() == VISIBLE)
+    {
+      bodyBubble.setQuoteViewProjection(quoteView.getProjection(bodyBubble));
+
+      float bubbleOffsetFromScale = Util.halfOffsetFromScale(bodyBubble.getHeight(), bodyBubble.getScaleY());
+      Projection cProj = quoteView.getProjection(coordinateRoot)
+          .translateX(bodyBubble.getTranslationX() + this.getTranslationX() + Util.halfOffsetFromScale(quoteView.getWidth(), bodyBubble.getScaleX()))
+          .translateY(bubbleOffsetFromScale - quoteView.getY() + (quoteView.getY() * bodyBubble.getScaleY()))
+          .scale(bodyBubble.getScaleX());
+
+      colorizerProjections.add(cProj);
     }
 
     for (int i = 0; i < colorizerProjections.size(); i++) {
