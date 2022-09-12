@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.avatar.Avatars;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor;
+import org.thoughtcrime.securesms.util.ThemeUtil;
 
 import java.util.Objects;
 
@@ -50,7 +51,7 @@ public class ResourceContactPhoto implements FallbackContactPhoto {
 
   @Override
   public @NonNull Drawable asDrawable(@NonNull Context context, @NonNull AvatarColor color) {
-    return asDrawable(context, color, false);
+    return asDrawable(context, color, ThemeUtil.isDarkTheme(context));
   }
 
   @Override
