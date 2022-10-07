@@ -14,7 +14,6 @@ import org.signal.paging.ProxyPagingController
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchConfiguration
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchKey
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchPagedDataSource
-import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.util.rx.RxStore
@@ -40,6 +39,7 @@ class StoriesPrivacySettingsViewModel : ViewModel() {
   private val headerActionRequestSubject = PublishSubject.create<Unit>()
 
   val state: Flowable<StoriesPrivacySettingsState> = store.stateFlowable.observeOn(AndroidSchedulers.mainThread())
+  val userHasActiveStories: Boolean get() = store.state.userHasStories
   val pagingController = ProxyPagingController<ContactSearchKey>()
   val headerActionRequests: Observable<Unit> = headerActionRequestSubject.debounce(100, TimeUnit.MILLISECONDS)
 
@@ -60,23 +60,40 @@ class StoriesPrivacySettingsViewModel : ViewModel() {
 
     pagingController.set(observablePagedData.controller)
 
-    store.update(observablePagedData.data.toFlowable(BackpressureStrategy.LATEST)) { data, state ->
+    updateUserHasStories()
+
+    disposables += store.update(observablePagedData.data.toFlowable(BackpressureStrategy.LATEST)) { data, state ->
       state.copy(storyContactItems = data)
     }
   }
 
   override fun onCleared() {
     disposables.clear()
+    store.dispose()
   }
 
   fun setStoriesEnabled(isEnabled: Boolean) {
-    SignalStore.storyValues().isFeatureDisabled = !isEnabled
-    store.update { it.copy(areStoriesEnabled = Stories.isFeatureEnabled()) }
+    store.update { it.copy(isUpdatingEnabledState = true) }
+    disposables += repository.setStoriesEnabled(isEnabled).subscribe {
+      store.update {
+        it.copy(
+          isUpdatingEnabledState = false,
+          areStoriesEnabled = Stories.isFeatureEnabled()
+        )
+      }
+      updateUserHasStories()
+    }
   }
 
   fun displayGroupsAsStories(recipientIds: List<RecipientId>) {
     disposables += repository.markGroupsAsStories(recipientIds).subscribe {
       pagingController.onDataInvalidated()
+    }
+  }
+
+  private fun updateUserHasStories() {
+    disposables += repository.userHasOutgoingStories().subscribe { userHasActiveStories ->
+      store.update { it.copy(userHasStories = userHasActiveStories) }
     }
   }
 }

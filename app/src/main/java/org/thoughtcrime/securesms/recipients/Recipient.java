@@ -36,6 +36,7 @@ import org.thoughtcrime.securesms.database.RecipientDatabase.VibrateState;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.DistributionListId;
 import org.thoughtcrime.securesms.database.model.ProfileAvatarFileDetails;
+import org.thoughtcrime.securesms.database.model.RecipientRecord;
 import org.thoughtcrime.securesms.database.model.databaseprotos.RecipientExtras;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.groups.GroupId;
@@ -118,12 +119,7 @@ public class Recipient {
   private final String                       notificationChannel;
   private final UnidentifiedAccessMode       unidentifiedAccessMode;
   private final boolean                      forceSmsSelection;
-  private final Capability                   groupsV1MigrationCapability;
-  private final Capability                   senderKeyCapability;
-  private final Capability                   announcementGroupCapability;
-  private final Capability                   changeNumberCapability;
-  private final Capability                   storiesCapability;
-  private final Capability                   giftBadgesCapability;
+  private final RecipientRecord.Capabilities capabilities;
   private final InsightsBannerTier           insightsBannerTier;
   private final byte[]                       storageId;
   private final MentionSetting               mentionSetting;
@@ -420,12 +416,7 @@ public class Recipient {
     this.notificationChannel          = null;
     this.unidentifiedAccessMode       = UnidentifiedAccessMode.DISABLED;
     this.forceSmsSelection            = false;
-    this.groupsV1MigrationCapability  = Capability.UNKNOWN;
-    this.senderKeyCapability          = Capability.UNKNOWN;
-    this.announcementGroupCapability  = Capability.UNKNOWN;
-    this.changeNumberCapability       = Capability.UNKNOWN;
-    this.storiesCapability            = Capability.UNKNOWN;
-    this.giftBadgesCapability         = Capability.UNKNOWN;
+    this.capabilities                 = RecipientRecord.Capabilities.UNKNOWN;
     this.storageId                    = null;
     this.mentionSetting               = MentionSetting.ALWAYS_NOTIFY;
     this.wallpaper                    = null;
@@ -479,12 +470,7 @@ public class Recipient {
     this.notificationChannel          = details.notificationChannel;
     this.unidentifiedAccessMode       = details.unidentifiedAccessMode;
     this.forceSmsSelection            = details.forceSmsSelection;
-    this.groupsV1MigrationCapability  = details.groupsV1MigrationCapability;
-    this.senderKeyCapability          = details.senderKeyCapability;
-    this.announcementGroupCapability  = details.announcementGroupCapability;
-    this.changeNumberCapability       = details.changeNumberCapability;
-    this.storiesCapability            = details.storiesCapability;
-    this.giftBadgesCapability         = details.giftBadgesCapability;
+    this.capabilities                 = details.capabilities;
     this.storageId                    = details.storageId;
     this.mentionSetting               = details.mentionSetting;
     this.wallpaper                    = details.wallpaper;
@@ -570,6 +556,37 @@ public class Recipient {
   }
 
   public @NonNull String getDisplayName(@NonNull Context context) {
+    String name = getNameFromLocalData(context);
+
+    if (Util.isEmpty(name)) {
+      name = context.getString(R.string.Recipient_unknown);
+    }
+
+    return StringUtil.isolateBidi(name);
+  }
+
+  public @NonNull String getDisplayNameOrUsername(@NonNull Context context) {
+    String name = getNameFromLocalData(context);
+
+    if (Util.isEmpty(name)) {
+      name = StringUtil.isolateBidi(username);
+    }
+
+    if (Util.isEmpty(name)) {
+      name = StringUtil.isolateBidi(context.getString(R.string.Recipient_unknown));
+    }
+
+    return StringUtil.isolateBidi(name);
+  }
+
+  public boolean hasNonUsernameDisplayName(@NonNull Context context) {
+    return getNameFromLocalData(context) != null;
+  }
+
+  /**
+   * @return local name for user ignoring the username.
+   */
+  private @Nullable String getNameFromLocalData(@NonNull Context context) {
     String name = getGroupName(context);
 
     if (Util.isEmpty(name)) {
@@ -586,40 +603,6 @@ public class Recipient {
 
     if (Util.isEmpty(name)) {
       name = email;
-    }
-
-    if (Util.isEmpty(name)) {
-      name = context.getString(R.string.Recipient_unknown);
-    }
-
-    return StringUtil.isolateBidi(name);
-  }
-
-  public @NonNull String getDisplayNameOrUsername(@NonNull Context context) {
-    String name = getGroupName(context);
-
-    if (Util.isEmpty(name)) {
-      name = systemContactName;
-    }
-
-    if (Util.isEmpty(name)) {
-      name = StringUtil.isolateBidi(getProfileName().toString());
-    }
-
-    if (Util.isEmpty(name) && !Util.isEmpty(e164)) {
-      name = PhoneNumberFormatter.prettyPrint(e164);
-    }
-
-    if (Util.isEmpty(name)) {
-      name = StringUtil.isolateBidi(email);
-    }
-
-    if (Util.isEmpty(name)) {
-      name = StringUtil.isolateBidi(username);
-    }
-
-    if (Util.isEmpty(name)) {
-      name = StringUtil.isolateBidi(context.getString(R.string.Recipient_unknown));
     }
 
     return name;
@@ -1022,35 +1005,20 @@ public class Recipient {
     return forceSmsSelection;
   }
 
-  public @NonNull Capability getGroupsV1MigrationCapability() {
-    return groupsV1MigrationCapability;
-  }
-
-  public @NonNull Capability getSenderKeyCapability() {
-    return senderKeyCapability;
-  }
-
-  public @NonNull Capability getAnnouncementGroupCapability() {
-    return announcementGroupCapability;
-  }
-
   public @NonNull Capability getChangeNumberCapability() {
-    return changeNumberCapability;
+    return capabilities.getChangeNumberCapability();
   }
 
   public @NonNull Capability getStoriesCapability() {
-    return storiesCapability;
+    return capabilities.getStoriesCapability();
   }
 
   public @NonNull Capability getGiftBadgesCapability() {
-    return giftBadgesCapability;
+    return capabilities.getGiftBadgesCapability();
   }
 
-  /**
-   * True if this recipient supports the message retry system, or false if we should use the legacy session reset system.
-   */
-  public boolean supportsMessageRetries() {
-    return getSenderKeyCapability() == Capability.SUPPORTED;
+  public @NonNull Capability getPnpCapability() {
+    return capabilities.getPnpCapability();
   }
 
   public @Nullable byte[] getProfileKey() {
@@ -1134,7 +1102,7 @@ public class Recipient {
   }
 
   public @NonNull List<Badge> getBadges() {
-    return FeatureFlags.displayDonorBadges() || isSelf() ? badges : Collections.emptyList();
+    return badges;
   }
 
   public @Nullable Badge getFeaturedBadge() {
@@ -1332,7 +1300,6 @@ public class Recipient {
            Objects.equals(profileAvatar, other.profileAvatar) &&
            Objects.equals(notificationChannel, other.notificationChannel) &&
            unidentifiedAccessMode == other.unidentifiedAccessMode &&
-           groupsV1MigrationCapability == other.groupsV1MigrationCapability &&
            insightsBannerTier == other.insightsBannerTier &&
            Arrays.equals(storageId, other.storageId) &&
            mentionSetting == other.mentionSetting &&

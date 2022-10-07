@@ -8,7 +8,9 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import org.thoughtcrime.securesms.database.model.DistributionListPrivacyMode
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
+import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.stories.settings.my.MyStorySettingsRepository
 import org.thoughtcrime.securesms.util.rx.RxStore
 
@@ -29,6 +31,7 @@ class ChooseInitialMyStoryMembershipViewModel @JvmOverloads constructor(
 
   override fun onCleared() {
     disposables.clear()
+    store.dispose()
   }
 
   fun select(selection: DistributionListPrivacyMode): Single<DistributionListPrivacyMode> {
@@ -40,6 +43,7 @@ class ChooseInitialMyStoryMembershipViewModel @JvmOverloads constructor(
   fun save(): Single<RecipientId> {
     return Single.fromCallable<RecipientId> {
       SignalStore.storyValues().userHasBeenNotifiedAboutStories = true
+      Stories.onStorySettingsChanged(Recipient.self().id)
       store.state.recipientId
     }.observeOn(AndroidSchedulers.mainThread())
   }

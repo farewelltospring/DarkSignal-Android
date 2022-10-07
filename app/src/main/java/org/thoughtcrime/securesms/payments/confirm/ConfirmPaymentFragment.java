@@ -21,7 +21,7 @@ import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -96,7 +96,7 @@ public class ConfirmPaymentFragment extends BottomSheetDialogFragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     ConfirmPaymentViewModel.Factory factory = new ConfirmPaymentViewModel.Factory(ConfirmPaymentFragmentArgs.fromBundle(requireArguments()).getCreatePaymentDetails());
-    viewModel = ViewModelProviders.of(this, factory).get(ConfirmPaymentViewModel.class);
+    viewModel = new ViewModelProvider(this, factory).get(ConfirmPaymentViewModel.class);
 
     RecyclerView          list    = view.findViewById(R.id.confirm_payment_fragment_list);
     ConfirmPaymentAdapter adapter = new ConfirmPaymentAdapter(new Callbacks());
@@ -143,7 +143,7 @@ public class ConfirmPaymentFragment extends BottomSheetDialogFragment {
     BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo
                                                                .Builder()
                                                                .setAllowedAuthenticators(BiometricDeviceAuthentication.ALLOWED_AUTHENTICATORS)
-                                                               .setTitle(requireContext().getString(R.string.ConfirmPaymentFragment__unlock_to_send_payment))
+                                                               .setTitle(requireContext().getString(R.string.BiometricDeviceAuthentication__signal))
                                                                .setConfirmationRequired(false)
                                                                .build();
     biometricAuth = new BiometricDeviceAuthentication(BiometricManager.from(requireActivity()),
@@ -211,7 +211,7 @@ public class ConfirmPaymentFragment extends BottomSheetDialogFragment {
 
 
   private boolean isPaymentLockEnabled(Context context) {
-    return SignalStore.paymentsValues().getPaymentLock() && ServiceUtil.getKeyguardManager(context).isKeyguardSecure();
+    return SignalStore.paymentsValues().isPaymentLockEnabled() && ServiceUtil.getKeyguardManager(context).isKeyguardSecure();
   }
 
   private class Callbacks implements ConfirmPaymentAdapter.Callbacks {
@@ -239,7 +239,7 @@ public class ConfirmPaymentFragment extends BottomSheetDialogFragment {
     }
 
     public Unit showConfirmDeviceCredentialIntent() {
-      activityResultLauncher.launch(getString(R.string.ConfirmPaymentFragment__unlock_to_send_payment));
+      activityResultLauncher.launch(getString(R.string.BiometricDeviceAuthentication__signal));
       return Unit.INSTANCE;
     }
   }

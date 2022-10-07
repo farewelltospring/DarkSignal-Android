@@ -101,6 +101,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.signal.core.util.PendingIntentFlags;
 import org.signal.core.util.StringUtil;
 import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.concurrent.SignalExecutors;
@@ -198,6 +199,7 @@ import org.thoughtcrime.securesms.groups.ui.migration.GroupsV1MigrationSuggestio
 import org.thoughtcrime.securesms.insights.InsightsLauncher;
 import org.thoughtcrime.securesms.invites.InviteReminderModel;
 import org.thoughtcrime.securesms.invites.InviteReminderRepository;
+import org.thoughtcrime.securesms.jobs.ForceUpdateGroupV2Job;
 import org.thoughtcrime.securesms.jobs.GroupV1MigrationJob;
 import org.thoughtcrime.securesms.jobs.GroupV2UpdateSelfProfileKeyJob;
 import org.thoughtcrime.securesms.jobs.RequestGroupV2InfoJob;
@@ -592,6 +594,8 @@ public class ConversationParentFragment extends Fragment
                              .startChain(new RequestGroupV2InfoJob(groupId))
                              .then(GroupV2UpdateSelfProfileKeyJob.withoutLimits(groupId))
                              .enqueue();
+
+      ForceUpdateGroupV2Job.enqueueIfNecessary(groupId);
 
       if (viewModel.getArgs().isFirstTimeInSelfCreatedGroup()) {
         groupViewModel.inviteFriendsOneTimeIfJustSelfInGroup(getChildFragmentManager(), groupId);
@@ -1381,7 +1385,7 @@ public class ConversationParentFragment extends Fragment
                                                                   .build();
 
     Intent callbackIntent                = new Intent(ACTION_PINNED_SHORTCUT);
-    PendingIntent shortcutPinnedCallback = PendingIntent.getBroadcast(context, REQUEST_CODE_PIN_SHORTCUT, callbackIntent, 0);
+    PendingIntent shortcutPinnedCallback = PendingIntent.getBroadcast(context, REQUEST_CODE_PIN_SHORTCUT, callbackIntent, PendingIntentFlags.mutable());
 
     ShortcutManagerCompat.requestPinShortcut(context, shortcutInfoCompat, shortcutPinnedCallback.getIntentSender());
 
@@ -1445,9 +1449,9 @@ public class ConversationParentFragment extends Fragment
     if (recipient == null) return;
 
     if (isSecure) {
-      CommunicationActions.startVoiceCall(requireActivity(), recipient);
+      CommunicationActions.startVoiceCall(this, recipient);
     } else {
-      CommunicationActions.startInsecureCall(requireActivity(), recipient);
+      CommunicationActions.startInsecureCall(this, recipient);
     }
   }
 
@@ -1460,7 +1464,7 @@ public class ConversationParentFragment extends Fragment
                                           .setPositiveButton(android.R.string.ok, (d, w) -> d.dismiss())
                                           .show();
     } else {
-      CommunicationActions.startVideoCall(requireActivity(), recipient);
+      CommunicationActions.startVideoCall(this, recipient);
     }
   }
 
@@ -3485,7 +3489,7 @@ public class ConversationParentFragment extends Fragment
   private class QuickCameraToggleListener implements OnClickListener {
     @Override
     public void onClick(View v) {
-      Permissions.with(requireActivity())
+      Permissions.with(ConversationParentFragment.this)
                  .request(Manifest.permission.CAMERA)
                  .ifNecessary()
                  .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.ic_camera_24)
