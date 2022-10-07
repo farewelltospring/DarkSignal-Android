@@ -2,6 +2,7 @@ package org.thoughtcrime.securesms.messages;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.os.Build;
 import android.text.TextUtils;
 
@@ -49,7 +50,7 @@ import org.thoughtcrime.securesms.database.SentStorySyncManifest;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.StickerDatabase;
 import org.thoughtcrime.securesms.database.ThreadDatabase;
-import org.thoughtcrime.securesms.database.model.DistributionListRecord;
+import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.Mention;
 import org.thoughtcrime.securesms.database.model.MessageId;
 import org.thoughtcrime.securesms.database.model.MessageLogEntry;
@@ -1317,14 +1318,27 @@ public final class MessageContentProcessor {
   private void handleSynchronizeViewedMessage(@NonNull List<ViewedMessage> viewedMessages, long envelopeTimestamp) {
     log(envelopeTimestamp, "Synchronize view message. Count: " + viewedMessages.size() + ", Timestamps: " + Stream.of(viewedMessages).map(ViewedMessage::getTimestamp).toList());
 
-    List<Long> toMarkViewed = Stream.of(viewedMessages)
-                                    .map(message -> {
-                                      RecipientId author = Recipient.externalPush(message.getSender()).getId();
-                                      return SignalDatabase.mmsSms().getMessageFor(message.getTimestamp(), author);
-                                    })
-                                    .filter(message -> message != null && message.isMms())
+    List<MessageRecord> records = Stream.of(viewedMessages)
+                                        .map(message -> {
+                                          RecipientId author = Recipient.externalPush(message.getSender()).getId();
+                                          return SignalDatabase.mmsSms().getMessageFor(message.getTimestamp(), author);
+                                        })
+                                        .filter(message -> message != null && message.isMms())
+                                        .toList();
+
+    List<Long> toMarkViewed = Stream.of(records)
                                     .map(MessageRecord::getId)
                                     .toList();
+
+    List<MediaMmsMessageRecord> toEnqueueDownload = Stream.of(records)
+                                                          .filter(MessageRecord::isMms)
+                                                          .map(it -> (MediaMmsMessageRecord) it)
+                                                          .filter(it -> it.getStoryType().isStory() && !it.getStoryType().isTextStory())
+                                                          .toList();
+
+    for (final MediaMmsMessageRecord mediaMmsMessageRecord : toEnqueueDownload) {
+      Stories.enqueueAttachmentsFromStoryForDownloadSync(mediaMmsMessageRecord, false);
+    }
 
     SignalDatabase.mms().setIncomingMessagesViewed(toMarkViewed);
     SignalDatabase.mms().setOutgoingGiftsRevealed(toMarkViewed);
@@ -1473,9 +1487,25 @@ public final class MessageContentProcessor {
       ChatColor.LinearGradient.Builder     linearGradientBuilder = ChatColor.LinearGradient.newBuilder();
 
       linearGradientBuilder.setRotation(gradient.getAngle().orElse(0).floatValue());
-      linearGradientBuilder.addColors(gradient.getStartColor().get());
-      linearGradientBuilder.addColors(gradient.getEndColor().get());
-      linearGradientBuilder.addAllPositions(Arrays.asList(0f, 1f));
+
+      if (gradient.getPositions().size() > 1 && gradient.getColors().size() == gradient.getPositions().size()) {
+        ArrayList<Float> positions = new ArrayList<>(gradient.getPositions());
+
+        positions.set(0, 0f);
+        positions.set(positions.size() - 1, 1f);
+
+        linearGradientBuilder.addAllColors(new ArrayList<>(gradient.getColors()));
+        linearGradientBuilder.addAllPositions(positions);
+      } else if (!gradient.getColors().isEmpty()) {
+        Log.w(TAG, "Incoming text story has color / position mismatch. Defaulting to start and end colors.");
+        linearGradientBuilder.addColors(gradient.getColors().get(0));
+        linearGradientBuilder.addColors(gradient.getColors().get(gradient.getColors().size() - 1));
+        linearGradientBuilder.addAllPositions(Arrays.asList(0f, 1f));
+      } else {
+        Log.w(TAG, "Incoming text story did not have a valid linear gradient.");
+        linearGradientBuilder.addAllColors(Arrays.asList(Color.BLACK, Color.BLACK));
+        linearGradientBuilder.addAllPositions(Arrays.asList(0f, 1f));
+      }
 
       chatColorBuilder.setLinearGradient(linearGradientBuilder);
     }
@@ -1610,6 +1640,10 @@ public final class MessageContentProcessor {
         MmsMessageRecord story           = (MmsMessageRecord) database.getMessageRecord(storyMessageId.getId());
         Recipient        threadRecipient = Objects.requireNonNull(SignalDatabase.threads().getRecipientForThreadId(story.getThreadId()));
         boolean          groupStory      = threadRecipient.isActiveGroup();
+
+        if (!groupStory) {
+          threadRecipient = senderRecipient;
+        }
 
         handlePossibleExpirationUpdate(content, message, threadRecipient.getGroupId(), senderRecipient, threadRecipient, receivedTime);
 
@@ -1896,7 +1930,7 @@ public final class MessageContentProcessor {
 
       if (message.getDataMessage().get().getGroupContext().isPresent()) {
         parentStoryId = new ParentStoryId.GroupReply(storyMessageId.getId());
-      } else if (groupStory || SignalDatabase.storySends().canReply(storyAuthorRecipient, storyContext.getSentTimestamp())) {
+      } else if (groupStory || story.getStoryType().isStoryWithReplies()) {
         parentStoryId   = new ParentStoryId.DirectReply(storyMessageId.getId());
 
         String quoteBody = "";
@@ -1905,7 +1939,7 @@ public final class MessageContentProcessor {
         }
 
         quoteModel      = new QuoteModel(storyContext.getSentTimestamp(), storyAuthorRecipient, quoteBody, false, story.getSlideDeck().asAttachments(), Collections.emptyList(), QuoteModel.Type.NORMAL);
-        expiresInMillis = TimeUnit.SECONDS.toMillis(message.getExpirationStartTimestamp());
+        expiresInMillis = TimeUnit.SECONDS.toMillis(message.getDataMessage().get().getExpiresInSeconds());
       } else {
         warn(envelopeTimestamp, "Story has replies disabled. Dropping reply.");
         return -1L;
@@ -2502,7 +2536,7 @@ public final class MessageContentProcessor {
                                    @NonNull SignalServiceReceiptMessage message,
                                    @NonNull Recipient senderRecipient)
   {
-    boolean shouldOnlyProcessStories = FeatureFlags.stories() && !SignalStore.storyValues().isFeatureDisabled() && !TextSecurePreferences.isReadReceiptsEnabled(context);
+    boolean shouldOnlyProcessStories = Stories.isFeatureFlagEnabled() && !SignalStore.storyValues().isFeatureDisabled() && !TextSecurePreferences.isReadReceiptsEnabled(context);
 
     if (!TextSecurePreferences.isReadReceiptsEnabled(context) && !shouldOnlyProcessStories) {
       log("Ignoring viewed receipts for IDs: " + Util.join(message.getTimestamps(), ", "));
@@ -2544,7 +2578,7 @@ public final class MessageContentProcessor {
                                      @NonNull SignalServiceReceiptMessage message,
                                      @NonNull Recipient senderRecipient)
   {
-    log(TAG, "Processing delivery receipts. Sender: " +  senderRecipient.getId() + ", Device: " + content.getSenderDevice() + ", Timestamps: " + Util.join(message.getTimestamps(), ", "));
+    log(content.getTimestamp(), "Processing delivery receipts. Sender: " +  senderRecipient.getId() + ", Device: " + content.getSenderDevice() + ", Timestamps: " + Util.join(message.getTimestamps(), ", "));
 
     List<SyncMessageId> ids = Stream.of(message.getTimestamps())
                                     .map(t -> new SyncMessageId(senderRecipient.getId(), t))

@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.badges.BadgeImageView
 import org.thoughtcrime.securesms.components.AvatarImageView
@@ -72,9 +73,10 @@ object ContactSearchItems {
       contactSearchData.filterNotNull().map {
         when (it) {
           is ContactSearchData.Story -> StoryModel(it, selection.contains(it.contactSearchKey), SignalStore.storyValues().userHasBeenNotifiedAboutStories)
-          is ContactSearchData.KnownRecipient -> RecipientModel(it, selection.contains(it.contactSearchKey))
+          is ContactSearchData.KnownRecipient -> RecipientModel(it, selection.contains(it.contactSearchKey), it.shortSummary)
           is ContactSearchData.Expand -> ExpandModel(it)
           is ContactSearchData.Header -> HeaderModel(it)
+          is ContactSearchData.TestRow -> error("This row exists for testing only.")
         }
       }
     )
@@ -205,7 +207,7 @@ object ContactSearchItems {
   /**
    * Recipient model
    */
-  private class RecipientModel(val knownRecipient: ContactSearchData.KnownRecipient, val isSelected: Boolean) : MappingModel<RecipientModel> {
+  private class RecipientModel(val knownRecipient: ContactSearchData.KnownRecipient, val isSelected: Boolean, val shortSummary: Boolean) : MappingModel<RecipientModel> {
 
     override fun areItemsTheSame(newItem: RecipientModel): Boolean {
       return newItem.knownRecipient == knownRecipient
@@ -228,6 +230,16 @@ object ContactSearchItems {
     override fun isSelected(model: RecipientModel): Boolean = model.isSelected
     override fun getData(model: RecipientModel): ContactSearchData.KnownRecipient = model.knownRecipient
     override fun getRecipient(model: RecipientModel): Recipient = model.knownRecipient.recipient
+    override fun bindNumberField(model: RecipientModel) {
+      val recipient = getRecipient(model)
+
+      if (model.shortSummary && recipient.isGroup) {
+        val count = recipient.participantIds.size
+        number.setText(context.resources.getQuantityString(R.plurals.ContactSearchItems__group_d_members, count, count))
+      } else {
+        super.bindNumberField(model)
+      }
+    }
   }
 
   /**
@@ -322,7 +334,7 @@ object ContactSearchItems {
   private class HeaderViewHolder(itemView: View) : MappingViewHolder<HeaderModel>(itemView) {
 
     private val headerTextView: TextView = itemView.findViewById(R.id.section_header)
-    private val headerActionView: TextView = itemView.findViewById(R.id.section_header_action)
+    private val headerActionView: MaterialButton = itemView.findViewById(R.id.section_header_action)
 
     override fun bind(model: HeaderModel) {
       headerTextView.setText(
@@ -336,7 +348,7 @@ object ContactSearchItems {
 
       if (model.header.action != null) {
         headerActionView.visible = true
-        headerActionView.setCompoundDrawablesRelativeWithIntrinsicBounds(model.header.action.icon, 0, 0, 0)
+        headerActionView.setIconResource(model.header.action.icon)
         headerActionView.setText(model.header.action.label)
         headerActionView.setOnClickListener { model.header.action.action.run() }
       } else {

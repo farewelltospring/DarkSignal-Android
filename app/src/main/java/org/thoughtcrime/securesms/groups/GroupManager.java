@@ -47,7 +47,7 @@ public final class GroupManager {
                                                        int disappearingMessagesTimer)
       throws GroupChangeBusyException, GroupChangeFailedException, IOException
   {
-    boolean          shouldAttemptToCreateV2 = !mms && !SignalStore.internalValues().gv2DoNotCreateGv2Groups();
+    boolean          shouldAttemptToCreateV2 = !mms;
     Set<RecipientId> memberIds               = getMemberIds(members);
 
     if (shouldAttemptToCreateV2) {
@@ -185,6 +185,17 @@ public final class GroupManager {
   {
     try (GroupManagerV2.GroupUpdater updater = new GroupManagerV2(context).updater(groupMasterKey)) {
       updater.updateLocalToServerRevision(revision, timestamp, signedGroupChange);
+    }
+  }
+
+  @WorkerThread
+  public static void forceSanityUpdateFromServer(@NonNull Context context,
+                                                 @NonNull GroupMasterKey groupMasterKey,
+                                                 long timestamp)
+      throws GroupChangeBusyException, IOException, GroupNotAMemberException
+  {
+    try (GroupManagerV2.GroupUpdater updater = new GroupManagerV2(context).updater(groupMasterKey)) {
+      updater.forceSanityUpdateFromServer(timestamp);
     }
   }
 

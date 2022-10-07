@@ -10,6 +10,8 @@ import org.signal.libsignal.protocol.util.Pair;
 import org.whispersystems.signalservice.api.push.TrustStore;
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.util.Tls12SocketFactory;
+import org.whispersystems.signalservice.api.util.TlsProxySocketFactory;
+import org.whispersystems.signalservice.internal.configuration.SignalProxy;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 import org.whispersystems.signalservice.internal.util.BlacklistingTrustManager;
 import org.whispersystems.signalservice.internal.util.Hex;
@@ -67,6 +69,11 @@ final class CdsiSocket {
 
     for (Interceptor interceptor : configuration.getNetworkInterceptors()) {
       builder.addInterceptor(interceptor);
+    }
+
+    if (configuration.getSignalProxy().isPresent()) {
+      SignalProxy proxy = configuration.getSignalProxy().get();
+      builder.socketFactory(new TlsProxySocketFactory(proxy.getHost(), proxy.getPort(), configuration.getDns()));
     }
 
     this.okhttp = builder.build();
@@ -150,7 +157,7 @@ final class CdsiSocket {
           } catch (IOException | AttestationDataException | Cds2CommunicationFailureException e) {
             Log.w(TAG, e);
             webSocket.close(1000, "OK");
-            emitter.onError(e);
+            emitter.tryOnError(e);
           }
         }
 
@@ -163,13 +170,13 @@ final class CdsiSocket {
             Log.w(TAG, "Remote side is closing with non-normal code " + code);
             webSocket.close(1000, "Remote closed with code " + code);
             stage.set(Stage.FAILED);
-            emitter.onError(new NonSuccessfulResponseCodeException(code));
+            emitter.tryOnError(new NonSuccessfulResponseCodeException(code));
           }
         }
 
         @Override
         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-          emitter.onError(t);
+          emitter.tryOnError(t);
           stage.set(Stage.FAILED);
           webSocket.close(1000, "OK");
         }
