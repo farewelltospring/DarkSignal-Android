@@ -64,6 +64,7 @@ import org.thoughtcrime.securesms.database.model.StoryViewState;
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList;
 import org.thoughtcrime.securesms.database.model.databaseprotos.GiftBadge;
 import org.thoughtcrime.securesms.database.model.databaseprotos.MessageExportState;
+import org.thoughtcrime.securesms.database.model.databaseprotos.ThreadMergeEvent;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.groups.GroupMigrationMembershipChange;
 import org.thoughtcrime.securesms.jobs.TrimThreadJob;
@@ -573,6 +574,11 @@ public class MmsDatabase extends MessageDatabase {
   }
 
   @Override
+  public void insertThreadMergeEvent(@NonNull RecipientId recipientId, long threadId, @NonNull ThreadMergeEvent event) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void endTransaction(SQLiteDatabase database) {
     database.endTransaction();
   }
@@ -889,17 +895,8 @@ public class MmsDatabase extends MessageDatabase {
   }
 
   @Override
-  public boolean hasSelfReplyInGroupStory(long parentStoryId) {
-    SQLiteDatabase db        = databaseHelper.getSignalReadableDatabase();
-    String[]       columns   = new String[]{"COUNT(*)"};
-    String         where     = PARENT_STORY_ID + " = ? AND (" +
-                               getOutgoingTypeClause() + ") AND ("
-                               + MESSAGE_BOX + " & " + Types.SPECIAL_TYPES_MASK + " != " + Types.SPECIAL_TYPE_STORY_REACTION + ")";
-    String[]       whereArgs = SqlUtil.buildArgs(parentStoryId);
-
-    try (Cursor cursor = db.query(TABLE_NAME, columns, where, whereArgs, null, null, null, null)) {
-      return cursor != null && cursor.moveToNext() && cursor.getInt(0) > 0;
-    }
+  public boolean hasGroupReplyOrReactionInStory(long parentStoryId) {
+    return hasSelfReplyInStory(-parentStoryId);
   }
 
   @Override
@@ -990,6 +987,17 @@ public class MmsDatabase extends MessageDatabase {
     } finally {
       db.endTransaction();
     }
+  }
+
+  private void disassociateStoryQuotes(long storyId) {
+    ContentValues contentValues = new ContentValues(2);
+    contentValues.put(QUOTE_MISSING, 1);
+    contentValues.putNull(QUOTE_BODY);
+
+    getWritableDatabase().update(TABLE_NAME,
+                                 contentValues,
+                                 PARENT_STORY_ID + " = ?",
+                                 SqlUtil.buildArgs(new ParentStoryId.DirectReply(storyId).serialize()));
   }
 
   @Override
@@ -1383,6 +1391,7 @@ public class MmsDatabase extends MessageDatabase {
       SignalDatabase.messageLog().deleteAllRelatedToMessage(messageId, true);
       SignalDatabase.reactions().deleteReactions(new MessageId(messageId, true));
       deleteGroupStoryReplies(messageId);
+      disassociateStoryQuotes(messageId);
 
       threadId = getThreadIdForMessage(messageId);
       SignalDatabase.threads().update(threadId, false);
@@ -1878,7 +1887,18 @@ public class MmsDatabase extends MessageDatabase {
       return Optional.empty();
     }
 
-    long messageId = insertMediaMessage(threadId, retrieved.getBody(), retrieved.getAttachments(), quoteAttachments, retrieved.getSharedContacts(), retrieved.getLinkPreviews(), retrieved.getMentions(), retrieved.getMessageRanges(), contentValues, null, true);
+    boolean updateThread = retrieved.getStoryType() == StoryType.NONE;
+    long    messageId    = insertMediaMessage(threadId,
+                                              retrieved.getBody(),
+                                              retrieved.getAttachments(),
+                                              quoteAttachments,
+                                              retrieved.getSharedContacts(),
+                                              retrieved.getLinkPreviews(),
+                                              retrieved.getMentions(),
+                                              retrieved.getMessageRanges(),
+                                              contentValues,
+                                              null,
+                                              updateThread);
 
     boolean isNotStoryGroupReply = retrieved.getParentStoryId() == null || !retrieved.getParentStoryId().isGroupReply();
     if (!Types.isExpirationTimerUpdate(mailbox) && !retrieved.getStoryType().isStory() && isNotStoryGroupReply) {
@@ -2424,13 +2444,13 @@ public class MmsDatabase extends MessageDatabase {
   }
 
   @Override
-  public Cursor getUnexportedInsecureMessages() {
+  public Cursor getUnexportedInsecureMessages(int limit) {
     return rawQuery(
         SqlUtil.appendArg(MMS_PROJECTION, EXPORT_STATE),
         getInsecureMessageClause() + " AND NOT " + EXPORTED,
         null,
         false,
-        0
+        limit
     );
   }
 
@@ -2598,6 +2618,18 @@ public class MmsDatabase extends MessageDatabase {
 
   public static OutgoingMessageReader readerFor(OutgoingMediaMessage message, long threadId) {
     return new OutgoingMessageReader(message, threadId);
+  }
+
+  @Override
+  public void remapRecipient(@NonNull RecipientId fromId, @NonNull RecipientId toId) {
+
+  }
+
+  @Override
+  public void remapThread(long fromId, long toId) {
+    ContentValues values = new ContentValues();
+    values.put(SmsDatabase.THREAD_ID, toId);
+    getWritableDatabase().update(TABLE_NAME, values, THREAD_ID + " = ?", SqlUtil.buildArgs(fromId));
   }
 
   public static class Status {

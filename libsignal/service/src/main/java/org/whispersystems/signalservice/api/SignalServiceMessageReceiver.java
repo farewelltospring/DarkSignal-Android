@@ -118,12 +118,6 @@ public class SignalServiceMessageReceiver {
     }
   }
 
-  public SignalServiceProfile retrieveProfileByUsername(String username, Optional<UnidentifiedAccess> unidentifiedAccess, Locale locale)
-      throws IOException
-  {
-    return socket.retrieveProfileByUsername(username, unidentifiedAccess, locale);
-  }
-
   public InputStream retrieveProfileAvatar(String path, File destination, ProfileKey profileKey, long maxSizeBytes)
       throws IOException
   {
@@ -201,15 +195,11 @@ public class SignalServiceMessageReceiver {
     return new SignalServiceStickerManifest(pack.getTitle(), pack.getAuthor(), cover, stickers);
   }
 
-  public List<SignalServiceEnvelope> retrieveMessages() throws IOException {
-    return retrieveMessages(new NullMessageReceivedCallback());
-  }
-
-  public List<SignalServiceEnvelope> retrieveMessages(MessageReceivedCallback callback)
+  public List<SignalServiceEnvelope> retrieveMessages(boolean allowStories, MessageReceivedCallback callback)
       throws IOException
   {
     List<SignalServiceEnvelope> results       = new LinkedList<>();
-    SignalServiceMessagesResult messageResult = socket.getMessages();
+    SignalServiceMessagesResult messageResult = socket.getMessages(allowStories);
 
     for (SignalServiceEnvelopeEntity entity : messageResult.getEnvelopes()) {
       SignalServiceEnvelope envelope;
@@ -225,7 +215,8 @@ public class SignalServiceMessageReceiver {
                                              messageResult.getServerDeliveredTimestamp(),
                                              entity.getServerUuid(),
                                              entity.getDestinationUuid(),
-                                             entity.isUrgent());
+                                             entity.isUrgent(),
+                                             entity.isStory());
       } else {
         envelope = new SignalServiceEnvelope(entity.getType(),
                                              entity.getTimestamp(),
@@ -234,7 +225,8 @@ public class SignalServiceMessageReceiver {
                                              messageResult.getServerDeliveredTimestamp(),
                                              entity.getServerUuid(),
                                              entity.getDestinationUuid(),
-                                             entity.isUrgent());
+                                             entity.isUrgent(),
+                                             entity.isStory());
       }
 
       callback.onMessage(envelope);

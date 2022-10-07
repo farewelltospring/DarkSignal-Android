@@ -155,7 +155,7 @@
     <color name="media_keyboard_button_color">@color/core_grey_60</color>
 
     <color name="megaphone_background_color">@color/core_white</color>
-    <color name="megaphone_body_text_color">@color/core_grey_65</color>
+    <color name="megaphone_body_text_color">@color/signal_colorOnSurfaceVariant</color>
     <color name="megaphone_reactions_shade">@color/core_grey_02</color>
     <color name="megaphone_reactions_close_tint">@color/core_black</color>
 
@@ -198,6 +198,8 @@
     <color name="signal_accent_primary_transparent_15">#262c6bed</color>
 
     <color name="notification_profile_moon_tint">#5151F6</color>
+
+    <color name="num_pad_key_background">#dce5f9</color>
 
     <color name="top_toast_background_color">@color/core_white</color>
 

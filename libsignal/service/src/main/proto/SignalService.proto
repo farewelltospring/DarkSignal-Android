@@ -35,7 +35,8 @@ message Envelope {
   optional uint64 serverTimestamp = 10;
   optional bool   urgent          = 14 [default = true];
   reserved      /*updatedPni*/      15; // Not used presently, may be used in the future
-  // NEXT ID: 16
+  optional bool   story           = 16;
+  // NEXT ID: 17
 }
 
 message Content {
@@ -132,8 +133,8 @@ message DataMessage {
   }
 
   message BodyRange {
-    optional int32 start  = 1;
-    optional int32 length = 2;
+    optional uint32 start  = 1;
+    optional uint32 length = 2;
 
     oneof associatedValue {
       string mentionUuid = 3;
@@ -392,9 +393,11 @@ message TextAttachment {
   }
 
   message Gradient {
-    optional uint32 startColor = 1;
-    optional uint32 endColor   = 2;
+    optional uint32 startColor = 1; // deprecated: this field will be removed in a future release.
+    optional uint32 endColor   = 2; // deprecated: this field will be removed in a future release.
     optional uint32 angle      = 3; // degrees
+    repeated uint32 colors     = 4;
+    repeated float  positions  = 5; // percent from 0 to 1
   }
 
   optional string  text                = 1;

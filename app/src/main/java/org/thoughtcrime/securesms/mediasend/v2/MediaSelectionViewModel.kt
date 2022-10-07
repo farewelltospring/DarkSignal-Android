@@ -5,27 +5,32 @@ import android.os.Bundle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import io.reactivex.rxjava3.kotlin.subscribeBy
+import io.reactivex.rxjava3.processors.BehaviorProcessor
+import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
 import io.reactivex.rxjava3.subjects.Subject
+import org.signal.core.util.BreakIteratorCompat
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchKey
 import org.thoughtcrime.securesms.conversation.MessageSendType
 import org.thoughtcrime.securesms.mediasend.Media
 import org.thoughtcrime.securesms.mediasend.MediaSendActivityResult
 import org.thoughtcrime.securesms.mediasend.VideoEditorFragment
+import org.thoughtcrime.securesms.mediasend.v2.review.AddMessageCharacterCount
 import org.thoughtcrime.securesms.mms.MediaConstraints
 import org.thoughtcrime.securesms.mms.SentMediaQuality
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.scribbles.ImageEditorFragment
 import org.thoughtcrime.securesms.stories.Stories
-import org.thoughtcrime.securesms.util.SingleLiveEvent
 import org.thoughtcrime.securesms.util.Util
 import org.thoughtcrime.securesms.util.livedata.Store
 import java.util.Collections
@@ -54,16 +59,34 @@ class MediaSelectionViewModel(
     )
   )
 
+  private val addAMessageUpdatePublisher = BehaviorProcessor.create<CharSequence>()
+
   val isContactSelectionRequired = destination == MediaSelectionDestination.ChooseAfterMediaSelection
 
   val state: LiveData<MediaSelectionState> = store.stateLiveData
 
   private val internalHudCommands = PublishSubject.create<HudCommand>()
 
-  val mediaErrors: SingleLiveEvent<MediaValidator.FilterError> = SingleLiveEvent()
+  val mediaErrors: PublishSubject<MediaValidator.FilterError> = PublishSubject.create()
   val hudCommands: Observable<HudCommand> = internalHudCommands
 
   private val disposables = CompositeDisposable()
+
+  fun watchAddAMessageCount(): Flowable<AddMessageCharacterCount> {
+    return addAMessageUpdatePublisher
+      .onBackpressureLatest()
+      .map {
+        val iterator = BreakIteratorCompat.getInstance()
+        iterator.setText(it)
+        AddMessageCharacterCount(iterator.countBreaks())
+      }
+      .subscribeOn(Schedulers.io())
+      .observeOn(AndroidSchedulers.mainThread())
+  }
+
+  fun updateAddAMessageCount(input: CharSequence?) {
+    addAMessageUpdatePublisher.onNext(input ?: "")
+  }
 
   private val isMeteredDisposable: Disposable = repository.isMetered.subscribe { metered ->
     store.update {
@@ -154,7 +177,7 @@ class MediaSelectionViewModel(
           }
 
           if (filterResult.filterError != null) {
-            mediaErrors.postValue(filterResult.filterError)
+            mediaErrors.onNext(filterResult.filterError)
           }
         }
     )
@@ -230,7 +253,7 @@ class MediaSelectionViewModel(
     }
 
     if (newMediaList.isEmpty() && !suppressEmptyError) {
-      mediaErrors.postValue(MediaValidator.FilterError.NoItems())
+      mediaErrors.onNext(MediaValidator.FilterError.NoItems())
     }
 
     selectedMediaSubject.onNext(newMediaList)
