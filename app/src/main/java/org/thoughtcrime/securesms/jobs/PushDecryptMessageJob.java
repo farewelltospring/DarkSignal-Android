@@ -114,6 +114,8 @@ public final class PushDecryptMessageJob extends BaseJob {
 
       if (FeatureFlags.phoneNumberPrivacy() && result.getContent().getPniSignatureMessage().isPresent()) {
         handlePniSignatureMessage(result.getContent().getSender(), result.getContent().getSenderDevice(), result.getContent().getPniSignatureMessage().get());
+      } else if (result.getContent().getPniSignatureMessage().isPresent()) {
+        Log.w(TAG, "Ignoring PNI signature because the feature flag is disabled!");
       }
 
       jobs.add(new PushProcessMessageJob(result.getContent(), smsMessageId, envelope.getTimestamp()));
@@ -180,6 +182,10 @@ public final class PushDecryptMessageJob extends BaseJob {
   private boolean isStoryMessage(@NonNull DecryptionResult result) {
     if (result.getContent() == null) {
       return false;
+    }
+
+    if (result.getContent().getSenderKeyDistributionMessage().isPresent()) {
+      return true;
     }
 
     if (result.getContent().getStoryMessage().isPresent()) {

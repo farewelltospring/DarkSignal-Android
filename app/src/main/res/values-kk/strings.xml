@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- smartling.instruction_comments_enabled = on -->
 <resources>
     <string name="app_name" translatable="false">Signal</string>
 
@@ -11,6 +12,7 @@
     <string name="sustainer_boost_and_badges" translatable="false">https://support.signal.org/hc/articles/4408365318426</string>
     <string name="google_pay_url" translatable="false">https://pay.google.com</string>
     <string name="donation_decline_code_error_url" translatable="false">https://support.signal.org/hc/articles/4408365318426#errors</string>
+    <string name="sms_export_url" translatable="false">https://support.signal.org/hc/articles/360007321171</string>
     <string name="signal_me_username_url" translatable="false">https://signal.me/#u/%1$s</string>
     <string name="signal_me_username_url_no_scheme" translatable="false">signal.me/#u/%1$s</string>
 
@@ -103,6 +105,14 @@
     <string name="AttachmentManager_signal_requires_the_external_storage_permission_in_order_to_attach_photos_videos_or_audio">Фотосурет, видео немесе аудионы тіркеу үшін Signal қолданбасына құрылғы жады ашық болу керек, бірақ параметрлерде оған кіруге рұқсат берілмеген. Қолданба параметрлері мәзіріне кіріп, \"Рұқсаттар\" бөлімін таңдаңыз да, \"Жад\" функциясын қосыңыз.</string>
     <string name="AttachmentManager_signal_requires_contacts_permission_in_order_to_attach_contact_information">Контакт туралы ақпаратты тіркеу үшін Signal қолданбасына Контактілер ашық болу керек, бірақ параметрлерде оған кіруге рұқсат берілмеген. Қолданба параметрлері мәзіріне кіріп, \"Рұқсаттар\" бөлімін таңдаңыз да, \"Контактілер\" функциясын қосыңыз.</string>
     <string name="AttachmentManager_signal_requires_location_information_in_order_to_attach_a_location">Геолокацияны тіркеу үшін Signal қолданбасына Геолокация ашық болу керек, бірақ параметрлерде оған кіруге рұқсат берілмеген. Қолданба параметрлері мәзіріне кіріп, \"Рұқсаттар\" бөлімін таңдаңыз да, \"Геолокация\" функциясын қосыңыз.</string>
+    <!-- Alert dialog title to show the recipient has not activated payments -->
+    <string name="AttachmentManager__not_activated_payments">%1$s Төлемдерді белсендірмеді </string>
+    <!-- Alert dialog description to send the recipient a request to activate payments -->
+    <string name="AttachmentManager__request_to_activate_payments">Төлемдерді белсендіру керектігі туралы сұрау жібергіңіз келе ме?</string>
+    <!-- Alert dialog button to send request -->
+    <string name="AttachmentManager__send_request">Сұрау жіберу</string>
+    <!-- Alert dialog button to cancel dialog -->
+    <string name="AttachmentManager__cancel">Болдырмау</string>
 
     <!-- AttachmentUploadJob -->
     <string name="AttachmentUploadJob_uploading_media">Мультимедиа жүктеп салынуда…</string>
@@ -123,6 +133,39 @@
     <string name="BlockedUsersActivity__do_you_want_to_unblock_s">\"%1$s\" блоктан шығарылсын ба?</string>
     <string name="BlockedUsersActivity__unblock">Бұғаттан алу</string>
 
+    <!-- CreditCardFragment -->
+    <!-- Title of fragment detailing the donation amount for one-time donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s">Демеушілік сомасы: %1$s</string>
+    <!-- Title of fragment detailing the donation amount for monthly donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s_per_month">Donation amount: %1$s/month</string>
+    <!-- Explanation of how to fill in the form, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_information_below">Картаңыз туралы ақпаратты төменге енгізіңіз</string>
+    <!-- Explanation of how to fill in the form and a note about pii, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_details">Enter your card details. Signal does not collect or store your personal information.</string>
+    <!-- Displayed as a hint in the card number text field -->
+    <string name="CreditCardFragment__card_number">Карта нөмірі</string>
+    <!-- Displayed as a hint in the card expiry text field -->
+    <string name="CreditCardFragment__mm_yy">АА/ЖЖ</string>
+    <!-- Displayed as a hint in the card cvv text field -->
+    <string name="CreditCardFragment__cvv">CVV</string>
+    <!-- Error displayed under the card number text field when there is an invalid card number entered -->
+    <string name="CreditCardFragment__invalid_card_number">Карта нөмірі дұрыс емес</string>
+    <!-- Error displayed under the card expiry text field when the card is expired -->
+    <string name="CreditCardFragment__card_has_expired">Картаның мерзімі өтіп кеткен</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too short -->
+    <string name="CreditCardFragment__code_is_too_short">Код тым қысқа</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too long -->
+    <string name="CreditCardFragment__code_is_too_long">Құрылғы атауы тым ұзақ</string>
+    <!-- Error displayed under the card cvv text field when the cvv is invalid -->
+    <string name="CreditCardFragment__invalid_code">Код дұрыс емес</string>
+    <!-- Error displayed under the card expiry text field when the expiry month is invalid -->
+    <string name="CreditCardFragment__invalid_month">Ай дұрыс жазылмады</string>
+    <!-- Error displayed under the card expiry text field when the expiry is missing the year -->
+    <string name="CreditCardFragment__year_required">Жылды жазу керек</string>
+    <!-- Error displayed under the card expiry text field when the expiry year is invalid -->
+    <string name="CreditCardFragment__invalid_year">Жыл дұрыс жазылмады</string>
+    <!-- Button label to confirm credit card input and proceed with payment -->
+    <string name="CreditCardFragment__continue">Жалғастыру</string>
 
     <!-- BlockUnblockDialog -->
     <string name="BlockUnblockDialog_block_and_leave_s">%1$s блокталған күйде қалсын ба?</string>
@@ -218,9 +261,9 @@
     <!-- Header for username search -->
     <string name="ContactsCursorLoader_find_by_username">Пайдаланушы аты бойынша іздеу</string>
     <!-- Label for my stories when selecting who to send media to -->
-    <string name="ContactsCursorLoader_my_stories">Менің сторилерім</string>
-    <!-- Action for creating a new story -->
-    <string name="ContactsCursorLoader_new_story">Жаңа сторис</string>
+    <string name="ContactsCursorLoader_my_stories">Менің стористерім</string>
+    <!-- Text for a button that brings up a bottom sheet to create a new story. -->
+    <string name="ContactsCursorLoader_new">Жаңа</string>
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">%1$s нөміріне хат жазу</string>
@@ -268,6 +311,18 @@
     <string name="ConversationItem_pending">  Күтілуде</string>
     <string name="ConversationItem_this_message_was_deleted">Бұл хабарлама жойылды.</string>
     <string name="ConversationItem_you_deleted_this_message">Сіз бұл хабарламаны жойғансыз.</string>
+    <!-- Dialog error message shown when user can't download a message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_message_s_will_need_to_send_it_again">Хатты жүктеп алу мүмкін емес. %1$s оны қайта жіберуі керек.</string>
+    <!-- Dialog error message shown when user can't download an image message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_image_s_will_need_to_send_it_again">Суретті жүктеп алу мүмкін емес. %1$s оны қайта жіберуі керек.</string>
+    <!-- Dialog error message shown when user can't download a video message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_video_s_will_need_to_send_it_again">Видеоны жүктеп алу мүмкін емес. %1$s оны қайта жіберуі керек.</string>
+    <!-- Dialog error message shown when user can't download a their own message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_message_you_will_need_to_send_it_again">Хатты жүктеп алу мүмкін емес. Сіз оны қайта жіберуіңіз керек.</string>
+    <!-- Dialog error message shown when user can't download a their own image message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_image_you_will_need_to_send_it_again">Суретті жүктеп алу мүмкін емес. Сіз оны қайта жіберуіңіз керек.</string>
+    <!-- Dialog error message shown when user can't download a their own video message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_video_you_will_need_to_send_it_again">Видеоны жүктеп алу мүмкін емес. Сіз оны қайта жіберуіңіз керек.</string>
 
     <!-- ConversationActivity -->
     <string name="ConversationActivity_add_attachment">Тіркеме қосу</string>
@@ -343,6 +398,21 @@
 
     <string name="ConversationActivity__reported_as_spam_and_blocked">Спам деп хабарланып, блокталды.</string>
 
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_you_can_export_your_messages_to_another_app_on_your_phone">SMS хат алмасу функциясы қазір өшіп тұр. Хаттарыңызды телефоныңыздағы басқа қолданбаға экспорттай аласыз.</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_you_can_export_your_messages_to_another_app_on_your_phone">Енді Signal-да SMS-пен алмасу мүмкін емес. Хаттарыңызды телефоныңыздағы басқа қолданбаға экспорттай аласыз.</string>
+    <!-- Action button shown when in sms conversation, sms is disabled, and unexported sms messages are present -->
+    <string name="ConversationActivity__export_sms_messages">SMS-хаттарды экспорттау</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_invite_s_to_to_signal_to_keep_the_conversation_here">SMS хат алмасу функциясы қазір өшіп тұр. Әңгімелеріңізді осы жерде жалғастыру үшін %1$s деген кісіні Signal-ға шақырыңыз.</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_invite_s_to_to_signal_to_keep_the_conversation_here">Енді Signal-да SMS-пен алмасу мүмкін емес. Әңгімелеріңізді осы жерде жалғастыру үшін %1$s деген кісіні Signal-ға шақырыңыз.</string>
+    <!-- Action button shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__invite_to_signal">Signal қолданбасына шақыру</string>
+    <!-- Snackbar message shown after dismissing the full screen sms export megaphone indicating we'll do it again soon -->
+    <string name="ConversationActivity__you_will_be_reminded_again_soon">Жақында сізге қайта еске салғыш хат жіберіледі.</string>
+
     <!-- ConversationAdapter -->
     <plurals name="ConversationAdapter_n_unread_messages">
         <item quantity="one">%1$d оқылмаған хат</item>
@@ -382,6 +452,10 @@
     <string name="ConversationFragment_deleting_messages">Хаттар жойылуда…</string>
     <string name="ConversationFragment_delete_for_me">Меннен ғана жою</string>
     <string name="ConversationFragment_delete_for_everyone">Барлығынан жою</string>
+    <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
+    <string name="ConversationFragment_delete_on_this_device">Delete on this device</string>
+    <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
+    <string name="ConversationFragment_delete_everywhere">Delete everywhere</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">Signal-дың соңғы нұсқасын пайдаланып жатқан болса, бұл хат әңгімеге қатысқан барлық пайдаланушыдан жойылады. Олар сіздің хатты жойып тастағаныңызды көре алады.</string>
     <string name="ConversationFragment_quoted_message_not_found">Бастапқы хат табылмады</string>
     <string name="ConversationFragment_quoted_message_no_longer_available">Бастапқы хат енді қолжетімді емес</string>
@@ -673,7 +747,7 @@
     <!-- GroupsV1MigrationLearnMoreBottomSheetDialogFragment -->
     <string name="GroupsV1MigrationLearnMore_what_are_new_groups">Жаңа топтар деген не?</string>
     <string name="GroupsV1MigrationLearnMore_new_groups_have_features_like_mentions">Жаңа топтарда @атап өту және топ әкімшілері сияқты функциялар бар және болашақта басқа функциялар да қосылады.</string>
-    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">Жаңартылғанға дейінгі барлық хат тарихы және мультимедиа сақталды.</string>
+    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">Жаңартылғанға дейінгі барлық хаттар тарихы және мультимедиа сақталды.</string>
     <string name="GroupsV1MigrationLearnMore_you_will_need_to_accept_an_invite_to_join_this_group_again">Осы топқа қосылуға жіберілген шақыруды қайта қабылдауыңыз керек. Оны қабылдамайынша, топтағы хаттарды ала алмайсыз.</string>
     <plurals name="GroupsV1MigrationLearnMore_these_members_will_need_to_accept_an_invite">
         <item quantity="one">Бұл топ мүшесі топқа қосылуға жіберілген шақыруды қайта қабылдауы керек. Оны қабылдамайынша, топтағы хаттарды ала алмайды.</item>
@@ -802,11 +876,13 @@
     <string name="AddGroupDetailsFragment__this_field_is_required">Бұл өрісті міндетті түрде толтыру керек.</string>
     <string name="AddGroupDetailsFragment__group_creation_failed">Топ жасалмады.</string>
     <string name="AddGroupDetailsFragment__try_again_later">Кейінірек қайталап көріңіз.</string>
-    <!-- Displayed when adding group details to an MMS Group -->
-    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">Signal топтары қолдау көрсетпейтін контактіні таңдадыңыз, сондықтан бұл топ MMS болады. Реттелмелі MMS тобының атаулары мен фотосуреттері тек сізге көрінетін болады.</string>
     <string name="AddGroupDetailsFragment__remove">Жою</string>
     <string name="AddGroupDetailsFragment__sms_contact">SMS контактісі</string>
     <string name="AddGroupDetailsFragment__remove_s_from_this_group">Бұл топтан %1$s контактісін шығарғыңыз келе ме?</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">Signal топтары қолдау көрсетпейтін контактіні таңдадыңыз, сондықтан бұл топ MMS болады. Реттелмелі MMS тобының атаулары мен фотосуреттері тек сізге көрінетін болады.</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group after SMS Phase 0 -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support_signal_groups_mms_removal">You\'ve selected a contact that doesn\'t support Signal groups, this group will be MMS. Custom MMS group names and photos will only be visible to you. Support for MMS groups will be removed soon to focus on encrypted messaging.</string>
 
     <!-- ManageGroupActivity -->
     <string name="ManageGroupActivity_member_requests_and_invites">Топ мүшесі болуға өтініштер мен шақырулар</string>
@@ -990,6 +1066,8 @@
 
     <!-- InputPanel -->
     <string name="InputPanel_tap_and_hold_to_record_a_voice_message_release_to_send">Дауыстық хаттарды жазу үшін басып тұрыңыз да, жіберу үшін саусағыңызды алыңыз</string>
+    <!-- Message shown if the user tries to switch a conversation from Signal to SMS -->
+    <string name="InputPanel__sms_messaging_is_no_longer_supported_in_signal">Енді Signal-да SMS-пен алмасу мүмкін емес.</string>
 
     <!-- InviteActivity -->
     <string name="InviteActivity_share">Бөлісу</string>
@@ -1346,9 +1424,17 @@
     <!-- Update item message shown in the release channel when someone is already a sustainer so we ask them if they want to boost. -->
     <string name="MessageRecord_like_this_new_feature_help_support_signal_with_a_one_time_donation">Бұл жаңа функция ұнады ма? Бір реттік демеу жіберіп, Signal-ға қолдау көрсетіңіз.</string>
     <!-- Update item message shown when we merge two threads together -->
-    <string name="MessageRecord_your_message_history_with_s_and_their_number_s_has_been_merged">%1$s чаты және оның %2$s нөмірінен тұратын хаттар тарихы біріктірілді.</string>
+    <string name="MessageRecord_your_message_history_with_s_and_their_number_s_has_been_merged">%1$s деген кісімен жазған хаттарыңыз және оның %2$s деген нөмірі біріктірілді.</string>
     <!-- Update item message shown when we merge two threads together and we don't know the phone number of the other thread -->
     <string name="MessageRecord_your_message_history_with_s_and_another_chat_has_been_merged">%1$s чаты бар хаттар тарихы мен оған тиесілі тағы бір чат біріктірілді.</string>
+    <!-- Message to notify sender that activate payments request has been sent to the recipient -->
+    <string name="MessageRecord_you_sent_request">%1$s деген кісіге Төлемдерді белсендіру керектігі туралы сұрау жібердіңіз</string>
+    <!-- Request message from recipient to activate payments -->
+    <string name="MessageRecord_wants_you_to_activate_payments">%1$s сіздің Төлемдерді белсендіргеніңізді қалайды. Төлемдерді тек сенімді адамдарға жіберіңіз.</string>
+    <!-- Message to inform user that payments was activated-->
+    <string name="MessageRecord_you_activated_payments">Төлемдерді белсендірдіңіз</string>
+    <!-- Message to inform sender that recipient can now accept payments -->
+    <string name="MessageRecord_can_accept_payments">%1$s енді Төлемдер қабылдай алады</string>
 
     <!-- Group Calling update messages -->
     <string name="MessageRecord_s_started_a_group_call_s">%1$s топтық қоңырауды бастады · %2$s</string>
@@ -1374,6 +1460,13 @@
         <item quantity="one">%1$s, %2$s және тағы %3$d адам топтық қоңырауға қатысып отыр</item>
         <item quantity="other">%1$s, %2$s және тағы %3$d адам топтық қоңырауға қатысып отыр</item>
     </plurals>
+
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_will_no_longer_be_able_to_send_sms_messages_from_signal_soon">Жақында Signal арқылы SMS хаттар жібере алмайтын боласыз. Әңгімелеріңізді осы жерде жалғастыру үшін %1$s деген кісіні Signal-ға шақырыңыз.</string>
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Енді Signal-да SMS хаттар жібере алмайсыз. Әңгімелеріңізді осы жерде жалғастыру үшін %1$s деген кісіні Signal-ға шақырыңыз.</string>
+    <!-- Body for quote when message being quoted is an in-app payment message -->
+    <string name="MessageRecord__payment_s">Payment: %1$s</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">Қабылдау</string>
@@ -1524,7 +1617,7 @@
     <!-- Recipient -->
     <string name="Recipient_you">Сіз</string>
     <!-- Name of recipient representing user\'s \'My Story\' -->
-    <string name="Recipient_my_story">Менің сториім</string>
+    <string name="Recipient_my_story">Менің сторисім</string>
 
     <!-- RecipientPreferencesActivity -->
     <string name="RecipientPreferenceActivity_block">Бұғаттау</string>
@@ -1832,6 +1925,14 @@
     <string name="ThreadRecord_view_once_media">Бір-ақ рет көрінетін ақпарат файлы</string>
     <string name="ThreadRecord_this_message_was_deleted">Бұл хабарлама жойылды.</string>
     <string name="ThreadRecord_you_deleted_this_message">Сіз бұл хабарламаны жойғансыз.</string>
+    <!-- Displayed in the notification when the user sends a request to activate payments -->
+    <string name="ThreadRecord_you_sent_request">Төлемдерді белсендіру керектігі туралы сұрау жібердіңіз</string>
+    <!-- Displayed in the notification when the recipient wants to activate payments -->
+    <string name="ThreadRecord_wants_you_to_activate_payments">%1$s сіздің Төлемдерді белсендіргеніңізді қалайды</string>
+    <!-- Displayed in the notification when the user activates payments -->
+    <string name="ThreadRecord_you_activated_payments">Төлемдерді белсендірдіңіз</string>
+    <!-- Displayed in the notification when the recipient can accept payments -->
+    <string name="ThreadRecord_can_accept_payments">%1$s енді Төлемдер қабылдай алады</string>
     <string name="ThreadRecord_s_is_on_signal">%1$s Signal қолданады!</string>
     <string name="ThreadRecord_disappearing_messages_disabled">Жоғалып кететін хаттар функциясы өшірулі</string>
     <string name="ThreadRecord_disappearing_message_time_updated_to_s">Жоғалып кететін хат уақыты %1$s болып орнатылды</string>
@@ -1858,6 +1959,8 @@
     <string name="ThreadRecord__reacted_s_to_your_story">Сіздің сторисіңізге %1$s деп реакция қалдырды</string>
     <!-- Displayed in the conversation list when you reacted to someone\'s story -->
     <string name="ThreadRecord__reacted_s_to_their_story">Олардың сторисіне %1$s деп реакция қалдырды</string>
+    <!-- Displayed in the conversation list when your most recent message is a payment to or from the person the conversation is with -->
+    <string name="ThreadRecord_payment">Төлем</string>
 
     <!-- UpdateApkReadyListener -->
     <string name="UpdateApkReadyListener_Signal_update">Signal-ды жаңарту</string>
@@ -1961,6 +2064,7 @@
     <string name="MediaPreviewActivity_media_no_longer_available">Мультимедиа қолжетімді емес.</string>
     <string name="MediaPreviewActivity_cant_find_an_app_able_to_share_this_media">Бұл мультимедиа файлын бөлісе алатын қолданба табылмады.</string>
     <string name="MediaPreviewActivity_dismiss_due_to_error">Close</string>
+    <string name="MediaPreviewFragment_edit_media_error">Мультимедиадағы қате</string>
 
     <!-- MessageNotifier -->
     <string name="MessageNotifier_d_new_messages_in_d_conversations">%2$d әңгімеде %1$d жаңа хат бар</string>
@@ -2012,6 +2116,9 @@
     <string name="NotificationChannel_background_connection">Фондық режимде қосылу</string>
     <!-- Notification channel name for showing call status information (like connection, ongoing, etc.) Not ringing. -->
     <string name="NotificationChannel_call_status">Қоңырау күйі</string>
+    <!-- Notification channel name for occasional alerts to the user. Will appear in the system notification settings as the title of this notification channel. -->
+    <string name="NotificationChannel_critical_app_alerts">Маңызды қолданба ескертулері</string>
+
     <!-- ProfileEditNameFragment -->
 
     <!-- QuickResponseService -->
@@ -2054,6 +2161,12 @@
     <!-- UnauthorizedReminder -->
     <string name="UnauthorizedReminder_device_no_longer_registered">Құрылғы бұдан былай тіркелмеген</string>
     <string name="UnauthorizedReminder_this_is_likely_because_you_registered_your_phone_number_with_Signal_on_a_different_device">Телефон нөміріңізді Signal орнатылған басқа құрылғыда тіркегендіктен осындай болуы мүмкін. Қайта тіркелу үшін түртіңіз.</string>
+
+    <!-- EnclaveFailureReminder -->
+    <!-- Banner message to update app to use payments -->
+    <string name="EnclaveFailureReminder_update_signal">Төлемдерді пайдалана беру үшін Signal-ды жаңартыңыз. Балансыңыз жаңартылмаған болуы мүмкін.</string>
+    <!-- Banner button to update now -->
+    <string name="EnclaveFailureReminder_update_now">Қазір жаңарту</string>
 
     <!-- WebRtcCallActivity -->
     <string name="WebRtcCallActivity_to_answer_the_call_give_signal_access_to_your_microphone">Қоңырауға жауап беру үшін Signal қолданбасының микрофонды пайдалануына рұқсат етіңіз.</string>
@@ -2184,6 +2297,11 @@
     <string name="ConversationUpdateItem_the_disappearing_message_time_will_be_set_to_s_when_you_message_them">Оларға хат жазғанда жоғалып кететін хаттың уақыты %1$s болып орнатылады.</string>
     <!-- Update item button text to show to boost a feature -->
     <string name="ConversationUpdateItem_donate">Ерікті жарна енгізу</string>
+    <!-- Update item button text to send payment -->
+    <string name="ConversationUpdateItem_send_payment">Send Payment</string>
+    <!-- Update item button text to activate payments -->
+    <string name="ConversationUpdateItem_activate_payments">Төлемдерді іске қосу</string>
+
 
     <!-- audio_view -->
     <string name="audio_view__play_pause_accessibility_description">Ойнату … Кідірту</string>
@@ -2344,7 +2462,7 @@
     <!-- Displayed in a toast when user long presses an item in MyStories -->
     <string name="MyStoriesFragment__copied_sent_timestamp_to_clipboard">Жіберілген уақыт белгісі буферге көшірілді.</string>
     <!-- Displayed when there are no outgoing stories -->
-    <string name="MyStoriesFragment__updates_to_your_story_will_show_up_here">Сториіңізде жаңартулар осы жерде көрініс табады.</string>
+    <string name="MyStoriesFragment__updates_to_your_story_will_show_up_here">Сторисіңіздегі жаңартулар осы жерде көрсетіледі.</string>
 
     <!-- GroupUtil -->
     <plurals name="GroupUtil_joined_the_group">
@@ -2484,7 +2602,7 @@
     <string name="HelpFragment__debug_log">Ақауларды түзету журналы:</string>
     <string name="HelpFragment__could_not_upload_logs">Журналдар жүктеп салынбады</string>
     <string name="HelpFragment__please_be_as_descriptive_as_possible">Мәселенің төркінін түсіну үшін барынша нақтылап жазуыңызды сұраймыз.</string>
-    <string-array name="HelpFragment__categories_4">
+    <string-array name="HelpFragment__categories_5">
         <item>\\-\\- Бір опция таңдаңыз \\-\\-</item>
         <item>Бірдеңе жұмыс істеп тұрған жоқ</item>
         <item>Функцияны сұрау</item>
@@ -2493,6 +2611,7 @@
         <item>Басқа</item>
         <item>Төлемдер (MobileCoin)</item>
         <item>Демеушіліктер және Таңбалар</item>
+        <item>SMS экспорты</item>
     </string-array>
 
     <!-- ReactWithAnyEmojiBottomSheetDialogFragment -->
@@ -2558,6 +2677,10 @@
     <string name="preferences__pressing_the_enter_key_will_send_text_messages">Enter пернесін бассаңыз, мәтіндік хаттар жіберіледі</string>
     <string name="preferences__pref_use_address_book_photos">Мекенжайлар кітабындағы фотосуреттерді қолдану</string>
     <string name="preferences__display_contact_photos_from_your_address_book_if_available">Бар болса, мекенжайлар кітабындағы контакт фотосуреттерін көрсету</string>
+    <!-- Preference menu item title for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__pref_keep_muted_chats_archived">Keep Muted Chats Archived</string>
+    <!-- Preference menu item description for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__muted_chats_that_are_archived_will_remain_archived">Muted chats that are archived will remain archived when a new message arrives.</string>
     <string name="preferences__generate_link_previews">Сілтеменің шағын көріністерін жасау</string>
     <string name="preferences__retrieve_link_previews_from_websites_for_messages">Жіберетін хаттарыңыз үшін сілтеменің шағын көріністерін тікелей веб-сайттардан алыңыз.</string>
     <string name="preferences__choose_identity">Адамды таңдау</string>
@@ -2749,107 +2872,9 @@
     <string name="configurable_single_select__customize_option">Бейімдеу опциясы</string>
 
     <!-- Internal only preferences -->
-    <string name="preferences__internal_turn_off_stories_with_stories_on_disk" translatable="false">Turn off stories (with stories on disk)</string>
-    <string name="preferences__internal_turn_off_stories" translatable="false">Turn off stories</string>
-    <string name="preferences__internal_delete_private_story" translatable="false">Delete private story</string>
-    <string name="preferences__internal_hide_story" translatable="false">Hide story</string>
-    <string name="preferences__internal_story_or_profile_selector" translatable="false">Story or profile selector</string>
-    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
-    <string name="preferences__internal_retry_send" translatable="false">Retry send</string>
-    <string name="preferences__internal_remove_group_story" translatable="false">Remove group story</string>
-    <string name="preferences__internal_clear_onboarding_state" translatable="false">Clear onboarding state</string>
-    <string name="preferences__internal_clears_onboarding_flag_and_triggers_download_of_onboarding_stories" translatable="false">Clears onboarding flag and triggers download of onboarding stories.</string>
     <string name="preferences__internal_preferences" translatable="false">Internal Preferences</string>
-    <string name="preferences__internal_preferences_groups_v2" translatable="false">Groups V2</string>
-    <string name="preferences__internal_force_gv2_invites" translatable="false">Force Invites</string>
-    <string name="preferences__internal_force_gv2_invites_description" translatable="false">Members will not be added directly to a GV2 even if they could be.</string>
-    <string name="preferences__internal_ignore_gv2_server_changes" translatable="false">Ignore server changes</string>
-    <string name="preferences__internal_ignore_gv2_server_changes_description" translatable="false">Changes in server\&apos;s response will be ignored, causing passive voice update messages if P2P is also ignored.</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes" translatable="false">Ignore P2P changes</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes_description" translatable="false">Changes sent P2P will be ignored. In conjunction with ignoring server changes, will cause passive voice.</string>
-    <string name="preferences__internal_payments" translatable="false">Payments</string>
-    <string name="preferences__internal_payment_copy_data" translatable="false">Copy payments data</string>
-    <string name="preferences__internal_payment_copy_data_description" translatable="false">Copy all payment records to clipboard.</string>
-    <string name="preferences__internal_account" translatable="false">Account</string>
-    <string name="preferences__internal_refresh_attributes" translatable="false">Refresh attributes</string>
-    <string name="preferences__internal_refresh_attributes_description" translatable="false">Forces a write of capabilities on to the server followed by a read.</string>
-    <string name="preferences__internal_refresh_profile" translatable="false">Refresh profile</string>
-    <string name="preferences__internal_refresh_profile_description" translatable="false">Forces a refresh of your own profile.</string>
-    <string name="preferences__internal_rotate_profile_key" translatable="false">Rotate profile key</string>
-    <string name="preferences__internal_rotate_profile_key_description" translatable="false">Creates a new versioned profile, and triggers an update of any GV2 group you belong to.</string>
-    <string name="preferences__internal_refresh_remote_config" translatable="false">Refresh remote config</string>
-    <string name="preferences__internal_refresh_remote_config_description" translatable="false">Forces a refresh of the remote config locally instead of waiting for the elapsed time.</string>
-    <string name="preferences__internal_misc" translatable="false">Miscellaneous</string>
-    <string name="preferences__internal_user_details" translatable="false">\&apos;Internal Details\&apos; button</string>
-    <string name="preferences__internal_user_details_description" translatable="false">Show a button in conversation settings that lets you see more information about a user.</string>
-    <string name="preferences__internal_shake_to_report" translatable="false">Shake to Report</string>
-    <string name="preferences__internal_shake_to_report_description" translatable="false">Shake your phone to easily submit and share a debug log.</string>
-    <string name="preferences__internal_clear_keep_longer_logs" translatable="false">Clear keep longer logs</string>
-    <string name="preferences__internal_storage_service" translatable="false">Storage service</string>
-    <string name="preferences__internal_disable_storage_service" translatable="false">Disable syncing</string>
-    <string name="preferences__internal_disable_storage_service_description" translatable="false">Prevent syncing any data to/from storage service.</string>
-    <string name="preferences__internal_force_storage_service_sync" translatable="false">Overwrite remote data</string>
-    <string name="preferences__internal_sync_now" translatable="false">Sync now</string>
-    <string name="preferences__internal_sync_now_description" translatable="false">Enqueue a normal storage service sync.</string>
-    <string name="preferences__internal_force_storage_service_sync_description" translatable="false">Forces remote storage to match the local device state.</string>
-    <string name="preferences__internal_network" translatable="false">Network</string>
-    <string name="preferences__internal_allow_censorship_toggle" translatable="false">Allow censorship circumvention toggle</string>
-    <string name="preferences__internal_allow_censorship_toggle_description" translatable="false">Allow changing the censorship circumvention toggle regardless of network connectivity.</string>
-    <string name="preferences__internal_conversations_and_shortcuts" translatable="false">Conversations and Shortcuts</string>
-    <string name="preferences__internal_emoji" translatable="false">Emoji</string>
-    <string name="preferences__internal_use_built_in_emoji_set" translatable="false">Use built-in emoji set</string>
-    <string name="preferences__internal_force_emoji_download" translatable="false">Force emoji download</string>
-    <string name="preferences__internal_force_emoji_download_description" translatable="false">Download the latest emoji set if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_force_search_index_download" translatable="false">Force search index download</string>
-    <string name="preferences__internal_force_search_index_download_description" translatable="false">Download the latest emoji search index if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_current_version_builtin" translatable="false">Current version: Built-In</string>
-    <string name="preferences__internal_current_version_d_at_density_s" translatable="false">Current version: %1$d at density %2$s</string>
-    <string name="preferences__internal_delete_all_dynamic_shortcuts" translatable="false">Delete all dynamic shortcuts</string>
-    <string name="preferences__internal_click_to_delete_all_dynamic_shortcuts" translatable="false">Click to delete all dynamic shortcuts</string>
     <string name="preferences__internal_details" translatable="false">Internal Details</string>
-    <string name="preferences__internal_disable_profile_sharing" translatable="false">Disable Profile Sharing</string>
-    <string name="preferences__internal_delete_session" translatable="false">Delete Session</string>
-    <string name="preferences__internal_sender_key" translatable="false">Sender Key</string>
-    <string name="preferences__internal_clear_all_state" translatable="false">Clear all state</string>
-    <string name="preferences__internal_click_to_delete_all_sender_key_state" translatable="false">Click to delete all sender key state</string>
-    <string name="preferences__internal_clear_shared_state" translatable="false">Clear shared state</string>
-    <string name="preferences__internal_click_to_delete_all_sharing_state" translatable="false">Click to delete all sharing state</string>
-    <string name="preferences__internal_remove_two_person_minimum" translatable="false">Remove 2 person minimum</string>
-    <string name="preferences__internal_remove_the_requirement_that_you_need" translatable="false">Remove the requirement that you  need at least 2 recipients to use sender key.</string>
-    <string name="preferences__internal_delay_resends" translatable="false">Delay resends</string>
-    <string name="preferences__internal_delay_resending_messages_in_response_to_retry_receipts" translatable="false">Delay resending messages in response to retry receipts by 10 seconds.</string>
-    <string name="preferences__internal_local_metrics" translatable="false">Local Metrics</string>
-    <string name="preferences__internal_clear_local_metrics" translatable="false">Clear local metrics</string>
-    <string name="preferences__internal_click_to_clear_all_local_metrics_state" translatable="false">Click to clear all local metrics state.</string>
-    <string name="preferences__internal_calling_server" translatable="false">Group call server</string>
-    <string name="preferences__internal_calling_server_default" translatable="false">Default</string>
-    <string name="preferences__internal_calling_server_s" translatable="false">%1$s server</string>
-    <string name="preferences__internal_calling" translatable="false">Calling options</string>
-    <string name="preferences__internal_calling_audio_processing_method" translatable="false">Audio processing method</string>
-    <string name="preferences__internal_calling_bandwidth_mode" translatable="false">Bandwidth mode</string>
-    <string name="preferences__internal_calling_disable_telecom" translatable="false">Disable Telecom integration</string>
-    <string name="preferences__internal_badges" translatable="false">Badges</string>
-    <string name="preferences__internal_badges_enqueue_redemption" translatable="false">Enqueue redemption.</string>
-    <string name="preferences__internal_badges_enqueue_keep_alive" translatable="false">Enqueue keep-alive.</string>
-    <string name="preferences__internal_badges_set_error_state" translatable="false">Set error state.</string>
-    <string name="preferences__internal_release_channel" translatable="false">Release channel</string>
-    <string name="preferences__internal_fetch_release_channel" translatable="false">Fetch release channel</string>
-    <string name="preferences__internal_release_channel_set_last_version" translatable="false">Set last version seen back 10 versions</string>
-    <string name="preferences__internal_reset_donation_megaphone" translatable="false">Reset donation megaphone</string>
-    <string name="preferences__internal_add_sample_note" translatable="false">Add sample note</string>
-    <string name="preferences__internal_disable_stories" translatable="false">Disable stories</string>
-    <string name="preferences__internal_cds" translatable="false">CDS</string>
-    <string name="preferences__internal_clear_history" translatable="false">Clear history</string>
-    <string name="preferences__internal_clear_history_description" translatable="false">Clears all CDS history, meaning the next sync will consider all numbers to be new.</string>
-    <string name="preferences__internal_clear_all_service_ids" translatable="false">Clear all service IDs</string>
-    <string name="preferences__internal_clear_all_service_ids_description" translatable="false">Clears all known service IDs (except your own) for people that have phone numbers. Do not use on your personal device!</string>
-    <string name="preferences__internal_clear_all_profile_keys" translatable="false">Clear all profile keys</string>
-    <string name="preferences__internal_clear_all_profile_keys_description" translatable="false">Clears all known profile keys (except your own). Do not use on your personal device!</string>
-    <string name="preferences__internal_donor_error_expired_badge" translatable="false">Expired Badge</string>
-    <string name="preferences__internal_donor_error_charge_failure" translatable="false">Charge Failure</string>
-    <string name="preferences__internal_donor_error_cancelation_reason" translatable="false">Cancelation Reason</string>
-    <string name="preferences__internal_donor_error_save_and_finish" translatable="false">Save and Finish</string>
-    <string name="preferences__internal_donor_error_clear" translatable="false">Clear</string>
+    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
 
 
     <!-- Payments -->
@@ -2908,26 +2933,34 @@
     <string name="PaymentsHomeFragment__enable">Іске қосу</string>
     <!-- Alert dialog button to not enable payment lock for now -->
     <string name="PaymentsHomeFragment__not_now">Қазір емес</string>
+    <!-- Alert dialog title which shows up to update app to send payments -->
+    <string name="PaymentsHomeFragment__update_required">Жаңарту керек</string>
+    <!-- Alert dialog description that app update is required to send payments-->
+    <string name="PaymentsHomeFragment__an_update_is_required">Төлемдерді жіберу және қабылдау үшін, сондай-ақ жаңартылған төлем балансын көру үшін жаңарту керек.</string>
+    <!-- Alert dialog button to cancel -->
+    <string name="PaymentsHomeFragment__cancel">Болдырмау</string>
+    <!-- Alert dialog button to update now -->
+    <string name="PaymentsHomeFragment__update_now">Қазір жаңарту</string>
 
     <!-- PaymentsSecuritySetupFragment -->
     <!-- Toolbar title -->
-    <string name="PaymentsSecuritySetupFragment__security_setup">Security setup</string>
+    <string name="PaymentsSecuritySetupFragment__security_setup">Қауіпсіздік параметрлерін реттеу</string>
     <!-- Title to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__protect_your_funds">Protect your funds</string>
+    <string name="PaymentsSecuritySetupFragment__protect_your_funds">Қаражатыңызды қорғаңыз</string>
     <!-- Description as to why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__help_prevent">Help prevent a person with your phone from accessing your funds by adding another layer of security. You can disable this option in Settings.</string>
+    <string name="PaymentsSecuritySetupFragment__help_prevent">Қосымша қауіпсіздік шарасын қосу арқылы телефоныңызды ұстап отырған адамның қаражатыңызды пайдаланбауын қадағалаңыз. Бұл опцияны \"Параметрлер\" бөлімінен өшіріп қоюыңызға болады.</string>
     <!-- Option to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">Enable payment lock</string>
+    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">Төлем құлпын қосу</string>
     <!-- Option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__not_now">Not now</string>
+    <string name="PaymentsSecuritySetupFragment__not_now">Кейін</string>
     <!-- Dialog title to confirm skipping the step -->
-    <string name="PaymentsSecuritySetupFragment__skip_this_step">Skip this step?</string>
+    <string name="PaymentsSecuritySetupFragment__skip_this_step">Осы қадамды өткізіп жіберу керек пе?</string>
     <!-- Dialog description to let users know why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__skipping_this_step">Skipping this step could allow anyone who has physical access to your phone to transfer funds or view your recovery phrase.</string>
+    <string name="PaymentsSecuritySetupFragment__skipping_this_step">Бұл қадамды өткізіп жіберсеңіз, телефоныңызды ұстап отырған кез келген адам ақша аудара алады немесе қалпына келтіру сөйлеміңізді көре алады.</string>
     <!-- Dialog option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__cancel">Cancel</string>
+    <string name="PaymentsSecuritySetupFragment__cancel">Болдырмау</string>
     <!-- Dialog option to skip -->
-    <string name="PaymentsSecuritySetupFragment__skip">Skip</string>
+    <string name="PaymentsSecuritySetupFragment__skip">Өткізіп жіберу</string>
 
     <!-- PaymentsAddMoneyFragment -->
     <string name="PaymentsAddMoneyFragment__add_funds">Қаражат қосу</string>
@@ -2951,7 +2984,7 @@
     <string name="PaymentsDetailsFragment__s_on_s_at_s">%1$s %2$s күні сағат %3$s</string>
     <string name="PaymentsDetailsFragment__to">To</string>
     <string name="PaymentsDetailsFragment__from">From</string>
-    <string name="PaymentsDetailsFragment__information">Транзакция мәліметтері, оның ішінде төлем сомасы және транзакция уақыты –MobileCoin тіркеу кітабының бір бөлігі.</string>
+    <string name="PaymentsDetailsFragment__information">Транзакция мәліметтері, оның ішінде төлем сомасы және транзакция уақыты – MobileCoin тіркеу кітабының бір бөлігі.</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_fee">Койнды тазалау ақысы</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_information">Транзакцияны орындау үшін сіздің иелігіңіздегі койндарды біріктіру мүмкін болмаған жағдайда, \"Койнды тазалау ақысы\" алынады. Тазалаудың арқасында төлемдер жіберуге мүмкіндік аласыз.</string>
     <string name="PaymentsDetailsFragment__no_details_available">Бұл транзакция үшін бұдан басқа мәлімет жоқ</string>
@@ -3088,6 +3121,8 @@
     <string name="conversation_selection__menu_resend_message">Resend</string>
     <!-- Button to select a message and enter selection mode -->
     <string name="conversation_selection__menu_multi_select">Бөлектеу</string>
+    <!-- Button to view a in-chat payment message's full payment details -->
+    <string name="conversation_selection__menu_payment_details">Payment details</string>
 
     <!-- conversation_expiring_on -->
 
@@ -3169,12 +3204,22 @@
     <string name="reminder_header_push_text">Адамдармен тіл табысу деңгейіңізді көтеріңіз.</string>
     <string name="reminder_header_service_outage_text">Signal қолданбасында техникалық қиындықтар туындады. Қызметті мүмкіндігінше тезірек қалпына келтіру үшін аянбай жұмыс істеп жатырмыз.</string>
     <string name="reminder_header_progress">%1$d%%</string>
+    <!-- Body text of a banner that will show at the top of the chat list when we temporarily cannot process the user's contacts -->
+    <string name="reminder_cds_warning_body">Signal\'s private contact discovery temporarily can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we temporarily can't process the user's contacts -->
+    <string name="reminder_cds_warning_learn_more">Толық ақпарат</string>
+    <!-- Body text of a banner that will show at the top of the chat list when the user has so many contacts that we cannot ever process them -->
+    <string name="reminder_cds_permanent_error_body">Signal\'s private contact discovery can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we cannot process the user's contacts -->
+    <string name="reminder_cds_permanent_error_learn_more">Толық ақпарат</string>
 
     <!-- media_preview -->
     <string name="media_preview__save_title">Сақтау</string>
     <string name="media_preview__forward_title">Басқаға жіберу</string>
     <string name="media_preview__share_title">Бөлісу</string>
     <string name="media_preview__all_media_title">Барлық мультимедиа</string>
+    <string name="media_preview__edit_title">Өңдеу</string>
+
 
     <!-- media_preview_activity -->
     <string name="media_preview_activity__media_content_description">Мультимедианы алдын ала қарау</string>
@@ -3798,7 +3843,10 @@
     <!-- Title in save recovery phrase screen -->
     <string name="PaymentsRecoveryStartFragment__save_recovery_phrase">Қалпына келтіру сөйлемін сақтау</string>
     <string name="PaymentsRecoveryStartFragment__enter_recovery_phrase">Қалпына келтіру сөйлемін енгізіңіз</string>
-    <string name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">Signal-дағы PIN-кодыңызды растасаңыз, Signal-ды қайта орнатқанда, балансыңыз автоматты түрде қалпына келеді. Қалпына келтіру сөйлемін пайдаланып та, балансыңызды қалпына келтіре аласыз. Қалпына келтіру сөйлемі – сізге ғана мәлім%1$d сөздік сөйлем. Оны жазып алып, қауіпсіз бір жерге сақтап қойыңыз.</string>
+    <plurals name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">
+        <item quantity="one">Signal-дағы PIN-кодыңызды растасаңыз, Signal-ды қайта орнатқанда, балансыңыз автоматты түрде қалпына келеді. Қалпына келтіру сөйлемін пайдаланып та, балансыңызды қалпына келтіре аласыз. Қалпына келтіру сөйлемі – сізге ғана мәлім %1$d сөздік сөйлем. Оны жазып алып, қауіпсіз бір жерге сақтап қойыңыз.</item>
+        <item quantity="other">Signal-дағы PIN-кодыңызды растасаңыз, Signal-ды қайта орнатқанда, балансыңыз автоматты түрде қалпына келеді. Қалпына келтіру сөйлемін пайдаланып та, балансыңызды қалпына келтіре аласыз. Қалпына келтіру сөйлемі – сізге ғана мәлім %1$d сөздік сөйлем. Оны жазып алып, қауіпсіз бір жерге сақтап қойыңыз.</item>
+    </plurals>
     <!-- Description in save recovery phrase screen which shows up when user has non zero balance -->
     <string name="PaymentsRecoveryStartFragment__got_balance">Сізде баланс бар! Қалпына келтіру сөйлемін сақтайтын уақыт. Ол – балансыңызды қалпына келтіру үшін пайдаланылатын 24 сөздік кілт.</string>
     <!-- Description in save recovery phrase screen which shows up when user navigates from info card -->
@@ -3968,9 +4016,15 @@
     <!-- Preference title to delete sms -->
     <string name="SmsSettingsFragment__remove_sms_messages">SMS-хаттарды өшіру</string>
     <!-- Snackbar text to confirm deletion -->
-    <string name="SmsSettingsFragment__removing_sms_messages_from_signal">Signal-дан SMS хаттар өшірілуде...</string>
+    <string name="SmsSettingsFragment__removing_sms_messages_from_signal">Signal-дан SMS хаттар өшірілуде…</string>
     <!-- Snackbar text to indicate can delete later -->
     <string name="SmsSettingsFragment__you_can_remove_sms_messages_from_signal_in_settings">Signal-дағы \"Параметрлер\" бөлімінен SMS хаттарды кез келген уақытта өшіріп тастай аласыз.</string>
+    <!-- Description for export sms preference -->
+    <string name="SmsSettingsFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">SMS хаттарды телефоныңыздың SMS дерекқорына экспорттай аласыз</string>
+    <!-- Description for remove sms preference -->
+    <string name="SmsSettingsFragment__remove_sms_messages_from_signal_to_clear_up_storage_space">Жадты тазалау үшін Signal-дан келген SMS хаттарды өшіріп тастаңыз.</string>
+    <!-- Information message shown at the top of sms settings to indicate it is being removed soon. -->
+    <string name="SmsSettingsFragment__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Шифрланған хат алмасу функциясына көңіл бөлу үшін жақында SMS хат алмасу функциясы істемейтін болады.</string>
 
     <!-- NotificationsSettingsFragment -->
     <string name="NotificationsSettingsFragment__messages">Хабарламалар</string>
@@ -4231,6 +4285,8 @@
     <string name="NewConversationActivity__this_person_is_saved_to_your">Бұл адам құрылғыңыздың Контактілер тізіміне сақталған. Оны Контактілер тізімінен өшіріп, қайталап көріңіз.</string>
     <!-- Dialog action to view contact when they can't be removed otherwise -->
     <string name="NewConversationActivity__view_contact">Контактіні көру</string>
+    <!-- Error message shown when looking up a person by phone number and that phone number is not associated with a signal account -->
+    <string name="NewConversationActivity__s_is_not_a_signal_user">%1$s Signal пайдаланушысы емес</string>
 
     <!-- ContactFilterView -->
     <string name="ContactFilterView__search_name_or_number">Атын немесе нөмірін іздеу</string>
@@ -4283,7 +4339,7 @@
     <!-- Displayed when user selects a video that will be clipped before sharing to a story -->
     <string name="MultiselectForwardFragment__videos_will_be_trimmed">Видеолар 30 секундтық клиптерге бөлінеді және бірнеше сторис ретінде жіберіледі.</string>
     <!-- Displayed when user selects a video that cannot be sent as a story -->
-    <string name="MultiselectForwardFragment__videos_sent_to_stories_cant">Сториске жіберілетін видеолардың ұзақтығы 30 секундтан аспау керек.</string>
+    <string name="MultiselectForwardFragment__videos_sent_to_stories_cant">Сториске жіберілетін видеолардың ұзақтығы 30 секундтан аспауы керек.</string>
     <string name="MultiselectForwardFragment__forwarded_messages_are_now">Басқаға жіберілген хаттар енді дереу кетеді.</string>
     <plurals name="MultiselectForwardFragment_send_d_messages">
         <item quantity="one">%1$d хат жіберу</item>
@@ -4351,13 +4407,17 @@
     <string name="SelectFeaturedBadgeFragment__failed_to_update_profile">Профиль жаңартылмады</string>
 
     <string name="ViewBadgeBottomSheetDialogFragment__become_a_sustainer">Демеуші болу</string>
+    <!-- Title of a page in the bottom sheet. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal">%1$s supports Signal</string>
+    <!-- Description of a page in the bottom sheet of a monthly badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_monthly">%1$s ай сайын ақша салып, Signal-ға қолдау көрсетеді. Signal – сіз сияқты адамдардың арқасында жұмыс істеп тұрған жарнама берушілері немесе инвесторлары жоқ коммерциялық емес жоба.</string>
+    <!-- Description of a page in the bottom sheet of a one-time badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_donation">%1$s supports Signal with a donation. Signal is a nonprofit with no advertisers or investors, supported only by people like you.</string>
 
     <string name="ImageView__badge">Таңба</string>
 
-    <string name="SubscribeFragment__signal_is_powered_by_people_like_you">Signal сіз сияқты адамдардың арқасында жұмыс істеп тұр.</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you">Оған демеушілік жасайтын адамдардың қатарына қосылып, деректеріңіз үшін емес, сіз үшін жасалған технологияға қолдау көрсетіңіз.</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you_not">Signal-ға демеушілік жасайтын адамдардың қатарына қосылып, деректеріңіз үшін емес, сіз үшін жасалған технологияға қолдау көрсетіңіз.</string>
-    <string name="SubscribeFragment__make_a_recurring_monthly_donation">Сіздің деректеріңіз үшін емес, сіз үшін жасалған технологияға қолдау көрсету үшін Signal-ға ай сайын демеушілік жасап тұрыңыз.</string>
     <string name="SubscribeFragment__currency">Валюта</string>
     <string name="SubscribeFragment__more_payment_options">Басқа төлем опциялары</string>
     <string name="SubscribeFragment__cancel_subscription">Жазылымнан бас тарту</string>
@@ -4372,37 +4432,41 @@
     <string name="SubscribeFragment__you_will_be_charged_the_full_amount_s_of">Бүгін сізден жаңа жазылымның толық сомасы (%1$s) алынады. Жазылымыңыз ай сайын жаңарып отырады.</string>
 
     <string name="Subscription__s_per_month">айына %1$s</string>
-    <string name="Subscription__s_per_month_dot_renews_s">айына %1$s · %2$s жаңарады</string>
-    <string name="Subscription__s_per_month_dot_expires_s">айына %1$s · %2$s күні мерзімі аяқталады</string>
+    <!-- Shown when a subscription is active and isn't going to expire at the end of the term -->
+    <string name="Subscription__renews_s">%1$s жаңарады</string>
+    <!-- Shown when a subscription is active and is going to expire at the end of the term -->
+    <string name="Subscription__expires_s">Мерзімі %1$s күні өтеді</string>
 
+    <!-- Title of learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_different">Signal is different.</string>
     <!-- First small text blurb on learn more sheet -->
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_a_nonprofit_with_no">Signal – жарнама берушілері немесе инвесторлары жоқ коммерциялық емес жоба. Оны пайдаланатын және бағалайтын адамдардың демеушілігімен жұмыс істейді. Ай сайын демеушілік жасап, профиліңізге таңба алыңыз да, басқалармен бөлісіңіз.</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__why_donate">Не үшін демеушілік жасау керек?</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_committed_to_developing">Signal әр адам ойын жасырмай айта алатын және әлемнің түкпір-түкпіріндегі адамдармен қауіпсіз сөйлесуге мүмкіндік беретін бастапқы көзі ашық құпия технология әзірлеуді мақсат етеді.</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__your_donation">Сіздің демеушілігіңіз осы мақсаттың орындалуына себеп болып, жеке қарым-қатынас орнату үшін миллиондаған адам пайдаланатын қолданбаны әзірлеуге және оның дұрыс жұмыс істеуіне жұмсалады. Жарнамасыз. Трекерсіз. Және бұл әзіл емес.</string>
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__private_messaging">Private messaging. No ads, no trackers, no surveillance.</string>
+    <!-- Second small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_supported_by">Signal is supported by donations, meaning that your privacy is at the center of everything we do. Signal is built for you; not your data and not for profit.</string>
+    <!-- Third small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__if_you_can">If you can, please donate today to keep Signal fun, dependable, and available for everyone.</string>
 
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_your_support">Қолдау көрсеткеніңіз үшін алғысымызды білдіреміз!</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_the_boost">Демеуіңізге рақмет!</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_s_badge_display">%1$s таңба алдыңыз! Осы таңбаны профиліңізде көрсетіп, Signal-ға демеушілік жасауға болатынын көрсетіңіз.</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_boost_badge_display">Boost таңбасын алдыңыз! Осы таңбаны профиліңізде көрсетіп, Signal-ға демеушілік жасауға болатынын көрсетіңіз.</string>
+    <!-- Subtext underneath the dialog title on the thanks sheet -->
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_donor_badge">You\'ve earned a donor badge from Signal! Display it on your profile to show off your support.</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__you_can_also">Сонымен қатар</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__become_a_montly_sustainer">ай сайынғы демеуші бола аласыз</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__display_on_profile">Профильде көрсету</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__make_featured_badge">Таңдаулы таңбасын жасау</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__done">Дайын</string>
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__continue">Жалғастыру</string>
     <string name="ThanksForYourSupportBottomSheetFragment__when_you_have_more">Бірнеше таңбаңыз болса, олардың біреуін таңдап, басқаларға профиліңізде көрсетуіңізге болады.</string>
 
     <string name="BecomeASustainerFragment__get_badges">Signal-ға қолдау көрсету арқылы профиліңізге таңбалар алыңыз.</string>
     <string name="BecomeASustainerFragment__signal_is_a_non_profit">Signal – сіз сияқты адамдардың арқасында жұмыс істеп тұрған жарнама берушілері немесе инвесторлары жоқ коммерциялық емес жоба.</string>
 
-    <!-- Button label for creating a monthly donation -->
-    <string name="ManageDonationsFragment__make_a_monthly_donation">Ай сайын демеушілік жасау</string>
+    <!-- Button label for creating a donation -->
+    <string name="ManageDonationsFragment__donate_to_signal">Signal-ды демеу</string>
     <!-- Heading for more area of manage subscriptions page -->
     <string name="ManageDonationsFragment__more">Толығырақ</string>
     <!-- Heading for receipts area of manage subscriptions page -->
     <string name="ManageDonationsFragment__receipts">Чектер</string>
     <!-- Heading for my subscription area of manage subscriptions page -->
-    <string name="ManageDonationsFragment__my_subscription">Менің жазылымым</string>
+    <string name="ManageDonationsFragment__my_support">My Support</string>
     <string name="ManageDonationsFragment__manage_subscription">Жазылымды басқару</string>
     <!-- Label for Donation Receipts button -->
     <string name="ManageDonationsFragment__donation_receipts">Демеушілік чектері</string>
@@ -4413,10 +4477,6 @@
     <string name="ManageDonationsFragment__other_ways_to_give">Демеудің басқа жолдары</string>
     <!-- Preference label to launch badge gifting -->
     <string name="ManageDonationsFragment__gift_a_badge">Таңба сыйлау</string>
-
-    <string name="BoostFragment__give_signal_a_boost">Signal-дың танымалдығын арттыру</string>
-    <!-- Description text in boost sheet -->
-    <string name="BoostFragment__make_a_one_time">Бір реттік демеушілік жасап, %1$d күнге Boost таңбасын алыңыз.</string>
 
     <string name="Boost__enter_custom_amount">Реттелмелі сома енгізіңіз</string>
     <string name="Boost__one_time_contribution">Бір реттік демеушілік</string>
@@ -4458,7 +4518,7 @@
 
     <string name="Subscription__please_contact_support_for_more_information">Толық ақпарат алу үшін қолдау көрсету қызметіне хабарласыңыз.</string>
     <string name="Subscription__contact_support">Қолдау қызметіне хабарласу</string>
-    <string name="Subscription__earn_a_s_badge">%1$s таңбасын алу</string>
+    <string name="Subscription__get_a_s_badge">%1$s таңбасын алыңыз</string>
 
     <string name="SubscribeFragment__processing_payment">Төлем өңделуде…</string>
     <!-- Displayed in notification when user payment fails to process on Stripe -->
@@ -4697,7 +4757,7 @@
     <!-- Donation receipts gift tab label -->
     <string name="DonationReceiptListFragment__gift">Сыйлық</string>
     <!-- Donation receipts boost row label -->
-    <string name="DonationReceiptListFragment__boost">Boost</string>
+    <string name="DonationReceiptListFragment__boost">Күшейтіңіз</string>
     <!-- Donation receipts details title -->
     <string name="DonationReceiptDetailsFragment__details">Details</string>
     <!-- Donation receipts donation type heading -->
@@ -4724,15 +4784,15 @@
     <!-- Label for Chats tab in home app screen -->
     <string name="ConversationListTabs__chats">Чаттар</string>
     <!-- Label for Stories tab in home app screen -->
-    <string name="ConversationListTabs__stories">Сторилер</string>
+    <string name="ConversationListTabs__stories">Стористер</string>
     <!-- String for counts above 99 in conversation list tabs -->
     <string name="ConversationListTabs__99p">99+</string>
     <!-- Menu item on stories landing page -->
-    <string name="StoriesLandingFragment__story_privacy">Сторис құпиялығы</string>
+    <string name="StoriesLandingFragment__story_privacy">Сторис құпиялылығы</string>
     <!-- Title for "My Stories" row item in Stories landing page -->
-    <string name="StoriesLandingFragment__my_stories">Менің сторилерім</string>
+    <string name="StoriesLandingFragment__my_stories">Менің стористерім</string>
     <!-- Subtitle for "My Stories" row item when user has not added stories -->
-    <string name="StoriesLandingFragment__tap_to_add_a_story">Сторис қосу үшін түртіңіз</string>
+    <string name="StoriesLandingFragment__tap_to_add">Қосу үшін түртіңіз</string>
     <!-- Displayed when there are no stories to display -->
     <string name="StoriesLandingFragment__no_recent_updates_to_show_right_now">Дәл қазір көрсететін ешқандай жаңалық жоқ.</string>
     <!-- Context menu option to hide a story -->
@@ -4811,7 +4871,7 @@
     <!-- Displayed when a story has no views -->
     <string name="StoryViewsFragment__no_views_yet">Әлі ешкім көрмеген</string>
     <!-- Displayed when user has disabled receipts -->
-    <string name="StoryViewsFragment__enable_read_receipts_to_see_whos_viewed_your_story">Стористеріңізді кім көргенін білу үшін осы функцияны қосып қойыңыз.</string>
+    <string name="StoryViewsFragment__enable_view_receipts_to_see_whos_viewed_your_story">Enable view receipts to see who\'s viewed your stories.</string>
     <!-- Button label displayed when user has disabled receipts -->
     <string name="StoryViewsFragment__go_to_settings">Параметрлерге өту</string>
     <!-- Dialog action to remove viewer from a story -->
@@ -4825,7 +4885,7 @@
     <!-- Displayed when a story has no replies yet -->
     <string name="StoryGroupReplyFragment__no_replies_yet">Ешкім жауап жазбаған</string>
     <!-- Displayed when no longer a group member -->
-    <string name="StoryGroupReplyFragment__you_cant_reply">You can\'t reply to this story because you\'re no longer a member of this group.</string>
+    <string name="StoryGroupReplyFragment__you_cant_reply">Бұл сториске жауап бере алмайсыз, себебі сіз ендігәрі бұл топтың мүшесі емессіз.</string>
     <!-- Displayed for each user that reacted to a story when viewing replies -->
     <string name="StoryGroupReactionReplyItem__reacted_to_the_story">Осы сториске реакция қалдырды</string>
     <!-- Label for story views tab -->
@@ -4843,7 +4903,14 @@
     <!-- Context menu item to delete a story response -->
     <string name="StoryGroupReplyItem__delete">Жою</string>
     <!-- Page title for My Story options -->
-    <string name="MyStorySettingsFragment__my_story">Менің сториім</string>
+    <string name="MyStorySettingsFragment__my_story">Менің сторисім</string>
+    <!-- Number of total signal connections displayed in "All connections" row item -->
+    <plurals name="MyStorySettingsFragment__viewers">
+        <item quantity="one">%1$d көрермен</item>
+        <item quantity="other">%1$d көрермен</item>
+    </plurals>
+    <!-- Button on all signal connections row to view all signal connections. Please keep as short as possible. -->
+    <string name="MyStorySettingsFragment__view">View</string>
     <!-- Section heading for story visibility -->
     <string name="MyStorySettingsFragment__who_can_view_this_story">Бұл стористі кім көре алады</string>
     <!-- Clickable option for selecting people to hide your story from -->
@@ -4855,7 +4922,7 @@
     <!-- Privacy setting title for sending stories to all except the specified connections -->
     <string name="MyStorySettingsFragment__all_except">Мыналардан басқалары…</string>
     <!-- Privacy setting description for sending stories to all except the specified connections -->
-    <string name="MyStorySettingsFragment__hide_your_story_from_specific_people">Белгілі бір адамдардан стористеріңізді жасыру</string>
+    <string name="MyStorySettingsFragment__hide_your_story_from_specific_people">Кейбір адамдардан стористеріңізді жасыру</string>
     <!-- Summary of clickable option displaying how many people you have excluded from your story -->
     <plurals name="MyStorySettingsFragment__d_people_excluded">
         <item quantity="one">%1$d адам шығарылды</item>
@@ -4878,8 +4945,6 @@
     <string name="MyStorySettingsFragment__allow_replies_amp_reactions">Жауаптар мен реакцияларға рұқсат ету</string>
     <!-- Summary for switchable option allowing replies and reactions on your story -->
     <string name="MyStorySettingsFragment__let_people_who_can_view_your_story_react_and_reply">Сторисіңізді көре алатын адамдарға реакция қалдыруға және жауап жазуға рұқсат ету</string>
-    <!-- Note about default sharing -->
-    <string name="MyStorySettingsFragment__hide_your_story_from">Стористеріңізді белгілі бір адамдардан жасырыңыз. Әдепкіде сторисіңізді %1$s көре алады</string>
     <!-- Signal connections bolded text in the Signal Connections sheet -->
     <string name="SignalConnectionsBottomSheet___signal_connections">Signal байланыстары</string>
     <!-- Displayed at the top of the signal connections sheet. Please remember to insert strong tag as required. -->
@@ -4892,25 +4957,25 @@
     <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">Олар сіздің жүйелік контактілеріңізде бар</string>
     <!-- Note at the bottom of the Signal connections sheet -->
     <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"Сіздің контактілеріңіз сіздің атыңыз бен фотосуретіңізді көре алады және стористеріңізді олардан жасырып қоймасаңыз, \"Стористерім\" бөліміндегі посттарды да көре алады."</string>
-    <!-- Clickable option to add a viewer to a private story -->
+    <!-- Clickable option to add a viewer to a custom story -->
     <string name="PrivateStorySettingsFragment__add_viewer">Көрермен қосу</string>
     <!-- Clickable option to delete a custom story -->
-    <string name="PrivateStorySettingsFragment__delete_private_story">Жеке стористі жою</string>
-    <!-- Dialog title when attempting to remove someone from a private story -->
+    <string name="PrivateStorySettingsFragment__delete_custom_story">Реттелмелі стористі өшіру</string>
+    <!-- Dialog title when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove_s">%1$s өшірілсін бе?</string>
-    <!-- Dialog message when attempting to remove someone from a private story -->
+    <!-- Dialog message when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__this_person_will_no_longer">Бұл адам енді сіздің сторисіңізді көрмейтін болады.</string>
-    <!-- Positive action label when attempting to remove someone from a private story -->
+    <!-- Positive action label when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove">Жою</string>
-    <!-- Dialog title when deleting a private story -->
+    <!-- Dialog title when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__are_you_sure">Сенімдісіз бе?</string>
-    <!-- Dialog message when deleting a private story -->
+    <!-- Dialog message when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__this_action_cannot">Содан кейін одан бас тарту мүмкін болмайды.</string>
-    <!-- Page title for editing a private story name -->
+    <!-- Page title for editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__edit_story_name">Сторис атын өзгерту</string>
-    <!-- Input field hint when editing a private story name -->
+    <!-- Input field hint when editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__story_name">Сторис аты</string>
-    <!-- Save button label when editing a private story name -->
+    <!-- Save button label when editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__save">Сақтау</string>
     <!-- Displayed in text post creator before user enters text -->
     <string name="TextStoryPostCreationFragment__tap_to_add_text">Мәтін қосу үшін түртіңіз</string>
@@ -4932,6 +4997,8 @@
     <string name="TextStoryPostSendFragment__search">Іздеу</string>
     <!-- Toast shown when an unexpected error occurs while sending a text story -->
     <string name="TextStoryPostSendFragment__an_unexpected_error_occurred_try_again">Күтпеген қате шықты</string>
+    <!-- Toast shown when a trying to add a link preview to a text story post and the link/url is not valid (e.g., missing .com at the end) -->
+    <string name="TextStoryPostSendFragment__please_enter_a_valid_link">Дұрыс сілтеме енгізіңіз.</string>
     <!-- Title for screen allowing user to exclude "My Story" entries from specific people -->
     <string name="ChangeMyStoryMembershipFragment__all_except">Мыналардан басқалары…</string>
     <!-- Title for screen allowing user to only share "My Story" entries with specific people -->
@@ -4939,25 +5006,25 @@
     <!-- Done button label for hide story from screen -->
     <string name="HideStoryFromFragment__done">Дайын</string>
     <!-- Dialog title for removing a group story -->
-    <string name="StoryDialogs__remove_group_story">Remove group story?</string>
+    <string name="StoryDialogs__remove_group_story">Топтағы стористі өшіру керек пе?</string>
     <!-- Dialog message for removing a group story -->
-    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" will be removed.</string>
+    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" өшіп қалады.</string>
     <!-- Dialog positive action for removing a group story -->
-    <string name="StoryDialogs__remove">Remove</string>
-    <!-- Dialog title for deleting a private story -->
-    <string name="StoryDialogs__delete_private_story">Delete private story?</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="StoryDialogs__s_and_updates_shared">\"%1$s\" and updates shared to this story will be deleted.</string>
-    <!-- Dialog positive action for deleting a private story -->
-    <string name="StoryDialogs__delete">Delete</string>
+    <string name="StoryDialogs__remove">Жою</string>
+    <!-- Dialog title for deleting a custom story -->
+    <string name="StoryDialogs__delete_custom_story">Реттелмелі стористі өшіру керек пе?</string>
+    <!-- Dialog message for deleting a custom story -->
+    <string name="StoryDialogs__s_and_updates_shared">\"%1$s\" және осы сториске салынған жаңартулар жойылады.</string>
+    <!-- Dialog positive action for deleting a custom story -->
+    <string name="StoryDialogs__delete">Жою</string>
     <!-- Dialog title for first time sending something to a beta story -->
-    <string name="StoryDialogs__stories_is_available_to">Stories is available to Signal beta users only.</string>
+    <string name="StoryDialogs__stories_is_available_to">Сторис тек Signal-дың бета нұсқасын пайдаланатындарға ғана қолжетімді.</string>
     <!-- Dialog message for first time sending something to a beta story -->
-    <string name="StoryDialogs__if_you_share_a_story">If you share a story, it will only be available to people who are on Signal beta.</string>
+    <string name="StoryDialogs__if_you_share_a_story">Сторис бөліссеңіз, оны Signal-дың бета нұсқасын пайдаланатындар көре алады.</string>
     <!-- Dialog title for first time adding something to a story -->
     <string name="StoryDialogs__add_to_story_q">Сторис қосу керек пе?</string>
     <!-- Dialog message for first time adding something to a story -->
-    <string name="StoryDialogs__adding_content">Сторисіңізге контент қоссаңыз, Signal-дағы контактілеріңіз оны 24 сағат көре алады. Параметрлер бөліміне кіріп, стористеріңізді кім көре алатынын өзгертуіңізге болады.</string>
+    <string name="StoryDialogs__adding_content">Сторис салсаңыз, Signal-дағы контактілеріңіз оны 24 сағат ішінде көре алады. Параметрлер бөліміне кіріп, стористеріңізді кім көре алатынын өзгертуіңізге болады.</string>
     <!-- First time share to story dialog: Positive action to go ahead and add to story -->
     <string name="StoryDialogs__add_to_story">Сторис қосу</string>
     <!-- First time share to story dialog: Neutral action to edit who can view "My Story" -->
@@ -4967,7 +5034,7 @@
     <!-- Error message dialog button to resend a previously failed story send -->
     <string name="StoryDialogs__send">Жіберу</string>
     <!-- Action button for turning off stories when stories are present on the device -->
-    <string name="StoryDialogs__turn_off_and_delete">Turn off and delete</string>
+    <string name="StoryDialogs__turn_off_and_delete">Өшіру және жою</string>
     <!-- Privacy Settings toggle title for stories -->
     <string name="PrivacySettingsFragment__share_and_view_stories">Стористерді бөлісу және көру</string>
     <!-- Privacy Settings toggle summary for stories -->
@@ -4983,6 +5050,8 @@
     </plurals>
     <!-- Name story screen title -->
     <string name="CreateStoryWithViewersFragment__name_story">Сториске ат қою</string>
+    <!-- Name story screen note under text field -->
+    <string name="CreateStoryWithViewersFragment__only_you_can">Бұл стористің атын тек сіз көре аласыз.</string>
     <!-- Name story screen label hint -->
     <string name="CreateStoryWithViewersFragment__story_name_required">Сторис атауы (міндетті)</string>
     <!-- Name story screen viewers subheading -->
@@ -4998,7 +5067,7 @@
     <!-- Choose story type bottom sheet title -->
     <string name="ChooseStoryTypeBottomSheet__choose_your_story_type">Сторис түрін таңдаңыз</string>
     <!-- Choose story type bottom sheet new story row title -->
-    <string name="ChooseStoryTypeBottomSheet__new_private_story">Жаңа жеке сторис</string>
+    <string name="ChooseStoryTypeBottomSheet__new_custom_story">Жаңа реттелмелі сторис</string>
     <!-- Choose story type bottom sheet new story row summary -->
     <string name="ChooseStoryTypeBottomSheet__visible_only_to">Белгілі бір адамдарға ғана көрінеді</string>
     <!-- Choose story type bottom sheet group story title -->
@@ -5015,6 +5084,8 @@
     <string name="StoryDirectReplyDialogFragment__sending_reply">Жауап жіберілуде…</string>
     <!-- Displayed in the viewer when a story is no longer available -->
     <string name="StorySlateView__this_story_is_no_longer_available">Бұл сторис енді жоқ.</string>
+    <!-- Displayed in the viewer when a story has permanently failed to download. -->
+    <string name="StorySlateView__cant_download_story_s_will_need_to_share_it_again">Стористі жүктеп алу мүмкін емес. %1$s оны қайта бөлісуі керек.</string>
     <!-- Displayed in the viewer when the network is not available -->
     <string name="StorySlateView__no_internet_connection">Интернет байланысы жоқ</string>
     <!-- Displayed in the viewer when network is available but content could not be downloaded -->
@@ -5105,11 +5176,11 @@
     <!-- Expired gift sheet not now button -->
     <string name="ExpiredGiftSheetConfiguration__not_now">Кейін</string>
     <!-- My Story label designating that we will only share with the selected viewers. -->
-    <string name="ContactSearchItems__only_share_with">Тек мына көрермендермен бөлісу</string>
-    <!-- Label under name for private stories -->
-    <plurals name="ContactSearchItems__private_story_d_viewers">
-        <item quantity="one">Жеке стористе · %1$d көрермен</item>
-        <item quantity="other">Жеке стористе · %1$d көрермен</item>
+    <string name="ContactSearchItems__only_share_with">Көре алатындар</string>
+    <!-- Label under name for custom stories -->
+    <plurals name="ContactSearchItems__custom_story_d_viewers">
+        <item quantity="one">Реттелмелі сторис · %1$d рет көрілді</item>
+        <item quantity="other">Реттелмелі сторис · %1$d рет көрілді</item>
     </plurals>
     <!-- Label under name for group stories -->
     <plurals name="ContactSearchItems__group_story_d_viewers">
@@ -5118,8 +5189,8 @@
     </plurals>
     <!-- Label under name for groups -->
     <plurals name="ContactSearchItems__group_d_members">
-        <item quantity="one">%1$d member</item>
-        <item quantity="other">%1$d members</item>
+        <item quantity="one">%1$d мүше</item>
+        <item quantity="other">%1$d мүше</item>
     </plurals>
     <!-- Label under name for my story -->
     <plurals name="ContactSearchItems__my_story_s_dot_d_viewers">
@@ -5132,7 +5203,7 @@
     <string name="ContactSearchItems__story_settings">Сторис параметрлері</string>
     <!-- Label for context menu item to remove a group story from contact results -->
     <string name="ContactSearchItems__remove_story">Стористі өшіру</string>
-    <!-- Label for context menu item to delete a private story -->
+    <!-- Label for context menu item to delete a custom story -->
     <string name="ContactSearchItems__delete_story">Стористі жою</string>
     <!-- Dialog title for removing a group story -->
     <string name="ContactSearchMediator__remove_group_story">Топтағы стористі өшіру керек пе?</string>
@@ -5140,11 +5211,11 @@
     <string name="ContactSearchMediator__this_will_remove">Бұл стористі тізімнен өшіреді. Стористерді осы топтан көре беруіңізге болады.</string>
     <!-- Dialog action item for removing a group story -->
     <string name="ContactSearchMediator__remove">Өшіру</string>
-    <!-- Dialog title for deleting a private story -->
-    <string name="ContactSearchMediator__delete_story">Стористі жою керек пе</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="ContactSearchMediator__delete_the_private">\"%1$s\" жеке сторисін өшіру керек пе?</string>
-    <!-- Dialog action item for deleting a private story -->
+    <!-- Dialog title for deleting a custom story -->
+    <string name="ContactSearchMediator__delete_story">Стористі жою керек пе?</string>
+    <!-- Dialog message for deleting a custom story -->
+    <string name="ContactSearchMediator__delete_the_custom">\"%1$s\" деп аталатын реттелмелі стористі өшіру керек пе?</string>
+    <!-- Dialog action item for deleting a custom story -->
     <string name="ContactSearchMediator__delete">Жою</string>
     <!-- Gift expiry days remaining -->
     <plurals name="Gifts__d_days_remaining">
@@ -5244,9 +5315,9 @@
 
     <!-- StoriesPrivacySettingsFragment -->
     <!-- Explanation about how stories are deleted and managed -->
-    <string name="StoriesPrivacySettingsFragment__stories_automatically_disappear">Сторис 24 сағаттан кейін өшіп қалады. Сторисіңізді кім көре алатынын таңдаңыз немесе белгілі бір көрермендер немесе топтар ғана көре алатын жаңа стористер жасаңыз.</string>
+    <string name="StoriesPrivacySettingsFragment__story_updates_automatically_disappear">Стористер 24 сағаттан кейін автоматты түрде өшіп қалады. Стористеріңізді кім көре алатынын таңдаңыз немесе белгілі бір көрерменге немесе топтарға арналған жаңа стористер жасаңыз.</string>
     <!-- Preference title to turn off stories -->
-    <string name="StoriesPrivacySettingsFragment__turn_off_stories">Стористерді өшіру</string>
+    <string name="StoriesPrivacySettingsFragment__turn_off_stories">Стористерді өшіріп қою</string>
     <!-- Preference summary to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__if_you_opt_out">Стористерді өшіріп қойсаңыз, бұдан былай стористерді бөлісе немесе көре алмайтын боласыз.</string>
     <!-- Preference title to turn on stories -->
@@ -5256,15 +5327,26 @@
     <!-- Dialog title to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__turn_off_stories_question">Стористерді өшіру керек пе?</string>
     <!-- Dialog message to turn off stories -->
-    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">You will no longer be able to share or view stories. Story updates you have recently shared will also be deleted.</string>
+    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">Ендігәрі стористерді бөлісе немесе көре алмайсыз. Жақында бөліскен сторис жаңалықтары да жойылады.</string>
     <!-- Page title when launched from stories landing screen -->
     <string name="StoriesPrivacySettingsFragment__story_privacy">Сторис құпиялылығы</string>
+    <!-- Header for section that lists out stories -->
+    <string name="StoriesPrivacySettingsFragment__stories">Стористер</string>
+    <!-- Story views header -->
+    <string name="StoriesPrivacySettingsFragment__story_views">Стористі көру статистикасы</string>
+    <!-- Story view receipts toggle title -->
+    <string name="StoriesPrivacySettingsFragment__view_receipts">Көрілгендігі туралы хаттар</string>
+    <!-- Story view receipts toggle message -->
+    <string name="StoriesPrivacySettingsFragment__see_and_share">Стористі біреудің көргенін біліп отырыңыз және бөлісіңіз. Өшіріп қойсаңыз, басқа адамдар стористеріңізді көргенін біле алмайсыз.</string>
+
+    <!-- NewStoryItem -->
+    <string name="NewStoryItem__new_story">Жаңа сторис</string>
 
     <!-- GroupStorySettingsFragment -->
     <!-- Section header for who can view a group story -->
     <string name="GroupStorySettingsFragment__who_can_view_this_story">Бұл стористі кім көре алады</string>
     <!-- Explanation of who can view a group story -->
-    <string name="GroupStorySettingsFragment__members_of_the_group_s">"\"%1$s\" тобының мүшелері бұл стористі көре алады және оған жауап бере алады. Топтағы осы чат үшін мүшелік параметрлерін өзгерте аласыз."</string>
+    <string name="GroupStorySettingsFragment__members_of_the_group_s">"%1$s тобының мүшелері бұл стористі көре алады және оған жауап бере алады. Топтағы осы чат үшін мүшелік параметрлерін өзгерте аласыз."</string>
     <!-- Preference label for removing this group story -->
     <string name="GroupStorySettingsFragment__remove_group_story">Топтық стористі өшіріп тастау</string>
 
@@ -5274,20 +5356,37 @@
     <!-- SMS Export Service -->
     <!-- Displayed in the notification while export is running -->
     <string name="SignalSmsExportService__exporting_messages">Хаттар экспортталуда…</string>
+    <!-- Displayed in the notification title when export completes -->
+    <string name="SignalSmsExportService__signal_sms_export_complete">Signal SMS хаттарын экспорттау процесі аяқталды</string>
+    <!-- Displayed in the notification message when export completes -->
+    <string name="SignalSmsExportService__tap_to_return_to_signal">Signal-ға қайту үшін түртіңіз</string>
 
     <!-- ExportYourSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportYourSmsMessagesFragment__export_your_sms_messages">SMS-хаттарды экспорттау</string>
     <!-- Message of the screen -->
-    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">SMS хаттарды телефоныңыздың SMS дерекқорына экспорттай аласыз. Ол телефоныңыздағы басқа SMS қолданбаларының хаттарды қолдануына және импорттауына мүмкіндік береді. Ол SMS хаттар тарихының бөлісуге болатын файлын жасамайды.</string>
+    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database_and_youll_have_the_option_to_keep_or_remove_them_from_signal">SMS хаттарды телефоныңыздың SMS дерекқорына экспорттай аласыз, сондай-ақ оларды Signal-да сақтауыңызға немесе одан өшіріп тастауыңызға болады. Ол телефоныңыздағы басқа SMS қолданбаларының хаттарды импорттауына мүмкіндік береді. Ол SMS хаттар тарихының бөлісуге болатын файлын жасамайды.</string>
     <!-- Button label to begin export -->
     <string name="ExportYourSmsMessagesFragment__continue">Жалғастыру</string>
 
     <!-- ExportingSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportingSmsMessagesFragment__exporting_sms_messages">SMS-хаттарды экспорттау</string>
+    <!-- Message of the screen when exporting sms messages -->
+    <string name="ExportingSmsMessagesFragment__this_may_take_awhile">Бұл біраз уақыт алуы мүмкін</string>
     <!-- Progress indicator for export -->
-    <string name="ExportingSmsMessagesFragment__exporting_d_of_d">%1$d/%2$d экспортталуда…</string>
+    <plurals name="ExportingSmsMessagesFragment__exporting_d_of_d">
+        <item quantity="one">%1$d/%2$d экспортталуда…</item>
+        <item quantity="other">%1$d/%2$d экспортталуда…</item>
+    </plurals>
+    <!-- Alert dialog title shown when we think a user may not have enough local storage available to export sms messages -->
+    <string name="ExportingSmsMessagesFragment__you_may_not_have_enough_disk_space">Дискте бос орын жеткіліксіз болуы мүмкін</string>
+    <!-- Alert dialog message shown when we think a user may not have enough local storage available to export sms messages, placeholder is the file size, e.g., 128kB -->
+    <string name="ExportingSmsMessagesFragment__you_need_approximately_s_to_export_your_messages_ensure_you_have_enough_space_before_continuing">Хаттарды экспорттау үшін шамамен %1$s керек. Жалғастырмас бұрын, бос орын жеткілікті екеніне көз жеткізіңіз.</string>
+    <!-- Alert dialog button to continue with exporting sms after seeing the lack of storage warning -->
+    <string name="ExportingSmsMessagesFragment__continue_anyway">Сонда да жалғастыру</string>
+    <!-- Dialog text shown when Signal isn't granted the sms permission needed to export messages, different than being selected as the sms app -->
+    <string name="ExportingSmsMessagesFragment__signal_needs_the_sms_permission_to_be_able_to_export_your_sms_messages">Signal SMS хаттарды экспорттауы үшін, ол SMS-ке кіре алуы керек.</string>
 
     <!-- ChooseANewDefaultSmsAppFragment -->
     <!-- Title of the screen -->
@@ -5334,6 +5433,144 @@
     <string name="SetSignalAsDefaultSmsAppFragment__to_export_your_sms_messages">SMS хаттарыңызды экспорттау үшін Signal-ды әдепкі SMS қолданбасы етіп орнатуыңыз керек.</string>
     <!-- Button label to start export -->
     <string name="SetSignalAsDefaultSmsAppFragment__next">Келесі</string>
+
+    <!-- BackupSchedulePermission Megaphone -->
+    <!-- The title on an alert window that explains to the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__cant_back_up_chats">Чаттардың резервтік көшірмесін жасау мүмкін емес</string>
+    <!-- The body text of an alert window that tells the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__your_chats_are_no_longer_being_automatically_backed_up">Енді чаттарыңыздың автоматты түрде резервтік көшірмесі жасалмайды.</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__back_up_chats">Чаттардың резервтік көшірмесін жасау</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__not_now">Кейін</string>
+    <!-- Re-enable backup permission bottom sheet title -->
+    <string name="BackupSchedulePermissionMegaphone__to_reenable_backups">Резервтік көшірмелерді қайта қосу үшін:</string>
+    <!-- Re-enable backups permission bottom sheet instruction 1 text -->
+    <string name="BackupSchedulePermissionMegaphone__tap_the_go_to_settings_button_below">Төменде көрсетілген \"Параметрлерге өту\" түймесін басыңыз</string>
+    <!-- Re-enable backups permission bottom sheet instruction 2 text -->
+    <string name="BackupSchedulePermissionMegaphone__turn_on_allow_settings_alarms_and_reminders">\"Параметрлер туралы дабылдар мен еске салғыштарға рұқсат ету\" функциясын қосыңыз.</string>
+    <!-- Re-enable backups permission bottom sheet call to action button to open settings -->
+    <string name="BackupSchedulePermissionMegaphone__go_to_settings">Параметрлерге өту</string>
+
+    <!-- SmsExportMegaphoneActivity -->
+    <!-- Phase 2 title of full screen megaphone indicating sms will no longer be supported in the near future -->
+    <string name="SmsExportMegaphoneActivity__signal_will_no_longer_support_sms">Signal-да енді SMS хаттар жазу мүмкін емес</string>
+    <!-- Phase 3 title of full screen megaphone indicating sms is longer supported  -->
+    <string name="SmsExportMegaphoneActivity__signal_no_longer_supports_sms">Signal арқылы SMS хаттар алмасу мүмкін емес</string>
+    <!-- Phase 2 message describing that sms is going away soon -->
+    <string name="SmsExportMegaphoneActivity__signal_will_soon_remove_support_for_sending_sms_messages">Жақында Signal арқылы SMS хаттар жіберу функциясы істемейтін болады, себебі Signal хаттары өтпелі шифрлау функциясын және жоғары құпиялылық деңгейін ұсынады. Ал SMS-терде ондай емес. Бұл Signal-дың хат алмасу процесін жақсартуға да мүмкіндік береді.</string>
+    <!-- Phase 3 message describing that sms has gone away -->
+    <string name="SmsExportMegaphoneActivity__signal_has_removed_support_for_sending_sms_messages">Signal SMS хаттар жіберу функциясын өшіріп тастады, себебі Signal хаттары өтпелі шифрлау функциясын және жоғары құпиялылық деңгейін ұсынады. Ал SMS-терде ондай емес. Бұл Signal-дың хат алмасу процесін жақсартуға да мүмкіндік береді.</string>
+    <!-- The text on a button in a popup that, when clicked, will take the user to a screen to export their SMS messages -->
+    <string name="SmsExportMegaphoneActivity__export_sms">SMS хаттарды экспорттау</string>
+    <!-- The text on a button in a popup that, when clicked, will dismiss the popup and schedule the prompt to occur at a later time. -->
+    <string name="SmsExportMegaphoneActivity__remind_me_later">Кейінірек есіме салсын</string>
+    <!-- The text on a button in a popup that, when clicked, will navigate the user to a web article on SMS removal -->
+    <string name="SmsExportMegaphoneActivity__learn_more">Толық ақпарат</string>
+
+    <!-- Phase 1 Small megaphone title indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_going_away">SMS-ке қолдау көрсетілмейтін болады</string>
+    <!-- Phase 1 small megaphone description indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Шифрланған хат алмасу функциясына көңіл бөлу үшін жақында SMS хат алмасу функциясы істемейтін болады.</string>
+    <!-- Phase 1 small megaphone button that takes the user to the sms export flow -->
+    <string name="SmsExportMegaphone__export_sms">SMS хаттарды экспорттау</string>
+    <!-- Title for screen shown after sms export has completed -->
+    <string name="ExportSmsCompleteFragment__export_complete">Экспорттау процесі аяқталды</string>
+    <!-- Button to continue to next screen -->
+    <string name="ExportSmsCompleteFragment__next">Келесі</string>
+    <!-- Message showing summary of sms export counts -->
+    <plurals name="ExportSmsCompleteFragment__d_of_d_messages_exported">
+        <item quantity="one">%1$d/%2$d хат экспортталды</item>
+        <item quantity="other">%1$d / %2$d хат экспортталды</item>
+    </plurals>
+
+    <!-- Title of screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__export_partially_complete">Экспорттау процесі ішінара аяқталды</string>
+    <!-- Debug step 1 on screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__ensure_you_have_an_additional_s_free_on_your_phone_to_export_your_messages">Хаттарыңызды экспорттау үшін телефоныңызда артық %1$s орын болуы керек</string>
+    <!-- Debug step 2 on screen shown when some sms messages dit not export -->
+    <string name="ExportSmsPartiallyComplete__retry_export_which_will_only_retry_messages_that_have_not_yet_been_exported">Қайта экспорттап көріңіз. Экспортталмаған хаттар қайта экспортталады</string>
+    <!-- Partial sentence for Debug step 3 on screen shown when some sms messages did not export, is combined with 'contact us' -->
+    <string name="ExportSmsPartiallyComplete__if_the_problem_persists">Егер мәселе шешілмесе, </string>
+    <!-- Partial sentence for deubg step 3 on screen shown when some sms messages did not export, combined with 'If the problem persists', link text to open contact support view -->
+    <string name="ExportSmsPartiallyComplete__contact_us">бізбен хабарласыңыз</string>
+    <!-- Button text to retry sms export -->
+    <string name="ExportSmsPartiallyComplete__retry">Қайтадан байқап көру</string>
+    <!-- Button text to continue sms export flow and not retry failed message exports -->
+    <string name="ExportSmsPartiallyComplete__continue_anyway">Сонда да жалғастыру</string>
+    <!-- Title of screen shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__error_exporting_sms_messages">SMS хаттарды экспорттау кезінде қате шықты</string>
+    <!-- Helper text shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__please_try_again_if_the_problem_persists">Қайталап көріңіз. Егер мәселе шешілмесе, </string>
+
+
+    <!-- DonateToSignalFragment -->
+    <!-- Title below avatar -->
+    <string name="DonateToSignalFragment__privacy_over_profit">Privacy over profit</string>
+    <!-- Continue button label -->
+    <string name="DonateToSignalFragment__continue">Жалғастыру</string>
+    <!-- Description below title -->
+    <string name="DonateToSignalFragment__private_messaging">Private messaging, funded by you. No ads, no tracking, no compromise. Donate now to support Signal.</string>
+    <!-- Donation pill toggle monthly text -->
+    <string name="DonationPillToggle__monthly">Ай сайын</string>
+    <!-- Donation pill toggle one-time text -->
+    <string name="DonationPillToggle__one_time">Бір реттік</string>
+
+    <!-- GatewaySelectorBottomSheet -->
+    <!-- Sheet title when subscribing -->
+    <string name="GatewaySelectorBottomSheet__donate_s_month_to_signal">Signal-ға ай сайын %1$s аударып отырыңыз</string>
+    <!-- Sheet summary when subscribing -->
+    <string name="GatewaySelectorBottomSheet__get_a_s_badge">%1$s таңбасын алыңыз</string>
+    <!-- Sheet title when giving a one-time donation -->
+    <string name="GatewaySelectorBottomSheet__donate_s_to_signal">Signal-ға %1$s аудару</string>
+    <!-- Sheet summary when giving a one-time donation -->
+    <plurals name="GatewaySelectorBottomSheet__get_a_s_badge_for_d_days">
+        <item quantity="one">%2$d күнге %1$s таңба алыңыз</item>
+        <item quantity="other">%2$d күнге %1$s таңба алыңыз</item>
+    </plurals>
+    <!-- Button label for paying with a credit card -->
+    <string name="GatewaySelectorBottomSheet__credit_or_debit_card">Несиелік немесе дебеттік карта</string>
+
+    <!-- StripePaymentInProgressFragment -->
+    <string name="StripePaymentInProgressFragment__cancelling">Бас тартылуда…</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we temporarily can't process their contacts. -->
+    <string name="CdsTemporaryErrorBottomSheet_title">Too many contacts have been processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we temporarily can't process their contacts. The placeholder represents the number of days the user will have to wait until they can again. -->
+    <plurals name="CdsTemporaryErrorBottomSheet_body1">
+        <item quantity="one">Another attempt to process your contacts will be made within %1$d day.</item>
+        <item quantity="other">Another attempt to process your contacts will be made within %1$d days.</item>
+    </plurals>
+    <!-- The second part of the body text in a bottom sheet dialog that advises the user to remove contacts from their phone to fix the issue. -->
+    <string name="CdsTemporaryErrorBottomSheet_body2">To resolve this issue sooner, you can consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsTemporaryErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsTemporaryErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_title">Your contacts can\'t be processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_body">The number of contacts on your phone exceeds the limit Signal can process. To find contacts on Signal, consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_learn_more">Толық ақпарат</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsPermanentErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsPermanentErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- PaymentMessageView -->
+    <!-- In-chat conversation message shown when you sent a payment to another person, placeholder is the other person name -->
+    <string name="PaymentMessageView_you_sent_s">You sent %1$s</string>
+    <!-- In-chat conversation message shown when another person sent a payment to you, placeholder is the other person name -->
+    <string name="PaymentMessageView_s_sent_you">%1$s sent you</string>
+
+    <!-- YourInformationIsPrivateBottomSheet -->
+    <string name="YourInformationIsPrivateBottomSheet__your_information_is_private">Your information is private</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_collect">Signal does not collect or store any of your personal information when you make a donation.</string>
+    <string name="YourInformationIsPrivateBottomSheet__we_use_stripe">We use Stripe as our payment processor to receive your donations. We don\'t access, store, or save any of the information you provide to them.</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_and_cannot">Signal does not and cannot connect your donation to your Signal account.</string>
+    <string name="YourInformationIsPrivateBottomSheet__thank_you">Thank you for your support!</string>
 
     <!-- EOF -->
 

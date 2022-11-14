@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- smartling.instruction_comments_enabled = on -->
 <resources>
     <string name="app_name" translatable="false">Signal</string>
 
@@ -11,6 +12,7 @@
     <string name="sustainer_boost_and_badges" translatable="false">https://support.signal.org/hc/articles/4408365318426</string>
     <string name="google_pay_url" translatable="false">https://pay.google.com</string>
     <string name="donation_decline_code_error_url" translatable="false">https://support.signal.org/hc/articles/4408365318426#errors</string>
+    <string name="sms_export_url" translatable="false">https://support.signal.org/hc/articles/360007321171</string>
     <string name="signal_me_username_url" translatable="false">https://signal.me/#u/%1$s</string>
     <string name="signal_me_username_url_no_scheme" translatable="false">signal.me/#u/%1$s</string>
 
@@ -102,6 +104,14 @@
     <string name="AttachmentManager_signal_requires_the_external_storage_permission_in_order_to_attach_photos_videos_or_audio">ဓာတ်ပုံ၊ ဗီဒီယို သို့မဟုတ် အသံ ပို့ရန်အတွက် သိုလှောင်မှုခွင့်ပြုချက်ကို Signal မှ ရရန် လိုအပ်သည်။ သို့သော် အမြဲတမ်းအတွက် ခွင့်မပြုပါဟု ရွေးထားပြီး ဖြစ်နေသဖြင့် အက်ပ် စက်တင်မီနူးသို့ သွား၍ ခွင့်ပြုချက်များကို ရွေးချယ်ကာ သိုလှောင်မှုကို ခွင့်ပြုပေးပါ။</string>
     <string name="AttachmentManager_signal_requires_contacts_permission_in_order_to_attach_contact_information">အဆက်အသွယ်များ၏ အချက်အလက်များကို ပို့နိုင်ရန်အတွက် အဆက်အသွယ်များ ခွင့်ပြုချက်ကို Signal မှ ရရန်လိုအပ်သည်။ သို့သော် အမြဲတမ်းအတွက် ခွင့်မပြုပါဟုရွေးထားပြီး ဖြစ်နေသဖြင့် အက်ပ် စက်တင်မီနူးသို့သွား၍ ခွင့်ပြုချက်များကို ရွေးချယ်ကာ အဆက်အသွယ်များကို ခွင့်ပြုပေးပါ။</string>
     <string name="AttachmentManager_signal_requires_location_information_in_order_to_attach_a_location">မိမိ၏ တည်နေရာကို ပို့နိုင်ရန် တည်နေရာ ခွင့်ပြုချက်ကို Signal မှ ရရန်လိုအပ်သည်။ သို့သော် အမြဲတမ်းအတွက် ခွင့်မပြုပါဟု ရွေးထားပြီး ဖြစ်နေသဖြင့် အက်ပ် စက်တင်မီနူးသို့သွား၍ ခွင့်ပြုချက်များကို ရွေးချယ်ကာ တည်နေရာကို ခွင့်ပြုပေးပါ။</string>
+    <!-- Alert dialog title to show the recipient has not activated payments -->
+    <string name="AttachmentManager__not_activated_payments">%1$s သည် ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ထားခြင်း မရှိသေးပါ </string>
+    <!-- Alert dialog description to send the recipient a request to activate payments -->
+    <string name="AttachmentManager__request_to_activate_payments">၎င်းတို့ထံ ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ရန် တောင်းဆိုချက် ပေးပို့လိုပါသလား။</string>
+    <!-- Alert dialog button to send request -->
+    <string name="AttachmentManager__send_request">တောင်းဆိုချက် ပို့ရန်</string>
+    <!-- Alert dialog button to cancel dialog -->
+    <string name="AttachmentManager__cancel">မလုပ်တော့ပါ</string>
 
     <!-- AttachmentUploadJob -->
     <string name="AttachmentUploadJob_uploading_media">မီဒီယာဖိုင် တင်နေသည်…</string>
@@ -122,6 +132,39 @@
     <string name="BlockedUsersActivity__do_you_want_to_unblock_s">\"%1$s\" ကို မဘလော့ ချင်တော့ဘူးလား။</string>
     <string name="BlockedUsersActivity__unblock">မဘလော့ပါ</string>
 
+    <!-- CreditCardFragment -->
+    <!-- Title of fragment detailing the donation amount for one-time donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s">လှူဒါန်းမှုပမာဏ- %1$s</string>
+    <!-- Title of fragment detailing the donation amount for monthly donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s_per_month">Donation amount: %1$s/month</string>
+    <!-- Explanation of how to fill in the form, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_information_below">သင့်ကတ်အချက်အလက်ကို အောက်တွင် ထည့်သွင်းပါ</string>
+    <!-- Explanation of how to fill in the form and a note about pii, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_details">Enter your card details. Signal does not collect or store your personal information.</string>
+    <!-- Displayed as a hint in the card number text field -->
+    <string name="CreditCardFragment__card_number">ကတ်နံပါတ်</string>
+    <!-- Displayed as a hint in the card expiry text field -->
+    <string name="CreditCardFragment__mm_yy">MM/YY</string>
+    <!-- Displayed as a hint in the card cvv text field -->
+    <string name="CreditCardFragment__cvv">CVV</string>
+    <!-- Error displayed under the card number text field when there is an invalid card number entered -->
+    <string name="CreditCardFragment__invalid_card_number">ကတ်နံပါတ် မမှန်ကန်ပါ</string>
+    <!-- Error displayed under the card expiry text field when the card is expired -->
+    <string name="CreditCardFragment__card_has_expired">ကတ်သက်တမ်း ကုန်သွားပါပြီ</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too short -->
+    <string name="CreditCardFragment__code_is_too_short">ကုဒ်တိုလွန်းပါသည်</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too long -->
+    <string name="CreditCardFragment__code_is_too_long">ကုဒ်ရှည်လွန်းပါသည်</string>
+    <!-- Error displayed under the card cvv text field when the cvv is invalid -->
+    <string name="CreditCardFragment__invalid_code">ကုဒ် မမှန်ကန်ပါ</string>
+    <!-- Error displayed under the card expiry text field when the expiry month is invalid -->
+    <string name="CreditCardFragment__invalid_month">လ မမှန်ကန်ပါ</string>
+    <!-- Error displayed under the card expiry text field when the expiry is missing the year -->
+    <string name="CreditCardFragment__year_required">နှစ် လိုအပ်ပါသည်</string>
+    <!-- Error displayed under the card expiry text field when the expiry year is invalid -->
+    <string name="CreditCardFragment__invalid_year">နှစ် မမှန်ကန်ပါ</string>
+    <!-- Button label to confirm credit card input and proceed with payment -->
+    <string name="CreditCardFragment__continue">ဆက်လုပ်ရန်</string>
 
     <!-- BlockUnblockDialog -->
     <string name="BlockUnblockDialog_block_and_leave_s">%1$s ကို ဘလော့ပြီး ထွက်မည်လား။</string>
@@ -192,7 +235,7 @@
     <string name="ClientDeprecatedActivity_update">အပ်ဒိတ် လုပ်</string>
     <string name="ClientDeprecatedActivity_dont_update">အပ်ဒိတ် မလုပ်</string>
     <string name="ClientDeprecatedActivity_warning">သတိပေးချက်</string>
-    <string name="ClientDeprecatedActivity_your_version_of_signal_has_expired_you_can_view_your_message_history">သင်၏ Signal ဗားရှင်း သက်တမ်းကုန်သွားပြီ။ သင်၏ မက်ဆေ့ခ်ျမှတ်တမ်းကို သင်ကြည့်နိုင်သည်။ သို့သော် အပ်ဒိတ် မလုပ်မချင်း မက်ဆေ့ခ်ျများပို့ခြင်း သို့မဟုတ် လက်ခံခြင်း မလုပ်နိုင်ပါ။</string>
+    <string name="ClientDeprecatedActivity_your_version_of_signal_has_expired_you_can_view_your_message_history">သင်၏ Signal ဗားရှင်း သက်တမ်းကုန်သွားပြီ။ သင်၏ မက်ဆေ့ချ်မှတ်တမ်းကို သင်ကြည့်နိုင်သော်လည်း အပ်ဒိတ် မလုပ်မချင်း မက်ဆေ့ချ်များပို့ခြင်း သို့မဟုတ် လက်ခံခြင်း မလုပ်နိုင်ပါ။</string>
 
     <!-- CommunicationActions -->
     <string name="CommunicationActions_no_browser_found">Web browser ကိုရှာမတွေ့ပါ</string>
@@ -218,8 +261,8 @@
     <string name="ContactsCursorLoader_find_by_username">သုံးစွဲသူအမည်ဖြင့် ရှာရန်</string>
     <!-- Label for my stories when selecting who to send media to -->
     <string name="ContactsCursorLoader_my_stories">ကျွန်ုပ်၏ စတိုရီများ</string>
-    <!-- Action for creating a new story -->
-    <string name="ContactsCursorLoader_new_story">စတိုရီ အသစ်</string>
+    <!-- Text for a button that brings up a bottom sheet to create a new story. -->
+    <string name="ContactsCursorLoader_new">အသစ်</string>
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">စာတို %1$s</string>
@@ -267,6 +310,18 @@
     <string name="ConversationItem_pending">လုပ်ဆောင်နေဆဲ</string>
     <string name="ConversationItem_this_message_was_deleted">ဒီစာကိုဖျက်လိုက်သည်။</string>
     <string name="ConversationItem_you_deleted_this_message">သင်ဒီစာကိုဖျက်လိုက်သည်။</string>
+    <!-- Dialog error message shown when user can't download a message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_message_s_will_need_to_send_it_again">မက်ဆေ့ချ်ကို ဒေါင်းလုဒ်လုပ်၍ မရပါ။ %1$s သည် ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
+    <!-- Dialog error message shown when user can't download an image message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_image_s_will_need_to_send_it_again">ပုံ ဒေါင်းလုဒ်လုပ်၍ မရပါ။ %1$s သည် ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
+    <!-- Dialog error message shown when user can't download a video message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_video_s_will_need_to_send_it_again">ဗီဒီယို ဒေါင်းလုဒ်လုပ်၍ မရပါ။ %1$s သည် ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
+    <!-- Dialog error message shown when user can't download a their own message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_message_you_will_need_to_send_it_again">မက်ဆေ့ချ်ကို ဒေါင်းလုဒ်လုပ်၍ မရပါ။ ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
+    <!-- Dialog error message shown when user can't download a their own image message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_image_you_will_need_to_send_it_again">ပုံ ဒေါင်းလုဒ်လုပ်၍ မရပါ။ ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
+    <!-- Dialog error message shown when user can't download a their own video message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_video_you_will_need_to_send_it_again">ဗီဒီယို ဒေါင်းလုဒ်လုပ်၍ မရပါ။ ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
 
     <!-- ConversationActivity -->
     <string name="ConversationActivity_add_attachment">ပူးတွဲဖိုင် ထည့်ရန်</string>
@@ -342,6 +397,21 @@
 
     <string name="ConversationActivity__reported_as_spam_and_blocked">áá­á¯ááºáá¼á¬á¸áá®á¸ ááá±á¬á·áááº</string>
 
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_you_can_export_your_messages_to_another_app_on_your_phone">SMS မက်ဆေ့ချ်လုပ်ဆောင်ချက်ကို လက်ရှိတွင် ပိတ်ထားပါသည်။ သင့်မက်ဆေ့ချ်များကို သင့်ဖုန်းရှိ အခြားအက်ပ်ထံသို့ ထုတ်သိမ်းနိုင်ပါသည်။</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_you_can_export_your_messages_to_another_app_on_your_phone">SMS မက်ဆေ့ချ်လုပ်ဆောင်ချက်ကို Signal တွင် မပံ့ပိုးပေးတော့ပါ။ သင့်မက်ဆေ့ချ်များကို သင့်ဖုန်းရှိ အခြားအက်ပ်ထံသို့ ထုတ်သိမ်းနိုင်ပါသည်။</string>
+    <!-- Action button shown when in sms conversation, sms is disabled, and unexported sms messages are present -->
+    <string name="ConversationActivity__export_sms_messages">SMS မက်ဆေ့ချ်များကို ထုတ်ရန်</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_invite_s_to_to_signal_to_keep_the_conversation_here">SMS မက်ဆေ့ချ်လုပ်ဆောင်ချက်ကို လက်ရှိတွင် ပိတ်ထားပါသည်။ ဤတွင် ဆက်လက်ဆွေးနွေးနိုင်ရန် %1$s အား Signal သို့ ဖိတ်ခေါ်ပါ။</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_invite_s_to_to_signal_to_keep_the_conversation_here">SMS မက်ဆေ့ချ်လုပ်ဆောင်ချက်ကို Signal တွင် မပံ့ပိုးပေးတော့ပါ။ ဤတွင် ဆက်လက်ဆွေးနွေးနိုင်ရန် %1$s အား Signal သို့ ဖိတ်ခေါ်ပါ။</string>
+    <!-- Action button shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__invite_to_signal">Signal သို့ ဖိတ်ခေါ်မည်</string>
+    <!-- Snackbar message shown after dismissing the full screen sms export megaphone indicating we'll do it again soon -->
+    <string name="ConversationActivity__you_will_be_reminded_again_soon">မကြာမီ သင့်အား ထပ်မံသတိပေးပါမည်။</string>
+
     <!-- ConversationAdapter -->
     <plurals name="ConversationAdapter_n_unread_messages">
         <item quantity="other">မဖတ်ရသေးသည့် စာတို %1$d</item>
@@ -375,6 +445,10 @@
     <string name="ConversationFragment_deleting_messages">စာများဖျက်နေသည်</string>
     <string name="ConversationFragment_delete_for_me">ကျွန်ုပ်အတွက် ဖျက်မယ်</string>
     <string name="ConversationFragment_delete_for_everyone">လူတိုင်းအတွက်ဖျက်ပါ</string>
+    <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
+    <string name="ConversationFragment_delete_on_this_device">Delete on this device</string>
+    <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
+    <string name="ConversationFragment_delete_everywhere">Delete everywhere</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">အကယ်၍ သူတို့ကလတ်တလော Signal ပုံစံတွင်ရှိနေလျှင်ဤမက်ဆေ့ခ်ျသည်စကားပြောဆိုမှုတွင်ပါဝင်သူများအတွက်ဖျက်ပစ်လိမ့်မည်။ သူတို့ကသင်မက်ဆေ့ခ်ျတစ်ခုဖျက်လိုက်သည်ကိုတွေ့နိုင်လိမ့်မည်။</string>
     <string name="ConversationFragment_quoted_message_not_found">မူရင်းစာကိုမတွေ့ပါ</string>
     <string name="ConversationFragment_quoted_message_no_longer_available">မူရင်းသတင်းကိုမရရှိနိုင်ပါ</string>
@@ -650,7 +724,7 @@
     <!-- GroupsV1MigrationLearnMoreBottomSheetDialogFragment -->
     <string name="GroupsV1MigrationLearnMore_what_are_new_groups">အဖွဲ့အသစ်များ ဆိုတာဘာလဲ။</string>
     <string name="GroupsV1MigrationLearnMore_new_groups_have_features_like_mentions">အဖွဲ့အသစ်များတွင် @mentions နှင့် အုပ်စု အက်မင်များ ကဲ့သို့သော အင်္ဂါရပ်များရှိသည်။ နောင်တွင်လည်း ပို၍ များပြားသော အင်္ဂါရပ်များကို ထောက်ပံ့လိမ့်မည်။</string>
-    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">မက်ဆေ့ခ်ျ သမိုင်းနှင့် မီဒီယာ အားလုံးကို အဆင့်မြှင့်တင်ခြင်း မပြုမီ သိမ်းဆည်းထားသည်။</string>
+    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">မက်ဆေ့ချ်မှတ်တမ်းနှင့် မီဒီယာ အားလုံးကို အဆင့်မြှင့်တင်ခြင်း မပြုမီ သိမ်းဆည်းထားပါသည်။</string>
     <string name="GroupsV1MigrationLearnMore_you_will_need_to_accept_an_invite_to_join_this_group_again">သင် ဤအုပ်စုထဲသို့ ပြန်ဝင်ရန် ဖိတ်ကြားချက်ကို လက်ခံရန် လိုလိမ့်မည်။ သင်လက်ခံပြီးမှ အဖွဲ့လိုက် မက်ဆေ့ခ်ျများကို ရရှိမည် ဖြစ်သည်။</string>
     <plurals name="GroupsV1MigrationLearnMore_these_members_will_need_to_accept_an_invite">
         <item quantity="other">အဖွဲ့ဝင်များသည် ဤအုပ်စုထဲသို့ ပြန်ဝင်ရန် ဖိတ်ကြားချက်ကိုလက်ခံရန်လိုလိမ့်မည်။ ထိုသူတို့ လက်ခံပြီးမှ အဖွဲ့လိုက် မက်ဆေ့ခ်ျများကို ရရှိမည် ဖြစ်သည်။</item>
@@ -663,7 +737,7 @@
     <string name="GroupsV1MigrationInitiation_upgrade_to_new_group">အုပ်စု အသစ်သို့ အဆင့်မြှင့်တင်ပါ။</string>
     <string name="GroupsV1MigrationInitiation_upgrade_this_group">ဤအုပ်စုကို အဆင့်မြှင့်တင်ပါ။</string>
     <string name="GroupsV1MigrationInitiation_new_groups_have_features_like_mentions">အဖွဲ့အသစ်များတွင် @mentions နှင့် အုပ်စု အက်မင်များ ကဲ့သို့သော အင်္ဂါရပ်များရှိသည်။ နောင်တွင်လည်း ပို၍ များပြားသော အင်္ဂါရပ်များကို ထောက်ပံ့လိမ့်မည်။</string>
-    <string name="GroupsV1MigrationInitiation_all_message_history_and_media_will_be_kept">မက်ဆေ့ခ်ျ သမိုင်းနှင့် မီဒီယာ အားလုံးကို အဆင့်မြှင့်ခြင်း မပြုမီ သိမ်းဆည်းထားသည်။</string>
+    <string name="GroupsV1MigrationInitiation_all_message_history_and_media_will_be_kept">မက်ဆေ့ချ်မှတ်တမ်းနှင့် မီဒီယာ အားလုံးကို အဆင့်မြှင့်တင်ခြင်း မပြုမီ သိမ်းဆည်းသွားပါမည်။</string>
     <string name="GroupsV1MigrationInitiation_encountered_a_network_error">ကွန်ယက် အမှားတစ်ခုနှင့် ကြုံတွေ့ခဲ့သည်။ နောက်မှ ပြန်လည် ကြိုးစားပါ။</string>
     <string name="GroupsV1MigrationInitiation_failed_to_upgrade">အဆင့်မြှင့်ခြင်း မအောင်မြင်ပါ။</string>
     <plurals name="GroupsV1MigrationInitiation_these_members_will_need_to_accept_an_invite">
@@ -764,11 +838,13 @@
     <string name="AddGroupDetailsFragment__this_field_is_required">ကွက်လပ်မှာဖြည့်ရန်လိုအပ်ပါသည်။</string>
     <string name="AddGroupDetailsFragment__group_creation_failed">အုပ်စုဖွဲ့ခြင်း မအောင်မြင်ပါ။</string>
     <string name="AddGroupDetailsFragment__try_again_later">နောက်တကြိမ် ပြန်ကြိုးစားပါ</string>
-    <!-- Displayed when adding group details to an MMS Group -->
-    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">သင်သည် Signal အဖွဲ့များအား သုံးနိုင်ခြင်း မရှိသည့် အဆက်အသွယ်ကို ရွေးချယ်ထားသောကြောင့် ဤအဖွဲ့သည့် MMS ဖြစ်သွားပါမည်။ စိတ်ကြိုက် MMS အဖွဲ့အမည်များနှင့် ဓာတ်ပုံများကို သင်သာလျှင် မြင်ရပါမည်။</string>
     <string name="AddGroupDetailsFragment__remove">ဖယ်ပစ်ပါ။</string>
     <string name="AddGroupDetailsFragment__sms_contact">SMS နှင့်ဆက်သွယ်ပါ</string>
     <string name="AddGroupDetailsFragment__remove_s_from_this_group">၎င်းအဖွဲ့မှ %1$s ကို ဖယ်ရှားမည်လား?</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">သင်သည် Signal အဖွဲ့များအား သုံးနိုင်ခြင်း မရှိသည့် အဆက်အသွယ်ကို ရွေးချယ်ထားသောကြောင့် ဤအဖွဲ့သည့် MMS ဖြစ်သွားပါမည်။ စိတ်ကြိုက် MMS အဖွဲ့အမည်များနှင့် ဓာတ်ပုံများကို သင်သာလျှင် မြင်ရပါမည်။</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group after SMS Phase 0 -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support_signal_groups_mms_removal">You\'ve selected a contact that doesn\'t support Signal groups, this group will be MMS. Custom MMS group names and photos will only be visible to you. Support for MMS groups will be removed soon to focus on encrypted messaging.</string>
 
     <!-- ManageGroupActivity -->
     <string name="ManageGroupActivity_member_requests_and_invites">အသင်းဝင်တောင်းဆိုမှုများ &amp; amp; ဖိတ်ကြားထား</string>
@@ -947,6 +1023,8 @@
 
     <!-- InputPanel -->
     <string name="InputPanel_tap_and_hold_to_record_a_voice_message_release_to_send">အသံဖမ်းရန် ခလုပ်ကိုဖိထားပါ၊ ပို့ရန် ခလုပ်ကိုလွှတ်လိုက်ပါ</string>
+    <!-- Message shown if the user tries to switch a conversation from Signal to SMS -->
+    <string name="InputPanel__sms_messaging_is_no_longer_supported_in_signal">SMS မက်ဆေ့ချ်လုပ်ဆောင်ချက်ကို Signal တွင် မပံ့ပိုးပေးတော့ပါ။</string>
 
     <!-- InviteActivity -->
     <string name="InviteActivity_share">မျှဝေရန်</string>
@@ -1291,6 +1369,14 @@
     <string name="MessageRecord_your_message_history_with_s_and_their_number_s_has_been_merged">%1$s နှင့် သင်၏ မက်ဆေ့ချ်မှတ်တမ်း၊ ၎င်းတို့၏ နံပါတ် %2$s တို့ကို ပေါင်းစည်းထားပါသည်။</string>
     <!-- Update item message shown when we merge two threads together and we don't know the phone number of the other thread -->
     <string name="MessageRecord_your_message_history_with_s_and_another_chat_has_been_merged">%1$s နှင့် သင်၏ မက်ဆေ့ချ်မှတ်တမ်း၊ ၎င်းတို့နှင့် သက်ဆိုင်သည့် အခြား ချက်(တ်)ကို ပေါင်းစည်းထားပါသည်။</string>
+    <!-- Message to notify sender that activate payments request has been sent to the recipient -->
+    <string name="MessageRecord_you_sent_request">%1$s ထံ ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ရန် တောင်းဆိုချက် ပို့ထားပါသည်</string>
+    <!-- Request message from recipient to activate payments -->
+    <string name="MessageRecord_wants_you_to_activate_payments">%1$s သည် သင့်အား ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်စေလိုပါသည်။ သင်ယုံကြည်ရသူများထံသာ ငွေပေးချေမှုများ ပို့ပါ။</string>
+    <!-- Message to inform user that payments was activated-->
+    <string name="MessageRecord_you_activated_payments">ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ထားပါသည်</string>
+    <!-- Message to inform sender that recipient can now accept payments -->
+    <string name="MessageRecord_can_accept_payments">ယခုအခါ %1$s သည် ငွေပေးချေမှုများကို လက်ခံနိုင်ပါသည်</string>
 
     <!-- Group Calling update messages -->
     <string name="MessageRecord_s_started_a_group_call_s">%1$s သည် အဖွဲ့လိုက်ခေါ်ဆိုမှု စခဲ့ပါသည် · %2$s</string>
@@ -1314,6 +1400,13 @@
     <plurals name="MessageRecord_s_s_and_d_others_are_in_the_group_call">
         <item quantity="other">%1$s၊ %2$s၊ နှင့် အခြား %3$d ယောက်များသည် ၎င်းအဖွဲ့လိုက်ခေါ်ဆိုမှုထဲတွင် ရှိပါသည်</item>
     </plurals>
+
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_will_no_longer_be_able_to_send_sms_messages_from_signal_soon">မကြာမီတွင် SMS မက်ဆေ့ချ်များကို Signal မှ ပေးပို့၍ ရနိုင်တော့မည် မဟုတ်ပါ။ ဤတွင် ဆက်လက်ဆွေးနွေးနိုင်ရန် %1$s အား Signal သို့ ဖိတ်ခေါ်ပါ။</string>
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Signal တွင် SMS မက်ဆေ့ချ်များကို ပေးပို့နိုင်တော့မည် မဟုတ်ပါ။ ဤတွင် ဆက်လက်ဆွေးနွေးနိုင်ရန် %1$s အား Signal သို့ ဖိတ်ခေါ်ပါ။</string>
+    <!-- Body for quote when message being quoted is an in-app payment message -->
+    <string name="MessageRecord__payment_s">Payment: %1$s</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">လက်ခံသည်</string>
@@ -1759,6 +1852,14 @@
     <string name="ThreadRecord_view_once_media">တစ်ခါကြည့် မီဒီယာ</string>
     <string name="ThreadRecord_this_message_was_deleted">၎င်းမက်ဆေ့ချ်ကို ဖျက်ခဲ့ပါသည်။</string>
     <string name="ThreadRecord_you_deleted_this_message">သင်သည် ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ။</string>
+    <!-- Displayed in the notification when the user sends a request to activate payments -->
+    <string name="ThreadRecord_you_sent_request">ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ရန် တောင်းဆိုချက် ပို့ထားပါသည်</string>
+    <!-- Displayed in the notification when the recipient wants to activate payments -->
+    <string name="ThreadRecord_wants_you_to_activate_payments">%1$s သည် သင့်အား ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်စေလိုပါသည်</string>
+    <!-- Displayed in the notification when the user activates payments -->
+    <string name="ThreadRecord_you_activated_payments">ငွေပေးချေမှုများကို သက်ဝင်လုပ်ဆောင်ထားပါသည်</string>
+    <!-- Displayed in the notification when the recipient can accept payments -->
+    <string name="ThreadRecord_can_accept_payments">ယခုအခါ %1$s သည် ငွေပေးချေမှုများကို လက်ခံနိုင်ပါသည်</string>
     <string name="ThreadRecord_s_is_on_signal">%1$s က Signal တွင်ရှိသည်!</string>
     <string name="ThreadRecord_disappearing_messages_disabled">မက်ဆေ့ချ်များ ပျောက်ကွယ်ခြင်းကို ပိတ်ထားပါသည်</string>
     <string name="ThreadRecord_disappearing_message_time_updated_to_s">စာများသည် %1$s အတွင်းပျောက်သွားရန် ချိန်ညှိထားသည်။</string>
@@ -1785,6 +1886,8 @@
     <string name="ThreadRecord__reacted_s_to_your_story">သင့်စတိုရီကို %1$s ဖြင့် တုံ့ပြန်ခဲ့ပါသည်</string>
     <!-- Displayed in the conversation list when you reacted to someone\'s story -->
     <string name="ThreadRecord__reacted_s_to_their_story">၎င်းတို့၏ စတိုရီကို %1$s ဖြင့် တုံ့ပြန်ခဲ့ပါသည်</string>
+    <!-- Displayed in the conversation list when your most recent message is a payment to or from the person the conversation is with -->
+    <string name="ThreadRecord_payment">ငွေပေးချေမှု</string>
 
     <!-- UpdateApkReadyListener -->
     <string name="UpdateApkReadyListener_Signal_update">Signal ဗားရှင်းအသစ်</string>
@@ -1886,7 +1989,8 @@
     <string name="MediaPreviewActivity_s_to_you">%1$s ထံမှ</string>
     <string name="MediaPreviewActivity_media_no_longer_available">မီဒီယာမရှိတော့ပါ</string>
     <string name="MediaPreviewActivity_cant_find_an_app_able_to_share_this_media">ဤမီဒီယာကို ဝေမျှနိုင်သော အပ္ပလီကေးရှင်း မတွေ့ရှိပါ။</string>
-    <string name="MediaPreviewActivity_dismiss_due_to_error">Close</string>
+    <string name="MediaPreviewActivity_dismiss_due_to_error">ပိတ်မယ်</string>
+    <string name="MediaPreviewFragment_edit_media_error">မီဒီယာ ချို့ယွင်းချက်</string>
 
     <!-- MessageNotifier -->
     <string name="MessageNotifier_d_new_messages_in_d_conversations">စကားဝိုင်း %2$d တွင် စာပေါင်း %1$d ရှိသည်။</string>
@@ -1938,6 +2042,9 @@
     <string name="NotificationChannel_background_connection">နောက်ကွယ်၌ ချိတ်ဆက်မှု</string>
     <!-- Notification channel name for showing call status information (like connection, ongoing, etc.) Not ringing. -->
     <string name="NotificationChannel_call_status">ကောလ် အခြေအနေ</string>
+    <!-- Notification channel name for occasional alerts to the user. Will appear in the system notification settings as the title of this notification channel. -->
+    <string name="NotificationChannel_critical_app_alerts">အလွန်အရေးပါသော အက်ပ်သတိပေးချက်များ</string>
+
     <!-- ProfileEditNameFragment -->
 
     <!-- QuickResponseService -->
@@ -1979,6 +2086,12 @@
     <!-- UnauthorizedReminder -->
     <string name="UnauthorizedReminder_device_no_longer_registered">ယခုဖုန်းမှာ မှတ်ပုံတင်ထားခြင်း မရှိတော့ပါ</string>
     <string name="UnauthorizedReminder_this_is_likely_because_you_registered_your_phone_number_with_Signal_on_a_different_device">ဤကဲ့သို့ ဖြစ်ရခြင်းမှာ Signal အား မိမိဖုန်းနံပါတ်နှင့် အခြားဖုန်းတစ်ခုတွင် မှတ်ပုံတင်ခဲ့ခြင်းကြောင့်ဖြစ်သည်။ Re-register ကို နှိပ်၍ မှတ်ပုံတင်ခြင်း ပြန်လည်ပြုလုပ်ပါ။</string>
+
+    <!-- EnclaveFailureReminder -->
+    <!-- Banner message to update app to use payments -->
+    <string name="EnclaveFailureReminder_update_signal">ငွေပေးချေမှုများကို ဆက်သုံးရန် Signal ကို အပ်ဒိတ်လုပ်ပါ။ သင့်လက်ကျန်ငွေသည် အပ်ဒိတ် မဖြစ်ပါ။</string>
+    <!-- Banner button to update now -->
+    <string name="EnclaveFailureReminder_update_now">ယခု Update လုပ်ပါ။</string>
 
     <!-- WebRtcCallActivity -->
     <string name="WebRtcCallActivity_to_answer_the_call_give_signal_access_to_your_microphone">ကောလ် ဖြေဆိုရန် Signal အား သင့်မိုက်ခရိုဖုန်းကို သုံးခွင့်ပေးပါ။</string>
@@ -2105,7 +2218,12 @@
     <string name="ConversationUpdateItem_view">ကြည့်မယ်</string>
     <string name="ConversationUpdateItem_the_disappearing_message_time_will_be_set_to_s_when_you_message_them">၎င်းတို့ထံ မက်ဆေ့ချ် ပို့ချိန်တွင် ပျောက်သွားမည့် မက်ဆေ့ချ် အချိန်ကို %1$s အဖြစ် သတ်မှတ်သွားပါမည်။</string>
     <!-- Update item button text to show to boost a feature -->
-    <string name="ConversationUpdateItem_donate">လှူဒါန်းပါ</string>
+    <string name="ConversationUpdateItem_donate">လှူဒါန်းရန်</string>
+    <!-- Update item button text to send payment -->
+    <string name="ConversationUpdateItem_send_payment">ငွေပေးချေမှု ပေးပို့မယ်</string>
+    <!-- Update item button text to activate payments -->
+    <string name="ConversationUpdateItem_activate_payments">ငွေပေးချေမှုများ ဖွင့်မယ်</string>
+
 
     <!-- audio_view -->
     <string name="audio_view__play_pause_accessibility_description">ဖွင့်မယ် … ခေတ္တရပ်မယ်</string>
@@ -2399,7 +2517,7 @@
     <string name="HelpFragment__debug_log">ပျက်ကွက်မှုဖြေရှင်းသည့် မှတ်တမ်းစာ -</string>
     <string name="HelpFragment__could_not_upload_logs">မှတ်တမ်းများ မတင်သွင်းနိုင်ပါ</string>
     <string name="HelpFragment__please_be_as_descriptive_as_possible">ကျွနှ်ပ်တို့နားလည်နိုင်ရန် ကိစ္စအကြောင်းကို တတ်နိုင်သမျှ ဖေါ်ပြပေးပါ။</string>
-    <string-array name="HelpFragment__categories_4">
+    <string-array name="HelpFragment__categories_5">
         <item>\\-\\- ရွေးစရာတစ်ခုကို ရွေးပေးပါ \\-\\-</item>
         <item>တစ်ခုခု အလုပ်မလုပ်ပါ</item>
         <item>လုပ်ဆောင်ချက် အင်္ဂါရပ် တောင်းဆိုချက်</item>
@@ -2408,6 +2526,7 @@
         <item>အခြား</item>
         <item>ငွေပေးချေမှုများ (MobileCoin)</item>
         <item>လှူဒါန်းမှုများနှင့် ဘဲ့ဂျ်များ</item>
+        <item>SMS ထုတ်သိမ်းခြင်း</item>
     </string-array>
 
     <!-- ReactWithAnyEmojiBottomSheetDialogFragment -->
@@ -2472,6 +2591,10 @@
     <string name="preferences__pressing_the_enter_key_will_send_text_messages">စာပို့ရန်အတွက် Enter ကို နှိပ်ခြင်း</string>
     <string name="preferences__pref_use_address_book_photos">လိပ်စာစာအုပ်ဓာတ်ပုံများကို သုံးပါ</string>
     <string name="preferences__display_contact_photos_from_your_address_book_if_available">ဖြစ်နိုင်လျှင် စနစ်ထဲရှိ အဆက်အသွယ်များ၏ ရုပ်ပုံများကို ပြသပါ</string>
+    <!-- Preference menu item title for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__pref_keep_muted_chats_archived">Keep Muted Chats Archived</string>
+    <!-- Preference menu item description for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__muted_chats_that_are_archived_will_remain_archived">မက်ဆေ့ချ်အသစ် ရောက်လာချိန်တွင် စုစည်းထားသော အသံတိတ်ချက်(တ်)များသည် စုစည်းလျက်သား ကျန်ရှိပါမည်။</string>
     <string name="preferences__generate_link_previews">ကြိုတင်ကြည့်ရှုရန် လင့်ခ်များ ထုတ်လုပ်ပါ</string>
     <string name="preferences__retrieve_link_previews_from_websites_for_messages">သင်ပေးပို့သော မက်ဆေ့ချ်များ အတွက် ဝဘ်ဆိုဒ်များမှ ကြိုတင်ကြည့်ရှုနိုင်သည့် လင့်ခ်များကို တိုက်ရိုက်ရယူပါ။</string>
     <string name="preferences__choose_identity">အမှတ်အသားရွေးရန်</string>
@@ -2515,7 +2638,7 @@
     <string name="preferences__slow">အနှေး</string>
     <string name="preferences__help">အကူအညီ</string>
     <string name="preferences__advanced">အဆင့်မြင့်</string>
-    <string name="preferences__donate_to_signal">Signal ကိုလှူဒါန်းပါ</string>
+    <string name="preferences__donate_to_signal">Signal ကို လှူဒါန်းရန်</string>
     <!-- Preference label for making one-time donations to Signal -->
     <string name="preferences__one_time_donation">တစ်ကြိမ် လှူဒါန်းမှု</string>
     <string name="preferences__privacy">ကိုယ်ရေးအချက်အလက်များ လုံခြုံမှု</string>
@@ -2538,7 +2661,7 @@
     <string name="preferences__payments_beta">ငွေပေးချေမှုများ (စမ်းသပ်သည့် Beta ဗားရှင်း)</string>
     <string name="preferences__conversation_length_limit">စာလုံးရေ အကန့်အသတ်</string>
     <string name="preferences__keep_messages">မက်ဆေ့များကို သိမ်းထားပါ</string>
-    <string name="preferences__clear_message_history">မက်ဆေ့ရာဇဝင်ရှင်းလင်းမယ်</string>
+    <string name="preferences__clear_message_history">မက်ဆေ့ချ်မှတ်တမ်း ရှင်းလင်းရန်</string>
     <string name="preferences__linked_devices">ချိတ်ဆက်ထားသော စက်ပစ္စည်းများ</string>
     <string name="preferences__light_theme">အလင်း</string>
     <string name="preferences__dark_theme">အမှောင်</string>
@@ -2572,7 +2695,7 @@
     <string name="preferences_chats__when_using_wifi">ဝိုင်ဖိုင်ကို အသုံးပြုသည့်အခါ</string>
     <string name="preferences_chats__when_roaming">Roaming လုပ်သည့်အခါ</string>
     <string name="preferences_chats__media_auto_download">ရုပ်/သံ/ပုံကို အလိုအလျောက် ဒေါင်းလုတ်လုပ်ပါ</string>
-    <string name="preferences_chats__message_history">မက်ဆေ့ခ်ျရာဇဝင်</string>
+    <string name="preferences_chats__message_history">မက်ဆေ့ချ်မှတ်တမ်း</string>
     <string name="preferences_storage__storage_usage">သိုလှောင်မှုအသုံးပြုမှု</string>
     <string name="preferences_storage__photos">ဓါတ်ပုံများ</string>
     <string name="preferences_storage__videos">ဗီဒီယိုများ</string>
@@ -2580,12 +2703,12 @@
     <string name="preferences_storage__audio">အသံ</string>
     <string name="preferences_storage__review_storage">သိုလှောင်မှုကို ပြန်သုံးသပ်မယ်</string>
     <string name="preferences_storage__delete_older_messages">မက်ဆေ့ခ်ျအဟောင်းများကို ဖျက်မည်လား?</string>
-    <string name="preferences_storage__clear_message_history">မက်ဆေ့ရာဇဝင်ကို ရှင်းလင်းမည်လား?</string>
-    <string name="preferences_storage__this_will_permanently_delete_all_message_history_and_media">၎င်းလုပ်ဆောင်ချက်သည် သင့်စက်ပေါ်ရှိ %1$s ထက်ကြာသော မက်ဆေ့ချ်ရာဇဝင် နှင့် မီဒီယာများကို ဖျက်သိမ်းလိုက်ပါမည်။</string>
+    <string name="preferences_storage__clear_message_history">မက်ဆေ့ချ်မှတ်တမ်းကို ရှင်းလင်းမည်လား။</string>
+    <string name="preferences_storage__this_will_permanently_delete_all_message_history_and_media">၎င်းသည် သင့်စက်ရှိ %1$s ထက်ကြာသော မက်ဆေ့ချ်မှတ်တမ်းနှင့် မီဒီယာများကို အပြီးဖျက်ပစ်လိုက်ပါမည်။</string>
     <string name="preferences_storage__this_will_permanently_trim_all_conversations_to_the_d_most_recent_messages">၎င်းလုပ်ဆောင်ချက်သည် သင်၏ စကားပြောဆိုမှုများအားလုံးကို နောက်ဆုံးမက်ဆေ့ချ် %1$s ခုထိ ဖြတ်လိုက်ပါမည်။</string>
-    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">၎င်းလုပ်ဆောင်ချက်သည် သင့်စက်ပေါ်ရှိ မက်ဆေ့ချ်ရာဇဝင် နှင့် မီဒီယာများ အားလုံးကို ဖျက်သိမ်းလိုက်ပါမည်။</string>
-    <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">သင်မှ မက်ဆေ့ချ်ရာဇဝင် များအားလုံးကို ဖျက်မည်ဆိုတာ သေချာပါသလား?</string>
-    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">မက်ဆေ့ချ်ရာဇဝင်များအားလုံးကို အမြဲတမ်းဖျက်သိမ်းလုပ်ပါမည်။ ၎င်းလုပ်ဆောင်ချက်ကို ပြန်ရုပ်သိမ်းလို့် မရပါ။</string>
+    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">၎င်းသည် သင့်စက်ရှိ မက်ဆေ့ချ်မှတ်တမ်းနှင့် မီဒီယာများ အားလုံးကို အပြီးဖျက်ပစ်လိုက်ပါမည်။</string>
+    <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">မက်ဆေ့ချ်မှတ်တမ်းများ အားလုံးကို ဖျက်လိုသည်မှာ သေချာပါသလား။</string>
+    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">မက်ဆေ့ချ်မှတ်တမ်းများ အားလုံးကို အပြီးဖယ်ရှားလိုက်ပါမည်။ ဤလုပ်ဆောင်ချက်ကို ပြန်ရုပ်သိမ်း၍ မရပါ။</string>
     <string name="preferences_storage__delete_all_now">အားလုံးကို ယခု ဖျက်သိမ်းမယ်</string>
     <string name="preferences_storage__forever">အမြဲတမ်း</string>
     <string name="preferences_storage__one_year">1 နှစ်</string>
@@ -2663,107 +2786,9 @@
     <string name="configurable_single_select__customize_option">ရွေးချယ်မှုကို စိတ်ကြိုက်ပြင်ဆင်မယ်</string>
 
     <!-- Internal only preferences -->
-    <string name="preferences__internal_turn_off_stories_with_stories_on_disk" translatable="false">Turn off stories (with stories on disk)</string>
-    <string name="preferences__internal_turn_off_stories" translatable="false">Turn off stories</string>
-    <string name="preferences__internal_delete_private_story" translatable="false">Delete private story</string>
-    <string name="preferences__internal_hide_story" translatable="false">Hide story</string>
-    <string name="preferences__internal_story_or_profile_selector" translatable="false">Story or profile selector</string>
-    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
-    <string name="preferences__internal_retry_send" translatable="false">Retry send</string>
-    <string name="preferences__internal_remove_group_story" translatable="false">Remove group story</string>
-    <string name="preferences__internal_clear_onboarding_state" translatable="false">Clear onboarding state</string>
-    <string name="preferences__internal_clears_onboarding_flag_and_triggers_download_of_onboarding_stories" translatable="false">Clears onboarding flag and triggers download of onboarding stories.</string>
     <string name="preferences__internal_preferences" translatable="false">Internal Preferences</string>
-    <string name="preferences__internal_preferences_groups_v2" translatable="false">Groups V2</string>
-    <string name="preferences__internal_force_gv2_invites" translatable="false">Force Invites</string>
-    <string name="preferences__internal_force_gv2_invites_description" translatable="false">Members will not be added directly to a GV2 even if they could be.</string>
-    <string name="preferences__internal_ignore_gv2_server_changes" translatable="false">Ignore server changes</string>
-    <string name="preferences__internal_ignore_gv2_server_changes_description" translatable="false">Changes in server\&apos;s response will be ignored, causing passive voice update messages if P2P is also ignored.</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes" translatable="false">Ignore P2P changes</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes_description" translatable="false">Changes sent P2P will be ignored. In conjunction with ignoring server changes, will cause passive voice.</string>
-    <string name="preferences__internal_payments" translatable="false">Payments</string>
-    <string name="preferences__internal_payment_copy_data" translatable="false">Copy payments data</string>
-    <string name="preferences__internal_payment_copy_data_description" translatable="false">Copy all payment records to clipboard.</string>
-    <string name="preferences__internal_account" translatable="false">Account</string>
-    <string name="preferences__internal_refresh_attributes" translatable="false">Refresh attributes</string>
-    <string name="preferences__internal_refresh_attributes_description" translatable="false">Forces a write of capabilities on to the server followed by a read.</string>
-    <string name="preferences__internal_refresh_profile" translatable="false">Refresh profile</string>
-    <string name="preferences__internal_refresh_profile_description" translatable="false">Forces a refresh of your own profile.</string>
-    <string name="preferences__internal_rotate_profile_key" translatable="false">Rotate profile key</string>
-    <string name="preferences__internal_rotate_profile_key_description" translatable="false">Creates a new versioned profile, and triggers an update of any GV2 group you belong to.</string>
-    <string name="preferences__internal_refresh_remote_config" translatable="false">Refresh remote config</string>
-    <string name="preferences__internal_refresh_remote_config_description" translatable="false">Forces a refresh of the remote config locally instead of waiting for the elapsed time.</string>
-    <string name="preferences__internal_misc" translatable="false">Miscellaneous</string>
-    <string name="preferences__internal_user_details" translatable="false">\&apos;Internal Details\&apos; button</string>
-    <string name="preferences__internal_user_details_description" translatable="false">Show a button in conversation settings that lets you see more information about a user.</string>
-    <string name="preferences__internal_shake_to_report" translatable="false">Shake to Report</string>
-    <string name="preferences__internal_shake_to_report_description" translatable="false">Shake your phone to easily submit and share a debug log.</string>
-    <string name="preferences__internal_clear_keep_longer_logs" translatable="false">Clear keep longer logs</string>
-    <string name="preferences__internal_storage_service" translatable="false">Storage service</string>
-    <string name="preferences__internal_disable_storage_service" translatable="false">Disable syncing</string>
-    <string name="preferences__internal_disable_storage_service_description" translatable="false">Prevent syncing any data to/from storage service.</string>
-    <string name="preferences__internal_force_storage_service_sync" translatable="false">Overwrite remote data</string>
-    <string name="preferences__internal_sync_now" translatable="false">Sync now</string>
-    <string name="preferences__internal_sync_now_description" translatable="false">Enqueue a normal storage service sync.</string>
-    <string name="preferences__internal_force_storage_service_sync_description" translatable="false">Forces remote storage to match the local device state.</string>
-    <string name="preferences__internal_network" translatable="false">Network</string>
-    <string name="preferences__internal_allow_censorship_toggle" translatable="false">Allow censorship circumvention toggle</string>
-    <string name="preferences__internal_allow_censorship_toggle_description" translatable="false">Allow changing the censorship circumvention toggle regardless of network connectivity.</string>
-    <string name="preferences__internal_conversations_and_shortcuts" translatable="false">Conversations and Shortcuts</string>
-    <string name="preferences__internal_emoji" translatable="false">Emoji</string>
-    <string name="preferences__internal_use_built_in_emoji_set" translatable="false">Use built-in emoji set</string>
-    <string name="preferences__internal_force_emoji_download" translatable="false">Force emoji download</string>
-    <string name="preferences__internal_force_emoji_download_description" translatable="false">Download the latest emoji set if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_force_search_index_download" translatable="false">Force search index download</string>
-    <string name="preferences__internal_force_search_index_download_description" translatable="false">Download the latest emoji search index if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_current_version_builtin" translatable="false">Current version: Built-In</string>
-    <string name="preferences__internal_current_version_d_at_density_s" translatable="false">Current version: %1$d at density %2$s</string>
-    <string name="preferences__internal_delete_all_dynamic_shortcuts" translatable="false">Delete all dynamic shortcuts</string>
-    <string name="preferences__internal_click_to_delete_all_dynamic_shortcuts" translatable="false">Click to delete all dynamic shortcuts</string>
     <string name="preferences__internal_details" translatable="false">Internal Details</string>
-    <string name="preferences__internal_disable_profile_sharing" translatable="false">Disable Profile Sharing</string>
-    <string name="preferences__internal_delete_session" translatable="false">Delete Session</string>
-    <string name="preferences__internal_sender_key" translatable="false">Sender Key</string>
-    <string name="preferences__internal_clear_all_state" translatable="false">Clear all state</string>
-    <string name="preferences__internal_click_to_delete_all_sender_key_state" translatable="false">Click to delete all sender key state</string>
-    <string name="preferences__internal_clear_shared_state" translatable="false">Clear shared state</string>
-    <string name="preferences__internal_click_to_delete_all_sharing_state" translatable="false">Click to delete all sharing state</string>
-    <string name="preferences__internal_remove_two_person_minimum" translatable="false">Remove 2 person minimum</string>
-    <string name="preferences__internal_remove_the_requirement_that_you_need" translatable="false">Remove the requirement that you  need at least 2 recipients to use sender key.</string>
-    <string name="preferences__internal_delay_resends" translatable="false">Delay resends</string>
-    <string name="preferences__internal_delay_resending_messages_in_response_to_retry_receipts" translatable="false">Delay resending messages in response to retry receipts by 10 seconds.</string>
-    <string name="preferences__internal_local_metrics" translatable="false">Local Metrics</string>
-    <string name="preferences__internal_clear_local_metrics" translatable="false">Clear local metrics</string>
-    <string name="preferences__internal_click_to_clear_all_local_metrics_state" translatable="false">Click to clear all local metrics state.</string>
-    <string name="preferences__internal_calling_server" translatable="false">Group call server</string>
-    <string name="preferences__internal_calling_server_default" translatable="false">Default</string>
-    <string name="preferences__internal_calling_server_s" translatable="false">%1$s server</string>
-    <string name="preferences__internal_calling" translatable="false">Calling options</string>
-    <string name="preferences__internal_calling_audio_processing_method" translatable="false">Audio processing method</string>
-    <string name="preferences__internal_calling_bandwidth_mode" translatable="false">Bandwidth mode</string>
-    <string name="preferences__internal_calling_disable_telecom" translatable="false">Disable Telecom integration</string>
-    <string name="preferences__internal_badges" translatable="false">Badges</string>
-    <string name="preferences__internal_badges_enqueue_redemption" translatable="false">Enqueue redemption.</string>
-    <string name="preferences__internal_badges_enqueue_keep_alive" translatable="false">Enqueue keep-alive.</string>
-    <string name="preferences__internal_badges_set_error_state" translatable="false">Set error state.</string>
-    <string name="preferences__internal_release_channel" translatable="false">Release channel</string>
-    <string name="preferences__internal_fetch_release_channel" translatable="false">Fetch release channel</string>
-    <string name="preferences__internal_release_channel_set_last_version" translatable="false">Set last version seen back 10 versions</string>
-    <string name="preferences__internal_reset_donation_megaphone" translatable="false">Reset donation megaphone</string>
-    <string name="preferences__internal_add_sample_note" translatable="false">Add sample note</string>
-    <string name="preferences__internal_disable_stories" translatable="false">Disable stories</string>
-    <string name="preferences__internal_cds" translatable="false">CDS</string>
-    <string name="preferences__internal_clear_history" translatable="false">Clear history</string>
-    <string name="preferences__internal_clear_history_description" translatable="false">Clears all CDS history, meaning the next sync will consider all numbers to be new.</string>
-    <string name="preferences__internal_clear_all_service_ids" translatable="false">Clear all service IDs</string>
-    <string name="preferences__internal_clear_all_service_ids_description" translatable="false">Clears all known service IDs (except your own) for people that have phone numbers. Do not use on your personal device!</string>
-    <string name="preferences__internal_clear_all_profile_keys" translatable="false">Clear all profile keys</string>
-    <string name="preferences__internal_clear_all_profile_keys_description" translatable="false">Clears all known profile keys (except your own). Do not use on your personal device!</string>
-    <string name="preferences__internal_donor_error_expired_badge" translatable="false">Expired Badge</string>
-    <string name="preferences__internal_donor_error_charge_failure" translatable="false">Charge Failure</string>
-    <string name="preferences__internal_donor_error_cancelation_reason" translatable="false">Cancelation Reason</string>
-    <string name="preferences__internal_donor_error_save_and_finish" translatable="false">Save and Finish</string>
-    <string name="preferences__internal_donor_error_clear" translatable="false">Clear</string>
+    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
 
 
     <!-- Payments -->
@@ -2773,7 +2798,7 @@
     <string name="PaymentsAllActivityFragment__received">လက်ခံရရှိပြီး</string>
 
     <string name="PaymentsHomeFragment__introducing_payments">ငွေပေးချေမှုများ (စမ်းသပ်သည့် Beta ဗားရှင်း) မိတ်ဆက်ပါသည်</string>
-    <string name="PaymentsHomeFragment__use_signal_to_send_and_receive">Signal သုံး၍ MobileCoin ပေးပို့လက်ခံလိုက်ပါ၊​ ၎င်းသည် ပုဂ္ဂိုလုံခြုံရေး အလေးထားသော ဒစ်ဂျစ်တယ်ငွေကြေး ဖြစ်ပါသည်။ ဖွင့်၍ စတင်သုံးလိုက်ပါ။</string>
+    <string name="PaymentsHomeFragment__use_signal_to_send_and_receive">Signal သုံး၍ လုံခြုံရေးအလေးပေး ဒစ်ဂျစ်တယ်ငွေကြေးအသစ် MobileCoin ကို ပေးပို့လက်ခံလိုက်ပါ။ စတင်သုံးရန် ဖွင့်ပါ။</string>
     <string name="PaymentsHomeFragment__activate_payments">ငွေပေးချေမှုများ ဖွင့်မယ်</string>
     <string name="PaymentsHomeFragment__activating_payments">ငွေပေးချေမှုများ ဖွင့်နေသည်…</string>
     <string name="PaymentsHomeFragment__restore_payments_account">ငွေပေးချမှုလုပ်သည့် အကောင့် ပြန်ရယူမယ်</string>
@@ -2822,26 +2847,34 @@
     <string name="PaymentsHomeFragment__enable">ဖွင့်ရန်</string>
     <!-- Alert dialog button to not enable payment lock for now -->
     <string name="PaymentsHomeFragment__not_now">ယခု မလုပ်ပါ</string>
+    <!-- Alert dialog title which shows up to update app to send payments -->
+    <string name="PaymentsHomeFragment__update_required">အပ်ဒိတ် လိုအပ်ပါသည်</string>
+    <!-- Alert dialog description that app update is required to send payments-->
+    <string name="PaymentsHomeFragment__an_update_is_required">ငွေပေးချေမှုများ ပို့ရန် သို့မဟုတ် လက်ခံရန်အတွက် ဆက်လက်လုပ်ဆောင်ရန်နှင့် သင်၏ ငွေပေးချေမှု လက်ကျန်ငွေကို ကြည့်ရန် အပ်ဒိတ်လိုအပ်ပါသည်။</string>
+    <!-- Alert dialog button to cancel -->
+    <string name="PaymentsHomeFragment__cancel">မလုပ်တော့ပါ</string>
+    <!-- Alert dialog button to update now -->
+    <string name="PaymentsHomeFragment__update_now">ယခု Update လုပ်ပါ။</string>
 
     <!-- PaymentsSecuritySetupFragment -->
     <!-- Toolbar title -->
-    <string name="PaymentsSecuritySetupFragment__security_setup">Security setup</string>
+    <string name="PaymentsSecuritySetupFragment__security_setup">လုံခြုံရေး သတ်မှတ်ချိန်ညှိမှု</string>
     <!-- Title to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__protect_your_funds">Protect your funds</string>
+    <string name="PaymentsSecuritySetupFragment__protect_your_funds">သင်၏ ငွေကြေးကို ကာကွယ်ပါ</string>
     <!-- Description as to why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__help_prevent">Help prevent a person with your phone from accessing your funds by adding another layer of security. You can disable this option in Settings.</string>
+    <string name="PaymentsSecuritySetupFragment__help_prevent">နောက်ထပ် လုံခြုံရေးအလွှာ ပေါင်းထည့်ခြင်းဖြင့် သင်၏ငွေကြေးကို အခြားတစ်ယောက်က ရယူသုံးစွဲခြင်းအား ကူညီတားဆီးပေးပါသည်။ ဤသည်ကို ဆက်တင်တွင် ပိတ်နိုင်ပါသည်။</string>
     <!-- Option to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">Enable payment lock</string>
+    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">ငွေပေးချေမှုလော့ခ်ကို ဖွင့်ရန်</string>
     <!-- Option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__not_now">Not now</string>
+    <string name="PaymentsSecuritySetupFragment__not_now">ယခု မလုပ်ဆောင်သေးပါ။</string>
     <!-- Dialog title to confirm skipping the step -->
-    <string name="PaymentsSecuritySetupFragment__skip_this_step">Skip this step?</string>
+    <string name="PaymentsSecuritySetupFragment__skip_this_step">ဤအဆင့်ကို ကျော်မည်လား။</string>
     <!-- Dialog description to let users know why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__skipping_this_step">Skipping this step could allow anyone who has physical access to your phone to transfer funds or view your recovery phrase.</string>
+    <string name="PaymentsSecuritySetupFragment__skipping_this_step">ဤအဆင့်ကို ကျော်လိုက်ခြင်းဖြင့် သင့်ဖုန်းကို ဝင်ရောက်ကြည့်ရှုခွင့်ရှိသည့် မည်သူမဆိုအား ငွေလွှဲရန် သို့မဟုတ် သင်၏ ပြန်လည်ရယူရေး စကားစုကို ကြည့်ရန် ခွင့်ပြုပေးပါသည်။</string>
     <!-- Dialog option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__cancel">Cancel</string>
+    <string name="PaymentsSecuritySetupFragment__cancel">မလုပ်တော့ပါ</string>
     <!-- Dialog option to skip -->
-    <string name="PaymentsSecuritySetupFragment__skip">Skip</string>
+    <string name="PaymentsSecuritySetupFragment__skip">ကျော်ပါ။</string>
 
     <!-- PaymentsAddMoneyFragment -->
     <string name="PaymentsAddMoneyFragment__add_funds">ငွေဖြည့်မယ်</string>
@@ -2865,7 +2898,7 @@
     <string name="PaymentsDetailsFragment__s_on_s_at_s">%1$s ကို %2$s ၊ %3$s အချိန်တွင်</string>
     <string name="PaymentsDetailsFragment__to">သို့</string>
     <string name="PaymentsDetailsFragment__from">မှ</string>
-    <string name="PaymentsDetailsFragment__information">ငွေပေးချေမှု ငွေပမာဏ နှင့် လုပ်ဆောင်သည့်အချိန် အပါအဝင် ငွေပေးငွေယူသည့် အသေးစိတ်အချက်အလက်များသည် MobileCoin စာအုပ်စာရင်း၏ အစိတ်အပိုင်းတစ်ခု ဖြစ်ပါသည်။</string>
+    <string name="PaymentsDetailsFragment__information">ငွေပေးချေမှု ငွေပမာဏနှင့် လုပ်ဆောင်သည့်အချိန် အပါအဝင် ငွေပေးငွေယူသည့် အသေးစိတ်အချက်အလက်များသည် MobileCoin စာအုပ်စာရင်း၏ အစိတ်အပိုင်းတစ်ခု ဖြစ်ပါသည်။</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_fee">အကြွေစေ့ရှင်းရေးအခကြေး</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_information">ငွေပေးချေမှု လုပ်ဆောင်ရန် သင့်လက်ထဲတွင်ရှိသော အကြွေစေ့များကိုပေါင်းစပ်သော်လည်း မလုံလောက်မှုဖြစ်ခဲ့လျှင် \"အကြွေစေ့ရှင်းရေးအခကြေး\" ကို ကောက်ခံယူပါမည်။ ရှင်းခြင်းဖြင့် ငွေပေးချေမှုများ ဆက်လက် ပေးပို့နိုင်ပါမည်။</string>
     <string name="PaymentsDetailsFragment__no_details_available">၎င်းငွေပေးချေမှုအတွက် အခြားအချက်အလက်များ မရရှိနိုင်ပါ</string>
@@ -2951,7 +2984,7 @@
     <string name="CurrencyAmountFormatter_s_at_s">%1$s ကို %2$s ဖြင့်</string>
 
     <!-- SetCurrencyFragment -->
-    <string name="SetCurrencyFragment__set_currency">ငွေကြေး သတ်မှတ်မယ်</string>
+    <string name="SetCurrencyFragment__set_currency">ငွေကြေး သတ်မှတ်ရန်</string>
     <string name="SetCurrencyFragment__all_currencies">ငွေကြေးများ အားလုံး</string>
 
     <!-- **************************************** -->
@@ -3001,6 +3034,8 @@
     <string name="conversation_selection__menu_resend_message">Resend</string>
     <!-- Button to select a message and enter selection mode -->
     <string name="conversation_selection__menu_multi_select">ရွေးမယ်</string>
+    <!-- Button to view a in-chat payment message's full payment details -->
+    <string name="conversation_selection__menu_payment_details">Payment details</string>
 
     <!-- conversation_expiring_on -->
 
@@ -3082,12 +3117,22 @@
     <string name="reminder_header_push_text">သင့်ဆက်သွယ်မှုအတွေ့အကြုံကို အဆင့်မြှင့်လိုက်ပါ။</string>
     <string name="reminder_header_service_outage_text">Signal သည် နည်းပညာပိုင်းဆိုင်ရာ အခက်အခဲများ ကြုံတွေ့နေပါသည်။ ဝန်ဆောင်မှုများကို အမြန်ဆုံးပြန်လည်စတင်နိုင်ရန် ကျွနု်ပ်တို့ ကြိုးစားနေပါသည်။</string>
     <string name="reminder_header_progress">%1$d%%</string>
+    <!-- Body text of a banner that will show at the top of the chat list when we temporarily cannot process the user's contacts -->
+    <string name="reminder_cds_warning_body">Signal\'s private contact discovery temporarily can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we temporarily can't process the user's contacts -->
+    <string name="reminder_cds_warning_learn_more">ပိုမိုလေ့လာရန်</string>
+    <!-- Body text of a banner that will show at the top of the chat list when the user has so many contacts that we cannot ever process them -->
+    <string name="reminder_cds_permanent_error_body">Signal\'s private contact discovery can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we cannot process the user's contacts -->
+    <string name="reminder_cds_permanent_error_learn_more">ပိုမိုလေ့လာရန်</string>
 
     <!-- media_preview -->
     <string name="media_preview__save_title">သိမ်းထားပါ။</string>
     <string name="media_preview__forward_title">ထပ်ဆင့် ပေးပို့ပါ။</string>
     <string name="media_preview__share_title">ဝေမျှမယ်</string>
     <string name="media_preview__all_media_title">ရုပ်/သံ/ပုံ စာများအားလုံး</string>
+    <string name="media_preview__edit_title">ပြင်မယ်</string>
+
 
     <!-- media_preview_activity -->
     <string name="media_preview_activity__media_content_description">ရုပ်/သံ/ပုံပါ စာများကို အစမ်းကြည့်ခြင်း</string>
@@ -3116,7 +3161,7 @@
 
     <string name="FirstInviteReminder__title">Signal သို့ ဖိတ်ခေါ်မည်</string>
     <string name="FirstInviteReminder__description">သင်ပေးပို့သည့် ကုဒ်ဖြင့်ဝှက်ထားသော မက်ဆေ့ချ်အရေအတွက်ကို %1$d %% ထက်တိုးမြှင့်နိုင်ပါသည်</string>
-    <string name="SecondInviteReminder__title">သင်၏ Signal ကိုမြှင့်တင်ပါ</string>
+    <string name="SecondInviteReminder__title">သင်၏ Signal ကို Boost လုပ်ပါ</string>
     <string name="SecondInviteReminder__description">%1$s ကို ဖိတ်ခေါ်မယ်</string>
     <string name="InsightsReminder__view_insights">ထင်မြင်ချက်များ (Insights) ကိုကြည့်မယ်</string>
     <string name="InsightsReminder__invite">ဖိတ်ခေါ်မယ်</string>
@@ -3663,7 +3708,7 @@
 
     <!-- InfoCard -->
     <string name="payment_info_card_about_mobilecoin">MobileCoin အကြောင်း</string>
-    <string name="payment_info_card_mobilecoin_is_a_new_privacy_focused_digital_currency">MobileCoin သည် ပုဂ္ဂိုလ်လုံခြုံရေးကို အလေးထားသော ဒစ်ဂျစ်တယ်ငွေကြေးအသစ် ဖြစ်ပါသည်။</string>
+    <string name="payment_info_card_mobilecoin_is_a_new_privacy_focused_digital_currency">MobileCoin သည် လုံခြုံရေးအလေးပေး ဒစ်ဂျစ်တယ်ငွေကြေးအသစ် ဖြစ်ပါသည်။</string>
     <string name="payment_info_card_adding_funds">ငွေဖြည့်နေသည်</string>
     <string name="payment_info_card_you_can_add_funds_for_use_in">သင့် ပိုက်ဆံအိတ် wallet လိပ်စာသို့ MobileCoin ပို့၍ Signal တွင် သုံးရန် ငွေဖြည့်နိုင်ပါသည်။</string>
     <string name="payment_info_card_cashing_out">ငွေထုတ်ယူခြင်း</string>
@@ -3701,7 +3746,9 @@
     <!-- Title in save recovery phrase screen -->
     <string name="PaymentsRecoveryStartFragment__save_recovery_phrase">ပြန်လည်ရယူရေး စကားစုကို သိမ်းရန်</string>
     <string name="PaymentsRecoveryStartFragment__enter_recovery_phrase">ပြန်လည်ရယူ စာပုဒ်တိုကို ရိုက်ထည့်ပါ</string>
-    <string name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">Signal ပြန်တင်သွင်းသည့်အချိန်တွင် သင်မှသင့် Signal ပင်နံပါတ်ကို အတည်ပြုခဲ့လျှင် သင့် လက်ကျန်ငွေကို အလိုအလျောက်ပြန်လည် ရရှိပါမည်။ ပြန်လည်ရယူရန် စာပုဒ်တိုဖြင့်လည်း သင့်လက်ကျန်ငွေကို ပြန်ရယူနိုင်ပါသည်။ ၎င်းသည် သင့်အတွက်သာ ထူးခြားသာ စာလုံး %1$d လုံး ရှိသော စာပုဒ်တိုဖြစ်ပါသည်။ ရေးသားမှတ်ထားပြီး လုံခြုံသောတစ်နေရာတွင် ဝှက်ထားပါ။</string>
+    <plurals name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">
+        <item quantity="other">Signal ပြန်တင်သွင်းသည့်အချိန်တွင် သင့် Signal PIN ကို အတည်ပြုခဲ့လျှင် သင့် လက်ကျန်ငွေကို အလိုအလျောက်ပြန်လည် ရရှိပါမည်။ ပြန်လည်ရယူရန် စာပုဒ်တိုဖြင့်လည်း သင့်လက်ကျန်ငွေကို ပြန်ရယူနိုင်ပါသည်။ ၎င်းသည် သင့်အတွက်ထူးခြားသော စကားလုံး %1$d လုံးရှိသော စာပုဒ်တိုဖြစ်ပါသည်။ ရေးမှတ်ထားပြီး လုံခြုံသောတစ်နေရာတွင် သိမ်းထားပါ။</item>
+    </plurals>
     <!-- Description in save recovery phrase screen which shows up when user has non zero balance -->
     <string name="PaymentsRecoveryStartFragment__got_balance">လက်ကျန်ငွေ ရရှိထားပါသည်။ သင်၏ လက်ကျန်ငွေကို ပြန်လည်ရယူရန် သုံးနိုင်သည့် ပြန်လည်ရယူရေး စကားစု—စာလုံး 24 လုံးပါ ကီး ကို သိမ်းရန် အချိန်ကျပါပြီ။</string>
     <!-- Description in save recovery phrase screen which shows up when user navigates from info card -->
@@ -3874,6 +3921,12 @@
     <string name="SmsSettingsFragment__removing_sms_messages_from_signal">SMS မက်ဆေ့ချ်များကို Signal မှ ဖယ်ရှားနေဆဲ…</string>
     <!-- Snackbar text to indicate can delete later -->
     <string name="SmsSettingsFragment__you_can_remove_sms_messages_from_signal_in_settings">Signal မှ SMS မက်ဆေ့ချ်များကို ဆက်တင်တွင် အချိန်မရွေး ဖယ်ရှားနိုင်ပါသည်။</string>
+    <!-- Description for export sms preference -->
+    <string name="SmsSettingsFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">သင်၏ SMS မက်ဆေ့ချ်များကို သင့်ဖုန်း၏ SMS ဒေတာဘေ့စ်တွင် ထုတ်သိမ်းနိုင်ပါသည်</string>
+    <!-- Description for remove sms preference -->
+    <string name="SmsSettingsFragment__remove_sms_messages_from_signal_to_clear_up_storage_space">သိုလှောင်မှု နေရာလွတ်ကို ရှင်းရန် Signal မှ SMS မက်ဆေ့ချ်များကို ဖယ်ရှားပါ။</string>
+    <!-- Information message shown at the top of sms settings to indicate it is being removed soon. -->
+    <string name="SmsSettingsFragment__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">စာဝှက်စနစ်သုံးထားသော မက်ဆေ့ချ်လုပ်ဆောင်ချက်အပေါ် အာရုံစိုက်နိုင်ရန် SMS ပံ့ပိုးမှုကို မကြာမီ ဖယ်ရှားပါတော့မည်။</string>
 
     <!-- NotificationsSettingsFragment -->
     <string name="NotificationsSettingsFragment__messages">မက်ဆေ့ချ်များ</string>
@@ -3991,11 +4044,11 @@
     <string name="ChatColorGradientTool_bottom_edge_selector">Bottom Edge Selector</string>
 
     <!-- Title text for prompt to donate. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_donate_to_signal">Signal ကိုလှူဒါန်းပါ</string>
+    <string name="Donate2022Q2Megaphone_donate_to_signal">Signal ကို လှူဒါန်းရန်</string>
     <!-- Body text for prompt to donate. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_signal_is_powered_by_people_like_you">Signal ကိုသင့်လိုသူများက အားဖြည့်ကူညီပေးထားပါသည်။ လစဉ်လှူဒါန်းပြီး တံဆိပ်ရယူလိုက်ပါ။</string>
+    <string name="Donate2022Q2Megaphone_signal_is_powered_by_people_like_you">Signal ကိုသင့်လိုသူများက အားဖြည့်ကူညီပေးထားပါသည်။ လစဉ်လှူဒါန်းပြီး ဘဲ့ဂျ်တစ်ခု ရယူလိုက်ပါ။</string>
     <!-- Button label that brings a user to the donate screen. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_donate">လှူဒါန်းပါ</string>
+    <string name="Donate2022Q2Megaphone_donate">လှူဒါန်းရန်</string>
     <!-- Button label that dismissed a prompt to donate. Shown in a popup at the bottom of the chat list. -->
     <string name="Donate2022Q2Megaphone_not_now">ယခု မလုပ်ဆောင်သေးပါ။</string>
 
@@ -4016,9 +4069,9 @@
     <!-- BecomeASustainerMegaphone -->
     <string name="BecomeASustainerMegaphone__become_a_sustainer">ပါဝင်အားဖြည့်သူ ဖြစ်စေရန်</string>
     <!-- Displayed in the Become a Sustainer megaphone -->
-    <string name="BecomeASustainerMegaphone__signal_is_powered_by">Signal ကို သင့်ကဲ့သို့သော လူများက အားဖြည့်ကူညီပေးထားပါသည်။ လှူဒါန်းပြီး ဘဲ့ဂျ်တစ်ခု ရယူပါ။</string>
+    <string name="BecomeASustainerMegaphone__signal_is_powered_by">Signal ကိုသင့်လိုသူများက အားဖြည့်ကူညီပေးထားပါသည်။ လှူဒါန်းပြီး ဘဲ့ဂျ်တစ်ခု ရယူလိုက်ပါ။</string>
     <string name="BecomeASustainerMegaphone__not_now">ယခု မလုပ်ဆောင်သေးပါ။</string>
-    <string name="BecomeASustainerMegaphone__donate">လှူဒါန်းပါ</string>
+    <string name="BecomeASustainerMegaphone__donate">လှူဒါန်းရန်</string>
 
     <!-- KeyboardPagerFragment -->
     <string name="KeyboardPagerFragment_emoji">အီမိုဂျိ</string>
@@ -4132,6 +4185,8 @@
     <string name="NewConversationActivity__this_person_is_saved_to_your">ဤပုဂ္ဂိုလ်ကို သင့်စက်၏ အဆက်အသွယ်များတွင် သိမ်းထားပါသည်။ ၎င်းတို့ကို သင်၏ အဆက်အသွယ်များမှ ဖျက်ပြီး ထပ်ကြိုးစားကြည့်ပါ။</string>
     <!-- Dialog action to view contact when they can't be removed otherwise -->
     <string name="NewConversationActivity__view_contact">အဆက်အသွယ် ကြည့်ရန်</string>
+    <!-- Error message shown when looking up a person by phone number and that phone number is not associated with a signal account -->
+    <string name="NewConversationActivity__s_is_not_a_signal_user">%1$s သည် Signal သုံးစွဲသူ မဟုတ်ပါ</string>
 
     <!-- ContactFilterView -->
     <string name="ContactFilterView__search_name_or_number">အမည် သို့မဟုတ် နံပါတ်ကို ရှာရန်</string>
@@ -4248,13 +4303,17 @@
     <string name="SelectFeaturedBadgeFragment__failed_to_update_profile">ပရိုဖိုင် အပ်ဒိတ်လုပ်ရန် မအောင်မြင်ခဲ့ပါ</string>
 
     <string name="ViewBadgeBottomSheetDialogFragment__become_a_sustainer">ပါဝင်အားဖြည့်သူ ဖြစ်စေရန်</string>
+    <!-- Title of a page in the bottom sheet. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal">%1$s supports Signal</string>
+    <!-- Description of a page in the bottom sheet of a monthly badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_monthly">%1$s သည် Signal ကို လစဥ် လှူဒါန်းမှုဖြင့် ပံ့ပိုးပေးပါသည်။ Signal သည် ကြော်ငြာသူများ သို့မဟုတ် ရင်းနှီးမြှုပ်နှံသူများ မရှိဘဲ သင်ကဲ့သို့သော သူများနှင့်သာ ပံ့ပိုးလုပ်ဆောင်သည့် အကျိုးအမြတ်မယူသော အဖွဲ့အစည်းဖြစ်ပါသည်။</string>
+    <!-- Description of a page in the bottom sheet of a one-time badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_donation">%1$s supports Signal with a donation. Signal is a nonprofit with no advertisers or investors, supported only by people like you.</string>
 
     <string name="ImageView__badge">ဘဲ့ဂျ်</string>
 
-    <string name="SubscribeFragment__signal_is_powered_by_people_like_you">Signal ကို သင့်ကဲ့သို့သော လူများက အားဖြည့်ကူညီပေးထားပါသည်။</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you">သင့်ဒေတာအတွက် မဟုတ်ဘဲ—သင့်အတွက် ဖန်တီးထားသည့် နည်းပညာကို—ပါဝင်အားဖြည့်သူ အဖွဲ့အစည်းတွင် ပါဝင်ခြင်းဖြင့် ပံ့ပိုးပေးပါ။</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you_not">သင့်ဒေတာအတွက် မဟုတ်ဘဲ သင့်အတွက် ဖန်တီးထားသည့် နည်းပညာကို Signal အား ပါဝင်အားဖြည့်ပေးသူ အဖွဲ့အစည်းတွင် ပါဝင်ခြင်းဖြင့် ပံ့ပိုးပေးပါ။</string>
-    <string name="SubscribeFragment__make_a_recurring_monthly_donation">သင့်ဒေတာအတွက် မဟုတ်ဘဲ သင့်အတွက် ဖန်တီးထားသည့် နည်းပညာကို ပံ့ပိုးနိုင်ရန် Signal အား လစဉ် ထပ်တလဲလဲ လှူဒါန်းပေးပါ။</string>
     <string name="SubscribeFragment__currency">ငွေကြေး</string>
     <string name="SubscribeFragment__more_payment_options">နောက်ထပ် ငွေပေးချေမှု ရွေးစရာများ</string>
     <string name="SubscribeFragment__cancel_subscription">ပုံမှန်လှူဒါန်းငွေကို ပယ်ဖျက်ရန်</string>
@@ -4269,37 +4328,41 @@
     <string name="SubscribeFragment__you_will_be_charged_the_full_amount_s_of">ယနေ့တွင် ပုံမှန်လှူဒါန်းငွေ နှုန်းထားအသစ်၏ ပမာဏအပြည့် (%1$s) ကို သင့်ထံမှ ဖြတ်တောက်သွားပါမည်။ သင်၏ ပုံမှန်လှူဒါန်းငွေကို လစဉ် သက်တမ်းတိုးသွားပါမည်။</string>
 
     <string name="Subscription__s_per_month">တစ်လလျှင် %1$s</string>
-    <string name="Subscription__s_per_month_dot_renews_s">တစ်လလျှင် %1$s · %2$s တွင် သက်တမ်းတိုးမည်</string>
-    <string name="Subscription__s_per_month_dot_expires_s">တစ်လလျှင် %1$s · %2$s တွင် သက်တမ်းကုန်မည်</string>
+    <!-- Shown when a subscription is active and isn't going to expire at the end of the term -->
+    <string name="Subscription__renews_s">%1$s တွင် သက်တမ်းတိုးသည်</string>
+    <!-- Shown when a subscription is active and is going to expire at the end of the term -->
+    <string name="Subscription__expires_s">· %1$s သက်တမ်းကုန်ပါမည်</string>
 
+    <!-- Title of learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_different">Signal is different.</string>
     <!-- First small text blurb on learn more sheet -->
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_a_nonprofit_with_no">Signal သည် ကြော်ငြာသူများ သို့မဟုတ် ရင်းနှီးမြှုပ်နှံသူများ မရှိဘဲ ၎င်းကို သုံးစွဲ၊ တန်ဖိုးထားသူများသာလျှင် ပါဝင်အားဖြည့်ထားသည့် အကျိုးအမြတ်မယူသော အဖွဲ့အစည်းဖြစ်ပါသည်။ သင့်ပံ့ပိုးကူညီမှုကို မျှဝေရန် လစဉ် ထပ်တလဲလဲ လှူဒါန်းမှု လုပ်ပြီး ပရိုဖိုင် ဘဲ့ဂျ်ကို ရယူပါ။</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__why_donate">အဘယ်ကြောင့် လှူဒါန်းရသနည်း။</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_committed_to_developing">Signal သည် ကမ္ဘာအနှံ့ ဆက်သွယ်ရေးကို လုံခြုံစိတ်ချရစေပြီး လွတ်လပ်စွာ ထုတ်ဖော်ခွင့်ကို ကာကွယ်ပေးသည့် ဖွံ့ဖြိုးဆဲ Open Source Privacy နည်းပညာကို အလေးအနက်ထားပါသည်။</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__your_donation">သင့်လှူဒါန်းမှုသည် သီးသန့် ဆက်သွယ်ရေးအတွက် လူသန်းပေါင်းများစွာ သုံးစွဲနေသည့် အက်ပ်တစ်ခု၏ လုပ်ငန်းလည်ပတ်နှင့် ဖွံ့ဖြိုးတိုးတက်ရေးအတွက် အားဖြည့်ပေးသည့် ပေးကမ်းမှုဖြစ်ပါသည်။ ကြော်ငြာများ မရှိ။ ခြေရာခံမှုများ မရှိ။ ကျီစယ်မှု မရှိ။</string>
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__private_messaging">Private messaging. No ads, no trackers, no surveillance.</string>
+    <!-- Second small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_supported_by">Signal is supported by donations, meaning that your privacy is at the center of everything we do. Signal is built for you; not your data and not for profit.</string>
+    <!-- Third small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__if_you_can">If you can, please donate today to keep Signal fun, dependable, and available for everyone.</string>
 
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_your_support">သင့်ပံ့ပိုးကူညီမှုအတွက် ကျေးဇူးတင်ပါသည်။</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_the_boost">Boost အတွက် ကျေးဇူးတင်ပါသည်။</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_s_badge_display">သင်သည် %1$s ဘဲ့ဂျ် ရထားပါသည်။ Signal အတွက် လှူဒါန်းနိုင်ကြောင်းကို သဘောပေါက်မှု ဖန်တီးရန် သင့်ပရိုဖိုင်တွင် ဤဘဲ့ဂျ်ကို ပြသပါ။</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_boost_badge_display">သင်သည် Boost ဘဲ့ဂျ် ရထားပါသည်။ Signal အတွက် လှူဒါန်းနိုင်ကြောင်းကို သဘောပေါက်မှု ဖန်တီးရန် သင့်ပရိုဖိုင်တွင် ဤဘဲ့ဂျ်ကို ပြသပါ။</string>
+    <!-- Subtext underneath the dialog title on the thanks sheet -->
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_donor_badge">You\'ve earned a donor badge from Signal! Display it on your profile to show off your support.</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__you_can_also">သင်သည်လည်း</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__become_a_montly_sustainer">လစဉ် ပါဝင်အားဖြည့်သူ ဖြစ်နိုင်ပါသည်။</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__display_on_profile">ပရိုဖိုင်တွင် ပြသရန်</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__make_featured_badge">အသားပေးထားသည့် ဘဲ့ဂျ် ပြုလုပ်ရန်</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__done">ပြီးပါပြီ</string>
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__continue">ဆက်လုပ်ရန်</string>
     <string name="ThanksForYourSupportBottomSheetFragment__when_you_have_more">သင့်တွင် ဘဲ့ဂျ်တစ်ခုထက် ပိုရှိပါက သင့်ပရိုဖိုင်တွင် အခြားသူများ မြင်နိုင်မည့် အသားပေးဖော်ပြလိုသော ဘဲ့ဂျ်ကို ရွေးနိုင်ပါသည်။</string>
 
     <string name="BecomeASustainerFragment__get_badges">Signal ကို ပံ့ပိုးခြင်းဖြင့် သင့်ပရိုဖိုင်အတွက် ဘဲ့ဂျ်များကို ရယူပါ။</string>
     <string name="BecomeASustainerFragment__signal_is_a_non_profit">Signal သည် ကြော်ငြာသူများ သို့မဟုတ် ရင်းနှီးမြှုပ်နှံသူများ မရှိဘဲ သင်ကဲ့သို့သော သူများနှင့်သာ ပံ့ပိုးလုပ်ဆောင်သည့် အကျိုးအမြတ်မယူသော အဖွဲ့အစည်းဖြစ်ပါသည်။</string>
 
-    <!-- Button label for creating a monthly donation -->
-    <string name="ManageDonationsFragment__make_a_monthly_donation">လစဉ် လှူဒါန်းမှု ပြုလုပ်ရန်</string>
+    <!-- Button label for creating a donation -->
+    <string name="ManageDonationsFragment__donate_to_signal">Signal ကို လှူဒါန်းရန်</string>
     <!-- Heading for more area of manage subscriptions page -->
     <string name="ManageDonationsFragment__more">နောက်ထပ်</string>
     <!-- Heading for receipts area of manage subscriptions page -->
     <string name="ManageDonationsFragment__receipts">ပြေစာများ</string>
     <!-- Heading for my subscription area of manage subscriptions page -->
-    <string name="ManageDonationsFragment__my_subscription">ကျွန်ုပ်၏ ပုံမှန်လှူဒါန်းငွေ</string>
+    <string name="ManageDonationsFragment__my_support">My Support</string>
     <string name="ManageDonationsFragment__manage_subscription">ပုံမှန်လှူဒါန်းငွေကို စီမံရန်</string>
     <!-- Label for Donation Receipts button -->
     <string name="ManageDonationsFragment__donation_receipts">လှူဒါန်းမှု ပြေစာများ</string>
@@ -4310,10 +4373,6 @@
     <string name="ManageDonationsFragment__other_ways_to_give">အခြားလှူဒါန်းမှုနည်းလမ်းများ</string>
     <!-- Preference label to launch badge gifting -->
     <string name="ManageDonationsFragment__gift_a_badge">ဘဲ့ဂျ်တစ်ခု လက်ဆောင်ပေးရန်</string>
-
-    <string name="BoostFragment__give_signal_a_boost">Signal အား Boost ပေးရန်</string>
-    <!-- Description text in boost sheet -->
-    <string name="BoostFragment__make_a_one_time">တစ်ကြိမ် လှူဒါန်းမှု ပြုလုပ်ပြီး %1$d ရက်စာအတွက် Boost ဘဲ့ဂျ်တစ်ခု ရယူပါ။</string>
 
     <string name="Boost__enter_custom_amount">စိတ်ကြိုက်ပမာဏကို ရိုက်ထည့်ပါ</string>
     <string name="Boost__one_time_contribution">တစ်ကြိမ် ကူညီထောက်ပံ့မှု</string>
@@ -4355,7 +4414,7 @@
 
     <string name="Subscription__please_contact_support_for_more_information">နောက်ထပ် အချက်အလက်များအတွက် အကူအညီရယူရန် ဆက်သွယ်ပါ။</string>
     <string name="Subscription__contact_support">ပံ့ပိုးမှုစင်တာသို့ ဆက်သွယ်ပါ</string>
-    <string name="Subscription__earn_a_s_badge">%1$s ဘဲ့ဂျ် ရယူရန်</string>
+    <string name="Subscription__get_a_s_badge">%1$s ဘဲ့ဂျ် ရယူရန်</string>
 
     <string name="SubscribeFragment__processing_payment">ငွေပေးချေမှု လုပ်ဆောင်နေသည်…</string>
     <!-- Displayed in notification when user payment fails to process on Stripe -->
@@ -4593,7 +4652,7 @@
     <!-- Donation receipts gift tab label -->
     <string name="DonationReceiptListFragment__gift">လက်ဆောင်</string>
     <!-- Donation receipts boost row label -->
-    <string name="DonationReceiptListFragment__boost">Boost</string>
+    <string name="DonationReceiptListFragment__boost">Boost လုပ်ရန်</string>
     <!-- Donation receipts details title -->
     <string name="DonationReceiptDetailsFragment__details">အသေးစိတ်အချက်အလက်များ</string>
     <!-- Donation receipts donation type heading -->
@@ -4628,7 +4687,7 @@
     <!-- Title for "My Stories" row item in Stories landing page -->
     <string name="StoriesLandingFragment__my_stories">ကျွန်ုပ်၏ စတိုရီများ</string>
     <!-- Subtitle for "My Stories" row item when user has not added stories -->
-    <string name="StoriesLandingFragment__tap_to_add_a_story">စတိုရီ ပေါင်းထည့်ရန် နှိပ်ပါ</string>
+    <string name="StoriesLandingFragment__tap_to_add">ပေါင်းထည့်ရန် နှိပ်ပါ</string>
     <!-- Displayed when there are no stories to display -->
     <string name="StoriesLandingFragment__no_recent_updates_to_show_right_now">ပြသရန် မကြာသေးမီက အပ်ဒိတ်များ ယခု မရှိသေးပါ။</string>
     <!-- Context menu option to hide a story -->
@@ -4704,7 +4763,7 @@
     <!-- Displayed when a story has no views -->
     <string name="StoryViewsFragment__no_views_yet">ကြည့်ရှုမှုများ မရှိသေးပါ</string>
     <!-- Displayed when user has disabled receipts -->
-    <string name="StoryViewsFragment__enable_read_receipts_to_see_whos_viewed_your_story">သင့်စတိုရီများအား မည်သူ ကြည့်ပြီးပြီလဲကို မြင်နိုင်ရန် ဖတ်ပြီးကြောင်းညွှန်ပြမှုကို ဖွင့်ပါ။</string>
+    <string name="StoryViewsFragment__enable_view_receipts_to_see_whos_viewed_your_story">Enable view receipts to see who\'s viewed your stories.</string>
     <!-- Button label displayed when user has disabled receipts -->
     <string name="StoryViewsFragment__go_to_settings">ဆက်တင်သို့ သွားရန်</string>
     <!-- Dialog action to remove viewer from a story -->
@@ -4718,7 +4777,7 @@
     <!-- Displayed when a story has no replies yet -->
     <string name="StoryGroupReplyFragment__no_replies_yet">ပြန်စာများ မရှိသေးပါ</string>
     <!-- Displayed when no longer a group member -->
-    <string name="StoryGroupReplyFragment__you_cant_reply">You can\'t reply to this story because you\'re no longer a member of this group.</string>
+    <string name="StoryGroupReplyFragment__you_cant_reply">သင်သည် ဤအဖွဲ့ဝင် မဟုတ်တော့သောကြောင့် ဤစတိုရီကို စာပြန်နိုင်တော့မည် မဟုတ်ပါ။</string>
     <!-- Displayed for each user that reacted to a story when viewing replies -->
     <string name="StoryGroupReactionReplyItem__reacted_to_the_story">စတိုရီကို တုံ့ပြန်မှု ပေးခဲ့ပါသည်</string>
     <!-- Label for story views tab -->
@@ -4737,6 +4796,12 @@
     <string name="StoryGroupReplyItem__delete">ဖျက်မယ်</string>
     <!-- Page title for My Story options -->
     <string name="MyStorySettingsFragment__my_story">ကျွန်ုပ်၏ စတိုရီ</string>
+    <!-- Number of total signal connections displayed in "All connections" row item -->
+    <plurals name="MyStorySettingsFragment__viewers">
+        <item quantity="other">ကြည့်ရှုသူ %1$d ဦး</item>
+    </plurals>
+    <!-- Button on all signal connections row to view all signal connections. Please keep as short as possible. -->
+    <string name="MyStorySettingsFragment__view">ကြည့်မယ်</string>
     <!-- Section heading for story visibility -->
     <string name="MyStorySettingsFragment__who_can_view_this_story">ဤစတိုရီကို ကြည့်နိုင်မည့်သူများ</string>
     <!-- Clickable option for selecting people to hide your story from -->
@@ -4769,8 +4834,6 @@
     <string name="MyStorySettingsFragment__allow_replies_amp_reactions">ပြန်စာများနှင့် တုံ့ပြန်မှုများကို ခွင့်ပြုရန်</string>
     <!-- Summary for switchable option allowing replies and reactions on your story -->
     <string name="MyStorySettingsFragment__let_people_who_can_view_your_story_react_and_reply">သင့်စတိုရီကို ကြည့်နိုင်သူများအား တုံ့ပြန်မှု ပေးရန်နှင့် ပြန်စာပို့ရန် ခွင့်ပြုပါ</string>
-    <!-- Note about default sharing -->
-    <string name="MyStorySettingsFragment__hide_your_story_from">သင့်စတိုရီကို အချို့သူများအတွက် ဝှက်ပါ။ ပုံသေအားဖြင့် သင့်စတိုရီကို သင့် %1$s နှင့် မျှဝေပါသည်</string>
     <!-- Signal connections bolded text in the Signal Connections sheet -->
     <string name="SignalConnectionsBottomSheet___signal_connections">Signal အဆက်အသွယ်များ</string>
     <!-- Displayed at the top of the signal connections sheet. Please remember to insert strong tag as required. -->
@@ -4783,25 +4846,25 @@
     <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">သင့်စနစ်ထဲရှိ အဆက်အသွယ်များတွင် ၎င်းတို့ ရှိပြီးခြင်း</string>
     <!-- Note at the bottom of the Signal connections sheet -->
     <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"သင့်အဆက်အသွယ်များက သင့်အမည်နှင့် ဓာတ်ပုံကို မြင်နိုင်ပြီး ၎င်းတို့အတွက် မဝှက်ထားပါက \"ကျွန်ုပ်၏ စတိုရီ\" တွင် ပို့စ်များကို မြင်နိုင်ပါသည်။"</string>
-    <!-- Clickable option to add a viewer to a private story -->
+    <!-- Clickable option to add a viewer to a custom story -->
     <string name="PrivateStorySettingsFragment__add_viewer">ကြည့်ရှုသူ ပေါင်းထည့်ရန်</string>
     <!-- Clickable option to delete a custom story -->
-    <string name="PrivateStorySettingsFragment__delete_private_story">သီးသန့် စတိုရီကို ဖျက်ရန်</string>
-    <!-- Dialog title when attempting to remove someone from a private story -->
+    <string name="PrivateStorySettingsFragment__delete_custom_story">စိတ်ကြိုက်စတိုရီကို ဖျက်ရန်</string>
+    <!-- Dialog title when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove_s">%1$s ကို ဖယ်ရှားမည်လား။</string>
-    <!-- Dialog message when attempting to remove someone from a private story -->
+    <!-- Dialog message when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__this_person_will_no_longer">ဤပုဂ္ဂိုလ်က သင့်စတိုရီကို မမြင်နိုင်တော့ပါ။</string>
-    <!-- Positive action label when attempting to remove someone from a private story -->
+    <!-- Positive action label when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove">ဖယ်ရှားမယ်</string>
-    <!-- Dialog title when deleting a private story -->
+    <!-- Dialog title when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__are_you_sure">သေချာပါသလား။</string>
-    <!-- Dialog message when deleting a private story -->
+    <!-- Dialog message when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__this_action_cannot">ဤလုပ်ဆောင်ချက်ကို ပြန်လုပ်၍ မရနိုင်ပါ။</string>
-    <!-- Page title for editing a private story name -->
+    <!-- Page title for editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__edit_story_name">စတိုရီ အမည်ကို ပြင်ဆင်ရန်</string>
-    <!-- Input field hint when editing a private story name -->
+    <!-- Input field hint when editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__story_name">စတိုရီ အမည်</string>
-    <!-- Save button label when editing a private story name -->
+    <!-- Save button label when editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__save">သိမ်းမယ်</string>
     <!-- Displayed in text post creator before user enters text -->
     <string name="TextStoryPostCreationFragment__tap_to_add_text">စာသားပေါင်းထည့်ရန် နှိပ်ပါ</string>
@@ -4823,6 +4886,8 @@
     <string name="TextStoryPostSendFragment__search">ရှာဖွေမယ်</string>
     <!-- Toast shown when an unexpected error occurs while sending a text story -->
     <string name="TextStoryPostSendFragment__an_unexpected_error_occurred_try_again">မမျှော်လင့်ထားသော ချို့ယွင်းချက် ဖြစ်ပေါ်ခဲ့သည်</string>
+    <!-- Toast shown when a trying to add a link preview to a text story post and the link/url is not valid (e.g., missing .com at the end) -->
+    <string name="TextStoryPostSendFragment__please_enter_a_valid_link">မှန်ကန်သည့် လင့်ခ်ကို ဖြည့်ပေးပါ။</string>
     <!-- Title for screen allowing user to exclude "My Story" entries from specific people -->
     <string name="ChangeMyStoryMembershipFragment__all_except">ဖော်ပြပါမှလွဲ၍…</string>
     <!-- Title for screen allowing user to only share "My Story" entries with specific people -->
@@ -4830,25 +4895,25 @@
     <!-- Done button label for hide story from screen -->
     <string name="HideStoryFromFragment__done">ပြီးပါပြီ</string>
     <!-- Dialog title for removing a group story -->
-    <string name="StoryDialogs__remove_group_story">Remove group story?</string>
+    <string name="StoryDialogs__remove_group_story">အဖွဲ့ စတိုရီကို ဖယ်ရှားမည်လား။</string>
     <!-- Dialog message for removing a group story -->
-    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" will be removed.</string>
+    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" ကို ဖယ်ရှားသွားပါမည်။</string>
     <!-- Dialog positive action for removing a group story -->
-    <string name="StoryDialogs__remove">Remove</string>
-    <!-- Dialog title for deleting a private story -->
-    <string name="StoryDialogs__delete_private_story">Delete private story?</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="StoryDialogs__s_and_updates_shared">\"%1$s\" and updates shared to this story will be deleted.</string>
-    <!-- Dialog positive action for deleting a private story -->
-    <string name="StoryDialogs__delete">Delete</string>
+    <string name="StoryDialogs__remove">ဖယ်ရှားမယ်</string>
+    <!-- Dialog title for deleting a custom story -->
+    <string name="StoryDialogs__delete_custom_story">စိတ်ကြိုက်စတိုရီကို ဖျက်မည်လား။</string>
+    <!-- Dialog message for deleting a custom story -->
+    <string name="StoryDialogs__s_and_updates_shared">\"%1$s\" နှင့် ဤစတိုရီအတွက် ဝေမျှထားသည့် အပ်ဒိတ်များကို ဖျက်သွားပါမည်။</string>
+    <!-- Dialog positive action for deleting a custom story -->
+    <string name="StoryDialogs__delete">ဖျက်ပါ</string>
     <!-- Dialog title for first time sending something to a beta story -->
-    <string name="StoryDialogs__stories_is_available_to">Stories is available to Signal beta users only.</string>
+    <string name="StoryDialogs__stories_is_available_to">စတိုရီများကို Signal Beta သုံးစွဲသူများအတွက်သာ ရရှိနိုင်ပါသည်။</string>
     <!-- Dialog message for first time sending something to a beta story -->
-    <string name="StoryDialogs__if_you_share_a_story">If you share a story, it will only be available to people who are on Signal beta.</string>
+    <string name="StoryDialogs__if_you_share_a_story">သင်သည် စတိုရီတစ်ခုကို ဝေမျှပါက Signal Beta ရှိ လူများသည် ၎င်းကို မြင်ရပါမည်။</string>
     <!-- Dialog title for first time adding something to a story -->
     <string name="StoryDialogs__add_to_story_q">စတိုရီတွင် ပေါင်းထည့်မည်လား။</string>
     <!-- Dialog message for first time adding something to a story -->
-    <string name="StoryDialogs__adding_content">သင့်စတိုရီတွင် အကြောင်းအရာ ထည့်ခြင်းဖြင့် သင်၏ Signal အဆက်အသွယ်များအား ၎င်းကို ၂၄ နာရီ ကြည့်ရှုခွင့်ပြုပါသည်။ သင့်စတိုရီအား ကြည့်ရှုနိုင်သူများကို ဆက်တင်တွင် ပြောင်းနိုင်ပါသည်။</string>
+    <string name="StoryDialogs__adding_content">သင့်စတိုရီတွင် ပေါင်းထည့်လိုက်သော အကြောင်းအရာကို သင်၏ Signal အဆက်အသွယ်များအား ၂၄ နာရီ ကြည့်ရှုခွင့်ပြုပါသည်။ သင့်စတိုရီအား ကြည့်ရှုနိုင်သူများကို ဆက်တင်တွင် ပြောင်းနိုင်ပါသည်။</string>
     <!-- First time share to story dialog: Positive action to go ahead and add to story -->
     <string name="StoryDialogs__add_to_story">စတိုရီတွင် ပေါင်းထည့်ရန်</string>
     <!-- First time share to story dialog: Neutral action to edit who can view "My Story" -->
@@ -4858,7 +4923,7 @@
     <!-- Error message dialog button to resend a previously failed story send -->
     <string name="StoryDialogs__send">ပေးပို့မယ်</string>
     <!-- Action button for turning off stories when stories are present on the device -->
-    <string name="StoryDialogs__turn_off_and_delete">Turn off and delete</string>
+    <string name="StoryDialogs__turn_off_and_delete">ပိတ်ပြီး ဖျက်ရန်</string>
     <!-- Privacy Settings toggle title for stories -->
     <string name="PrivacySettingsFragment__share_and_view_stories">စတိုရီများကို မျှဝေကြည့်ရှုရန်</string>
     <!-- Privacy Settings toggle summary for stories -->
@@ -4873,6 +4938,8 @@
     </plurals>
     <!-- Name story screen title -->
     <string name="CreateStoryWithViewersFragment__name_story">စတိုရီကို အမည်ပေးရန်</string>
+    <!-- Name story screen note under text field -->
+    <string name="CreateStoryWithViewersFragment__only_you_can">ဤစတိုရီ၏ အမည်ကို သင်တစ်ဦးတည်းသာ မြင်နိုင်ပါသည်။</string>
     <!-- Name story screen label hint -->
     <string name="CreateStoryWithViewersFragment__story_name_required">စတိုရီ အမည် (လိုအပ်ပါသည်)</string>
     <!-- Name story screen viewers subheading -->
@@ -4888,7 +4955,7 @@
     <!-- Choose story type bottom sheet title -->
     <string name="ChooseStoryTypeBottomSheet__choose_your_story_type">သင့်စတိုရီ အမျိုးအစားကို ရွေးချယ်ရန်</string>
     <!-- Choose story type bottom sheet new story row title -->
-    <string name="ChooseStoryTypeBottomSheet__new_private_story">သီးသန့် စတိုရီ အသစ်</string>
+    <string name="ChooseStoryTypeBottomSheet__new_custom_story">စိတ်ကြိုက်စတိုရီ အသစ်</string>
     <!-- Choose story type bottom sheet new story row summary -->
     <string name="ChooseStoryTypeBottomSheet__visible_only_to">အချို့သူများကသာ မြင်နိုင်သည်</string>
     <!-- Choose story type bottom sheet group story title -->
@@ -4905,6 +4972,8 @@
     <string name="StoryDirectReplyDialogFragment__sending_reply">ပြန်စာ ပို့နေဆဲ…</string>
     <!-- Displayed in the viewer when a story is no longer available -->
     <string name="StorySlateView__this_story_is_no_longer_available">ဤစတိုရီကို မရရှိနိုင်တော့ပါ</string>
+    <!-- Displayed in the viewer when a story has permanently failed to download. -->
+    <string name="StorySlateView__cant_download_story_s_will_need_to_share_it_again">စတိုရီကို ဒေါင်းလုဒ်လုပ်၍ မရပါ။ %1$s သည် ၎င်းကို ထပ်ပို့ရန် လိုအပ်ပါသည်။</string>
     <!-- Displayed in the viewer when the network is not available -->
     <string name="StorySlateView__no_internet_connection">အင်တာနက် ချိတ်ဆက်မှု မရှိ</string>
     <!-- Displayed in the viewer when network is available but content could not be downloaded -->
@@ -4960,7 +5029,7 @@
     <!-- Text explaining that gift will be sent to the chosen recipient -->
     <string name="GiftFlowConfirmationFragment__your_gift_will_be_sent_in">သင့်လက်ဆောင်ကို လက်ခံသူထံ တစ်ဦးချင်း ၁-၁ မက်ဆေ့ချ်ဖြင့် ပေးပို့သွားပါမည်။ သင့်ကိုယ်ပိုင်မက်ဆေ့ချ်ကို အောက်တွင် ပေါင်းထည့်ပါ။</string>
     <!-- Text explaining that this gift is a one time donation -->
-    <string name="GiftFlowConfirmationFragment__one_time_donation">တစ်ကြိမ် လှူဒါန်းမှု</string>
+    <string name="GiftFlowConfirmationFragment__one_time_donation">တစ်ကြိမ်စာ လှူဒါန်းမှု</string>
     <!-- Hint for add message input -->
     <string name="GiftFlowConfirmationFragment__add_a_message">မက်ဆေ့ချ် ပေါင်းထည့်ရန်</string>
     <!-- Displayed in the dialog while verifying the chosen recipient -->
@@ -4994,10 +5063,10 @@
     <!-- Expired gift sheet not now button -->
     <string name="ExpiredGiftSheetConfiguration__not_now">ယခု မလုပ်ဆောင်သေးပါ။</string>
     <!-- My Story label designating that we will only share with the selected viewers. -->
-    <string name="ContactSearchItems__only_share_with">ဖော်ပြထားသူများထံသာ ဝေမျှရန်</string>
-    <!-- Label under name for private stories -->
-    <plurals name="ContactSearchItems__private_story_d_viewers">
-        <item quantity="other">သီးသန့် စတိုရီ · ကြည့်ရှုသူ · %1$d ဦး</item>
+    <string name="ContactSearchItems__only_share_with">ဖော်ပြပါထံသာဝေမျှရန်</string>
+    <!-- Label under name for custom stories -->
+    <plurals name="ContactSearchItems__custom_story_d_viewers">
+        <item quantity="other">စိတ်ကြိုက်စတိုရီ · ကြည့်ရှုသူ · %1$d ဦး</item>
     </plurals>
     <!-- Label under name for group stories -->
     <plurals name="ContactSearchItems__group_story_d_viewers">
@@ -5005,7 +5074,7 @@
     </plurals>
     <!-- Label under name for groups -->
     <plurals name="ContactSearchItems__group_d_members">
-        <item quantity="other">%1$d members</item>
+        <item quantity="other">%1$d အဖွဲ့ဝင်များ</item>
     </plurals>
     <!-- Label under name for my story -->
     <plurals name="ContactSearchItems__my_story_s_dot_d_viewers">
@@ -5017,7 +5086,7 @@
     <string name="ContactSearchItems__story_settings">စတိုရီ ဆက်တင်</string>
     <!-- Label for context menu item to remove a group story from contact results -->
     <string name="ContactSearchItems__remove_story">စတိုရီ ဖယ်ရှားရန်</string>
-    <!-- Label for context menu item to delete a private story -->
+    <!-- Label for context menu item to delete a custom story -->
     <string name="ContactSearchItems__delete_story">စတိုရီ ဖျက်ရန်</string>
     <!-- Dialog title for removing a group story -->
     <string name="ContactSearchMediator__remove_group_story">အဖွဲ့ စတိုရီကို ဖယ်ရှားမည်လား။</string>
@@ -5025,11 +5094,11 @@
     <string name="ContactSearchMediator__this_will_remove">၎င်းသည် ဤစာရင်းမှ စတိုရီကို ဖယ်ရှားပစ်ပါမည်။ ဤအဖွဲ့မှ စတိုရီများကို သင် ဆက်လက်ကြည့်ရှုနိုင်ပါမည်။</string>
     <!-- Dialog action item for removing a group story -->
     <string name="ContactSearchMediator__remove">ဖယ်ရှားမယ်</string>
-    <!-- Dialog title for deleting a private story -->
+    <!-- Dialog title for deleting a custom story -->
     <string name="ContactSearchMediator__delete_story">စတိုရီကို ဖျက်မည်လား။</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="ContactSearchMediator__delete_the_private">သီးသန့် စတိုရီ \"%1$s\" ကို ဖျက်မည်လား။</string>
-    <!-- Dialog action item for deleting a private story -->
+    <!-- Dialog message for deleting a custom story -->
+    <string name="ContactSearchMediator__delete_the_custom">စိတ်ကြိုက်စတိုရီ \"%1$s\" ကို ဖျက်မည်လား။</string>
+    <!-- Dialog action item for deleting a custom story -->
     <string name="ContactSearchMediator__delete">ဖျက်မယ်</string>
     <!-- Gift expiry days remaining -->
     <plurals name="Gifts__d_days_remaining">
@@ -5125,7 +5194,7 @@
 
     <!-- StoriesPrivacySettingsFragment -->
     <!-- Explanation about how stories are deleted and managed -->
-    <string name="StoriesPrivacySettingsFragment__stories_automatically_disappear">စတိုရီများသည် 24 နာရီ ကြာပြီးနောက် အော်တိုပျောက်သွားပါမည်။ သင့်စတိုရီကို မြင်နိုင်မည့်သူများအား ရွေးချယ်ပါ သို့မဟုတ် အချို့သော ကြည့်ရှုသူများ သို့မဟုတ် အဖွဲ့များဖြင့်သာ စတိုရီအသစ် ဖန်တီးပါ။</string>
+    <string name="StoriesPrivacySettingsFragment__story_updates_automatically_disappear">စတိုရီ အပ်ဒိတ်များသည် 24 နာရီ ကြာပြီးနောက် အော်တိုပျောက်သွားပါမည်။ သင့်စတိုရီကို မြင်နိုင်မည့်သူများအား ရွေးချယ်ပါ သို့မဟုတ် အချို့သော ကြည့်ရှုသူများ သို့မဟုတ် အဖွဲ့များဖြင့်သာ စတိုရီအသစ် ဖန်တီးပါ။</string>
     <!-- Preference title to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__turn_off_stories">စတိုရီများ ပိတ်ရန်</string>
     <!-- Preference summary to turn off stories -->
@@ -5137,15 +5206,26 @@
     <!-- Dialog title to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__turn_off_stories_question">စတိုရီများကို ပိတ်မည်လား။</string>
     <!-- Dialog message to turn off stories -->
-    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">You will no longer be able to share or view stories. Story updates you have recently shared will also be deleted.</string>
+    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">သင်သည် စတိုရီများ ဝေမျှရန် သို့မဟုတ် ကြည့်ရန် လုပ်ဆောင်နိုင်တော့မည် မဟုတ်ပါ။ မကြာသေးမီက သင် ဝေမျှထားသည့် အပ်ဒိတ်များကိုလည်း ဖျက်ပစ်ပါမည်။</string>
     <!-- Page title when launched from stories landing screen -->
     <string name="StoriesPrivacySettingsFragment__story_privacy">စတိုရီ ကိုယ်ပိုင်အချက်အလက်</string>
+    <!-- Header for section that lists out stories -->
+    <string name="StoriesPrivacySettingsFragment__stories">စတိုရီများ</string>
+    <!-- Story views header -->
+    <string name="StoriesPrivacySettingsFragment__story_views">စတိုရီ ကြည့်ရှုမှုများ</string>
+    <!-- Story view receipts toggle title -->
+    <string name="StoriesPrivacySettingsFragment__view_receipts">လက်ခံရရှိမှုများကို ကြည့်ရန်</string>
+    <!-- Story view receipts toggle message -->
+    <string name="StoriesPrivacySettingsFragment__see_and_share">စတိုရီများကို ကြည့်ရှုချိန်အား ကြည့်ပြီး ဝေမျှပါ။ ပိတ်ထားပါက သင့်စတိုရီများကို အခြားသူများ ကြည့်သည့်အချိန်အား မြင်နိုင်မည် မဟုတ်ပါ။</string>
+
+    <!-- NewStoryItem -->
+    <string name="NewStoryItem__new_story">စတိုရီ အသစ်</string>
 
     <!-- GroupStorySettingsFragment -->
     <!-- Section header for who can view a group story -->
     <string name="GroupStorySettingsFragment__who_can_view_this_story">ဤစတိုရီကို ကြည့်နိုင်မည့်သူများ</string>
     <!-- Explanation of who can view a group story -->
-    <string name="GroupStorySettingsFragment__members_of_the_group_s">"\"%1$s\" အဖွဲ့ဝင်များသည် ဤစတိုရီကို ကြည့်ခြင်း၊ အကြောင်းပြန်ခြင်းများ လုပ်နိုင်ပါသည်။ အဖွဲ့အတွင်းရှိ ဤချက်(တ်)အတွက် မန်ဘာပလန်ကို အပ်ဒိတ်လုပ်နိုင်ပါသည်။"</string>
+    <string name="GroupStorySettingsFragment__members_of_the_group_s">"%1$s အဖွဲ့ဝင်များသည် ဤစတိုရီကို ကြည့်ခြင်း၊ အကြောင်းပြန်ခြင်းများ လုပ်နိုင်ပါသည်။ အဖွဲ့အတွင်းရှိ ဤချက်(တ်)အတွက် မန်ဘာပလန်ကို အပ်ဒိတ်လုပ်နိုင်ပါသည်။"</string>
     <!-- Preference label for removing this group story -->
     <string name="GroupStorySettingsFragment__remove_group_story">အဖွဲ့စတိုရီကို ဖယ်ရှားရန်</string>
 
@@ -5155,20 +5235,36 @@
     <!-- SMS Export Service -->
     <!-- Displayed in the notification while export is running -->
     <string name="SignalSmsExportService__exporting_messages">မက်ဆေ့ချ်များ ထုတ်နေဆဲ…</string>
+    <!-- Displayed in the notification title when export completes -->
+    <string name="SignalSmsExportService__signal_sms_export_complete">Signal SMS ထုတ်သိမ်းမှု ပြီးပါပြီ</string>
+    <!-- Displayed in the notification message when export completes -->
+    <string name="SignalSmsExportService__tap_to_return_to_signal">Signal သို့ ပြန်သွားရန် နှိပ်ပါ</string>
 
     <!-- ExportYourSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportYourSmsMessagesFragment__export_your_sms_messages">သင့် SMS မက်ဆေ့ချ်များကို ထုတ်ရန်</string>
     <!-- Message of the screen -->
-    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">သင်၏ SMS မက်ဆေ့ချ်များကို သင့်ဖုန်း၏ SMS ဒေတာဘေ့စ်တွင် ထုတ်သိမ်းနိုင်ပါသည်။ ဤသည်က သင့်ဖုန်းရှိ အခြားသော SMS အက်ပ်များအား ၎င်းတို့ကို ရယူသုံးစွဲရန်နှင့် ထည့်သွင်းခွင့်ပြုပါသည်။ ဤသည်က သင်၏ SMS မက်ဆေ့ချ်မှတ်တမ်းကို ဝေမျှနိုင်သော ဖိုင်အဖြစ် ဖန်တီးမည် မဟုတ်ပါ။</string>
+    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database_and_youll_have_the_option_to_keep_or_remove_them_from_signal">သင့် SMS မက်ဆေ့ချ်များကို သင့်ဖုန်း၏ SMS ဒေတာဘေ့စ်တွင် ထုတ်သိမ်းနိုင်ပြီး ၎င်းတို့အား ဆက်သိမ်းထားရန် သို့မဟုတ် Signal မှ ဖယ်ရှားပစ်ရန် ရွေးချယ်စရာ ရှိပါမည်။ ဤသည်က သင့်ဖုန်းရှိ အခြားသော SMS အက်ပ်များအား ၎င်းတို့ကို ထည့်သွင်းခွင့်ပြုပါသည်။ ဤသည်က သင်၏ SMS မှတ်တမ်းကို ဝေမျှနိုင်သော ဖိုင်အဖြစ် ဖန်တီးမည် မဟုတ်ပါ။</string>
     <!-- Button label to begin export -->
     <string name="ExportYourSmsMessagesFragment__continue">ဆက်လုပ်ရန်</string>
 
     <!-- ExportingSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportingSmsMessagesFragment__exporting_sms_messages">SMS မက်ဆေ့ချ်များ ထုတ်ခြင်း</string>
+    <!-- Message of the screen when exporting sms messages -->
+    <string name="ExportingSmsMessagesFragment__this_may_take_awhile">အချိန်အနည်းငယ် ကြာနိုင်ပါသည်</string>
     <!-- Progress indicator for export -->
-    <string name="ExportingSmsMessagesFragment__exporting_d_of_d">%1$d/%2$d ထုတ်နေဆဲ…</string>
+    <plurals name="ExportingSmsMessagesFragment__exporting_d_of_d">
+        <item quantity="other">%1$d/%2$d ထုတ်နေဆဲ…</item>
+    </plurals>
+    <!-- Alert dialog title shown when we think a user may not have enough local storage available to export sms messages -->
+    <string name="ExportingSmsMessagesFragment__you_may_not_have_enough_disk_space">သင့်တွင် လုံလောက်သည့် Disk နေရာလွတ် မရှိပါ</string>
+    <!-- Alert dialog message shown when we think a user may not have enough local storage available to export sms messages, placeholder is the file size, e.g., 128kB -->
+    <string name="ExportingSmsMessagesFragment__you_need_approximately_s_to_export_your_messages_ensure_you_have_enough_space_before_continuing">သင့်မက်ဆေ့ချ်များကို ထုတ်သိမ်းရန် ခန့်မှန်းခြေ %1$s လိုအပ်ပါသည်၊ ဆက်မလုပ်မီ လုံလောက်သည့် နေရာလွတ်ရှိကြောင်း သေချာပါစေ။</string>
+    <!-- Alert dialog button to continue with exporting sms after seeing the lack of storage warning -->
+    <string name="ExportingSmsMessagesFragment__continue_anyway">မည်သို့ပင်ဖြစ်စေ ဆက်လုပ်ရန်</string>
+    <!-- Dialog text shown when Signal isn't granted the sms permission needed to export messages, different than being selected as the sms app -->
+    <string name="ExportingSmsMessagesFragment__signal_needs_the_sms_permission_to_be_able_to_export_your_sms_messages">သင့် SMS မက်ဆေ့ချ်များကို ထုတ်သိမ်းနိုင်ရန် Signal သည် SMS ခွင့်ပြုချက် လိုအပ်ပါသည်။</string>
 
     <!-- ChooseANewDefaultSmsAppFragment -->
     <!-- Title of the screen -->
@@ -5215,6 +5311,141 @@
     <string name="SetSignalAsDefaultSmsAppFragment__to_export_your_sms_messages">သင့် SMS မက်ဆေ့ချ်များကို ထုတ်သိမ်းရန် Signal အား ပုံသေ SMS အက်ပ်အဖြစ် သတ်မှတ်ရန် လိုအပ်ပါသည်။</string>
     <!-- Button label to start export -->
     <string name="SetSignalAsDefaultSmsAppFragment__next">နောက်ထက်</string>
+
+    <!-- BackupSchedulePermission Megaphone -->
+    <!-- The title on an alert window that explains to the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__cant_back_up_chats">ချက်(တ်)များကို ဘက်ခ်အပ်လုပ်မရပါ</string>
+    <!-- The body text of an alert window that tells the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__your_chats_are_no_longer_being_automatically_backed_up">သင့်ချက်(တ်)များကို အော်တိုဘက်ခ်အပ်လုပ်တော့မည် မဟုတ်ပါ။</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__back_up_chats">ချက်(တ်)များကို ဘက်ခ်အပ်လုပ်ရန်</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__not_now">ယခု မလုပ်ဆောင်သေးပါ။</string>
+    <!-- Re-enable backup permission bottom sheet title -->
+    <string name="BackupSchedulePermissionMegaphone__to_reenable_backups">ဘက်ခ်အပ်များကို ပြန်ဖွင့်ရန်-</string>
+    <!-- Re-enable backups permission bottom sheet instruction 1 text -->
+    <string name="BackupSchedulePermissionMegaphone__tap_the_go_to_settings_button_below">အောက်ပါ \"Go to settings\" ခလုတ်ကို နှိပ်ပါ</string>
+    <!-- Re-enable backups permission bottom sheet instruction 2 text -->
+    <string name="BackupSchedulePermissionMegaphone__turn_on_allow_settings_alarms_and_reminders">\"Allow settings alarms and reminders\" ကို ဖွင့်ပါ။</string>
+    <!-- Re-enable backups permission bottom sheet call to action button to open settings -->
+    <string name="BackupSchedulePermissionMegaphone__go_to_settings">ဆက်တင်သို့ သွားရန်</string>
+
+    <!-- SmsExportMegaphoneActivity -->
+    <!-- Phase 2 title of full screen megaphone indicating sms will no longer be supported in the near future -->
+    <string name="SmsExportMegaphoneActivity__signal_will_no_longer_support_sms">Signal သည် SMS ကို မပံ့ပိုးပေးတော့ပါ</string>
+    <!-- Phase 3 title of full screen megaphone indicating sms is longer supported  -->
+    <string name="SmsExportMegaphoneActivity__signal_no_longer_supports_sms">Signal သည် SMS ကို မပံ့ပိုးတော့ပါ</string>
+    <!-- Phase 2 message describing that sms is going away soon -->
+    <string name="SmsExportMegaphoneActivity__signal_will_soon_remove_support_for_sending_sms_messages">Signal မက်ဆေ့ချ်များသည် SMS မက်ဆေ့ချ်များ မပံ့ပိုးပေးသည့် ကိုယ်ပိုင်အချက်အလက် လုံခြုံရေးနှင့် ခိုင်မာသော End-to-end စာဝှက်စနစ်ကို ပံ့ပိုးပေးသောကြောင့် SMS မက်ဆေ့ချ်များ ပေးပို့မှုအတွက် ပံ့ပိုးမှုကို မကြာမီ ဖယ်ရှားပါတော့မည်။ ၎င်းသည် Signal မက်ဆေ့ချ်လုပ်ဆောင်ချက် အတွေ့အကြုံကို ပိုမိုကောင်းမွန်စေရန်လည်း လုပ်ဆောင်ပေးပါသည်။</string>
+    <!-- Phase 3 message describing that sms has gone away -->
+    <string name="SmsExportMegaphoneActivity__signal_has_removed_support_for_sending_sms_messages">Signal မက်ဆေ့ချ်များသည် SMS မက်ဆေ့ချ်များ မပံ့ပိုးပေးသည့် ခိုင်မာသော ကိုယ်ပိုင်အချက်အလက် လုံခြုံရေးနှင့် End-to-end စာဝှက်စနစ်ကို ပံ့ပိုးပေးသောကြောင့် SMS မက်ဆေ့ချ်များ ပေးပို့မှုအတွက် ပံ့ပိုးမှုကို ဖယ်ရှားလိုက်ပါသည်။ ၎င်းသည် Signal မက်ဆေ့ချ်လုပ်ဆောင်ချက် အတွေ့အကြုံကို ပိုမိုကောင်းမွန်စေရန်လည်း လုပ်ဆောင်ပေးပါသည်။</string>
+    <!-- The text on a button in a popup that, when clicked, will take the user to a screen to export their SMS messages -->
+    <string name="SmsExportMegaphoneActivity__export_sms">SMS ထုတ်သိမ်းရန်</string>
+    <!-- The text on a button in a popup that, when clicked, will dismiss the popup and schedule the prompt to occur at a later time. -->
+    <string name="SmsExportMegaphoneActivity__remind_me_later">နောက်မှပြန်သတိပေးပါ</string>
+    <!-- The text on a button in a popup that, when clicked, will navigate the user to a web article on SMS removal -->
+    <string name="SmsExportMegaphoneActivity__learn_more">ပိုမိုလေ့လာရန်</string>
+
+    <!-- Phase 1 Small megaphone title indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_going_away">SMS ပံ့ပိုးမှုနှင့် ဝေးပါပြီ</string>
+    <!-- Phase 1 small megaphone description indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">စာဝှက်စနစ်သုံးထားသော မက်ဆေ့ချ်လုပ်ဆောင်ချက်အပေါ် အာရုံစိုက်နိုင်ရန် SMS ပံ့ပိုးမှုကို မကြာမီ ဖယ်ရှားပါတော့မည်။</string>
+    <!-- Phase 1 small megaphone button that takes the user to the sms export flow -->
+    <string name="SmsExportMegaphone__export_sms">SMS ထုတ်သိမ်းရန်</string>
+    <!-- Title for screen shown after sms export has completed -->
+    <string name="ExportSmsCompleteFragment__export_complete">ထုတ်သိမ်းမှု ပြီးပါပြီ</string>
+    <!-- Button to continue to next screen -->
+    <string name="ExportSmsCompleteFragment__next">နောက်ထက်</string>
+    <!-- Message showing summary of sms export counts -->
+    <plurals name="ExportSmsCompleteFragment__d_of_d_messages_exported">
+        <item quantity="other">မက်ဆေ့ချ် %1$d/%2$d စောင် ထုတ်သိမ်းပြီး</item>
+    </plurals>
+
+    <!-- Title of screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__export_partially_complete">တစ်ပိုင်းစီ ထုတ်သိမ်းမှု ပြီးပါပြီ</string>
+    <!-- Debug step 1 on screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__ensure_you_have_an_additional_s_free_on_your_phone_to_export_your_messages">သင့်မက်ဆေ့ချ်များကို ထုတ်သိမ်းရန် သင့်ဖုန်းတွင် နေရာလွတ် %1$s ရှိကြောင်း သေချာပါစေ</string>
+    <!-- Debug step 2 on screen shown when some sms messages dit not export -->
+    <string name="ExportSmsPartiallyComplete__retry_export_which_will_only_retry_messages_that_have_not_yet_been_exported">ထုတ်သိမ်းရန် ထပ်ကြိုးစားကြည့်ပါ၊ ထုတ်မသိမ်းရသေးသည့် မက်ဆေ့ချ်များအတွက်သာ ပြန်ကြိုးစားသွားပါမည်</string>
+    <!-- Partial sentence for Debug step 3 on screen shown when some sms messages did not export, is combined with 'contact us' -->
+    <string name="ExportSmsPartiallyComplete__if_the_problem_persists">ပြဿနာ ဆက်ရှိနေပါက </string>
+    <!-- Partial sentence for deubg step 3 on screen shown when some sms messages did not export, combined with 'If the problem persists', link text to open contact support view -->
+    <string name="ExportSmsPartiallyComplete__contact_us">ကျွန်ုပ်တို့ကိုဆက်သွယ်ရန်</string>
+    <!-- Button text to retry sms export -->
+    <string name="ExportSmsPartiallyComplete__retry">ထပ်ကြိုးစားပါ</string>
+    <!-- Button text to continue sms export flow and not retry failed message exports -->
+    <string name="ExportSmsPartiallyComplete__continue_anyway">မည်သို့ပင်ဖြစ်စေ ဆက်လုပ်ရန်</string>
+    <!-- Title of screen shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__error_exporting_sms_messages">SMS မက်ဆေ့ချ်များ ထုတ်သိမ်းမှု ချို့ယွင်းချက်</string>
+    <!-- Helper text shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__please_try_again_if_the_problem_persists">ထပ်ကြိုးစားကြည့်ပါ။ ပြဿနာ ဆက်ရှိနေပါက </string>
+
+
+    <!-- DonateToSignalFragment -->
+    <!-- Title below avatar -->
+    <string name="DonateToSignalFragment__privacy_over_profit">Privacy over profit</string>
+    <!-- Continue button label -->
+    <string name="DonateToSignalFragment__continue">ဆက်လုပ်ရန်</string>
+    <!-- Description below title -->
+    <string name="DonateToSignalFragment__private_messaging">Private messaging, funded by you. No ads, no tracking, no compromise. Donate now to support Signal.</string>
+    <!-- Donation pill toggle monthly text -->
+    <string name="DonationPillToggle__monthly">လစဉ်</string>
+    <!-- Donation pill toggle one-time text -->
+    <string name="DonationPillToggle__one_time">တစ်ကြိမ်</string>
+
+    <!-- GatewaySelectorBottomSheet -->
+    <!-- Sheet title when subscribing -->
+    <string name="GatewaySelectorBottomSheet__donate_s_month_to_signal">Signal သို့ တစ်လလျှင် %1$s လှူဒါန်းရန်</string>
+    <!-- Sheet summary when subscribing -->
+    <string name="GatewaySelectorBottomSheet__get_a_s_badge">%1$s ဘဲ့ဂျ် ရယူရန်</string>
+    <!-- Sheet title when giving a one-time donation -->
+    <string name="GatewaySelectorBottomSheet__donate_s_to_signal">Signal သို့ %1$s လှူဒါန်းရန်</string>
+    <!-- Sheet summary when giving a one-time donation -->
+    <plurals name="GatewaySelectorBottomSheet__get_a_s_badge_for_d_days">
+        <item quantity="other">%1$s ဘဲ့ဂျ်ကို %2$d ရက်စာ ရယူပါ</item>
+    </plurals>
+    <!-- Button label for paying with a credit card -->
+    <string name="GatewaySelectorBottomSheet__credit_or_debit_card">ခရက်ဒစ် သို့မဟုတ် ဒက်ဘစ်ကတ်</string>
+
+    <!-- StripePaymentInProgressFragment -->
+    <string name="StripePaymentInProgressFragment__cancelling">ပယ်ဖျက်နေဆဲ…</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we temporarily can't process their contacts. -->
+    <string name="CdsTemporaryErrorBottomSheet_title">Too many contacts have been processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we temporarily can't process their contacts. The placeholder represents the number of days the user will have to wait until they can again. -->
+    <plurals name="CdsTemporaryErrorBottomSheet_body1">
+        <item quantity="other">Another attempt to process your contacts will be made within %1$d days.</item>
+    </plurals>
+    <!-- The second part of the body text in a bottom sheet dialog that advises the user to remove contacts from their phone to fix the issue. -->
+    <string name="CdsTemporaryErrorBottomSheet_body2">To resolve this issue sooner, you can consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsTemporaryErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsTemporaryErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_title">Your contacts can\'t be processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_body">The number of contacts on your phone exceeds the limit Signal can process. To find contacts on Signal, consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_learn_more">ပိုမိုလေ့လာရန်</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsPermanentErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsPermanentErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- PaymentMessageView -->
+    <!-- In-chat conversation message shown when you sent a payment to another person, placeholder is the other person name -->
+    <string name="PaymentMessageView_you_sent_s">You sent %1$s</string>
+    <!-- In-chat conversation message shown when another person sent a payment to you, placeholder is the other person name -->
+    <string name="PaymentMessageView_s_sent_you">%1$s sent you</string>
+
+    <!-- YourInformationIsPrivateBottomSheet -->
+    <string name="YourInformationIsPrivateBottomSheet__your_information_is_private">Your information is private</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_collect">Signal does not collect or store any of your personal information when you make a donation.</string>
+    <string name="YourInformationIsPrivateBottomSheet__we_use_stripe">We use Stripe as our payment processor to receive your donations. We don\'t access, store, or save any of the information you provide to them.</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_and_cannot">Signal does not and cannot connect your donation to your Signal account.</string>
+    <string name="YourInformationIsPrivateBottomSheet__thank_you">Thank you for your support!</string>
 
     <!-- EOF -->
 

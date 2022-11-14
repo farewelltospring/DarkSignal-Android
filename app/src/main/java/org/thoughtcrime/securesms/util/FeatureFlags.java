@@ -55,7 +55,6 @@ public final class FeatureFlags {
   private static final long FETCH_INTERVAL = TimeUnit.HOURS.toMillis(2);
 
   private static final String PAYMENTS_KILL_SWITCH              = "android.payments.kill";
-  private static final String USERNAMES                         = "android.usernames";
   private static final String GROUPS_V2_RECOMMENDED_LIMIT       = "global.groupsv2.maxGroupSize";
   private static final String GROUPS_V2_HARD_LIMIT              = "global.groupsv2.groupSizeHardLimit";
   private static final String GROUP_NAME_MAX_LENGTH             = "global.groupsv2.maxNameLength";
@@ -82,7 +81,6 @@ public final class FeatureFlags {
   private static final String RETRY_RECEIPTS                    = "android.retryReceipts";
   private static final String MAX_GROUP_CALL_RING_SIZE          = "global.calling.maxGroupCallRingSize";
   private static final String GROUP_CALL_RINGING                = "android.calling.groupCallRinging";
-  private static final String STORIES                           = "android.stories.3";
   private static final String STORIES_TEXT_FUNCTIONS            = "android.stories.text.functions";
   private static final String HARDWARE_AEC_BLOCKLIST_MODELS     = "android.calling.hardwareAecBlockList";
   private static final String SOFTWARE_AEC_BLOCKLIST_MODELS     = "android.calling.softwareAecBlockList";
@@ -99,12 +97,17 @@ public final class FeatureFlags {
   private static final String CAMERAX_MODEL_BLOCKLIST           = "android.cameraXModelBlockList";
   private static final String CAMERAX_MIXED_MODEL_BLOCKLIST     = "android.cameraXMixedModelBlockList";
   private static final String RECIPIENT_MERGE_V2                = "android.recipientMergeV2";
-  private static final String CDS_V2_LOAD_TEST                  = "android.cdsV2LoadTest";
-  private static final String SMS_EXPORTER                      = "android.sms.exporter";
-  private static final String CDS_V2_COMPAT                     = "android.cdsV2Compat.4";
-  public  static final String STORIES_LOCALE                    = "android.stories.locale";
+  private static final String SMS_EXPORTER                      = "android.sms.exporter.2";
   private static final String HIDE_CONTACTS                     = "android.hide.contacts";
-  public  static final String MEDIA_PREVIEW_V2                  = "android.mediaPreviewV2";
+  private static final String SMS_EXPORT_MEGAPHONE_DELAY_DAYS   = "android.smsExport.megaphoneDelayDays.2";
+  public  static final String CREDIT_CARD_PAYMENTS              = "android.credit.card.payments.2";
+  private static final String PAYMENTS_REQUEST_ACTIVATE_FLOW    = "android.payments.requestActivateFlow";
+  private static final String KEEP_MUTED_CHATS_ARCHIVED         = "android.keepMutedChatsArchived";
+  public  static final String GOOGLE_PAY_DISABLED_REGIONS       = "global.donations.gpayDisabledRegions";
+  public  static final String CREDIT_CARD_DISABLED_REGIONS      = "global.donations.ccDisabledRegions";
+  public  static final String PAYPAL_DISABLED_REGIONS           = "global.donations.paypalDisabledRegions";
+  private static final String CDS_HARD_LIMIT                    = "android.cds.hardLimit";
+  private static final String PAYMENTS_IN_CHAT_MESSAGES         = "android.payments.inChatMessages";
 
   /**
    * We will only store remote values for flags in this set. If you want a flag to be controllable
@@ -116,7 +119,6 @@ public final class FeatureFlags {
       GROUPS_V2_RECOMMENDED_LIMIT,
       GROUPS_V2_HARD_LIMIT,
       INTERNAL_USER,
-      USERNAMES,
       VERIFY_V2,
       CLIENT_EXPIRATION,
       DONATE_MEGAPHONE,
@@ -140,7 +142,6 @@ public final class FeatureFlags {
       MAX_GROUP_CALL_RING_SIZE,
       GROUP_CALL_RINGING,
       SENDER_KEY_MAX_AGE,
-      STORIES,
       STORIES_TEXT_FUNCTIONS,
       HARDWARE_AEC_BLOCKLIST_MODELS,
       SOFTWARE_AEC_BLOCKLIST_MODELS,
@@ -156,12 +157,18 @@ public final class FeatureFlags {
       CAMERAX_MODEL_BLOCKLIST,
       CAMERAX_MIXED_MODEL_BLOCKLIST,
       RECIPIENT_MERGE_V2,
-      CDS_V2_LOAD_TEST,
       SMS_EXPORTER,
-      CDS_V2_COMPAT,
-      STORIES_LOCALE,
       HIDE_CONTACTS,
-      MEDIA_PREVIEW_V2
+      SMS_EXPORT_MEGAPHONE_DELAY_DAYS,
+      CREDIT_CARD_PAYMENTS,
+      PAYMENTS_REQUEST_ACTIVATE_FLOW,
+      KEEP_MUTED_CHATS_ARCHIVED,
+      GOOGLE_PAY_DISABLED_REGIONS,
+      CREDIT_CARD_DISABLED_REGIONS,
+      PAYPAL_DISABLED_REGIONS,
+      KEEP_MUTED_CHATS_ARCHIVED,
+      CDS_HARD_LIMIT,
+      PAYMENTS_IN_CHAT_MESSAGES
   );
 
   @VisibleForTesting
@@ -222,10 +229,12 @@ public final class FeatureFlags {
       TELECOM_MODEL_BLOCKLIST,
       CAMERAX_MODEL_BLOCKLIST,
       RECIPIENT_MERGE_V2,
-      CDS_V2_LOAD_TEST,
-      CDS_V2_COMPAT,
-      STORIES,
-      MEDIA_PREVIEW_V2
+      SMS_EXPORT_MEGAPHONE_DELAY_DAYS,
+      CREDIT_CARD_PAYMENTS,
+      PAYMENTS_REQUEST_ACTIVATE_FLOW,
+      KEEP_MUTED_CHATS_ARCHIVED,
+      CDS_HARD_LIMIT,
+      PAYMENTS_IN_CHAT_MESSAGES
   );
 
   /**
@@ -249,10 +258,6 @@ public final class FeatureFlags {
    */
   private static final Map<String, OnFlagChange> FLAG_CHANGE_LISTENERS = new HashMap<String, OnFlagChange>() {{
     put(MESSAGE_PROCESSOR_ALARM_INTERVAL, change -> MessageProcessReceiver.startOrUpdateAlarm(ApplicationDependencies.getApplication()));
-    put(STORIES, change -> {
-      ApplicationDependencies.getJobManager().startChain(new RefreshAttributesJob()).then(new RefreshOwnProfileJob()).enqueue();
-      ApplicationDependencies.resetAllNetworkConnections();
-    });
     put(GIFT_BADGE_RECEIVE_SUPPORT, change -> ApplicationDependencies.getJobManager().startChain(new RefreshAttributesJob()).then(new RefreshOwnProfileJob()).enqueue());
   }};
 
@@ -309,7 +314,8 @@ public final class FeatureFlags {
 
   /** Creating usernames, sending messages by username. */
   public static synchronized boolean usernames() {
-    return getBoolean(USERNAMES, false);
+    // For now these features are paired, but leaving the separate method in case we decide to separate in the future.
+    return phoneNumberPrivacy();
   }
 
   /**
@@ -448,28 +454,12 @@ public final class FeatureFlags {
   }
 
   /**
-   * Whether or not stories are available
-   *
-   * NOTE: This feature is still under ongoing development, do not enable.
-   */
-  public static boolean stories() {
-    return getBoolean(STORIES, false);
-  }
-
-  /**
    * Whether users can apply alignment and scale to text posts
    *
    * NOTE: This feature is still under ongoing development, do not enable.
    */
   public static boolean storiesTextFunctions() {
     return getBoolean(STORIES_TEXT_FUNCTIONS, false);
-  }
-
-  /**
-   * List of locales in which stories have been enabled. Overridden by the stories flag.
-   */
-  public static @NonNull String storiesLocale() {
-    return getString(STORIES_LOCALE, "");
   }
 
   /** A comma-separated list of models that should *not* use hardware AEC for calling. */
@@ -538,20 +528,6 @@ public final class FeatureFlags {
   }
 
   /**
-   * Whether or not we should use the new recipient merging strategy.
-   */
-  public static boolean recipientMergeV2() {
-    return getBoolean(RECIPIENT_MERGE_V2, false);
-  }
-
-  /**
-   * Whether or not we should also query CDSv2 as a form of load test.
-   */
-  public static boolean cdsV2LoadTesting() {
-    return getBoolean(CDS_V2_LOAD_TEST, false);
-  }
-
-  /**
    * Whether or not we should enable the SMS exporter
    *
    * WARNING: This feature is under active development and is off for a reason. The exporter writes messages out to your
@@ -559,13 +535,6 @@ public final class FeatureFlags {
    */
   public static boolean smsExporter() {
     return getBoolean(SMS_EXPORTER, false);
-  }
-
-  /**
-   * Whether or not we should use CDSv2 with the compat flag on as our primary CDS.
-   */
-  public static boolean cdsV2Compat() {
-    return getBoolean(CDS_V2_COMPAT, false);
   }
 
   /**
@@ -579,10 +548,64 @@ public final class FeatureFlags {
   }
 
   /**
-   * Whether or not we should use the new media preview fragment implementation.
+   * Number of days to postpone the sms export megaphone and Phase 1 start.
    */
-  public static boolean mediaPreviewV2() {
-    return getBoolean(MEDIA_PREVIEW_V2, false);
+  public static int smsExportMegaphoneDelayDays() {
+    return getInteger(SMS_EXPORT_MEGAPHONE_DELAY_DAYS, 14);
+  }
+
+  /**
+   * Whether or not we should allow credit card payments for donations
+   *
+   * WARNING: This feature is not done, and this should not be enabled.
+   */
+  public static boolean creditCardPayments() {
+    return getBoolean(CREDIT_CARD_PAYMENTS, Environment.IS_STAGING);
+  }
+
+  /** Whether client supports sending a request to another to activate payments */
+  public static boolean paymentsRequestActivateFlow() {
+    return getBoolean(PAYMENTS_REQUEST_ACTIVATE_FLOW, false);
+  }
+
+  /** Whether client supports processing a payment notification as a in-chat message */
+  public static boolean paymentsInChatMessages() {
+    return getBoolean(PAYMENTS_IN_CHAT_MESSAGES, false);
+  }
+
+  /**
+   * Whether users can enable keeping conversations with incoming messages archived if the conversation is muted.
+   */
+  public static boolean keepMutedChatsArchived() {
+    return getBoolean(KEEP_MUTED_CHATS_ARCHIVED, false);
+  }
+
+  /**
+   * @return Serialized list of regions in which Google Pay is disabled for donations
+   */
+  public static @NonNull String googlePayDisabledRegions() {
+    return getString(GOOGLE_PAY_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * @return Serialized list of regions in which credit cards are disabled for donations
+   */
+  public static @NonNull String creditCardDisabledRegions() {
+    return getString(CREDIT_CARD_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * @return Serialized list of regions in which PayPal is disabled for donations
+   */
+  public static @NonNull String paypalDisabledRegions() {
+    return getString(PAYPAL_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * If the user has more than this number of contacts, the CDS request will certainly be rejected, so we must fail.
+   */
+  public static int cdsHardLimit() {
+    return getInteger(CDS_HARD_LIMIT, 50_000);
   }
 
   /** Only for rendering debug info. */

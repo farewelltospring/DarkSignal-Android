@@ -40,7 +40,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -76,6 +75,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.signal.core.util.DimensionUnit;
+import org.signal.core.util.Stopwatch;
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.signal.core.util.concurrent.SimpleTask;
 import org.signal.core.util.logging.Log;
@@ -94,6 +94,8 @@ import org.thoughtcrime.securesms.components.menu.ActionItem;
 import org.thoughtcrime.securesms.components.menu.SignalBottomActionBar;
 import org.thoughtcrime.securesms.components.menu.SignalContextMenu;
 import org.thoughtcrime.securesms.components.registration.PulsingFloatingActionButton;
+import org.thoughtcrime.securesms.components.reminder.CdsPermanentErrorReminder;
+import org.thoughtcrime.securesms.components.reminder.CdsTemporyErrorReminder;
 import org.thoughtcrime.securesms.components.reminder.DozeReminder;
 import org.thoughtcrime.securesms.components.reminder.ExpiredBuildReminder;
 import org.thoughtcrime.securesms.components.reminder.OutdatedBuildReminder;
@@ -106,6 +108,8 @@ import org.thoughtcrime.securesms.components.settings.app.notifications.manual.N
 import org.thoughtcrime.securesms.components.settings.app.subscription.errors.UnexpectedSubscriptionCancellation;
 import org.thoughtcrime.securesms.components.voice.VoiceNoteMediaControllerOwner;
 import org.thoughtcrime.securesms.components.voice.VoiceNotePlayerView;
+import org.thoughtcrime.securesms.contacts.sync.CdsPermanentErrorBottomSheet;
+import org.thoughtcrime.securesms.contacts.sync.CdsTemporaryErrorBottomSheet;
 import org.thoughtcrime.securesms.conversation.ConversationFragment;
 import org.thoughtcrime.securesms.conversationlist.model.Conversation;
 import org.thoughtcrime.securesms.conversationlist.model.UnreadPayments;
@@ -115,6 +119,7 @@ import org.thoughtcrime.securesms.database.ThreadDatabase;
 import org.thoughtcrime.securesms.database.model.ThreadRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.events.ReminderUpdateEvent;
+import org.thoughtcrime.securesms.exporter.flow.SmsExportDialogs;
 import org.thoughtcrime.securesms.insights.InsightsLauncher;
 import org.thoughtcrime.securesms.jobs.ServiceOutageDetectionJob;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
@@ -126,6 +131,7 @@ import org.thoughtcrime.securesms.megaphone.Megaphone;
 import org.thoughtcrime.securesms.megaphone.MegaphoneActionController;
 import org.thoughtcrime.securesms.megaphone.MegaphoneViewBuilder;
 import org.thoughtcrime.securesms.megaphone.Megaphones;
+import org.thoughtcrime.securesms.megaphone.SmsExportMegaphoneActivity;
 import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
 import org.thoughtcrime.securesms.notifications.profiles.NotificationProfile;
@@ -154,7 +160,6 @@ import org.thoughtcrime.securesms.util.SignalLocalMetrics;
 import org.thoughtcrime.securesms.util.SignalProxyUtil;
 import org.thoughtcrime.securesms.util.SnapToTopDataObserver;
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration;
-import org.signal.core.util.Stopwatch;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.Util;
 import org.thoughtcrime.securesms.util.ViewUtil;
@@ -179,6 +184,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 
 
@@ -406,8 +412,10 @@ public class ConversationListFragment extends MainFragment implements ActionMode
       isDisplayingSubscriptionFailure = true;
     } else if (unexpectedSubscriptionCancellation != null && SignalStore.donationsValues().isUserManuallyCancelled()) {
       Log.w(TAG, "Unexpected cancellation detected but not displaying dialog because user manually cancelled their subscription: " + unexpectedSubscriptionCancellation, true);
+      SignalStore.donationsValues().setUnexpectedSubscriptionCancelationWatermark(subscriptionFailureTimestamp);
     } else if (unexpectedSubscriptionCancellation != null && !SignalStore.donationsValues().showCantProcessDialog()) {
       Log.w(TAG, "Unexpected cancellation detected but not displaying dialog because user has silenced it.", true);
+      SignalStore.donationsValues().setUnexpectedSubscriptionCancelationWatermark(subscriptionFailureTimestamp);
     }
 
     if (expiredBadge != null && !isDisplayingSubscriptionFailure) {
@@ -510,11 +518,16 @@ public class ConversationListFragment extends MainFragment implements ActionMode
 
   @Override
   public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-    if (resultCode != RESULT_OK) {
-      return;
+    if (requestCode == SmsExportMegaphoneActivity.REQUEST_CODE && SignalStore.misc().getSmsExportPhase().isFullscreen()) {
+      ApplicationDependencies.getMegaphoneRepository().markSeen(Megaphones.Event.SMS_EXPORT);
+      if (resultCode == RESULT_CANCELED) {
+        Snackbar.make(fab, R.string.ConversationActivity__you_will_be_reminded_again_soon, Snackbar.LENGTH_LONG).show();
+      } else {
+        SmsExportDialogs.showSmsRemovalDialog(requireContext(), fab);
+      }
     }
 
-    if (requestCode == CreateKbsPinActivity.REQUEST_NEW_PIN) {
+    if (resultCode == RESULT_OK && requestCode == CreateKbsPinActivity.REQUEST_NEW_PIN) {
       Snackbar.make(fab, R.string.ConfirmKbsPinFragment__pin_created, Snackbar.LENGTH_LONG).show();
       viewModel.onMegaphoneCompleted(Megaphones.Event.PINS_FOR_ALL);
     }
@@ -607,6 +620,10 @@ public class ConversationListFragment extends MainFragment implements ActionMode
   private void onReminderAction(@IdRes int reminderActionId) {
     if (reminderActionId == R.id.reminder_action_update_now) {
       PlayStoreUtil.openPlayStoreOrOurApkDownloadPage(requireContext());
+    } else if (reminderActionId == R.id.reminder_action_cds_temporary_error_learn_more) {
+      CdsTemporaryErrorBottomSheet.show(getChildFragmentManager());
+    } else if (reminderActionId == R.id.reminder_action_cds_permanent_error_learn_more) {
+      CdsPermanentErrorBottomSheet.show(getChildFragmentManager());
     }
   }
 
@@ -740,7 +757,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     ConversationListViewModel.Factory viewModelFactory = new ConversationListViewModel.Factory(isArchived(),
                                                                                                getString(R.string.note_to_self));
 
-    viewModel = new ViewModelProvider(this, viewModelFactory).get(ConversationListViewModel.class);
+    viewModel = new ViewModelProvider(this, (ViewModelProvider.Factory) viewModelFactory).get(ConversationListViewModel.class);
 
     viewModel.getSearchResult().observe(getViewLifecycleOwner(), this::onSearchResultChanged);
     viewModel.getMegaphone().observe(getViewLifecycleOwner(), this::onMegaphoneChanged);
@@ -866,6 +883,10 @@ public class ConversationListFragment extends MainFragment implements ActionMode
         return Optional.of((new PushRegistrationReminder(context)));
       } else if (DozeReminder.isEligible(context)) {
         return Optional.of(new DozeReminder(context));
+      } else if (CdsTemporyErrorReminder.isEligible()) {
+        return Optional.of(new CdsTemporyErrorReminder(context));
+      } else if (CdsPermanentErrorReminder.isEligible()) {
+        return Optional.of(new CdsPermanentErrorReminder(context));
       } else {
         return Optional.<Reminder>empty();
       }
@@ -1386,7 +1407,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
   }
 
   @SuppressLint("StaticFieldLeak")
-  protected void onItemSwiped(long threadId, int unreadCount) {
+  protected void onItemSwiped(long threadId, int unreadCount, int unreadSelfMentionsCount) {
     archiveDecoration.onArchiveStarted();
     itemAnimator.enable();
 
@@ -1426,7 +1447,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
         threadDatabase.restorePins(pinnedThreadIds);
 
         if (unreadCount > 0) {
-          threadDatabase.incrementUnread(threadId, unreadCount);
+          threadDatabase.incrementUnread(threadId, unreadCount, unreadSelfMentionsCount);
           ApplicationDependencies.getMessageNotifier().updateNotification(context);
         }
 
@@ -1464,12 +1485,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     }
 
     private void goToSinglePayment(@NonNull UUID paymentId) {
-      Intent intent = new Intent(requireContext(), PaymentsActivity.class);
-
-      intent.putExtra(PaymentsActivity.EXTRA_PAYMENTS_STARTING_ACTION, R.id.action_directly_to_paymentDetails);
-      intent.putExtra(PaymentsActivity.EXTRA_STARTING_ARGUMENTS, new PaymentDetailsFragmentArgs.Builder(PaymentDetailsParcelable.forUuid(paymentId)).build().toBundle());
-
-      startActivity(intent);
+      startActivity(PaymentsActivity.navigateToPaymentDetails(requireContext(), paymentId));
     }
   }
 
@@ -1550,10 +1566,9 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     }
 
     private void onTrueSwipe(RecyclerView.ViewHolder viewHolder) {
-      final long threadId    = ((ConversationListItem) viewHolder.itemView).getThreadId();
-      final int  unreadCount = ((ConversationListItem) viewHolder.itemView).getUnreadCount();
+      ThreadRecord thread = ((ConversationListItem) viewHolder.itemView).getThread();
 
-      onItemSwiped(threadId, unreadCount);
+      onItemSwiped(thread.getThreadId(), thread.getUnreadCount(), thread.getUnreadSelfMentionsCount());
     }
 
     @Override

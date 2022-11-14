@@ -47,7 +47,7 @@ public interface MmsSmsColumns {
    * {@link #TOTAL_MASK}.
    *
    * <pre>
-   *    ____________________________________________ SPECIAL TYPES (Story reactions) ({@link #SPECIAL_TYPES_MASK}
+   *    ____________________________________________ SPECIAL TYPES ({@link #SPECIAL_TYPES_MASK}
    *   |       _____________________________________ ENCRYPTION ({@link #ENCRYPTION_MASK})
    *   |      |        _____________________________ SECURE MESSAGE INFORMATION (no mask, but look at {@link #SECURE_MESSAGE_BIT})
    *   |      |       |     ________________________ GROUPS (no mask, but look at {@link #GROUP_UPDATE_BIT})
@@ -82,6 +82,7 @@ public interface MmsSmsColumns {
     protected static final long CHANGE_NUMBER_TYPE                 = 14;
     protected static final long BOOST_REQUEST_TYPE                 = 15;
     protected static final long THREAD_MERGE_TYPE                  = 16;
+    protected static final long SMS_EXPORT_TYPE                    = 17;
 
     protected static final long BASE_INBOX_TYPE                    = 20;
     protected static final long BASE_OUTBOX_TYPE                   = 21;
@@ -139,9 +140,12 @@ public interface MmsSmsColumns {
     protected static final long ENCRYPTION_REMOTE_LEGACY_BIT     = 0x02000000;
 
     // Special message types
-    public static final long SPECIAL_TYPES_MASK          = 0xF00000000L;
-    public static final long SPECIAL_TYPE_STORY_REACTION = 0x100000000L;
-    public static final long SPECIAL_TYPE_GIFT_BADGE     = 0x200000000L;
+    public    static final long SPECIAL_TYPES_MASK                     = 0xF00000000L;
+    public    static final long SPECIAL_TYPE_STORY_REACTION            = 0x100000000L;
+    public    static final long SPECIAL_TYPE_GIFT_BADGE                = 0x200000000L;
+    protected static final long SPECIAL_TYPE_PAYMENTS_NOTIFICATION     = 0x300000000L;
+    protected static final long SPECIAL_TYPE_PAYMENTS_ACTIVATE_REQUEST = 0x400000000L;
+    protected static final long SPECIAL_TYPE_PAYMENTS_ACTIVATED        = 0x800000000L;
 
     public static boolean isStoryReaction(long type) {
       return (type & SPECIAL_TYPES_MASK) == SPECIAL_TYPE_STORY_REACTION;
@@ -149,6 +153,18 @@ public interface MmsSmsColumns {
 
     public static boolean isGiftBadge(long type) {
       return (type & SPECIAL_TYPES_MASK) == SPECIAL_TYPE_GIFT_BADGE;
+    }
+
+    public static boolean isPaymentsNotification(long type) {
+      return (type & SPECIAL_TYPES_MASK) == SPECIAL_TYPE_PAYMENTS_NOTIFICATION;
+    }
+
+    public static boolean isPaymentsRequestToActivate(long type) {
+      return (type & SPECIAL_TYPES_MASK) == SPECIAL_TYPE_PAYMENTS_ACTIVATE_REQUEST;
+    }
+
+    public static boolean isPaymentsActivated(long type) {
+      return (type & SPECIAL_TYPES_MASK) == SPECIAL_TYPE_PAYMENTS_ACTIVATED;
     }
 
     public static boolean isDraftMessageType(long type) {
@@ -364,6 +380,10 @@ public interface MmsSmsColumns {
 
     public static boolean isBoostRequest(long type) {
       return type == BOOST_REQUEST_TYPE;
+    }
+
+    public static boolean isSmsExport(long type) {
+      return type == SMS_EXPORT_TYPE;
     }
 
     public static boolean isGroupV2LeaveOnly(long type) {

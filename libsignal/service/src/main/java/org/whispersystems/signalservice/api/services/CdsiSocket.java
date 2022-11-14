@@ -8,7 +8,10 @@ import org.signal.libsignal.cds2.Cds2CommunicationFailureException;
 import org.signal.libsignal.protocol.logging.Log;
 import org.signal.libsignal.protocol.util.Pair;
 import org.whispersystems.signalservice.api.push.TrustStore;
+import org.whispersystems.signalservice.api.push.exceptions.CdsiInvalidArgumentException;
+import org.whispersystems.signalservice.api.push.exceptions.CdsiInvalidTokenException;
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
+import org.whispersystems.signalservice.api.push.exceptions.CdsiResourceExhaustedException;
 import org.whispersystems.signalservice.api.util.Tls12SocketFactory;
 import org.whispersystems.signalservice.api.util.TlsProxySocketFactory;
 import org.whispersystems.signalservice.internal.configuration.SignalProxy;
@@ -22,9 +25,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -64,6 +67,7 @@ final class CdsiSocket {
     OkHttpClient.Builder builder = new OkHttpClient.Builder()
                                                    .sslSocketFactory(new Tls12SocketFactory(socketFactory.first()), socketFactory.second())
                                                    .connectionSpecs(Util.immutableList(ConnectionSpec.RESTRICTED_TLS))
+                                                   .retryOnConnectionFailure(false)
                                                    .readTimeout(30, TimeUnit.SECONDS)
                                                    .connectTimeout(30, TimeUnit.SECONDS);
 
@@ -89,10 +93,13 @@ final class CdsiSocket {
                                    .addHeader("Authorization", basicAuth(username, password))
                                    .build();
 
+      AtomicInteger retryAfterSeconds = new AtomicInteger(0);
+
+
       WebSocket webSocket = okhttp.newWebSocket(request, new WebSocketListener() {
         @Override
         public void onOpen(WebSocket webSocket, Response response) {
-          Log.d(TAG, "onOpen");
+          Log.d(TAG, "[onOpen]");
           stage.set(Stage.WAITING_FOR_CONNECTION);
         }
 
@@ -127,6 +134,12 @@ final class CdsiSocket {
 
               case WAITING_FOR_TOKEN:
                 ClientResponse tokenResponse = ClientResponse.parseFrom(client.establishedRecv(bytes.toByteArray()));
+
+                if (tokenResponse.getRetryAfterSecs() > 0) {
+                  Log.w(TAG, "Got a retry-after (" + tokenResponse.getRetryAfterSecs() + "), meaning we hit the rate limit. (WAITING_FOR_TOKEN)");
+                  throw new CdsiResourceExhaustedException(tokenResponse.getRetryAfterSecs());
+                }
+
                 if (tokenResponse.getToken().isEmpty()) {
                   throw new IOException("No token! Cannot continue!");
                 }
@@ -142,7 +155,14 @@ final class CdsiSocket {
                 break;
 
               case WAITING_FOR_RESPONSE:
-                emitter.onNext(ClientResponse.parseFrom(client.establishedRecv(bytes.toByteArray())));
+                ClientResponse dataResponse = ClientResponse.parseFrom(client.establishedRecv(bytes.toByteArray()));
+
+                if (dataResponse.getRetryAfterSecs() > 0) {
+                  Log.w(TAG, "Got a retry-after (" + dataResponse.getRetryAfterSecs() + "), meaning we hit the rate limit. (WAITING_FOR_RESPONSE)");
+                  throw new CdsiResourceExhaustedException(dataResponse.getRetryAfterSecs());
+                }
+
+                emitter.onNext(dataResponse);
                 break;
 
               case CLOSED:
@@ -163,6 +183,7 @@ final class CdsiSocket {
 
         @Override
         public void onClosing(WebSocket webSocket, int code, String reason) {
+          Log.i(TAG, "[onClosing] code: " + code + ", reason: " + reason);
           if (code == 1000) {
             emitter.onComplete();
             stage.set(Stage.CLOSED);
@@ -170,12 +191,19 @@ final class CdsiSocket {
             Log.w(TAG, "Remote side is closing with non-normal code " + code);
             webSocket.close(1000, "Remote closed with code " + code);
             stage.set(Stage.FAILED);
-            emitter.tryOnError(new NonSuccessfulResponseCodeException(code));
+            if (code == 4003) {
+              emitter.tryOnError(new CdsiInvalidArgumentException());
+            } else if (code == 4101) {
+              emitter.tryOnError(new CdsiInvalidTokenException());
+            } else {
+              emitter.tryOnError(new NonSuccessfulResponseCodeException(code));
+            }
           }
         }
 
         @Override
         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+          Log.w(TAG, "[onFailure] response? " + (response != null), t);
           emitter.tryOnError(t);
           stage.set(Stage.FAILED);
           webSocket.close(1000, "OK");

@@ -153,9 +153,8 @@ public class MessageSender {
       database.beginTransaction();
 
       for (OutgoingSecureMediaMessage message : messages) {
-        long      allocatedThreadId = threadDatabase.getOrCreateValidThreadId(message.getRecipient(), -1L, message.getDistributionType());
-        Recipient recipient         = message.getRecipient();
-        long      messageId         = database.insertMessageOutbox(applyUniversalExpireTimerIfNecessary(context, recipient, message.stripAttachments(), allocatedThreadId), allocatedThreadId, false, insertListener);
+        long allocatedThreadId = threadDatabase.getOrCreateValidThreadId(message.getRecipient(), -1L, message.getDistributionType());
+        long messageId         = database.insertMessageOutbox(message.stripAttachments(), allocatedThreadId, false, insertListener);
 
         messageIds.add(messageId);
         threads.add(allocatedThreadId);
@@ -255,7 +254,7 @@ public class MessageSender {
                           final long threadId,
                           final boolean forceSms,
                           @Nullable final String metricId,
-                          final SmsDatabase.InsertListener insertListener)
+                          @Nullable final SmsDatabase.InsertListener insertListener)
   {
     Log.i(TAG, "Sending media message to " + message.getRecipient().getId() + ", thread: " + threadId);
     try {
@@ -274,7 +273,7 @@ public class MessageSender {
 
       sendMediaMessage(context, recipient, forceSms, messageId, Collections.emptyList());
       onMessageSent();
-      threadDatabase.update(threadId, true);
+      threadDatabase.update(allocatedThreadId, true);
 
       return allocatedThreadId;
     } catch (MmsException e) {
@@ -318,7 +317,7 @@ public class MessageSender {
 
       sendMediaMessage(context, recipient, false, messageId, jobIds);
       onMessageSent();
-      threadDatabase.update(threadId, true);
+      threadDatabase.update(allocatedThreadId, true);
 
       return allocatedThreadId;
     } catch (MmsException e) {

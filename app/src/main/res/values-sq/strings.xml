@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- smartling.instruction_comments_enabled = on -->
 <resources>
     <string name="app_name" translatable="false">Signal</string>
 
@@ -11,6 +12,7 @@
     <string name="sustainer_boost_and_badges" translatable="false">https://support.signal.org/hc/articles/4408365318426</string>
     <string name="google_pay_url" translatable="false">https://pay.google.com</string>
     <string name="donation_decline_code_error_url" translatable="false">https://support.signal.org/hc/articles/4408365318426#errors</string>
+    <string name="sms_export_url" translatable="false">https://support.signal.org/hc/articles/360007321171</string>
     <string name="signal_me_username_url" translatable="false">https://signal.me/#u/%1$s</string>
     <string name="signal_me_username_url_no_scheme" translatable="false">signal.me/#u/%1$s</string>
 
@@ -103,6 +105,14 @@
     <string name="AttachmentManager_signal_requires_the_external_storage_permission_in_order_to_attach_photos_videos_or_audio">Signal kërkon lejen e Storage për të bashkëngjitur foto, video ose audio, por i është refuzuar përgjithmonë. Ju lutemi, vazhdoni te menyja e cilësimeve të aplikacionit, zgjidhni \"Lejet\" dhe aktivizoni \"Storage\".</string>
     <string name="AttachmentManager_signal_requires_contacts_permission_in_order_to_attach_contact_information">Signal kërkon lejen e Kontakteve për të bashkangjitur informacionin e kontaktit, por i është refuzuar përgjithmonë. Ju lutemi, vazhdoni te menyja e cilësimeve të aplikacionit, zgjidhni \"Lejet\" dhe aktivizoni \"Kontaktet\".</string>
     <string name="AttachmentManager_signal_requires_location_information_in_order_to_attach_a_location">Signal kërkon lejen e Vendndodhjes për të bashkangjitur një vendndodhje, por i është refuzuar përgjithmonë. Ju lutemi, vazhdoni te menyja e cilësimeve të aplikacionit, zgjidhni \"Lejet\" dhe aktivizoni \"Vendndodhja\".</string>
+    <!-- Alert dialog title to show the recipient has not activated payments -->
+    <string name="AttachmentManager__not_activated_payments">%1$s nuk ka aktivizuar Pagesat </string>
+    <!-- Alert dialog description to send the recipient a request to activate payments -->
+    <string name="AttachmentManager__request_to_activate_payments">Dëshiron t\'u dërgosh një kërkesë për të aktivizuar Pagesat?</string>
+    <!-- Alert dialog button to send request -->
+    <string name="AttachmentManager__send_request">Dërgo kërkesën</string>
+    <!-- Alert dialog button to cancel dialog -->
+    <string name="AttachmentManager__cancel">Anuloje</string>
 
     <!-- AttachmentUploadJob -->
     <string name="AttachmentUploadJob_uploading_media">Po ngarkohet media…</string>
@@ -123,6 +133,39 @@
     <string name="BlockedUsersActivity__do_you_want_to_unblock_s">Dëshironi të zhbllokoni \"%1$s\"?</string>
     <string name="BlockedUsersActivity__unblock">Zhbllokoje</string>
 
+    <!-- CreditCardFragment -->
+    <!-- Title of fragment detailing the donation amount for one-time donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s">Shuma e dhurimit: %1$s</string>
+    <!-- Title of fragment detailing the donation amount for monthly donation, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__donation_amount_s_per_month">Donation amount: %1$s/month</string>
+    <!-- Explanation of how to fill in the form, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_information_below">Shkruaj të dhënat e kartës më poshtë</string>
+    <!-- Explanation of how to fill in the form and a note about pii, displayed above the credit card text fields -->
+    <string name="CreditCardFragment__enter_your_card_details">Enter your card details. Signal does not collect or store your personal information.</string>
+    <!-- Displayed as a hint in the card number text field -->
+    <string name="CreditCardFragment__card_number">Numri i kartës</string>
+    <!-- Displayed as a hint in the card expiry text field -->
+    <string name="CreditCardFragment__mm_yy">MM/YY</string>
+    <!-- Displayed as a hint in the card cvv text field -->
+    <string name="CreditCardFragment__cvv">CVV</string>
+    <!-- Error displayed under the card number text field when there is an invalid card number entered -->
+    <string name="CreditCardFragment__invalid_card_number">Numri i kartës është i pavlefshëm</string>
+    <!-- Error displayed under the card expiry text field when the card is expired -->
+    <string name="CreditCardFragment__card_has_expired">Karta ka skaduar</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too short -->
+    <string name="CreditCardFragment__code_is_too_short">Kodi është shumë i shkurtër</string>
+    <!-- Error displayed under the card cvv text field when the cvv is too long -->
+    <string name="CreditCardFragment__code_is_too_long">Kodi është shumë i gjatë</string>
+    <!-- Error displayed under the card cvv text field when the cvv is invalid -->
+    <string name="CreditCardFragment__invalid_code">Kod i pavlefshëm</string>
+    <!-- Error displayed under the card expiry text field when the expiry month is invalid -->
+    <string name="CreditCardFragment__invalid_month">Muaj i pavlefshëm</string>
+    <!-- Error displayed under the card expiry text field when the expiry is missing the year -->
+    <string name="CreditCardFragment__year_required">Kërkohet viti</string>
+    <!-- Error displayed under the card expiry text field when the expiry year is invalid -->
+    <string name="CreditCardFragment__invalid_year">Vit i pavlefshëm</string>
+    <!-- Button label to confirm credit card input and proceed with payment -->
+    <string name="CreditCardFragment__continue">Vazhdo</string>
 
     <!-- BlockUnblockDialog -->
     <string name="BlockUnblockDialog_block_and_leave_s">Blloko dhe dil %1$s?</string>
@@ -193,7 +236,7 @@
     <string name="ClientDeprecatedActivity_update">Përditësoje</string>
     <string name="ClientDeprecatedActivity_dont_update">Mos e përditëso</string>
     <string name="ClientDeprecatedActivity_warning">Paralajmërim</string>
-    <string name="ClientDeprecatedActivity_your_version_of_signal_has_expired_you_can_view_your_message_history">Versioni juaj i Signal ka skaduar. Ju mund të shikoni historikun tuaj të mesazheve, por nuk do të mund të dërgoni ose merrni mesazhe derisa ta përditësoni atë.</string>
+    <string name="ClientDeprecatedActivity_your_version_of_signal_has_expired_you_can_view_your_message_history">Versioni yt i Signal ka skaduar. Mund të shikosh historikun e mesazheve, por nuk do të mund të dërgosh ose marrësh mesazhe, derisa ta përditësosh.</string>
 
     <!-- CommunicationActions -->
     <string name="CommunicationActions_no_browser_found">Nuk u gjet asnjë shfletues ueb.</string>
@@ -218,9 +261,9 @@
     <!-- Header for username search -->
     <string name="ContactsCursorLoader_find_by_username">Gjeni sipas emri përdoruesi</string>
     <!-- Label for my stories when selecting who to send media to -->
-    <string name="ContactsCursorLoader_my_stories">Story-t e mia</string>
-    <!-- Action for creating a new story -->
-    <string name="ContactsCursorLoader_new_story">Postim i përkohshëm i ri</string>
+    <string name="ContactsCursorLoader_my_stories">Postimet e mia të përkohshme</string>
+    <!-- Text for a button that brings up a bottom sheet to create a new story. -->
+    <string name="ContactsCursorLoader_new">I ri</string>
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">%1$s mesazhi</string>
@@ -268,6 +311,18 @@
     <string name="ConversationItem_pending">  Në pritje</string>
     <string name="ConversationItem_this_message_was_deleted">Ky mesazh u fshi.</string>
     <string name="ConversationItem_you_deleted_this_message">Ju e fshitë këtë mesazh.</string>
+    <!-- Dialog error message shown when user can't download a message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_message_s_will_need_to_send_it_again">Mesazhi nuk mund të shkarkohet. %1$s do të duhet ta dërgojë përsëri.</string>
+    <!-- Dialog error message shown when user can't download an image message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_image_s_will_need_to_send_it_again">Imazhi nuk mund të shkarkohet. %1$s do të duhet ta dërgojë përsëri.</string>
+    <!-- Dialog error message shown when user can't download a video message from someone else due to a permanent failure (e.g., unable to decrypt), placeholder is other's name -->
+    <string name="ConversationItem_cant_download_video_s_will_need_to_send_it_again">Videoja nuk mund të shkarkohet. %1$s do të duhet ta dërgojë përsëri.</string>
+    <!-- Dialog error message shown when user can't download a their own message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_message_you_will_need_to_send_it_again">Mesazhi nuk mund të shkarkohet. Duhet ta dërgosh përsëri.</string>
+    <!-- Dialog error message shown when user can't download a their own image message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_image_you_will_need_to_send_it_again">Imazhi nuk mund të shkarkohet. Duhet ta dërgosh përsëri.</string>
+    <!-- Dialog error message shown when user can't download a their own video message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
+    <string name="ConversationItem_cant_download_video_you_will_need_to_send_it_again">Videoja nuk mund të shkarkohet. Duhet ta dërgosh përsëri.</string>
 
     <!-- ConversationActivity -->
     <string name="ConversationActivity_add_attachment">Shtoni bashkëngjitjen</string>
@@ -343,6 +398,21 @@
 
     <string name="ConversationActivity__reported_as_spam_and_blocked">U raportua si mesazh i padëshiruar dhe u bllokua.</string>
 
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_you_can_export_your_messages_to_another_app_on_your_phone">Mesazhet SMS aktualisht janë çaktivizuar. Mund t\'i eksportosh mesazhet në një aplikacion tjetër në telefonin tënd.</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and they have unexported sms messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_you_can_export_your_messages_to_another_app_on_your_phone">Mesazhet SMS nuk mbështeten më nga Signal. Mund t\'i eksportosh mesazhet e tua në një aplikacion tjetër në telefonin tënd.</string>
+    <!-- Action button shown when in sms conversation, sms is disabled, and unexported sms messages are present -->
+    <string name="ConversationActivity__export_sms_messages">Eksporto mesazhet SMS</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_currently_disabled_invite_s_to_to_signal_to_keep_the_conversation_here">Mesazhet SMS aktualisht janë çaktivizuar. Fto %1$s në Signal për ta vazhduar bisedën këtu.</string>
+    <!-- Message shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__sms_messaging_is_no_longer_supported_in_signal_invite_s_to_to_signal_to_keep_the_conversation_here">Mesazhet SMS nuk mbështeten më nga Signal. Fto %1$s te Signal për ta vazhduar bisedën këtu.</string>
+    <!-- Action button shown when opening an SMS conversation with SMS disabled and there are no exported messages -->
+    <string name="ConversationActivity__invite_to_signal">Ftoje në Signal</string>
+    <!-- Snackbar message shown after dismissing the full screen sms export megaphone indicating we'll do it again soon -->
+    <string name="ConversationActivity__you_will_be_reminded_again_soon">Së shpejti do të kujtoheni përsëri.</string>
+
     <!-- ConversationAdapter -->
     <plurals name="ConversationAdapter_n_unread_messages">
         <item quantity="one">%1$d mesazh i palexuar</item>
@@ -382,6 +452,10 @@
     <string name="ConversationFragment_deleting_messages">Duke fshirë mesazhet…</string>
     <string name="ConversationFragment_delete_for_me">Fshije për mua</string>
     <string name="ConversationFragment_delete_for_everyone">Fshije për të gjithë</string>
+    <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
+    <string name="ConversationFragment_delete_on_this_device">Delete on this device</string>
+    <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
+    <string name="ConversationFragment_delete_everywhere">Delete everywhere</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">Ky mesazh do të fshihet për të gjithë në bisedë nëse ata kanë një version të fundit të Signal. Ata do të mund të shohin që ju keni fshirë një mesazh.</string>
     <string name="ConversationFragment_quoted_message_not_found">Mesazhi origjinal nuk u gjet</string>
     <string name="ConversationFragment_quoted_message_no_longer_available">Mesazhi origjinal nuk është më i disponueshëm</string>
@@ -673,7 +747,7 @@
     <!-- GroupsV1MigrationLearnMoreBottomSheetDialogFragment -->
     <string name="GroupsV1MigrationLearnMore_what_are_new_groups">Ç\\’janë Grupet e Reja?</string>
     <string name="GroupsV1MigrationLearnMore_new_groups_have_features_like_mentions">Grupet e Reja kanë veçori të tilla si @përmendje dhe përgjegjës grupi, dhe në të ardhmen do të mbulojnë më tepër veçori.</string>
-    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">Krejt historiku i mesazhe dhe mediat janë mbajtur prej kohës para përmirësimit.</string>
+    <string name="GroupsV1MigrationLearnMore_all_message_history_and_media_has_been_kept">Do të ruhet i gjithë historiku i mesazheve dhe media para përditësimit.</string>
     <string name="GroupsV1MigrationLearnMore_you_will_need_to_accept_an_invite_to_join_this_group_again">Do t\\’ju duhet të pranoni një ftesë, ta të ribëheni pjesë e këtij grupi, dhe s\\’do të merrni mesazhe grupi, pa e pranuar.</string>
     <plurals name="GroupsV1MigrationLearnMore_these_members_will_need_to_accept_an_invite">
         <item quantity="one">Ky anëtar do të duhet të pranojë një ftesë për t\\’u bërë pjesë e grupit dhe s\\’do të marrë mesazhe grupi përpara se ta pranojë:</item>
@@ -688,7 +762,7 @@
     <string name="GroupsV1MigrationInitiation_upgrade_to_new_group">Përmirësoje si Grup të Ri</string>
     <string name="GroupsV1MigrationInitiation_upgrade_this_group">Përpunojeni këtë grup</string>
     <string name="GroupsV1MigrationInitiation_new_groups_have_features_like_mentions">Grupet e Reja kanë veçori të tilla si @përmendje dhe përgjegjës grupi, dhe në të ardhmen do të mbulojnë më tepër veçori.</string>
-    <string name="GroupsV1MigrationInitiation_all_message_history_and_media_will_be_kept">Krejt historiku i mesazheve dhe mediat do të mbahen prej kohës para përmirësimit.</string>
+    <string name="GroupsV1MigrationInitiation_all_message_history_and_media_will_be_kept">Do të ruhet i gjithë historiku i mesazheve dhe media para përditësimit.</string>
     <string name="GroupsV1MigrationInitiation_encountered_a_network_error">U has një gabim rrjeti. Riprovoni më vonë.</string>
     <string name="GroupsV1MigrationInitiation_failed_to_upgrade">S\\’u arrit të përmirësohej.</string>
     <plurals name="GroupsV1MigrationInitiation_these_members_will_need_to_accept_an_invite">
@@ -802,11 +876,13 @@
     <string name="AddGroupDetailsFragment__this_field_is_required">Kjo fushë është e domosdoshme.</string>
     <string name="AddGroupDetailsFragment__group_creation_failed">Krijimi i grupit dështoi.</string>
     <string name="AddGroupDetailsFragment__try_again_later">Riprovoni më vonë.</string>
-    <!-- Displayed when adding group details to an MMS Group -->
-    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">Ke zgjedhur një kontakt që nuk mbështet grupet e Signal, ndaj ky grup do të jetë MMS. Emrat dhe fotot e grupeve të personalizuara MMS do të shfaqen vetëm për ty.</string>
     <string name="AddGroupDetailsFragment__remove">Hiqe</string>
     <string name="AddGroupDetailsFragment__sms_contact">Kontakt SMS</string>
     <string name="AddGroupDetailsFragment__remove_s_from_this_group">Të hiqet %1$s prej këtij grupi?</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support">Ke zgjedhur një kontakt që nuk mbështet grupet e Signal, ndaj ky grup do të jetë MMS. Emrat dhe fotot e grupeve të personalizuara MMS do të shfaqen vetëm për ty.</string>
+    <!-- Info message shown in the middle of the screen, displayed when adding group details to an MMS Group after SMS Phase 0 -->
+    <string name="AddGroupDetailsFragment__youve_selected_a_contact_that_doesnt_support_signal_groups_mms_removal">You\'ve selected a contact that doesn\'t support Signal groups, this group will be MMS. Custom MMS group names and photos will only be visible to you. Support for MMS groups will be removed soon to focus on encrypted messaging.</string>
 
     <!-- ManageGroupActivity -->
     <string name="ManageGroupActivity_member_requests_and_invites">Kërkesa &amp; ftesa anëtarësie</string>
@@ -871,7 +947,7 @@
     <string name="ManageProfileFragment_your_name">Emri juaj</string>
     <string name="ManageProfileFragment_your_username">Emri juaj i përdoruesit</string>
     <string name="ManageProfileFragment_failed_to_set_avatar">S\\’u arrit të caktohej avatar</string>
-    <string name="ManageProfileFragment_badges">Distinktiv</string>
+    <string name="ManageProfileFragment_badges">Distinktivët</string>
     <string name="ManageProfileFragment__edit_photo">Përpunoni foton</string>
     <!-- Snackbar message after creating username -->
     <string name="ManageProfileFragment__username_created">Emri i përdoruesit u krijua</string>
@@ -990,6 +1066,8 @@
 
     <!-- InputPanel -->
     <string name="InputPanel_tap_and_hold_to_record_a_voice_message_release_to_send">Që të incizoni një mesazh zanor, prekeni dhe mbajeni të prekur, për ta dërguar, lëshojeni</string>
+    <!-- Message shown if the user tries to switch a conversation from Signal to SMS -->
+    <string name="InputPanel__sms_messaging_is_no_longer_supported_in_signal">Mesazhet SMS nuk mbështeten më në Signal.</string>
 
     <!-- InviteActivity -->
     <string name="InviteActivity_share">Ndaje</string>
@@ -1344,11 +1422,19 @@
     <string name="MessageRecord_a_message_from_s_couldnt_be_delivered">S\\’u dërgua dot një mesazh prej %1$s</string>
     <string name="MessageRecord_s_changed_their_phone_number">%1$s ndryshoi numrin e vet të telefonit.</string>
     <!-- Update item message shown in the release channel when someone is already a sustainer so we ask them if they want to boost. -->
-    <string name="MessageRecord_like_this_new_feature_help_support_signal_with_a_one_time_donation">Të pëlqen kjo veçori e re? Jep ndihmën tënde duke e mbështetur Signal me donacionin që bëhet vetëm një herë.</string>
+    <string name="MessageRecord_like_this_new_feature_help_support_signal_with_a_one_time_donation">Të pëlqen kjo veçori e re? Jep ndihmën tënde duke e mbështetur Signal me një dhurim të vetëm.</string>
     <!-- Update item message shown when we merge two threads together -->
     <string name="MessageRecord_your_message_history_with_s_and_their_number_s_has_been_merged">Historiku i mesazheve të tua me %1$s dhe numrin e tyre %2$s është bashkuar.</string>
     <!-- Update item message shown when we merge two threads together and we don't know the phone number of the other thread -->
     <string name="MessageRecord_your_message_history_with_s_and_another_chat_has_been_merged">Historiku i mesazheve të tua me %1$s dhe një bisedë tjetër që i përkiste atyre është bashkuar.</string>
+    <!-- Message to notify sender that activate payments request has been sent to the recipient -->
+    <string name="MessageRecord_you_sent_request">Dërgove %1$s një kërkesë për të aktivizuar Pagesat</string>
+    <!-- Request message from recipient to activate payments -->
+    <string name="MessageRecord_wants_you_to_activate_payments">%1$s dëshiron që ti të aktivizosh Pagesat. Dërgo pagesa vetëm tek personat që iu beson.</string>
+    <!-- Message to inform user that payments was activated-->
+    <string name="MessageRecord_you_activated_payments">Aktivizove Pagesat</string>
+    <!-- Message to inform sender that recipient can now accept payments -->
+    <string name="MessageRecord_can_accept_payments">%1$s tani mund të pranojë pagesat</string>
 
     <!-- Group Calling update messages -->
     <string name="MessageRecord_s_started_a_group_call_s">%1$s nisi një thirrje grupi · %2$s</string>
@@ -1374,6 +1460,13 @@
         <item quantity="one">%1$s, %2$s, dhe %3$d tjetër gjenden te thirrja e grupit</item>
         <item quantity="other">%1$s, %2$s, dhe %3$d të tjerë gjenden te thirrja e grupit</item>
     </plurals>
+
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_will_no_longer_be_able_to_send_sms_messages_from_signal_soon">Së shpejti nuk do të mund të dërgosh më mesazhe SMS nga Signal. Fto %1$s te Signal për ta vazhduar bisedën këtu.</string>
+    <!-- In-conversation update message to indicate that the current contact is sms only and will need to migrate to signal to continue the conversation in signal. -->
+    <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Nuk mund të dërgosh më mesazhe SMS në Signal. Fto %1$s te Signal për ta mbajtur bisedën këtu.</string>
+    <!-- Body for quote when message being quoted is an in-app payment message -->
+    <string name="MessageRecord__payment_s">Payment: %1$s</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">Pranoje</string>
@@ -1524,7 +1617,7 @@
     <!-- Recipient -->
     <string name="Recipient_you">Ju</string>
     <!-- Name of recipient representing user\'s \'My Story\' -->
-    <string name="Recipient_my_story">Historia Ime</string>
+    <string name="Recipient_my_story">Postimi im i përkohshëm</string>
 
     <!-- RecipientPreferencesActivity -->
     <string name="RecipientPreferenceActivity_block">Bllokoje</string>
@@ -1542,7 +1635,7 @@
     <string name="RedPhone_network_failed">Dështoi rrjeti!</string>
     <string name="RedPhone_number_not_registered">Numër i paregjistruar!</string>
     <string name="RedPhone_the_number_you_dialed_does_not_support_secure_voice">Numri që thirrët nuk mbulon thirrje me zë të sigurta!</string>
-    <string name="RedPhone_got_it">E mora</string>
+    <string name="RedPhone_got_it">E kuptova</string>
 
     <!-- Valentine\'s Day Megaphone -->
     <!-- Title text for the Valentine\'s Day donation megaphone. The placeholder will always be a heart emoji. Needs to be a placeholder for Android reasons. -->
@@ -1832,6 +1925,14 @@
     <string name="ThreadRecord_view_once_media">Media për t\\’u parë vetëm një herë</string>
     <string name="ThreadRecord_this_message_was_deleted">Ky mesazh u fshi.</string>
     <string name="ThreadRecord_you_deleted_this_message">E fshitë këtë mesazh.</string>
+    <!-- Displayed in the notification when the user sends a request to activate payments -->
+    <string name="ThreadRecord_you_sent_request">Dërgove një kërkesë për të aktivizuar Pagesat</string>
+    <!-- Displayed in the notification when the recipient wants to activate payments -->
+    <string name="ThreadRecord_wants_you_to_activate_payments">%1$s dëshiron që ti të aktivizosh Pagesat.</string>
+    <!-- Displayed in the notification when the user activates payments -->
+    <string name="ThreadRecord_you_activated_payments">Aktivizove Pagesat</string>
+    <!-- Displayed in the notification when the recipient can accept payments -->
+    <string name="ThreadRecord_can_accept_payments">%1$s tani mund të pranojë pagesat</string>
     <string name="ThreadRecord_s_is_on_signal">%1$s është në Signal!</string>
     <string name="ThreadRecord_disappearing_messages_disabled">Zhdukja e mesazheve është e çaktivizuar</string>
     <string name="ThreadRecord_disappearing_message_time_updated_to_s">Koha për zhdukje mesazhesh është vënë %1$s</string>
@@ -1853,11 +1954,13 @@
     <!-- Displayed in the notification when the user sends a gift -->
     <string name="ThreadRecord__you_sent_a_gift">Dërguat një dhuratë</string>
     <!-- Displayed in the notification when the user has opened a received gift -->
-    <string name="ThreadRecord__you_redeemed_a_gift_badge">Ju përdorët një distinktiv dhuratë</string>
+    <string name="ThreadRecord__you_redeemed_a_gift_badge">Përdore një distinktiv dhuratë</string>
     <!-- Displayed in the conversation list when someone reacted to your story -->
-    <string name="ThreadRecord__reacted_s_to_your_story">Reagoi me %1$s ndaj postimit të përkohshëm</string>
+    <string name="ThreadRecord__reacted_s_to_your_story">Reagoi me %1$s ndaj postimit tënd të përkohshëm</string>
     <!-- Displayed in the conversation list when you reacted to someone\'s story -->
-    <string name="ThreadRecord__reacted_s_to_their_story">Reagoi me %1$s ndaj postimit të përkohshëm</string>
+    <string name="ThreadRecord__reacted_s_to_their_story">Reagoi me %1$s ndaj postimit të tyre të përkohshëm</string>
+    <!-- Displayed in the conversation list when your most recent message is a payment to or from the person the conversation is with -->
+    <string name="ThreadRecord_payment">Pagesë</string>
 
     <!-- UpdateApkReadyListener -->
     <string name="UpdateApkReadyListener_Signal_update">Përditësim i Signal-it</string>
@@ -1960,7 +2063,8 @@
     <string name="MediaPreviewActivity_s_to_you">%1$s për ju</string>
     <string name="MediaPreviewActivity_media_no_longer_available">Media s\\’është më e passhme.</string>
     <string name="MediaPreviewActivity_cant_find_an_app_able_to_share_this_media">S\\’gjendet dot një aplikacion për të ndarë me të tjerët këtë media.</string>
-    <string name="MediaPreviewActivity_dismiss_due_to_error">Close</string>
+    <string name="MediaPreviewActivity_dismiss_due_to_error">Mbylle</string>
+    <string name="MediaPreviewFragment_edit_media_error">Gabim në media</string>
 
     <!-- MessageNotifier -->
     <string name="MessageNotifier_d_new_messages_in_d_conversations">%1$d mesazhe të reja në %2$d biseda</string>
@@ -2012,6 +2116,9 @@
     <string name="NotificationChannel_background_connection">Lidhje në prapaskenë</string>
     <!-- Notification channel name for showing call status information (like connection, ongoing, etc.) Not ringing. -->
     <string name="NotificationChannel_call_status">Gjendje thirrjeje</string>
+    <!-- Notification channel name for occasional alerts to the user. Will appear in the system notification settings as the title of this notification channel. -->
+    <string name="NotificationChannel_critical_app_alerts">Sinjalizimet jetike të aplikacioneve</string>
+
     <!-- ProfileEditNameFragment -->
 
     <!-- QuickResponseService -->
@@ -2039,7 +2146,7 @@
     <string name="SingleRecipientNotificationBuilder_message_request">Kërkesë mesazhi</string>
     <string name="SingleRecipientNotificationBuilder_you">Ju</string>
     <!-- Notification subtext for group stories -->
-    <string name="SingleRecipientNotificationBuilder__s_dot_story">%1$s • Story</string>
+    <string name="SingleRecipientNotificationBuilder__s_dot_story">%1$s • Postim i përkohshëm</string>
 
     <!-- ThumbnailView -->
     <string name="ThumbnailView_Play_video_description">Luaje videon</string>
@@ -2054,6 +2161,12 @@
     <!-- UnauthorizedReminder -->
     <string name="UnauthorizedReminder_device_no_longer_registered">Pajisje jo më e regjistruar</string>
     <string name="UnauthorizedReminder_this_is_likely_because_you_registered_your_phone_number_with_Signal_on_a_different_device">Ka gjasa që kjo të rrjedhë ngaqë numrin tuaj të telefonit e regjistruat me Signal-in në një pajisje tjetër. Prekeni që të riregjistrohet.</string>
+
+    <!-- EnclaveFailureReminder -->
+    <!-- Banner message to update app to use payments -->
+    <string name="EnclaveFailureReminder_update_signal">Që të përdorësh pagesat, përditëso Signal. Depozita jote mund të mos jetë e përditësuar.</string>
+    <!-- Banner button to update now -->
+    <string name="EnclaveFailureReminder_update_now">Përditësoje tani</string>
 
     <!-- WebRtcCallActivity -->
     <string name="WebRtcCallActivity_to_answer_the_call_give_signal_access_to_your_microphone">Që t’i përgjigjeni thirrjes, jepini Signal-it leje të përdorë mikrofonin tuaj.</string>
@@ -2183,7 +2296,12 @@
     <string name="ConversationUpdateItem_view">Shihni</string>
     <string name="ConversationUpdateItem_the_disappearing_message_time_will_be_set_to_s_when_you_message_them">Koha për mesazhe që treten do të caktohet si %1$s, kur u dërgoni mesazhe.</string>
     <!-- Update item button text to show to boost a feature -->
-    <string name="ConversationUpdateItem_donate">Dhuroni</string>
+    <string name="ConversationUpdateItem_donate">Dhuro</string>
+    <!-- Update item button text to send payment -->
+    <string name="ConversationUpdateItem_send_payment">Dërgoni Pagesë</string>
+    <!-- Update item button text to activate payments -->
+    <string name="ConversationUpdateItem_activate_payments">Pagesa</string>
+
 
     <!-- audio_view -->
     <string name="audio_view__play_pause_accessibility_description">Luaje … Pauzë</string>
@@ -2199,9 +2317,9 @@
     <string name="QuoteView_you">Ju</string>
     <string name="QuoteView_original_missing">S\\’u gjet mesazhi origjinal</string>
     <!-- Author formatting for group stories -->
-    <string name="QuoteView_s_story">%1$s · Histori</string>
+    <string name="QuoteView_s_story">%1$s · Postim i përkohshëm</string>
     <!-- Label indicating that a quote is for a reply to a story you created -->
-    <string name="QuoteView_your_story">Ju · Histori</string>
+    <string name="QuoteView_your_story">Ti · Postim i përkohshëm</string>
     <!-- Label indicating that the story being replied to no longer exists -->
     <string name="QuoteView_no_longer_available">S’mund të kihet më</string>
     <!-- Label for quoted gift -->
@@ -2344,7 +2462,7 @@
     <!-- Displayed in a toast when user long presses an item in MyStories -->
     <string name="MyStoriesFragment__copied_sent_timestamp_to_clipboard">U kopjua në të papastër vulë kohore dërgimi.</string>
     <!-- Displayed when there are no outgoing stories -->
-    <string name="MyStoriesFragment__updates_to_your_story_will_show_up_here">Këtu do të shfaqen përditësime te historia juaj.</string>
+    <string name="MyStoriesFragment__updates_to_your_story_will_show_up_here">Përditësimet e postimit tënd të përkohshëm do të shfaqen këtu.</string>
 
     <!-- GroupUtil -->
     <plurals name="GroupUtil_joined_the_group">
@@ -2484,15 +2602,16 @@
     <string name="HelpFragment__debug_log">Regjistër Diagnostikimesh:</string>
     <string name="HelpFragment__could_not_upload_logs">S\\’u ngarkuan dot regjistra</string>
     <string name="HelpFragment__please_be_as_descriptive_as_possible">Ju lutemi, që të na ndihmoni të kuptojmë problemin, jini sa më përshkrues që të jetë e mundur.</string>
-    <string-array name="HelpFragment__categories_4">
+    <string-array name="HelpFragment__categories_5">
         <item>\\-\\- Zgjidh një opsion \\-\\-</item>
         <item>Diçka nuk po funksionon</item>
         <item>Paraqit kërkesën</item>
         <item>Pyetje</item>
         <item>Koment</item>
-        <item>Të tjera</item>
+        <item>Tjetër</item>
         <item>Pagesa (MobileCoin)</item>
-        <item>Donacione &amp; Stema</item>
+        <item>Dhurime &amp; Distinktive</item>
+        <item>Eksporto SMS-të</item>
     </string-array>
 
     <!-- ReactWithAnyEmojiBottomSheetDialogFragment -->
@@ -2558,6 +2677,10 @@
     <string name="preferences__pressing_the_enter_key_will_send_text_messages">Shtypja e tastit Enter do të sjellë dërgim mesazhesh tekst</string>
     <string name="preferences__pref_use_address_book_photos">Përdor foto libri adresash</string>
     <string name="preferences__display_contact_photos_from_your_address_book_if_available">Shfaqni foto kontaktesh prej librit tuaj të adresave, në pastë</string>
+    <!-- Preference menu item title for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__pref_keep_muted_chats_archived">Mbaj të arkivuara bisedat pa zë</string>
+    <!-- Preference menu item description for a toggle switch for preserving the archived state of muted chats. -->
+    <string name="preferences__muted_chats_that_are_archived_will_remain_archived">Bisedat pa zë të arkivuara do të mbeten të të tilla edhe kur të vijë një mesazh i ri.</string>
     <string name="preferences__generate_link_previews">Prodho lidhje për paraparje</string>
     <string name="preferences__retrieve_link_previews_from_websites_for_messages">Merrni, për mesazhet që dërgoni, paraparje lidhjesh drejt e nga sajtet.</string>
     <string name="preferences__choose_identity">Zgjidhni identitet</string>
@@ -2601,9 +2724,9 @@
     <string name="preferences__slow">I ngadaltë</string>
     <string name="preferences__help">Ndihmë</string>
     <string name="preferences__advanced">Të mëtejshme</string>
-    <string name="preferences__donate_to_signal">Dhuroni për Signal-in</string>
+    <string name="preferences__donate_to_signal">Dhuro për Signal</string>
     <!-- Preference label for making one-time donations to Signal -->
-    <string name="preferences__one_time_donation">Dhurim Një Herë</string>
+    <string name="preferences__one_time_donation">Dhurim i vetëm</string>
     <string name="preferences__privacy">Privatësi</string>
     <!-- Preference label for stories -->
     <string name="preferences__stories">Postime të përkohshme</string>
@@ -2624,7 +2747,7 @@
     <string name="preferences__payments_beta">Pagesa (Beta)</string>
     <string name="preferences__conversation_length_limit">Kufi gjatësie bisedash</string>
     <string name="preferences__keep_messages">Mbaji mesazhet</string>
-    <string name="preferences__clear_message_history">Spastro historik mesazhesh</string>
+    <string name="preferences__clear_message_history">Pastro historikun e mesazheve</string>
     <string name="preferences__linked_devices">Pajisje të lidhura</string>
     <string name="preferences__light_theme">E çelët</string>
     <string name="preferences__dark_theme">E errët</string>
@@ -2658,7 +2781,7 @@
     <string name="preferences_chats__when_using_wifi">Kur përdoret Wi-Fi</string>
     <string name="preferences_chats__when_roaming">Nën roaming</string>
     <string name="preferences_chats__media_auto_download">Vetëshkarkim mediash</string>
-    <string name="preferences_chats__message_history">Historik mesazhesh</string>
+    <string name="preferences_chats__message_history">Historiku i mesazheve</string>
     <string name="preferences_storage__storage_usage">Përdorim hapësire</string>
     <string name="preferences_storage__photos">Foto</string>
     <string name="preferences_storage__videos">Video</string>
@@ -2666,12 +2789,12 @@
     <string name="preferences_storage__audio">Audio</string>
     <string name="preferences_storage__review_storage">Shqyrtoni hapësirën</string>
     <string name="preferences_storage__delete_older_messages">Të fshihen mesazhet e vjetër?</string>
-    <string name="preferences_storage__clear_message_history">Të spastrohet historiku i mesazheve?</string>
-    <string name="preferences_storage__this_will_permanently_delete_all_message_history_and_media">Kjo do të sjellë fshirjen përgjithmonë nga pajisja juaj të krejt historikut dhe mediave të mesazheve që janë më të vjetër se %1$s.</string>
+    <string name="preferences_storage__clear_message_history">Të pastrohet historiku i mesazheve?</string>
+    <string name="preferences_storage__this_will_permanently_delete_all_message_history_and_media">Kjo do të fshijë përgjithmonë të gjithë historikun e mesazheve dhe mediat nga pajisja jote, që janë më të vjetër se %1$s.</string>
     <string name="preferences_storage__this_will_permanently_trim_all_conversations_to_the_d_most_recent_messages">Kjo do të qethë përgjithnjë krejt bisedat sa %1$s mesazhet më të freskët.</string>
-    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">Kjo do të sjellë fshirjen përgjithmonë nga pajisja juaj të krejt historikut dhe mediave të mesazheve.</string>
-    <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">Jeni i sigurt se doni të fshihet krejt historiku i mesazheve?</string>
-    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">Do të hiqet përgjithnjë krejt historiku i mesazheve. Ky veprim s\\’mund të zhbëhet.</string>
+    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">Kjo do të fshijë përgjithmonë të gjithë historikun e mesazheve dhe mediat nga pajisja jote.</string>
+    <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">Je i sigurt se dëshiron të fshihesh krejt historikun e mesazheve?</string>
+    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">I gjithë historiku i mesazheve do të hiqet përgjithmonë. Ky veprim nuk mund të zhbëhet.</string>
     <string name="preferences_storage__delete_all_now">Fshije krejt tani</string>
     <string name="preferences_storage__forever">Përgjithmonë</string>
     <string name="preferences_storage__one_year">1 vit</string>
@@ -2749,107 +2872,9 @@
     <string name="configurable_single_select__customize_option">Përshtatë një mundësi</string>
 
     <!-- Internal only preferences -->
-    <string name="preferences__internal_turn_off_stories_with_stories_on_disk" translatable="false">Turn off stories (with stories on disk)</string>
-    <string name="preferences__internal_turn_off_stories" translatable="false">Turn off stories</string>
-    <string name="preferences__internal_delete_private_story" translatable="false">Delete private story</string>
-    <string name="preferences__internal_hide_story" translatable="false">Hide story</string>
-    <string name="preferences__internal_story_or_profile_selector" translatable="false">Story or profile selector</string>
-    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
-    <string name="preferences__internal_retry_send" translatable="false">Retry send</string>
-    <string name="preferences__internal_remove_group_story" translatable="false">Remove group story</string>
-    <string name="preferences__internal_clear_onboarding_state" translatable="false">Clear onboarding state</string>
-    <string name="preferences__internal_clears_onboarding_flag_and_triggers_download_of_onboarding_stories" translatable="false">Clears onboarding flag and triggers download of onboarding stories.</string>
     <string name="preferences__internal_preferences" translatable="false">Internal Preferences</string>
-    <string name="preferences__internal_preferences_groups_v2" translatable="false">Groups V2</string>
-    <string name="preferences__internal_force_gv2_invites" translatable="false">Force Invites</string>
-    <string name="preferences__internal_force_gv2_invites_description" translatable="false">Members will not be added directly to a GV2 even if they could be.</string>
-    <string name="preferences__internal_ignore_gv2_server_changes" translatable="false">Ignore server changes</string>
-    <string name="preferences__internal_ignore_gv2_server_changes_description" translatable="false">Changes in server\&apos;s response will be ignored, causing passive voice update messages if P2P is also ignored.</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes" translatable="false">Ignore P2P changes</string>
-    <string name="preferences__internal_ignore_gv2_p2p_changes_description" translatable="false">Changes sent P2P will be ignored. In conjunction with ignoring server changes, will cause passive voice.</string>
-    <string name="preferences__internal_payments" translatable="false">Payments</string>
-    <string name="preferences__internal_payment_copy_data" translatable="false">Copy payments data</string>
-    <string name="preferences__internal_payment_copy_data_description" translatable="false">Copy all payment records to clipboard.</string>
-    <string name="preferences__internal_account" translatable="false">Account</string>
-    <string name="preferences__internal_refresh_attributes" translatable="false">Refresh attributes</string>
-    <string name="preferences__internal_refresh_attributes_description" translatable="false">Forces a write of capabilities on to the server followed by a read.</string>
-    <string name="preferences__internal_refresh_profile" translatable="false">Refresh profile</string>
-    <string name="preferences__internal_refresh_profile_description" translatable="false">Forces a refresh of your own profile.</string>
-    <string name="preferences__internal_rotate_profile_key" translatable="false">Rotate profile key</string>
-    <string name="preferences__internal_rotate_profile_key_description" translatable="false">Creates a new versioned profile, and triggers an update of any GV2 group you belong to.</string>
-    <string name="preferences__internal_refresh_remote_config" translatable="false">Refresh remote config</string>
-    <string name="preferences__internal_refresh_remote_config_description" translatable="false">Forces a refresh of the remote config locally instead of waiting for the elapsed time.</string>
-    <string name="preferences__internal_misc" translatable="false">Miscellaneous</string>
-    <string name="preferences__internal_user_details" translatable="false">\&apos;Internal Details\&apos; button</string>
-    <string name="preferences__internal_user_details_description" translatable="false">Show a button in conversation settings that lets you see more information about a user.</string>
-    <string name="preferences__internal_shake_to_report" translatable="false">Shake to Report</string>
-    <string name="preferences__internal_shake_to_report_description" translatable="false">Shake your phone to easily submit and share a debug log.</string>
-    <string name="preferences__internal_clear_keep_longer_logs" translatable="false">Clear keep longer logs</string>
-    <string name="preferences__internal_storage_service" translatable="false">Storage service</string>
-    <string name="preferences__internal_disable_storage_service" translatable="false">Disable syncing</string>
-    <string name="preferences__internal_disable_storage_service_description" translatable="false">Prevent syncing any data to/from storage service.</string>
-    <string name="preferences__internal_force_storage_service_sync" translatable="false">Overwrite remote data</string>
-    <string name="preferences__internal_sync_now" translatable="false">Sync now</string>
-    <string name="preferences__internal_sync_now_description" translatable="false">Enqueue a normal storage service sync.</string>
-    <string name="preferences__internal_force_storage_service_sync_description" translatable="false">Forces remote storage to match the local device state.</string>
-    <string name="preferences__internal_network" translatable="false">Network</string>
-    <string name="preferences__internal_allow_censorship_toggle" translatable="false">Allow censorship circumvention toggle</string>
-    <string name="preferences__internal_allow_censorship_toggle_description" translatable="false">Allow changing the censorship circumvention toggle regardless of network connectivity.</string>
-    <string name="preferences__internal_conversations_and_shortcuts" translatable="false">Conversations and Shortcuts</string>
-    <string name="preferences__internal_emoji" translatable="false">Emoji</string>
-    <string name="preferences__internal_use_built_in_emoji_set" translatable="false">Use built-in emoji set</string>
-    <string name="preferences__internal_force_emoji_download" translatable="false">Force emoji download</string>
-    <string name="preferences__internal_force_emoji_download_description" translatable="false">Download the latest emoji set if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_force_search_index_download" translatable="false">Force search index download</string>
-    <string name="preferences__internal_force_search_index_download_description" translatable="false">Download the latest emoji search index if it\&apos;s newer than what we have.</string>
-    <string name="preferences__internal_current_version_builtin" translatable="false">Current version: Built-In</string>
-    <string name="preferences__internal_current_version_d_at_density_s" translatable="false">Current version: %1$d at density %2$s</string>
-    <string name="preferences__internal_delete_all_dynamic_shortcuts" translatable="false">Delete all dynamic shortcuts</string>
-    <string name="preferences__internal_click_to_delete_all_dynamic_shortcuts" translatable="false">Click to delete all dynamic shortcuts</string>
     <string name="preferences__internal_details" translatable="false">Internal Details</string>
-    <string name="preferences__internal_disable_profile_sharing" translatable="false">Disable Profile Sharing</string>
-    <string name="preferences__internal_delete_session" translatable="false">Delete Session</string>
-    <string name="preferences__internal_sender_key" translatable="false">Sender Key</string>
-    <string name="preferences__internal_clear_all_state" translatable="false">Clear all state</string>
-    <string name="preferences__internal_click_to_delete_all_sender_key_state" translatable="false">Click to delete all sender key state</string>
-    <string name="preferences__internal_clear_shared_state" translatable="false">Clear shared state</string>
-    <string name="preferences__internal_click_to_delete_all_sharing_state" translatable="false">Click to delete all sharing state</string>
-    <string name="preferences__internal_remove_two_person_minimum" translatable="false">Remove 2 person minimum</string>
-    <string name="preferences__internal_remove_the_requirement_that_you_need" translatable="false">Remove the requirement that you  need at least 2 recipients to use sender key.</string>
-    <string name="preferences__internal_delay_resends" translatable="false">Delay resends</string>
-    <string name="preferences__internal_delay_resending_messages_in_response_to_retry_receipts" translatable="false">Delay resending messages in response to retry receipts by 10 seconds.</string>
-    <string name="preferences__internal_local_metrics" translatable="false">Local Metrics</string>
-    <string name="preferences__internal_clear_local_metrics" translatable="false">Clear local metrics</string>
-    <string name="preferences__internal_click_to_clear_all_local_metrics_state" translatable="false">Click to clear all local metrics state.</string>
-    <string name="preferences__internal_calling_server" translatable="false">Group call server</string>
-    <string name="preferences__internal_calling_server_default" translatable="false">Default</string>
-    <string name="preferences__internal_calling_server_s" translatable="false">%1$s server</string>
-    <string name="preferences__internal_calling" translatable="false">Calling options</string>
-    <string name="preferences__internal_calling_audio_processing_method" translatable="false">Audio processing method</string>
-    <string name="preferences__internal_calling_bandwidth_mode" translatable="false">Bandwidth mode</string>
-    <string name="preferences__internal_calling_disable_telecom" translatable="false">Disable Telecom integration</string>
-    <string name="preferences__internal_badges" translatable="false">Badges</string>
-    <string name="preferences__internal_badges_enqueue_redemption" translatable="false">Enqueue redemption.</string>
-    <string name="preferences__internal_badges_enqueue_keep_alive" translatable="false">Enqueue keep-alive.</string>
-    <string name="preferences__internal_badges_set_error_state" translatable="false">Set error state.</string>
-    <string name="preferences__internal_release_channel" translatable="false">Release channel</string>
-    <string name="preferences__internal_fetch_release_channel" translatable="false">Fetch release channel</string>
-    <string name="preferences__internal_release_channel_set_last_version" translatable="false">Set last version seen back 10 versions</string>
-    <string name="preferences__internal_reset_donation_megaphone" translatable="false">Reset donation megaphone</string>
-    <string name="preferences__internal_add_sample_note" translatable="false">Add sample note</string>
-    <string name="preferences__internal_disable_stories" translatable="false">Disable stories</string>
-    <string name="preferences__internal_cds" translatable="false">CDS</string>
-    <string name="preferences__internal_clear_history" translatable="false">Clear history</string>
-    <string name="preferences__internal_clear_history_description" translatable="false">Clears all CDS history, meaning the next sync will consider all numbers to be new.</string>
-    <string name="preferences__internal_clear_all_service_ids" translatable="false">Clear all service IDs</string>
-    <string name="preferences__internal_clear_all_service_ids_description" translatable="false">Clears all known service IDs (except your own) for people that have phone numbers. Do not use on your personal device!</string>
-    <string name="preferences__internal_clear_all_profile_keys" translatable="false">Clear all profile keys</string>
-    <string name="preferences__internal_clear_all_profile_keys_description" translatable="false">Clears all known profile keys (except your own). Do not use on your personal device!</string>
-    <string name="preferences__internal_donor_error_expired_badge" translatable="false">Expired Badge</string>
-    <string name="preferences__internal_donor_error_charge_failure" translatable="false">Charge Failure</string>
-    <string name="preferences__internal_donor_error_cancelation_reason" translatable="false">Cancelation Reason</string>
-    <string name="preferences__internal_donor_error_save_and_finish" translatable="false">Save and Finish</string>
-    <string name="preferences__internal_donor_error_clear" translatable="false">Clear</string>
+    <string name="preferences__internal_stories_dialog_launcher" translatable="false">Stories dialog launcher</string>
 
 
     <!-- Payments -->
@@ -2859,7 +2884,7 @@
     <string name="PaymentsAllActivityFragment__received">Marrë më</string>
 
     <string name="PaymentsHomeFragment__introducing_payments">Ju paraqesim pagesa (Beta)</string>
-    <string name="PaymentsHomeFragment__use_signal_to_send_and_receive">Përdorni Signal-in për të dërguar dhe marrë MobileCoin, një monedhë e re dixhitale e fokusuar te privatësia. Që t\\’ia filloni, aktivizojeni.</string>
+    <string name="PaymentsHomeFragment__use_signal_to_send_and_receive">Përdor Signal për të dërguar dhe për të marrë MobileCoin, një monedhë e re digjitale e fokusuar te privatësia. Që t’ia fillosh, aktivizoje.</string>
     <string name="PaymentsHomeFragment__activate_payments">Pagesa</string>
     <string name="PaymentsHomeFragment__activating_payments">Po aktivizohen pagesa…</string>
     <string name="PaymentsHomeFragment__restore_payments_account">Riktheni llogari pagesash</string>
@@ -2881,8 +2906,8 @@
     <string name="PaymentsHomeFragment__received_payment">U mor pagesë</string>
     <string name="PaymentsHomeFragment__processing_payment">Po kryhet pagesa</string>
     <string name="PaymentsHomeFragment__unknown_amount">---</string>
-    <string name="PaymentsHomeFragment__currency_conversion_not_available">Kurs këmbimi jo gati</string>
-    <string name="PaymentsHomeFragment__cant_display_currency_conversion">S\\’shfaqet dot kurs këmbimi. Kontrolloni lidhjen e telefonit tuaj dhe riprovoni.</string>
+    <string name="PaymentsHomeFragment__currency_conversion_not_available">Kursi i këmbimit nuk është i disponueshëm</string>
+    <string name="PaymentsHomeFragment__cant_display_currency_conversion">Kursi i këmbimit nuk mund të shfaqet. Kontrollo lidhjen e internetit të telefonit tënd dhe riprovo.</string>
     <string name="PaymentsHomeFragment__payments_is_not_available_in_your_region">Pagesat s\\’janë të përdorshme në rajonin tuaj.</string>
     <string name="PaymentsHomeFragment__could_not_enable_payments">S\\’u aktivizuan dot pagesat. Riprovoni më vonë.</string>
     <string name="PaymentsHomeFragment__deactivate_payments_question">Të çaktivizohen Pagesa?</string>
@@ -2908,26 +2933,34 @@
     <string name="PaymentsHomeFragment__enable">Aktivizo</string>
     <!-- Alert dialog button to not enable payment lock for now -->
     <string name="PaymentsHomeFragment__not_now">Jo tani</string>
+    <!-- Alert dialog title which shows up to update app to send payments -->
+    <string name="PaymentsHomeFragment__update_required">Kërkohet përditësim</string>
+    <!-- Alert dialog description that app update is required to send payments-->
+    <string name="PaymentsHomeFragment__an_update_is_required">Kërkohet përditësim për të vazhduar me dërgimin dhe marrjen e pagesave, si dhe për të parë depozitën e përditësuar të pagesave.</string>
+    <!-- Alert dialog button to cancel -->
+    <string name="PaymentsHomeFragment__cancel">Anuloje</string>
+    <!-- Alert dialog button to update now -->
+    <string name="PaymentsHomeFragment__update_now">Përditësoje tani</string>
 
     <!-- PaymentsSecuritySetupFragment -->
     <!-- Toolbar title -->
-    <string name="PaymentsSecuritySetupFragment__security_setup">Security setup</string>
+    <string name="PaymentsSecuritySetupFragment__security_setup">Konfigurimi i sigurisë</string>
     <!-- Title to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__protect_your_funds">Protect your funds</string>
+    <string name="PaymentsSecuritySetupFragment__protect_your_funds">Mbro fondet e tua</string>
     <!-- Description as to why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__help_prevent">Help prevent a person with your phone from accessing your funds by adding another layer of security. You can disable this option in Settings.</string>
+    <string name="PaymentsSecuritySetupFragment__help_prevent">Parandalo që një person, i cili mund të ketë telefonin tënd, të mund të hyjë te fondet e tua, duke shtuar një shtresë tjetër sigurie. Mund ta çaktivizosh këtë opsion te \"Parametrat\".</string>
     <!-- Option to enable payment lock -->
-    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">Enable payment lock</string>
+    <string name="PaymentsSecuritySetupFragment__enable_payment_lock">Aktivizo kyçjen e pagesës</string>
     <!-- Option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__not_now">Not now</string>
+    <string name="PaymentsSecuritySetupFragment__not_now">Jo tani</string>
     <!-- Dialog title to confirm skipping the step -->
-    <string name="PaymentsSecuritySetupFragment__skip_this_step">Skip this step?</string>
+    <string name="PaymentsSecuritySetupFragment__skip_this_step">Do ta kalosh këtë hap?</string>
     <!-- Dialog description to let users know why payment lock is required -->
-    <string name="PaymentsSecuritySetupFragment__skipping_this_step">Skipping this step could allow anyone who has physical access to your phone to transfer funds or view your recovery phrase.</string>
+    <string name="PaymentsSecuritySetupFragment__skipping_this_step">Kapërcimi i këtij hapi mund të lejojë këdo që ka qasje fizike në telefonin tënd të transferojë fonde ose të shikojë fjalinë tënde të rimarrjes së kontrollit.</string>
     <!-- Dialog option to cancel -->
-    <string name="PaymentsSecuritySetupFragment__cancel">Cancel</string>
+    <string name="PaymentsSecuritySetupFragment__cancel">Anuloje</string>
     <!-- Dialog option to skip -->
-    <string name="PaymentsSecuritySetupFragment__skip">Skip</string>
+    <string name="PaymentsSecuritySetupFragment__skip">Anashkaloje</string>
 
     <!-- PaymentsAddMoneyFragment -->
     <string name="PaymentsAddMoneyFragment__add_funds">Shtoni fonde</string>
@@ -2951,7 +2984,7 @@
     <string name="PaymentsDetailsFragment__s_on_s_at_s">%1$s në %2$s më %3$s</string>
     <string name="PaymentsDetailsFragment__to">Për</string>
     <string name="PaymentsDetailsFragment__from">Nga</string>
-    <string name="PaymentsDetailsFragment__information">Hollësi transaksioni, përfshi llogari pagesash dhe kohë transaksioni, janë pjesë e MobileCoin Ledger.</string>
+    <string name="PaymentsDetailsFragment__information">Detajet e transaksionit duke përfshirë shumën e pagesës dhe kohën e transaksionit janë pjesë e Regjistrit të MobileCoin.</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_fee">Tarifë Coin Cleanup</string>
     <string name="PaymentsDetailsFragment__coin_cleanup_information">Një “tarifë pastrimi monedhash” aplikohet kur monedhat në pronësinë tuaj s\\’mund të ndërthuren për të plotësuar një transaksion. Pastrimi do t\\’ju lejojë të vazhdoni dërgim pagesash.</string>
     <string name="PaymentsDetailsFragment__no_details_available">S\\’ka hollësi të mëtejshme për këtë transaksion</string>
@@ -3011,7 +3044,7 @@
     <string name="ConfirmPayment__error_getting_fee">Gabim në marrje tarife</string>
     <string name="ConfirmPayment__estimated_s">Afërsisht %1$s</string>
     <string name="ConfirmPayment__to">Për</string>
-    <string name="ConfirmPayment__total_amount">Sasi gjithsej</string>
+    <string name="ConfirmPayment__total_amount">Shuma totale</string>
     <string name="ConfirmPayment__balance_s">Depozitë : %1$s</string>
     <string name="ConfirmPayment__submitting_payment">Po parashtrohet pagesa…</string>
     <string name="ConfirmPayment__processing_payment">Po kryhet pagesa…</string>
@@ -3037,7 +3070,7 @@
     <string name="CurrencyAmountFormatter_s_at_s">%1$s më %2$s</string>
 
     <!-- SetCurrencyFragment -->
-    <string name="SetCurrencyFragment__set_currency">Caktoni Monedhë</string>
+    <string name="SetCurrencyFragment__set_currency">Vendos monedhën</string>
     <string name="SetCurrencyFragment__all_currencies">Krejt Monedhat</string>
 
     <!-- **************************************** -->
@@ -3088,6 +3121,8 @@
     <string name="conversation_selection__menu_resend_message">Ridërgoje</string>
     <!-- Button to select a message and enter selection mode -->
     <string name="conversation_selection__menu_multi_select">Përzgjidhni</string>
+    <!-- Button to view a in-chat payment message's full payment details -->
+    <string name="conversation_selection__menu_payment_details">Payment details</string>
 
     <!-- conversation_expiring_on -->
 
@@ -3169,12 +3204,22 @@
     <string name="reminder_header_push_text">Përmirësoni komunikimin tuaj.</string>
     <string name="reminder_header_service_outage_text">Signal-i po kalon vështirësi teknike. Po punojmë fort të rikthejmë shërbimin sa më shpejt që të mundet.</string>
     <string name="reminder_header_progress">%1$d%%</string>
+    <!-- Body text of a banner that will show at the top of the chat list when we temporarily cannot process the user's contacts -->
+    <string name="reminder_cds_warning_body">Signal\'s private contact discovery temporarily can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we temporarily can't process the user's contacts -->
+    <string name="reminder_cds_warning_learn_more">Mësoni më tepër</string>
+    <!-- Body text of a banner that will show at the top of the chat list when the user has so many contacts that we cannot ever process them -->
+    <string name="reminder_cds_permanent_error_body">Signal\'s private contact discovery can\'t process your phone\'s contacts.</string>
+    <!-- Label for a button in a banner to learn more about why we cannot process the user's contacts -->
+    <string name="reminder_cds_permanent_error_learn_more">Mësoni më tepër</string>
 
     <!-- media_preview -->
     <string name="media_preview__save_title">Ruaje</string>
     <string name="media_preview__forward_title">Përcilleni</string>
     <string name="media_preview__share_title">Ndajeni Me të Tjerë</string>
     <string name="media_preview__all_media_title">Krejt mediat</string>
+    <string name="media_preview__edit_title">Përpunojeni</string>
+
 
     <!-- media_preview_activity -->
     <string name="media_preview_activity__media_content_description">Paraparje medie</string>
@@ -3203,7 +3248,7 @@
 
     <string name="FirstInviteReminder__title">Ftojeni në Signal</string>
     <string name="FirstInviteReminder__description">Mund ta rritnit numrin e mesazheve të fshehtëzuar që dërgoni me %1$d%%</string>
-    <string name="SecondInviteReminder__title">Fuqizoni Signal-in tuaj</string>
+    <string name="SecondInviteReminder__title">Fuqizo Signalin tënd</string>
     <string name="SecondInviteReminder__description">Ftojeni %1$s</string>
     <string name="InsightsReminder__view_insights">Shihni Prirje</string>
     <string name="InsightsReminder__invite">Ftoni</string>
@@ -3680,7 +3725,7 @@
     <!-- Title of progress dialog shown when a user deletes their account and the process has left all groups -->
     <string name="DeleteAccountFragment__deleting_account">Po fshihet llogaria…</string>
     <!-- Message of progress dialog shown when a user deletes their account and the process is canceling their subscription -->
-    <string name="DeleteAccountFragment__canceling_your_subscription">Po anulohet pajtimi juaj…</string>
+    <string name="DeleteAccountFragment__canceling_your_subscription">Abonimi yt po anulohet…</string>
     <!-- Message of progress dialog shown when a user deletes their account and the process is leaving groups -->
     <string name="DeleteAccountFragment__depending_on_the_number_of_groups">Në varësi të numrit të grupeve ku gjendeni, kjo mund të dojë pak minuta</string>
     <!-- Message of progress dialog shown when a user deletes their account and the process has left all groups -->
@@ -3760,7 +3805,7 @@
 
     <!-- InfoCard -->
     <string name="payment_info_card_about_mobilecoin">Rreth MobileCoin</string>
-    <string name="payment_info_card_mobilecoin_is_a_new_privacy_focused_digital_currency">MobileCoin është një monedhë e re dixhitale e fokusuar te privatësia.</string>
+    <string name="payment_info_card_mobilecoin_is_a_new_privacy_focused_digital_currency">MobileCoin është një monedhë e re digjitale e fokusuar te privatësia.</string>
     <string name="payment_info_card_adding_funds">Shtim fondesh</string>
     <string name="payment_info_card_you_can_add_funds_for_use_in">Mund të shtoni fonde për përdorim në Signal duke dërguar MobileCoin në adresën e portofolit tuaj.</string>
     <string name="payment_info_card_cashing_out">Thyerje çeqesh</string>
@@ -3798,7 +3843,10 @@
     <!-- Title in save recovery phrase screen -->
     <string name="PaymentsRecoveryStartFragment__save_recovery_phrase">Ruaj frazën e rikuperimit</string>
     <string name="PaymentsRecoveryStartFragment__enter_recovery_phrase">Jepni frazë rikthimi</string>
-    <string name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">Depozita juaj do të rikthehet automatikisht, kur të riinstaloni Signal-in, nëse ripohoni PIN-in tuaj Signal. Depozitën tuaj mund ta riktheni edhe duke përdorur një frazë rikthimesh, që është një frazë prej %1$d fjalësh unike për ju. Mbajeni shënim diku dhe depozitojeni në një vend të parrezik.</string>
+    <plurals name="PaymentsRecoveryStartFragment__your_balance_will_automatically_restore">
+        <item quantity="one">Depozita jote do të rikthehet automatikisht, kur të instalosh sërish Signal, nëse konfirmon PIN-in tënd Signal. Depozitën tënde mund ta rikthesh duke përdorur një frazë rikthimesh, që është një frazë prej %1$d fjalësh unike për ty. Mbaje shënim diku dhe ruaje në një vend të sigurt.</item>
+        <item quantity="other">Depozita jote do të rikthehet automatikisht, kur të riinstalosh Signal, nëse ripohon PIN-in tënd Signal. Depozitën tënde mund ta rikthesh edhe duke përdorur një frazë rikthimesh, që është një frazë prej %1$d fjalësh unike për ty. Mbaje shënim diku dhe ruaje në një vend të sigurt.</item>
+    </plurals>
     <!-- Description in save recovery phrase screen which shows up when user has non zero balance -->
     <string name="PaymentsRecoveryStartFragment__got_balance">Ti ke ekuilibër! Koha për të ruajtur frazën tënde të rikuperimit—një çelës 24 fjalësh që mund ta përdorësh për të rivendosur ekuilibrin tënd.</string>
     <!-- Description in save recovery phrase screen which shows up when user navigates from info card -->
@@ -3971,6 +4019,12 @@
     <string name="SmsSettingsFragment__removing_sms_messages_from_signal">Po hiqen mesazhet SMS nga Signal…</string>
     <!-- Snackbar text to indicate can delete later -->
     <string name="SmsSettingsFragment__you_can_remove_sms_messages_from_signal_in_settings">Ti mund të heqësh mesazhet SMS nga Signal te parametrat në çdo kohë.</string>
+    <!-- Description for export sms preference -->
+    <string name="SmsSettingsFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">Mund të eksportosh mesazhet e tua SMS në bazën e të dhënave SMS të telefonit tënd</string>
+    <!-- Description for remove sms preference -->
+    <string name="SmsSettingsFragment__remove_sms_messages_from_signal_to_clear_up_storage_space">Hiq mesazhet SMS nga Signal për të liruar hapësirën e ruajtjes.</string>
+    <!-- Information message shown at the top of sms settings to indicate it is being removed soon. -->
+    <string name="SmsSettingsFragment__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Mbështetja për SMS do të hiqet së shpejti për t\'u përqendruar në mesazhet e koduara.</string>
 
     <!-- NotificationsSettingsFragment -->
     <string name="NotificationsSettingsFragment__messages">Mesazhe</string>
@@ -4001,7 +4055,7 @@
     <string name="PrivacySettingsFragment__default_timer_for_new_changes">Kohëmatës parazgjedhje për fjalosje të reja</string>
     <string name="PrivacySettingsFragment__set_a_default_disappearing_message_timer_for_all_new_chats_started_by_you">Ujdisni një kohëmatës tretjeje mesazhesh për krejt fjalosjet e reja të nisura nga ju.</string>
     <!-- Summary for stories preference to launch into story privacy settings -->
-    <string name="PrivacySettingsFragment__manage_your_stories">Menaxho postimet e përkohshme dhe se kush mund t\'i shohë ato</string>
+    <string name="PrivacySettingsFragment__manage_your_stories">Menaxho postimet e tua të përkohshme dhe se cili mund t\'i shohë ato</string>
     <string name="PrivacySettingsFragment__payment_lock_require_lock">Kërko kyçje të ekranit nga Android ose gjurmën e gishtit për të transferuar fondet</string>
     <!-- Alert dialog title when payment lock cannot be enabled -->
     <string name="PrivacySettingsFragment__cant_enable_title">Kyçja e pagesës nuk mund të aktivizohet</string>
@@ -4090,11 +4144,11 @@
     <string name="ChatColorGradientTool_bottom_edge_selector">Përzgjedhës i skajit të poshtëm</string>
 
     <!-- Title text for prompt to donate. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_donate_to_signal">Dhuroni për Signal-in</string>
+    <string name="Donate2022Q2Megaphone_donate_to_signal">Dhuro për Signal</string>
     <!-- Body text for prompt to donate. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_signal_is_powered_by_people_like_you">Signal-i bazohet në njerëz si ju. Bëni një dhurim të përmuajshëm dhe merrni një stemë.</string>
+    <string name="Donate2022Q2Megaphone_signal_is_powered_by_people_like_you">Signal mundësohet nga njerëz si ti. Bëj dhurim të përmuajshëm dhe merr një distinktiv.</string>
     <!-- Button label that brings a user to the donate screen. Shown in a popup at the bottom of the chat list. -->
-    <string name="Donate2022Q2Megaphone_donate">Dhuroni</string>
+    <string name="Donate2022Q2Megaphone_donate">Dhuro</string>
     <!-- Button label that dismissed a prompt to donate. Shown in a popup at the bottom of the chat list. -->
     <string name="Donate2022Q2Megaphone_not_now">Jo tani</string>
 
@@ -4115,9 +4169,9 @@
     <!-- BecomeASustainerMegaphone -->
     <string name="BecomeASustainerMegaphone__become_a_sustainer">Bëhuni një Mbështetës</string>
     <!-- Displayed in the Become a Sustainer megaphone -->
-    <string name="BecomeASustainerMegaphone__signal_is_powered_by">Signal-i bazohet në njerëz si ju. Dhuroni dhe merrni një stemë.</string>
+    <string name="BecomeASustainerMegaphone__signal_is_powered_by">Signal mundësohet në njerëz si ti. Dhuro dhe merr një distinktiv.</string>
     <string name="BecomeASustainerMegaphone__not_now">Jo tani</string>
-    <string name="BecomeASustainerMegaphone__donate">Dhuroni</string>
+    <string name="BecomeASustainerMegaphone__donate">Dhuro</string>
 
     <!-- KeyboardPagerFragment -->
     <string name="KeyboardPagerFragment_emoji">Emoji</string>
@@ -4172,7 +4226,7 @@
     <string name="ConversationSettingsFragment__conversation_muted_forever">Bisedë e heshtuar përgjithmonë</string>
     <string name="ConversationSettingsFragment__copied_phone_number_to_clipboard">Numri i telefonit u kopjua në të papastër.</string>
     <string name="ConversationSettingsFragment__phone_number">Numër telefoni</string>
-    <string name="ConversationSettingsFragment__get_badges">Merrni stema për profilin tuaj duke përkrahur Signal-in. Për të mësuar më shumë, prekni mbi një stemë.</string>
+    <string name="ConversationSettingsFragment__get_badges">Merr distinktivët për profilin tënd, duke përkrahur Signal. Për të mësuar më shumë, kliko mbi një distinktiv.</string>
 
     <!-- PermissionsSettingsFragment -->
     <string name="PermissionsSettingsFragment__add_members">Shtoni anëtarë</string>
@@ -4231,6 +4285,8 @@
     <string name="NewConversationActivity__this_person_is_saved_to_your">Ky person është i ruajtur tek kontaktet në pajisjen tënde. Fshiji ato nga kontaktet e tua dhe provo përsëri.</string>
     <!-- Dialog action to view contact when they can't be removed otherwise -->
     <string name="NewConversationActivity__view_contact">Shiko kontaktin</string>
+    <!-- Error message shown when looking up a person by phone number and that phone number is not associated with a signal account -->
+    <string name="NewConversationActivity__s_is_not_a_signal_user">%1$s nuk është përdorues i Signal</string>
 
     <!-- ContactFilterView -->
     <string name="ContactFilterView__search_name_or_number">Kërkoni emër ose numër</string>
@@ -4337,166 +4393,170 @@
 
     <string name="CameraFragment__failed_to_open_camera">S\\’u arrit të hapet kamera</string>
 
-    <string name="BadgesOverviewFragment__my_badges">Stemat e mia</string>
-    <string name="BadgesOverviewFragment__featured_badge">Stemë e zgjedhur</string>
-    <string name="BadgesOverviewFragment__display_badges_on_profile">Shfaq stema në profil</string>
+    <string name="BadgesOverviewFragment__my_badges">Distinktivët e mi</string>
+    <string name="BadgesOverviewFragment__featured_badge">Distinktiv i zgjedhur</string>
+    <string name="BadgesOverviewFragment__display_badges_on_profile">Shfaq distinktivët në profil</string>
     <string name="BadgesOverviewFragment__failed_to_update_profile">S\\’u arrit të përditësohej profili</string>
 
 
-    <string name="BadgeSelectionFragment__select_badges">Përzgjidhni stema</string>
+    <string name="BadgeSelectionFragment__select_badges">Përzgjidh distinktivët</string>
 
     <string name="SelectFeaturedBadgeFragment__preview">Paraparje</string>
-    <string name="SelectFeaturedBadgeFragment__select_a_badge">Përzgjidhni një stemë</string>
-    <string name="SelectFeaturedBadgeFragment__you_must_select_a_badge">Duhet të përzgjidhni një stemë</string>
+    <string name="SelectFeaturedBadgeFragment__select_a_badge">Përzgjidh një distinktiv</string>
+    <string name="SelectFeaturedBadgeFragment__you_must_select_a_badge">Duhet të përzgjedhësh një distinktiv</string>
     <string name="SelectFeaturedBadgeFragment__failed_to_update_profile">S\\’u arrit të përditësohej profili</string>
 
     <string name="ViewBadgeBottomSheetDialogFragment__become_a_sustainer">Bëhuni një mbështetës</string>
+    <!-- Title of a page in the bottom sheet. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal">%1$s supports Signal</string>
+    <!-- Description of a page in the bottom sheet of a monthly badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_monthly">%1$s mbështet Signal me një donacion të përmuajshëm. Signal është një ent jofitimprurës pa reklama dhe investues, i përkrahur vetëm nga njerëz si ti.</string>
+    <!-- Description of a page in the bottom sheet of a one-time badge. Placeholder is a user's short-name -->
+    <string name="ViewBadgeBottomSheetDialogFragment__s_supports_signal_with_a_donation">%1$s supports Signal with a donation. Signal is a nonprofit with no advertisers or investors, supported only by people like you.</string>
 
-    <string name="ImageView__badge">Stemë</string>
+    <string name="ImageView__badge">Distinktiv</string>
 
-    <string name="SubscribeFragment__signal_is_powered_by_people_like_you">Signal bazohet në njerëz si ju.</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you">Përkrahni teknologjinë e ngritur për ju—jo për të dhënat tuaja—duke u bërë pjesë e bashkësisë së njerëzve që e mbajnë atë gjallë.</string>
     <string name="SubscribeFragment__support_technology_that_is_built_for_you_not">Përkrahni teknologjinë që është ngritur për ju, jo për të dhënat tuaja, duke u bërë pjesë e bashkësisë që mbështet Signal-in.</string>
-    <string name="SubscribeFragment__make_a_recurring_monthly_donation">Bëni një dhurim përsëritës mujor për Signal-in që të përkrahni teknologji të ndërtuar për ju, jo për të dhënat tuaja.</string>
     <string name="SubscribeFragment__currency">Monedhë</string>
     <string name="SubscribeFragment__more_payment_options">Më Tepër Mundësi Pagesash</string>
-    <string name="SubscribeFragment__cancel_subscription">Anuloje Pajtimin</string>
-    <string name="SubscribeFragment__confirm_cancellation">E ripohoni Anulimin?</string>
-    <string name="SubscribeFragment__you_wont_be_charged_again">S\\’do t\\’ju faturohet gjë më. Stema juaj do të hiqet nga profili juaj në fund të periudhës së faturuar.</string>
+    <string name="SubscribeFragment__cancel_subscription">Anuloje abonimin</string>
+    <string name="SubscribeFragment__confirm_cancellation">E konfirmon anulimin?</string>
+    <string name="SubscribeFragment__you_wont_be_charged_again">Nuk do të të mbahet më pagesë. Distinktivi yt do të hiqet nga profili në fund të periudhës së faturimit.</string>
     <string name="SubscribeFragment__not_now">Jo tani</string>
     <string name="SubscribeFragment__confirm">Ripohojeni</string>
-    <string name="SubscribeFragment__update_subscription">Përditësojeni Pajtimin</string>
-    <string name="SubscribeFragment__your_subscription_has_been_cancelled">Pajtimi juaj është anuluar.</string>
-    <string name="SubscribeFragment__update_subscription_question">Të përditësohet pajtimi?</string>
+    <string name="SubscribeFragment__update_subscription">Përditëso abonimin</string>
+    <string name="SubscribeFragment__your_subscription_has_been_cancelled">Abonimi yt është anuluar.</string>
+    <string name="SubscribeFragment__update_subscription_question">Ta përditësojmë abonimin?</string>
     <string name="SubscribeFragment__update">Përditësoje</string>
-    <string name="SubscribeFragment__you_will_be_charged_the_full_amount_s_of">Do t\\’ju faturohet sot vlera e plotë (%1$s) e çmimit të pajtimit të ri. Pajtimi juaj do të rinovohet çdo muaj.</string>
+    <string name="SubscribeFragment__you_will_be_charged_the_full_amount_s_of">Sot do të të mbahet shuma e plotë (%1$s) e çmimit të ri të abonimit. Abonimi yt do të rinovohet çdo muaj.</string>
 
     <string name="Subscription__s_per_month">%1$s/muaj</string>
-    <string name="Subscription__s_per_month_dot_renews_s">%1$s/muaj · Rinovohet më %2$s</string>
-    <string name="Subscription__s_per_month_dot_expires_s">%1$s/muaj · Skadon më %2$s</string>
+    <!-- Shown when a subscription is active and isn't going to expire at the end of the term -->
+    <string name="Subscription__renews_s">Rinovohet më %1$s</string>
+    <!-- Shown when a subscription is active and is going to expire at the end of the term -->
+    <string name="Subscription__expires_s">Skadon më %1$s</string>
 
+    <!-- Title of learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_different">Signal is different.</string>
     <!-- First small text blurb on learn more sheet -->
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_a_nonprofit_with_no">Signal-i është një ent jofitimprurës, pa reklamues për të apo investues, i bazuar vetëm te njerëzit që e përdorin dhe vlerësojnë. Bëni një dhurim mujor ripërsëritës dhe merrni një stemë profili për t\\’u treguar të tjerëve përkrahjen tuaj.</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__why_donate">Pse të Dhurohet?</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_committed_to_developing">Signal-i është i përkushtuar zhvillimit të teknologjive të privatësisë me burim të hapët që mbrojnë shprehjen e lirë dhe bëjnë të mundur komunikim të sigurt global.</string>
-    <string name="SubscribeLearnMoreBottomSheetDialogFragment__your_donation">Dhurimi juaj i shërben kësaj kauze dhe paguan për zhvillimin dhe operacioneve të lidhura me një aplikacion të përdorur nga miliona vetë për komunikim privat. Pa reklama. Pa gjurmues. Pa shaka.</string>
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__private_messaging">Private messaging. No ads, no trackers, no surveillance.</string>
+    <!-- Second small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__signal_is_supported_by">Signal is supported by donations, meaning that your privacy is at the center of everything we do. Signal is built for you; not your data and not for profit.</string>
+    <!-- Third small text blurb on learn more sheet -->
+    <string name="SubscribeLearnMoreBottomSheetDialogFragment__if_you_can">If you can, please donate today to keep Signal fun, dependable, and available for everyone.</string>
 
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_your_support">Faleminderit për Përkrahjen tuaj!</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__thanks_for_the_boost">Faleminderit për Fuqizimin!</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_s_badge_display">Fituat stemën %1$s! Shfaqeni këtë stemë në profilin tuaj, që të shtohet ndërgjegjësimi mbi dhurimet për Signal-in.</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_boost_badge_display">Fituat një stemë Përforcimi. Shpaloseni këtë stemë në profilin tuaj, që të shtohet ndërgjegjësimi për dhurim te Signal-i.</string>
+    <!-- Subtext underneath the dialog title on the thanks sheet -->
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__youve_earned_a_donor_badge">You\'ve earned a donor badge from Signal! Display it on your profile to show off your support.</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__you_can_also">Mundeni edhe të</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__become_a_montly_sustainer">bëheni një Mbështetës mujor.</string>
     <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__display_on_profile">Shfaqe në Profil</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__make_featured_badge">Bëje stemë të zgjedhur</string>
-    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__done">U bë</string>
-    <string name="ThanksForYourSupportBottomSheetFragment__when_you_have_more">Kur keni më shumë se një stemë, mund të zgjidhni cila t\\’u shfaqet të tjerëve te profili juaj për ta parë.</string>
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__make_featured_badge">Bëj distinktiv të zgjedhur</string>
+    <string name="SubscribeThanksForYourSupportBottomSheetDialogFragment__continue">Vazhdo</string>
+    <string name="ThanksForYourSupportBottomSheetFragment__when_you_have_more">Kur ke më shumë se një distinktiv, mund të zgjedhësh një, që të tjerët ta shohin në profilin tënd.</string>
 
-    <string name="BecomeASustainerFragment__get_badges">Merrni stema për profilin tuaj, duke përkrahur Signal-in.</string>
+    <string name="BecomeASustainerFragment__get_badges">Merr distinktivë për profilin, duke përkrahur Signal.</string>
     <string name="BecomeASustainerFragment__signal_is_a_non_profit">Signal-i është një ent jofitimprurës pa rrjete reklamash dhe investues, i përkrahur vetëm nga njerëz si ju.</string>
 
-    <!-- Button label for creating a monthly donation -->
-    <string name="ManageDonationsFragment__make_a_monthly_donation">Bëni një dhurim të përmuajshëm</string>
+    <!-- Button label for creating a donation -->
+    <string name="ManageDonationsFragment__donate_to_signal">Dhuro për Signal</string>
     <!-- Heading for more area of manage subscriptions page -->
     <string name="ManageDonationsFragment__more">Më tepër</string>
     <!-- Heading for receipts area of manage subscriptions page -->
     <string name="ManageDonationsFragment__receipts">Fatura</string>
     <!-- Heading for my subscription area of manage subscriptions page -->
-    <string name="ManageDonationsFragment__my_subscription">Pajtimi im</string>
-    <string name="ManageDonationsFragment__manage_subscription">Administroni pajtim</string>
+    <string name="ManageDonationsFragment__my_support">Përkrahja ime</string>
+    <string name="ManageDonationsFragment__manage_subscription">Menaxho abonimin</string>
     <!-- Label for Donation Receipts button -->
-    <string name="ManageDonationsFragment__donation_receipts">Dëftesa Dhurimesh</string>
-    <string name="ManageDonationsFragment__badges">Stema</string>
-    <string name="ManageDonationsFragment__subscription_faq">PBR pajtimesh</string>
-    <string name="ManageDonationsFragment__error_getting_subscription">Gabim në marrje pajtimi.</string>
+    <string name="ManageDonationsFragment__donation_receipts">Faturat e dhurimit</string>
+    <string name="ManageDonationsFragment__badges">Distinktivët</string>
+    <string name="ManageDonationsFragment__subscription_faq">FAQ për abonimin</string>
+    <string name="ManageDonationsFragment__error_getting_subscription">Gabim në marrjen e abonimit.</string>
     <!-- Preference heading for other ways to donate -->
     <string name="ManageDonationsFragment__other_ways_to_give">Rrugë të tjera për të dhuruar</string>
     <!-- Preference label to launch badge gifting -->
-    <string name="ManageDonationsFragment__gift_a_badge">Dhuroni një stemë</string>
+    <string name="ManageDonationsFragment__gift_a_badge">Dhuro një distinktiv</string>
 
-    <string name="BoostFragment__give_signal_a_boost">Jepini Sinjalit Pak Fuqizim</string>
-    <!-- Description text in boost sheet -->
-    <string name="BoostFragment__make_a_one_time">Bëni një dhurim një here dhe fitoni një stemë Përforcimi për %1$d ditë.</string>
-
-    <string name="Boost__enter_custom_amount">Jepni Sasi Vetjake</string>
+    <string name="Boost__enter_custom_amount">Vendos shumën e personalizuar</string>
     <string name="Boost__one_time_contribution">Kontribut një herë</string>
 
-    <string name="MySupportPreference__add_a_signal_boost">Shtoni një fuqizim Signal-i</string>
+    <string name="MySupportPreference__add_a_signal_boost">Shto një Signal Boost</string>
     <string name="MySupportPreference__s_per_month">%1$s/muaj</string>
     <string name="MySupportPreference__renews_s">Rinovohet më %1$s</string>
     <string name="MySupportPreference__processing_transaction">Po përpunohet transaksioni…</string>
     <!-- Displayed on "My Support" screen when user badge failed to be added to their account -->
-    <string name="MySupportPreference__couldnt_add_badge_s">S\\’u shtua dot stemë. %1$s</string>
+    <string name="MySupportPreference__couldnt_add_badge_s">Distinktivi nuk mundi të shtohej. %1$s</string>
     <string name="MySupportPreference__please_contact_support">Ju lutemi, lidhuni me ata të asistencës.</string>
 
     <!-- Title of expiry sheet when boost badge falls off profile unexpectedly. -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__boost_badge_expired">Stema e Përforcimit Ka Skaduar</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__boost_badge_expired">Distinktivi shtesë ka skaduar</string>
     <!-- Displayed in the bottom sheet if a monthly donation badge unexpectedly falls off the user\'s profile -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__monthly_donation_cancelled">Dhurim i Përmuajshëm i Anuluar</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__monthly_donation_cancelled">Dhurimi i Përmuajshëm u anulua</string>
     <!-- Displayed in the bottom sheet when a boost badge expires -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__your_boost_badge_has_expired_and">Stema juaj e Përforcimit ka skaduar dhe s\\’është më e dukshme për të tjerët në profilin tuaj.</string>
-    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can_reactivate">Stemën tua Përforcim mund ta riaktivizoni për 30 ditë të tjera përmes një kontributi një herësh.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__your_boost_badge_has_expired_and">Distinktivi yt shtesë ka skaduar dhe nuk shfaqet më në profilin tënd.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can_reactivate">Mund ta riaktivizosh distinktivin tënd shtesë për 30 ditë të tjera me një kontribut të njëherëshëm.</string>
     <!-- Displayed when we do not think the user is a subscriber when their boost expires -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can_keep">Mund të vazhdoni të përdorni Signal-in, por që të përkrahni teknologjinë që është ndërtuar për ju, shihni mundësinë e bërjes një përkrahës, duke bërë një dhurim të përmuajshëm.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can_keep">Mund të vazhdosh të përdorësh Signal, por që të mbështetësh teknologjinë që është ndërtuar për ty, merr në konsideratë që të bëhesh përkrahës, duke bërë një dhurim mujor.</string>
     <string name="ExpiredBadgeBottomSheetDialogFragment__become_a_sustainer">Bëhuni një Mbështetës</string>
-    <string name="ExpiredBadgeBottomSheetDialogFragment__add_a_boost">Shtoni një Përforcim</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__add_a_boost">Shto një Fuqizim</string>
     <string name="ExpiredBadgeBottomSheetDialogFragment__not_now">Jo tani</string>
     <!-- Copy displayed when badge expires after user inactivity -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_automatically">Dhurimi juaj ripërsëritës u anulua automatikisht, ngaqë qetë jo aktiv për një kohë të gjatë. Stema juaj %1$s s\\’është më e dukshme te profili juaj.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_automatically">Dhurimi yt mujor periodik u anulua automatikisht, sepse nuk ke qenë aktiv për një kohë të gjatë. Distinktivi yt %1$s nuk është më i dukshëm në profilin tënd.</string>
     <!-- Copy displayed when badge expires after payment failure -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_canceled">Dhurimi juaj i përmuajshëm u anulua, ngaqë s\\’përpunuam dot pagesën tuaj. Stema juaj s\\’është më e dukshme te profili juaj.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_canceled">Dhurimi yt mujor periodik u anulua, sepse ne nuk mund të përpunonim dot pagesën tënde. Distinktivi yt nuk është më i dukshëm në profilin tënd.</string>
     <!-- Copy displayed when badge expires after a payment failure and we have a displayable charge failure reason -->
-    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_canceled_s">Dhurimi yt mujor i përsëritur u anulua. %1$sStema %2$s nuk shfaqet më në profil.</string>
-    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can">Mund të vazhdoni ta përdorni Signal-in, por që të përkrahni aplikacionin dhe të riaktivizoni stemën, rinovojeni tani.</string>
-    <string name="ExpiredBadgeBottomSheetDialogFragment__renew_subscription">Rinovoni pajtimin</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__your_recurring_monthly_donation_was_canceled_s">Dhurimi yt mujor periodik u anulua. %1$s Distinktivi yt %2$s nuk është më i dukshëm në profilin tënd.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__you_can">Mund të vazhdosh të përdorësh Signal, por që të përkrahësh aplikacionin dhe të riaktivizosh distinktivin, rinovoje tani.</string>
+    <string name="ExpiredBadgeBottomSheetDialogFragment__renew_subscription">Rinovo abonimin</string>
     <!-- Button label to send user to Google Pay website -->
     <string name="ExpiredBadgeBottomSheetDialogFragment__go_to_google_pay">Kaloni në Google Pay</string>
 
-    <string name="CantProcessSubscriptionPaymentBottomSheetDialogFragment__cant_process_subscription_payment">S’bëhet dot kryerja e pagesës</string>
+    <string name="CantProcessSubscriptionPaymentBottomSheetDialogFragment__cant_process_subscription_payment">Nuk mund të përpunohet pagesa e abonimit</string>
     <string name="CantProcessSubscriptionPaymentBottomSheetDialogFragment__were_having_trouble">Po kemi probleme me marrjen e pagesës tuaj si Përkrahës Signal-i. Sigurohuni se metoda juaj e pagesës është e përditësuar. Nëse s’është, përditësojeni në Google Pay. Signal-i do të provojë sërish të bëjë kryerjen e pagesës pas pak ditësh.</string>
     <string name="CantProcessSubscriptionPaymentBottomSheetDialogFragment__dont_show_this_again">Mos e shfaq më këtë</string>
 
     <string name="Subscription__please_contact_support_for_more_information">Ju lutemi, për më tepër hollësi, lidhuni më asistencën.</string>
     <string name="Subscription__contact_support">Lidhuni Me Asistencën</string>
-    <string name="Subscription__earn_a_s_badge">Fitoni një stemë %1$s</string>
+    <string name="Subscription__get_a_s_badge">Merr një distinktiv %1$s</string>
 
     <string name="SubscribeFragment__processing_payment">Po kryhet pagesa…</string>
     <!-- Displayed in notification when user payment fails to process on Stripe -->
     <string name="DonationsErrors__error_processing_payment">Gabim në përpunim pagese</string>
     <!-- Displayed on "My Support" screen when user subscription payment method failed. -->
     <string name="DonationsErrors__error_processing_payment_s">Gabim në përpunim pagese. %1$s</string>
-    <string name="DonationsErrors__your_badge_could_not_be_added">Stema juaj s\\’u shtua dot te llogaria juaj, por mund t\\’ju jetë faturuar vlera e dhurimit. Ju lutemi, lidhuni me asistencën.</string>
-    <string name="DonationsErrors__your_payment">Pagesa juaj s\\’u përpunuar do dhe nuk ju është faturuar. Ju lutemi, riprovoni.</string>
+    <string name="DonationsErrors__your_badge_could_not_be_added">Distinktivi yt nuk mundi të shtohej në llogarinë tënde, por mund të të jetë mbajtur pagesa. Të lutemi, lidhu me ndihmën.</string>
+    <string name="DonationsErrors__your_payment">Pagesa jote nuk mundi të përpunohej dhe nuk të është mbajtur. Të lutem, provo përsëri.</string>
     <string name="DonationsErrors__still_processing">Ende në përpunim</string>
-    <string name="DonationsErrors__couldnt_add_badge">S\\’u shtua dot stemë</string>
+    <string name="DonationsErrors__couldnt_add_badge">Distinktivi nuk mundi të shtohej</string>
     <!-- Displayed when badge credential couldn\'t be verified -->
-    <string name="DonationsErrors__failed_to_validate_badge">S\\’u arrit të vleftësohej stema</string>
+    <string name="DonationsErrors__failed_to_validate_badge">Vërtetimi i distinktivit dështoi</string>
     <!-- Displayed when badge credential couldn\'t be verified -->
     <string name="DonationsErrors__could_not_validate">S\\’u vleftësua dot përgjigja e shërbyesit. Ju lutemi, lidhuni me asistencën.</string>
     <!-- Displayed as title when some generic error happens during gift badge sending -->
-    <string name="DonationsErrors__failed_to_send_gift_badge">S\\’u arrit të dërgohej një stemë dhuratë</string>
+    <string name="DonationsErrors__failed_to_send_gift_badge">Dërgimi i distinktivit dhuratë dështoi</string>
     <!-- Displayed as message when some generic error happens during gift badge sending -->
-    <string name="DonationsErrors__could_not_send_gift_badge">S\\’u dërgua dot stemë dhuratë. Ju lutemi, lidhuni me asistencën.</string>
-    <string name="DonationsErrors__your_badge_could_not">Stema juaj s\\’u shtua dot te llogaria juaj, por mund t\\’ju jetë faturuar vlera e dhurimit. Ju lutemi, lidhuni me asistencën.</string>
+    <string name="DonationsErrors__could_not_send_gift_badge">Distinktivi dhuratë nuk mund të dërgohej. Të lutemi, lidhu me ndihmën.</string>
+    <string name="DonationsErrors__your_badge_could_not">Distinktivi nuk mundi të shtohej në llogarinë tënde, por mund të të jetë mbajtur pagesa. Të lutemi, lidhu me ndihmën.</string>
     <string name="DonationsErrors__your_payment_is_still">Pagesa juaj ende po përpunohet. Kjo mund të zërë ca minuta, varet nga lidhja juaj.</string>
     <string name="DonationsErrors__google_pay_unavailable">Google Pay i Pakapshëm</string>
-    <string name="DonationsErrors__you_have_to_set_up_google_pay_to_donate_in_app">Duhet të ujdisni Google Pay, që të dhuroni që nga brenda aplikacionit.</string>
-    <string name="DonationsErrors__failed_to_cancel_subscription">S\\’u arrit të anulohej pajtimi</string>
-    <string name="DonationsErrors__subscription_cancellation_requires_an_internet_connection">Anulimi i pajtimit lyp lidhje në Internet.</string>
-    <string name="ViewBadgeBottomSheetDialogFragment__your_device_doesn_t_support_google_pay_so_you_can_t_subscribe_to_earn_a_badge_you_can_still_support_signal_by_making_a_donation_on_our_website">Pajisja juaj nuk mbulon Google Pay, ndaj s\\’mund të kontribuoni për të fituar një stemë. Mundeni ende të përkrahni Signal-in duke bërë një dhurim te sajti ynë.</string>
+    <string name="DonationsErrors__you_have_to_set_up_google_pay_to_donate_in_app">Duhet të konfigurosh Google Pay për të dhuruar brenda aplikacionit.</string>
+    <string name="DonationsErrors__failed_to_cancel_subscription">Anulimi i abonimit dështoi</string>
+    <string name="DonationsErrors__subscription_cancellation_requires_an_internet_connection">Anulimi i abonimit kërkon lidhje interneti.</string>
+    <string name="ViewBadgeBottomSheetDialogFragment__your_device_doesn_t_support_google_pay_so_you_can_t_subscribe_to_earn_a_badge_you_can_still_support_signal_by_making_a_donation_on_our_website">Pajisja jote nuk e mbështet Google Pay, kështu që nuk mund të abonohesh për të fituar një distinktiv. Ende mund ta mbështesësh Signal duke bërë një dhurim në faqen tonë të internetit.</string>
     <string name="NetworkFailure__network_error_check_your_connection_and_try_again">Gabim rrjeti. Ju lutemi, kontrolloni lidhjen tuaj me rrjetin dhe riprovoni.</string>
     <string name="NetworkFailure__retry">Riprovo</string>
     <!-- Displayed as a dialog title when the selected recipient for a gift doesn\'t support gifting -->
     <string name="DonationsErrors__cant_send_gift">Dhurata nuk mund të dërgohet</string>
     <!-- Displayed as a dialog message when the selected recipient for a gift doesn\'t support gifting -->
-    <string name="DonationsErrors__target_does_not_support_gifting">Ky marrës përdor një version të Signal që nuk mund të marrë distinktivë dhuratë. Dhuratat do të mund të merren kur të përditësojnë aplikacionin në versionin më të fundit.</string>
+    <string name="DonationsErrors__target_does_not_support_gifting">Ky marrës po përdor një version të Signal që nuk mund të marrë distinktivë dhuratë. Dhuratat do të mund të merren, kur të përditësojë aplikacionin në versionin më të ri.</string>
     <!-- Displayed as a dialog title when the user\'s profile could not be fetched, likely due to lack of internet -->
     <string name="DonationsErrors__couldnt_send_gift">Dhurata nuk mundi të dërgohej</string>
     <!-- Displayed as a dialog message when the user\'s profile could not be fetched, likely due to lack of internet -->
     <string name="DonationsErrors__please_check_your_network_connection">Dhurata jote nuk u dërgua dot për shkak të një gabimi në rrjet. Kontrollo internetin dhe provo sërish.</string>
 
     <!-- Gift message view title -->
-    <string name="GiftMessageView__gift_badge">Dhuroni stemë</string>
+    <string name="GiftMessageView__gift_badge">Distinktiv dhuratë</string>
     <!-- Gift message view expiry information -->
     <plurals name="GiftMessageView__lasts_for_d_months">
         <item quantity="one">Vlen për %1$d muaj</item>
@@ -4697,21 +4757,21 @@
     <!-- Donation receipts gift tab label -->
     <string name="DonationReceiptListFragment__gift">Dhuratë</string>
     <!-- Donation receipts boost row label -->
-    <string name="DonationReceiptListFragment__boost">Përforcojeni</string>
+    <string name="DonationReceiptListFragment__boost">Përforcoje</string>
     <!-- Donation receipts details title -->
     <string name="DonationReceiptDetailsFragment__details">Hollësi</string>
     <!-- Donation receipts donation type heading -->
-    <string name="DonationReceiptDetailsFragment__donation_type">Lloj dhurimi</string>
+    <string name="DonationReceiptDetailsFragment__donation_type">Lloji i dhurimit</string>
     <!-- Donation receipts date paid heading -->
     <string name="DonationReceiptDetailsFragment__date_paid">Datë pagese</string>
     <!-- Donation receipts share PNG -->
     <string name="DonationReceiptDetailsFragment__share_receipt">Ndani faturën</string>
     <!-- Donation receipts list end note -->
-    <string name="DonationReceiptListFragment__if_you_have">Nëse keni riinstaluar Signal-in, dëftesat prej dhurimesh të mëparshme s’do të duken më.</string>
+    <string name="DonationReceiptListFragment__if_you_have">Nëse ke riinstaluar Signal, faturat e dhurimeve të mëparshme nuk do të shfaqen.</string>
     <!-- Donation receipts document title -->
-    <string name="DonationReceiptDetailsFragment__donation_receipt">Dëftesë dhurimi</string>
+    <string name="DonationReceiptDetailsFragment__donation_receipt">Fatura e dhurimit</string>
     <!-- Donation receipts amount title -->
-    <string name="DonationReceiptDetailsFragment__amount">Sasi</string>
+    <string name="DonationReceiptDetailsFragment__amount">Shuma</string>
     <!-- Donation receipts thanks -->
     <string name="DonationReceiptDetailsFragment__thank_you_for_supporting">Faleminderit për përkrahjen e Signal-it. Kontributi juaj ndihmon të ushqehet misioni i zhvillimit me burim të hapët i teknologjisë së privatësisë që mbron shprehjen e lirë dhe bën të mundur komunikim global për miliona vetë anembanë botës. Nëse jeni një banues në ShBA, ju lutemi, mbajeni këtë dëftesë për deklarimin e taksave. Signal Technology Foundation është një ent jofitimprurës i përjashtuar nga taksat në ShBA, sipas ndarjes 501c3 të Kodit Mbi të Ardhurat e Brendshme. ID-ja jonë Federale e Taksave është 82–4506840.</string>
     <!-- Donation receipt type -->
@@ -4724,21 +4784,21 @@
     <!-- Label for Chats tab in home app screen -->
     <string name="ConversationListTabs__chats">Fjalosje</string>
     <!-- Label for Stories tab in home app screen -->
-    <string name="ConversationListTabs__stories">Histori</string>
+    <string name="ConversationListTabs__stories">Postime të përkohshme</string>
     <!-- String for counts above 99 in conversation list tabs -->
     <string name="ConversationListTabs__99p">99+</string>
     <!-- Menu item on stories landing page -->
     <string name="StoriesLandingFragment__story_privacy">Privatësia e postimit të përkohshëm</string>
     <!-- Title for "My Stories" row item in Stories landing page -->
-    <string name="StoriesLandingFragment__my_stories">Historitë e Mia</string>
+    <string name="StoriesLandingFragment__my_stories">Postimet e mia të përkohshme</string>
     <!-- Subtitle for "My Stories" row item when user has not added stories -->
-    <string name="StoriesLandingFragment__tap_to_add_a_story">Kliko për të shtuar një postim të përkohshëm</string>
+    <string name="StoriesLandingFragment__tap_to_add">Kliko për të shtuar</string>
     <!-- Displayed when there are no stories to display -->
     <string name="StoriesLandingFragment__no_recent_updates_to_show_right_now">S’ka përditësime së fundi për shfaqje tani.</string>
     <!-- Context menu option to hide a story -->
-    <string name="StoriesLandingItem__hide_story">Fshihe historinë</string>
+    <string name="StoriesLandingItem__hide_story">Fshihe postimin e përkohshëm</string>
     <!-- Context menu option to unhide a story -->
-    <string name="StoriesLandingItem__unhide_story">Shfshihe historinë</string>
+    <string name="StoriesLandingItem__unhide_story">Shfaq postimin e përkohshëm</string>
     <!-- Context menu option to forward a story -->
     <string name="StoriesLandingItem__forward">Përcjellje</string>
     <!-- Context menu option to share a story -->
@@ -4758,15 +4818,15 @@
     <!-- Status label when a story fails to send indicating user action to retry -->
     <string name="StoriesLandingItem__tap_to_retry">Prekeni që të riprovohet</string>
     <!-- Title of dialog confirming decision to hide a story -->
-    <string name="StoriesLandingFragment__hide_story">Të fshihet historia?</string>
+    <string name="StoriesLandingFragment__hide_story">Të fshihet postimi i përkohshëm?</string>
     <!-- Message of dialog confirming decision to hide a story -->
-    <string name="StoriesLandingFragment__new_story_updates">Përditësime të reja historie nga %1$s s’do të shfaqen më në krye të listës së historive.</string>
+    <string name="StoriesLandingFragment__new_story_updates">Përditësimet e reja të postimeve të përkohshme nga %1$s nuk do të shfaqen më në krye të listës së postimeve të përkohshme.</string>
     <!-- Positive action of dialog confirming decision to hide a story -->
     <string name="StoriesLandingFragment__hide">Fshihe</string>
     <!-- Displayed in Snackbar after story is hidden -->
-    <string name="StoriesLandingFragment__story_hidden">Histori e fshehur</string>
+    <string name="StoriesLandingFragment__story_hidden">Postim i përkohshëm i fshehur</string>
     <!-- Section header for hidden stories -->
-    <string name="StoriesLandingFragment__hidden_stories">Histori të fshehura</string>
+    <string name="StoriesLandingFragment__hidden_stories">Postime të përkohshme të fshehura</string>
     <!-- Displayed on each sent story under My Stories -->
     <plurals name="MyStories__d_views">
         <item quantity="one">%1$d parje</item>
@@ -4775,11 +4835,11 @@
     <!-- Forward story label, displayed in My Stories context menu -->
     <string name="MyStories_forward">Përcjellje</string>
     <!-- Label for stories for a single user. Format is {given name}\'s Story -->
-    <string name="MyStories__ss_story">Historia e %1$s</string>
+    <string name="MyStories__ss_story">Postim i përkohshëm i %1$s</string>
     <!-- Title of dialog to confirm deletion of story -->
-    <string name="MyStories__delete_story">Të fshihet historia?</string>
+    <string name="MyStories__delete_story">Të fshihet postimi i përkohshëm?</string>
     <!-- Message of dialog to confirm deletion of story -->
-    <string name="MyStories__this_story_will_be_deleted">Kjo histori do të fshihet për ju dhe këdo që e ka marrë.</string>
+    <string name="MyStories__this_story_will_be_deleted">Ky postim i përkohshëm do të fshihet për ty dhe për të gjithë ata që e kanë marrë.</string>
     <!-- Toast shown when story media cannot be saved -->
     <string name="MyStories__unable_to_save">Nuk mund të ruhet</string>
     <!-- Displayed at bottom of story viewer when current item has views -->
@@ -4811,7 +4871,7 @@
     <!-- Displayed when a story has no views -->
     <string name="StoryViewsFragment__no_views_yet">Ende pa parje</string>
     <!-- Displayed when user has disabled receipts -->
-    <string name="StoryViewsFragment__enable_read_receipts_to_see_whos_viewed_your_story">Aktivizo verifikuesin e leximit për të parë personat që i ka parë postimet e përkohshme.</string>
+    <string name="StoryViewsFragment__enable_view_receipts_to_see_whos_viewed_your_story">Enable view receipts to see who\'s viewed your stories.</string>
     <!-- Button label displayed when user has disabled receipts -->
     <string name="StoryViewsFragment__go_to_settings">Shko te cilësimet</string>
     <!-- Dialog action to remove viewer from a story -->
@@ -4825,15 +4885,15 @@
     <!-- Displayed when a story has no replies yet -->
     <string name="StoryGroupReplyFragment__no_replies_yet">Ende pa përgjigje</string>
     <!-- Displayed when no longer a group member -->
-    <string name="StoryGroupReplyFragment__you_cant_reply">You can\'t reply to this story because you\'re no longer a member of this group.</string>
+    <string name="StoryGroupReplyFragment__you_cant_reply">Nuk mund t\'i përgjigjesh këtij postimi të përkohshëm, sepse nuk je më anëtar i këtij grupi.</string>
     <!-- Displayed for each user that reacted to a story when viewing replies -->
-    <string name="StoryGroupReactionReplyItem__reacted_to_the_story">Reagoi ndaj historisë</string>
+    <string name="StoryGroupReactionReplyItem__reacted_to_the_story">Reagoi ndaj postimit të përkohshëm</string>
     <!-- Label for story views tab -->
     <string name="StoryViewsAndRepliesDialogFragment__views">Parje</string>
     <!-- Label for story replies tab -->
     <string name="StoryViewsAndRepliesDialogFragment__replies">Përgjigje</string>
     <!-- Description of action for reaction button -->
-    <string name="StoryReplyComposer__react_to_this_story">Reagoni ndaj kësaj historie</string>
+    <string name="StoryReplyComposer__react_to_this_story">Reago ndaj këtij postimi të përkohshëm</string>
     <!-- Displayed when the user is replying privately to someone who replied to one of their stories -->
     <string name="StoryReplyComposer__replying_privately_to_s">Përgjigje privatisht për %1$s</string>
     <!-- Context menu item to privately reply to a story response -->
@@ -4843,11 +4903,18 @@
     <!-- Context menu item to delete a story response -->
     <string name="StoryGroupReplyItem__delete">Fshiji</string>
     <!-- Page title for My Story options -->
-    <string name="MyStorySettingsFragment__my_story">Historia ime</string>
+    <string name="MyStorySettingsFragment__my_story">Postimi im i përkohshëm</string>
+    <!-- Number of total signal connections displayed in "All connections" row item -->
+    <plurals name="MyStorySettingsFragment__viewers">
+        <item quantity="one">%1$d shikues</item>
+        <item quantity="other">%1$d shikues</item>
+    </plurals>
+    <!-- Button on all signal connections row to view all signal connections. Please keep as short as possible. -->
+    <string name="MyStorySettingsFragment__view">Shihni</string>
     <!-- Section heading for story visibility -->
     <string name="MyStorySettingsFragment__who_can_view_this_story">Kush mund ta shikojë këtë postim të përkohshëm</string>
     <!-- Clickable option for selecting people to hide your story from -->
-    <string name="MyStorySettingsFragment__hide_story_from">Fshihe historinë nga</string>
+    <string name="MyStorySettingsFragment__hide_story_from">Fshihe postimin e përkohshëm nga</string>
     <!-- Privacy setting title for sending stories to all your signal connections -->
     <string name="MyStorySettingsFragment__all_signal_connections">Të gjitha kontaktet e Signal</string>
     <!-- Privacy setting description for sending stories to all your signal connections -->
@@ -4855,7 +4922,7 @@
     <!-- Privacy setting title for sending stories to all except the specified connections -->
     <string name="MyStorySettingsFragment__all_except">Të gjithë përveç…</string>
     <!-- Privacy setting description for sending stories to all except the specified connections -->
-    <string name="MyStorySettingsFragment__hide_your_story_from_specific_people">Fshih postimin e përkohshëm nga persona të caktuar</string>
+    <string name="MyStorySettingsFragment__hide_your_story_from_specific_people">Fshihe postimin e përkohshëm nga persona të caktuar</string>
     <!-- Summary of clickable option displaying how many people you have excluded from your story -->
     <plurals name="MyStorySettingsFragment__d_people_excluded">
         <item quantity="one">%1$d persona të përjashtuar</item>
@@ -4871,15 +4938,13 @@
         <item quantity="other">%1$d persona</item>
     </plurals>
     <!-- My story privacy fine print about what the privacy settings are for -->
-    <string name="MyStorySettingsFragment__choose_who_can_view_your_story">Zgjidh personat që mund ta shohin postimin e përkohshëm. Ndryshimet nuk zbatohen te postimet e përkohshëm që tashmë i ke dërguar.</string>
+    <string name="MyStorySettingsFragment__choose_who_can_view_your_story">Zgjidh personat që mund ta shohin postimin e përkohshëm. Ndryshimet nuk zbatohen te postimet e përkohshme që tashmë i ke dërguar.</string>
     <!-- Section header for options related to replies and reactions -->
     <string name="MyStorySettingsFragment__replies_amp_reactions">Përgjigje &amp; reagime</string>
     <!-- Switchable option for allowing replies and reactions on your stories -->
     <string name="MyStorySettingsFragment__allow_replies_amp_reactions">Lejo përgjigje &amp; reagime</string>
     <!-- Summary for switchable option allowing replies and reactions on your story -->
-    <string name="MyStorySettingsFragment__let_people_who_can_view_your_story_react_and_reply">Lërini njerëzit që mund të shohin historinë tuaj të reagojnë dhe përgjigjen</string>
-    <!-- Note about default sharing -->
-    <string name="MyStorySettingsFragment__hide_your_story_from">Fshiheni historinë tuaj për persona të caktuar. Si parazgjedhje, historia juaj ndahet me %1$s tuaj</string>
+    <string name="MyStorySettingsFragment__let_people_who_can_view_your_story_react_and_reply">Lëri njerëzit që mund të shohin postimin tënd të përkohshëm të reagojnë dhe të përgjigjen</string>
     <!-- Signal connections bolded text in the Signal Connections sheet -->
     <string name="SignalConnectionsBottomSheet___signal_connections">Kontaktet e Signal</string>
     <!-- Displayed at the top of the signal connections sheet. Please remember to insert strong tag as required. -->
@@ -4891,26 +4956,26 @@
     <!-- Signal connections sheet bullet point 3 -->
     <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">Pasjen e tyre te kontaktet tuaja të sistemit</string>
     <!-- Note at the bottom of the Signal connections sheet -->
-    <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"Lidhjet tuaja mund të shohin emrin dhe foton tuaj dhe mund të shohin postime te “Historia Ime”, veç në u fshefshi."</string>
-    <!-- Clickable option to add a viewer to a private story -->
+    <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"Kontaktet e tua mund të shohin emrin dhe foton tënde dhe mund të shohin postime te “Postimi im i përkohshëm”, veç nëse e fshihni nga të tjerët."</string>
+    <!-- Clickable option to add a viewer to a custom story -->
     <string name="PrivateStorySettingsFragment__add_viewer">Shtoni shikues</string>
     <!-- Clickable option to delete a custom story -->
-    <string name="PrivateStorySettingsFragment__delete_private_story">Fshi histori private</string>
-    <!-- Dialog title when attempting to remove someone from a private story -->
+    <string name="PrivateStorySettingsFragment__delete_custom_story">Fshij postimin e përkohshëm të personalizuar</string>
+    <!-- Dialog title when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove_s">Të hiqet %1$s?</string>
-    <!-- Dialog message when attempting to remove someone from a private story -->
-    <string name="PrivateStorySettingsFragment__this_person_will_no_longer">Ky person s’do ta shohë më historinë tuaj.</string>
-    <!-- Positive action label when attempting to remove someone from a private story -->
+    <!-- Dialog message when attempting to remove someone from a custom story -->
+    <string name="PrivateStorySettingsFragment__this_person_will_no_longer">Ky person nuk do ta shohë më postimin të përkohshëm.</string>
+    <!-- Positive action label when attempting to remove someone from a custom story -->
     <string name="PrivateStorySettingsFragment__remove">Hiqe</string>
-    <!-- Dialog title when deleting a private story -->
+    <!-- Dialog title when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__are_you_sure">Jeni i sigurt?</string>
-    <!-- Dialog message when deleting a private story -->
+    <!-- Dialog message when deleting a custom story -->
     <string name="PrivateStorySettingsFragment__this_action_cannot">Ky veprim s’mund të zhbëhet.</string>
-    <!-- Page title for editing a private story name -->
-    <string name="EditPrivateStoryNameFragment__edit_story_name">Përpunoni emër historie</string>
-    <!-- Input field hint when editing a private story name -->
-    <string name="EditPrivateStoryNameFragment__story_name">Emër historie</string>
-    <!-- Save button label when editing a private story name -->
+    <!-- Page title for editing a custom story name -->
+    <string name="EditPrivateStoryNameFragment__edit_story_name">Përpuno emrin e postimit të përkohshëm</string>
+    <!-- Input field hint when editing a custom story name -->
+    <string name="EditPrivateStoryNameFragment__story_name">Emri i postimit të përkohshëm</string>
+    <!-- Save button label when editing a custom story name -->
     <string name="EditPrivateStoryNameFragment__save">Ruaji</string>
     <!-- Displayed in text post creator before user enters text -->
     <string name="TextStoryPostCreationFragment__tap_to_add_text">Prekeni që të shtoni tekst</string>
@@ -4927,11 +4992,13 @@
     <!-- Hint for entering a URL for a text post -->
     <string name="TextStoryPostLinkEntryFragment__type_or_paste_a_url">Shtypni pse hidhni një URL</string>
     <!-- Displayed prior to the user entering a URL for a text post -->
-    <string name="TextStoryPostLinkEntryFragment__share_a_link_with_viewers_of_your_story">Ndajeni shembullin tuaj me shikuesit përmes një lidhjeje</string>
+    <string name="TextStoryPostLinkEntryFragment__share_a_link_with_viewers_of_your_story">Shpërndaj një link me shikuesit e postimit tënd të përkohshëm</string>
     <!-- Hint text for searching for a story text post recipient. -->
     <string name="TextStoryPostSendFragment__search">Kërko</string>
     <!-- Toast shown when an unexpected error occurs while sending a text story -->
     <string name="TextStoryPostSendFragment__an_unexpected_error_occurred_try_again">Ka ndodhur një gabim i papritur</string>
+    <!-- Toast shown when a trying to add a link preview to a text story post and the link/url is not valid (e.g., missing .com at the end) -->
+    <string name="TextStoryPostSendFragment__please_enter_a_valid_link">Të lutem, vendos një link të vlefshëm.</string>
     <!-- Title for screen allowing user to exclude "My Story" entries from specific people -->
     <string name="ChangeMyStoryMembershipFragment__all_except">Të gjithë përveç…</string>
     <!-- Title for screen allowing user to only share "My Story" entries with specific people -->
@@ -4939,39 +5006,39 @@
     <!-- Done button label for hide story from screen -->
     <string name="HideStoryFromFragment__done">U bë</string>
     <!-- Dialog title for removing a group story -->
-    <string name="StoryDialogs__remove_group_story">Remove group story?</string>
+    <string name="StoryDialogs__remove_group_story">Të hiqet postimi i përkohshëm i grupit?</string>
     <!-- Dialog message for removing a group story -->
-    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" will be removed.</string>
+    <string name="StoryDialogs__s_will_be_removed">\"%1$s\" do të hiqet.</string>
     <!-- Dialog positive action for removing a group story -->
-    <string name="StoryDialogs__remove">Remove</string>
-    <!-- Dialog title for deleting a private story -->
-    <string name="StoryDialogs__delete_private_story">Delete private story?</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="StoryDialogs__s_and_updates_shared">\"%1$s\" and updates shared to this story will be deleted.</string>
-    <!-- Dialog positive action for deleting a private story -->
-    <string name="StoryDialogs__delete">Delete</string>
+    <string name="StoryDialogs__remove">Fshije</string>
+    <!-- Dialog title for deleting a custom story -->
+    <string name="StoryDialogs__delete_custom_story">Do ta fshish postimin e përkohshëm të personalizuar?</string>
+    <!-- Dialog message for deleting a custom story -->
+    <string name="StoryDialogs__s_and_updates_shared">\" %1$s \" dhe përditësimet e ndara në këtë postim të përkohshëm do të fshihen.</string>
+    <!-- Dialog positive action for deleting a custom story -->
+    <string name="StoryDialogs__delete">Fshije</string>
     <!-- Dialog title for first time sending something to a beta story -->
-    <string name="StoryDialogs__stories_is_available_to">Stories is available to Signal beta users only.</string>
+    <string name="StoryDialogs__stories_is_available_to">Postimet e përkohshme ofrohen vetëm për përdoruesit e Signal beta.</string>
     <!-- Dialog message for first time sending something to a beta story -->
-    <string name="StoryDialogs__if_you_share_a_story">If you share a story, it will only be available to people who are on Signal beta.</string>
+    <string name="StoryDialogs__if_you_share_a_story">Nëse shpërndan një postim të përkohshëm, ai do të jetë i disponueshëm vetëm për njerëzit që janë në Signal beta.</string>
     <!-- Dialog title for first time adding something to a story -->
-    <string name="StoryDialogs__add_to_story_q">Të shtohet te histori?</string>
+    <string name="StoryDialogs__add_to_story_q">Të shtohet te postimi i përkohshëm?</string>
     <!-- Dialog message for first time adding something to a story -->
-    <string name="StoryDialogs__adding_content">Shtimi i lëndës te historia juaj u lejon lidhjeve tuaja Signal ta shohin për 24 orë. Se cilët mund ta shohin historinë tuaj mund ta ndryshoni te Rregullimet.</string>
+    <string name="StoryDialogs__adding_content">Shtimi i përmbajtjes në postimin tënd të përkohshëm lejon që kontaktet e tua të Signal ta shohin atë për 24 orë. Ti mund ta ndryshosh se kush mund ta shikojë postimin tënd të përkohshëm te \"Parametrat\".</string>
     <!-- First time share to story dialog: Positive action to go ahead and add to story -->
-    <string name="StoryDialogs__add_to_story">Shtoje në histori</string>
+    <string name="StoryDialogs__add_to_story">Shto në postimin e përkohshëm</string>
     <!-- First time share to story dialog: Neutral action to edit who can view "My Story" -->
     <string name="StoryDialogs__edit_viewers">Përpunoni shikues</string>
     <!-- Error message shown when a failure occurs during story send -->
-    <string name="StoryDialogs__story_could_not_be_sent">S\\’u dërgua dot histori. Kontrolloni lidhjen tuaj në internet dhe riprovoni.</string>
+    <string name="StoryDialogs__story_could_not_be_sent">Postimi i përkohshëm nuk u dërgua dot. Kontrollo lidhjen e internetit dhe provo sërish.</string>
     <!-- Error message dialog button to resend a previously failed story send -->
     <string name="StoryDialogs__send">Dërgoje</string>
     <!-- Action button for turning off stories when stories are present on the device -->
-    <string name="StoryDialogs__turn_off_and_delete">Turn off and delete</string>
+    <string name="StoryDialogs__turn_off_and_delete">Çaktivizo dhe fshij</string>
     <!-- Privacy Settings toggle title for stories -->
-    <string name="PrivacySettingsFragment__share_and_view_stories">Ndajeni me të tjerë &amp; Shihni Histori</string>
+    <string name="PrivacySettingsFragment__share_and_view_stories">Shpërndaj dhe shiko postimin e përkohshëm</string>
     <!-- Privacy Settings toggle summary for stories -->
-    <string name="PrivacySettingsFragment__you_will_no_longer_be_able">S’do të jeni më në gjendje të ndani me të tjerë apo të shihni Histori, kur kjo mundësi të çaktivizohet.</string>
+    <string name="PrivacySettingsFragment__you_will_no_longer_be_able">Nuk do të jesh më në gjendje të ndash apo shikosh postime të përkohshme, kur ky opsion të çaktivizohet.</string>
     <!-- New story viewer selection screen title -->
     <string name="CreateStoryViewerSelectionFragment__choose_viewers">Zgjidhni shikues</string>
     <!-- New story viewer selection action button label -->
@@ -4982,9 +5049,11 @@
         <item quantity="other">%1$d shikues</item>
     </plurals>
     <!-- Name story screen title -->
-    <string name="CreateStoryWithViewersFragment__name_story">Emërtoni historinë</string>
+    <string name="CreateStoryWithViewersFragment__name_story">Emërto postimin e përkohshëm</string>
+    <!-- Name story screen note under text field -->
+    <string name="CreateStoryWithViewersFragment__only_you_can">Vetëm ti mund ta shohësh emrin e këtij postimi të përkohshëm.</string>
     <!-- Name story screen label hint -->
-    <string name="CreateStoryWithViewersFragment__story_name_required">Emër historie (I domosdoshëm)</string>
+    <string name="CreateStoryWithViewersFragment__story_name_required">Emri i postimit të përkohshëm ( i domosdoshëm)</string>
     <!-- Name story screen viewers subheading -->
     <string name="CreateStoryWithViewersFragment__viewers">Shikues</string>
     <!-- Name story screen create button label -->
@@ -4992,17 +5061,17 @@
     <!-- Name story screen error when save attempted with no label -->
     <string name="CreateStoryWithViewersFragment__this_field_is_required">Kjo fushë është e domosdoshme.</string>
     <!-- Name story screen error when save attempted but label is duplicate -->
-    <string name="CreateStoryWithViewersFragment__there_is_already_a_story_with_this_name">Ka tashmë një histori me këtë emër.</string>
+    <string name="CreateStoryWithViewersFragment__there_is_already_a_story_with_this_name">Ka tashmë një postim të përkohshëm me këtë emër.</string>
     <!-- Text for select all action when editing recipients for a story -->
     <string name="BaseStoryRecipientSelectionFragment__select_all">Përzgjidhi krejt</string>
     <!-- Choose story type bottom sheet title -->
-    <string name="ChooseStoryTypeBottomSheet__choose_your_story_type">Zgjidhni llojin e historisë tuaj</string>
+    <string name="ChooseStoryTypeBottomSheet__choose_your_story_type">Zgjidh llojin e postimit tënd të përkohshëm</string>
     <!-- Choose story type bottom sheet new story row title -->
-    <string name="ChooseStoryTypeBottomSheet__new_private_story">Histori e re private</string>
+    <string name="ChooseStoryTypeBottomSheet__new_custom_story">Postim i ri i përkohshëm i personalizuar</string>
     <!-- Choose story type bottom sheet new story row summary -->
     <string name="ChooseStoryTypeBottomSheet__visible_only_to">E dukshme vetëm për persona specifikë</string>
     <!-- Choose story type bottom sheet group story title -->
-    <string name="ChooseStoryTypeBottomSheet__group_story">Histori grupi</string>
+    <string name="ChooseStoryTypeBottomSheet__group_story">Postim i përkohshëm grupi</string>
     <!-- Choose story type bottom sheet group story summary -->
     <string name="ChooseStoryTypeBottomSheet__share_to_an_existing_group">Ndajeni me një grup ekzistues</string>
     <!-- Choose groups bottom sheet title -->
@@ -5014,17 +5083,19 @@
     <!-- Displayed in toast after sending a direct reply -->
     <string name="StoryDirectReplyDialogFragment__sending_reply">Po dërgohet përgjigje…</string>
     <!-- Displayed in the viewer when a story is no longer available -->
-    <string name="StorySlateView__this_story_is_no_longer_available">Kjo story nuk është më e disponueshme.</string>
+    <string name="StorySlateView__this_story_is_no_longer_available">Ky postim i përkohshëm nuk është më i disponueshëm.</string>
+    <!-- Displayed in the viewer when a story has permanently failed to download. -->
+    <string name="StorySlateView__cant_download_story_s_will_need_to_share_it_again">Postimi i përkohshëm nuk mund të shkarkohet. %1$s do të duhet ta shpërndajë përsëri.</string>
     <!-- Displayed in the viewer when the network is not available -->
     <string name="StorySlateView__no_internet_connection">Nuk ka lidhje interneti</string>
     <!-- Displayed in the viewer when network is available but content could not be downloaded -->
     <string name="StorySlateView__couldnt_load_content">Përmbajtja nuk u ngarkua</string>
     <!-- Toasted when the user externally shares to a text story successfully -->
-    <string name="TextStoryPostCreationFragment__sent_story">Story u dërgua</string>
+    <string name="TextStoryPostCreationFragment__sent_story">Postimi i përkohshëm u dërgua</string>
     <!-- Toasted when the user external share to a text story fails -->
-    <string name="TextStoryPostCreationFragment__failed_to_send_story">Dërgimi i story-t dështoi</string>
+    <string name="TextStoryPostCreationFragment__failed_to_send_story">Dërgimi i postimit të përkohshëm dështoi</string>
     <!-- Displayed in a dialog to let the user select a given users story -->
-    <string name="StoryDialogs__view_story">Shihni story-n</string>
+    <string name="StoryDialogs__view_story">Shih postimin e përkohshëm</string>
     <!-- Displayed in a dialog to let the user select a given users profile photo -->
     <string name="StoryDialogs__view_profile_photo">Shihni foton e profilit</string>
 
@@ -5038,11 +5109,11 @@
     <string name="TurnOffCircumventionMegaphone_turn_off">Çaktivizoje</string>
 
     <!-- Conversation Item label for when you react to someone else\'s story -->
-    <string name="ConversationItem__you_reacted_to_s_story">Reaguat ndaj historisë nga %1$s</string>
+    <string name="ConversationItem__you_reacted_to_s_story">Ti reagove ndaj postimit të përkohshëm të %1$s</string>
     <!-- Conversation Item label for reactions to your story -->
-    <string name="ConversationItem__reacted_to_your_story">Reagoi ndaj story-t tuaj</string>
+    <string name="ConversationItem__reacted_to_your_story">Reagoi ndaj postimit tënd të përkohshëm</string>
     <!-- Conversation Item label for reactions to an unavailable story -->
-    <string name="ConversationItem__reacted_to_a_story">Reagoi te një story</string>
+    <string name="ConversationItem__reacted_to_a_story">Reagoi te një postim i përkohshëm</string>
 
     <!-- endregion -->
     <!-- Content description for expand contacts chevron -->
@@ -5055,11 +5126,11 @@
         <item quantity="other">%1$s · %2$d kohëzgjatja e ditës</item>
     </plurals>
     <!-- Tagline for gift row items -->
-    <string name="GiftRowItem__send_a_gift_badge">Dërgoni një distinktiv dhuratë</string>
+    <string name="GiftRowItem__send_a_gift_badge">Dërgo një distinktiv dhuratë</string>
     <!-- Headline text on start fragment for gifting a badge -->
-    <string name="GiftFlowStartFragment__gift_a_badge">Dhuroni një distinktiv</string>
+    <string name="GiftFlowStartFragment__gift_a_badge">Dhuro një distinktiv</string>
     <!-- Description text on start fragment for gifting a badge -->
-    <string name="GiftFlowStartFragment__gift_someone_a_badge">Dhurojini dikujt një stemë, duke bërë një dhurim për Signal-ni në emër të tyre. Do të marrin një stemë për ta shfaqur në foton e tyre të profilit.</string>
+    <string name="GiftFlowStartFragment__gift_someone_a_badge">Dhuroji dikujt një distinktiv, duke bërë një dhurim për Signal në emër të tyre. Ata do të marrin një distinktiv për ta shfaqur në foton e tyre të profilit.</string>
     <!-- Action button label for start fragment for gifting a badge -->
     <string name="GiftFlowStartFragment__next">Tjetër</string>
     <!-- Title text on choose recipient page for badge gifting -->
@@ -5071,7 +5142,7 @@
     <!-- Text explaining that gift will be sent to the chosen recipient -->
     <string name="GiftFlowConfirmationFragment__your_gift_will_be_sent_in">Dhurata juaj do të dërgohet si një mesazh tek për tek me marrësin. Shtoni më poshtë mesazhin tuaj.</string>
     <!-- Text explaining that this gift is a one time donation -->
-    <string name="GiftFlowConfirmationFragment__one_time_donation">Dhurim një herë</string>
+    <string name="GiftFlowConfirmationFragment__one_time_donation">Dhurim i vetëm</string>
     <!-- Hint for add message input -->
     <string name="GiftFlowConfirmationFragment__add_a_message">Shtoni një mesazh</string>
     <!-- Displayed in the dialog while verifying the chosen recipient -->
@@ -5081,9 +5152,9 @@
     <!-- Title for sheet shown when opening a sent gift -->
     <string name="ViewSentGiftBottomSheet__thanks_for_your_support">Faleminderit për përkrahjen tuaj!</string>
     <!-- Description for sheet shown when opening a redeemed gift -->
-    <string name="ViewReceivedGiftBottomSheet__youve_received_a_gift_badge">Morët një stemë dhuratë nga %1$s! Ndihmoni Signal-in të shtojë ndërgjegjësimin, duke e shfaqur këtë stemë në profilin tuaj.</string>
+    <string name="ViewReceivedGiftBottomSheet__youve_received_a_gift_badge">Ti ke marrë një distinktiv dhuratë nga %1$s! Ndihmo Signal të shtojë ndërgjegjësimin, duke e shfaqur këtë distinktiv në profilin tënd.</string>
     <!-- Description for sheet shown when opening a sent gift -->
-    <string name="ViewSentGiftBottomSheet__youve_gifted_a_badge">I dhuruat %1$s një stemë. Kur ta pranojë, do t’u jepet mundësia për ta shfaqur, ose për ta fshehur.</string>
+    <string name="ViewSentGiftBottomSheet__youve_gifted_a_badge">Ti i ke dhuruar %1$s një distinktiv. Kur ta pranojë, do t’i jepet mundësia për ta shfaqur, ose për ta fshehur.</string>
     <!-- Primary action for pending gift sheet to redeem badge now -->
     <string name="ViewReceivedGiftSheet__redeem">Përdor</string>
     <!-- Primary action for pending gift sheet to redeem badge later -->
@@ -5091,35 +5162,35 @@
     <!-- Dialog text while redeeming a gift -->
     <string name="ViewReceivedGiftSheet__redeeming_gift">Po përdor dhuratën…</string>
     <!-- Snackbar text when user presses "not now" on redemption sheet -->
-    <string name="ConversationFragment__you_can_redeem_your_badge_later">Ju mund ta përdorni distinktivin tuaj më vonë.</string>
+    <string name="ConversationFragment__you_can_redeem_your_badge_later">Ti mund ta përdorësh më vonë distinktivin tënd.</string>
     <!-- Description text in gift thanks sheet -->
-    <string name="GiftThanksSheet__youve_gifted_a_badge_to_s">I dhuruat %1$s një stemë. Kur ta pranojë, do t’u jepet mundësia për ta shfaqur, ose për ta fshehur.</string>
+    <string name="GiftThanksSheet__youve_gifted_a_badge_to_s">Ti i ke dhuruar %1$s një distinktiv. Kur ta pranojë, do t’i jepet mundësia për ta shfaqur, ose për ta fshehur.</string>
     <!-- Expired gift sheet title -->
-    <string name="ExpiredGiftSheetConfiguration__your_gift_badge_has_expired">Distinktivi juaj dhuratë ka skaduar</string>
+    <string name="ExpiredGiftSheetConfiguration__your_gift_badge_has_expired">Distinktivi yt dhuratë ka skaduar</string>
     <!-- Expired gift sheet top description text -->
-    <string name="ExpiredGiftSheetConfiguration__your_gift_badge_has_expired_and_is">Stema juaj dhuratë ka skaduar dhe s’është më e dukshme për të tjerët te profili juaj.</string>
+    <string name="ExpiredGiftSheetConfiguration__your_gift_badge_has_expired_and_is">Distinktivi yt dhuratë ka skaduar dhe nuk është më i dukshëm për të tjerët në profili tënd.</string>
     <!-- Expired gift sheet bottom description text -->
     <string name="ExpiredGiftSheetConfiguration__to_continue">Që të vazhdoni të përkrahni teknologji që është krijuar për ju, ju lutemi, shihni mundësinë e bërjes një Mbështetës mujor.</string>
     <!-- Expired gift sheet make a monthly donation button -->
-    <string name="ExpiredGiftSheetConfiguration__make_a_monthly_donation">Bëni një dhurim të përmuajshëm</string>
+    <string name="ExpiredGiftSheetConfiguration__make_a_monthly_donation">Bëj një dhurim të përmuajshëm</string>
     <!-- Expired gift sheet not now button -->
     <string name="ExpiredGiftSheetConfiguration__not_now">Jo tani</string>
     <!-- My Story label designating that we will only share with the selected viewers. -->
     <string name="ContactSearchItems__only_share_with">Shpërndaje vetëm me</string>
-    <!-- Label under name for private stories -->
-    <plurals name="ContactSearchItems__private_story_d_viewers">
-        <item quantity="one">Histori private · %1$d parës</item>
-        <item quantity="other">Postim i përkohshëm privat · %1$d shikues</item>
+    <!-- Label under name for custom stories -->
+    <plurals name="ContactSearchItems__custom_story_d_viewers">
+        <item quantity="one">Postim i përkohshëm i personalizuar · %1$d shikues</item>
+        <item quantity="other">Postim i ri i përkohshëm i personalizuar · %1$d shikues</item>
     </plurals>
     <!-- Label under name for group stories -->
     <plurals name="ContactSearchItems__group_story_d_viewers">
-        <item quantity="one">Histori grupi · %1$d parës</item>
-        <item quantity="other">Postim i përkohshëm grupi · %1$d shikues</item>
+        <item quantity="one">Postim i përkohshëm grupi · %1$d shikues</item>
+        <item quantity="other">Postim i përkohshëm grupi · %1$d shikuesa</item>
     </plurals>
     <!-- Label under name for groups -->
     <plurals name="ContactSearchItems__group_d_members">
-        <item quantity="one">%1$d member</item>
-        <item quantity="other">%1$d members</item>
+        <item quantity="one">%1$d anëtar</item>
+        <item quantity="other">%1$d anëtarë</item>
     </plurals>
     <!-- Label under name for my story -->
     <plurals name="ContactSearchItems__my_story_s_dot_d_viewers">
@@ -5129,22 +5200,22 @@
     <!-- Label under name for My Story when first sending to my story -->
     <string name="ContactSearchItems__tap_to_choose_your_viewers">Kliko për të zgjedhur shikuesit</string>
     <!-- Label for context menu item to open story settings -->
-    <string name="ContactSearchItems__story_settings">Rregullime historie</string>
+    <string name="ContactSearchItems__story_settings">Parametrat e postimit të përkohshëm</string>
     <!-- Label for context menu item to remove a group story from contact results -->
     <string name="ContactSearchItems__remove_story">Hiq postimin e përkohshëm</string>
-    <!-- Label for context menu item to delete a private story -->
+    <!-- Label for context menu item to delete a custom story -->
     <string name="ContactSearchItems__delete_story">Fshij postimin e përkohshëm</string>
     <!-- Dialog title for removing a group story -->
     <string name="ContactSearchMediator__remove_group_story">Të hiqet postimi i përkohshëm i grupit?</string>
     <!-- Dialog message for removing a group story -->
-    <string name="ContactSearchMediator__this_will_remove">Postimi i përkohshëm do të fshihet nga lista. Postimet e përkohshme të këtij grupi do të mund t\'i shohësh ende.</string>
+    <string name="ContactSearchMediator__this_will_remove">Kjo do të fshijë postimin e përkohshëm nga lista. Postimet e përkohshme të këtij grupi do të mund t\'i shohësh ende.</string>
     <!-- Dialog action item for removing a group story -->
     <string name="ContactSearchMediator__remove">Fshije</string>
-    <!-- Dialog title for deleting a private story -->
-    <string name="ContactSearchMediator__delete_story">Të fshihet historia?</string>
-    <!-- Dialog message for deleting a private story -->
-    <string name="ContactSearchMediator__delete_the_private">Të fshihet postimi privat i përkohshëm \"%1$s\"?</string>
-    <!-- Dialog action item for deleting a private story -->
+    <!-- Dialog title for deleting a custom story -->
+    <string name="ContactSearchMediator__delete_story">Të fshihet postimi i përkohshëm?</string>
+    <!-- Dialog message for deleting a custom story -->
+    <string name="ContactSearchMediator__delete_the_custom">Do ta fshish postimin e përkohshëm të personalizuar \"%1$s\"?</string>
+    <!-- Dialog action item for deleting a custom story -->
     <string name="ContactSearchMediator__delete">Fshiji</string>
     <!-- Gift expiry days remaining -->
     <plurals name="Gifts__d_days_remaining">
@@ -5171,7 +5242,7 @@
     <!-- Label indicating swipe direction to exit story viewer -->
     <string name="StoryFirstTimeNavigationView__swipe_right_to_exit">Shfleto djathtas për të dalë</string>
     <!-- Button label to confirm understanding of story navigation -->
-    <string name="StoryFirstTimeNagivationView__got_it">U mor</string>
+    <string name="StoryFirstTimeNagivationView__got_it">E kuptova</string>
     <!-- Content description for vertical context menu button in safety number sheet rows -->
     <string name="SafetyNumberRecipientRowItem__open_context_menu">Hap menynë e kontekstit</string>
     <!-- Sub-line when a user is verified. -->
@@ -5189,7 +5260,7 @@
     <!-- Message of safety number changes bottom sheet when not showing individual records and user has seen review screen -->
     <string name="SafetyNumberBottomSheetFragment__all_connections_have_been_reviewed">Të gjitha kontaktet janë shqyrtuar; kliko dërgo për të vazhduar.</string>
     <!-- Message of safety number changes bottom sheet when not showing individual records -->
-    <string name="SafetyNumberBottomSheetFragment__you_have_d_connections">Ke %1$d kontakte që mund të kenë riinstaluar Signal ose të kenë ndryshuar pajisje. Para se të shpërndash postimin e përkohshëm me ta, rishiko numrat e tyre të sigurisë ose shih mundësinë e heqjes së tyre nga postimi i përkohshëm.</string>
+    <string name="SafetyNumberBottomSheetFragment__you_have_d_connections">Ke %1$d kontakte që mund të kenë instaluar sërish Signal ose të kenë ndryshuar pajisje. Para se të shpërndash postimin e përkohshëm me ta, rishiko numrat e tyre të sigurisë ose shih mundësinë e heqjes së tyre nga postimi i përkohshëm.</string>
     <!-- Menu action to launch safety number verification screen -->
     <string name="SafetyNumberBottomSheetFragment__verify_safety_number">Verifiko numër siguri</string>
     <!-- Menu action to remove user from story -->
@@ -5219,7 +5290,7 @@
     <!-- Title of initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__my_story_privacy">Privatësia e postimit tim të përkohshëm</string>
     <!-- Subtitle of initial My Story settings configuration shown when sending to My Story for the first time -->
-    <string name="ChooseInitialMyStoryMembershipFragment__choose_who_can_see_posts_to_my_story_you_can_always_make_changes_in_settings">Zgjidh personat që mund t\'i shikojë postimet te \"Postimet e mia të përkohshme\". Ndryshimet mund të bëhen gjithmonë te cilësimet.</string>
+    <string name="ChooseInitialMyStoryMembershipFragment__choose_who_can_see_posts_to_my_story_you_can_always_make_changes_in_settings">Zgjidh personat që mund t\'i shikojë postimet te \"Postimet e mia të përkohshme\". Ndryshimet mund të bëhen gjithmonë te parametrat.</string>
     <!-- All connections option for initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__all_signal_connections">Të gjitha lidhjet e Signalit</string>
     <!-- All connections except option for initial My Story settings configuration shown when sending to My Story for the first time -->
@@ -5244,7 +5315,7 @@
 
     <!-- StoriesPrivacySettingsFragment -->
     <!-- Explanation about how stories are deleted and managed -->
-    <string name="StoriesPrivacySettingsFragment__stories_automatically_disappear">Postimet e përkohshme zhduken automatikisht pas 24 orësh. Zgjidh kush mund të shohë postimet e tua të përkohshme ose krijo postime të reja të përkohshme për shikues ose grupe të veçanta.</string>
+    <string name="StoriesPrivacySettingsFragment__story_updates_automatically_disappear">Përditësimet e postimit të përkohshëm zhduken automatikisht pas 24 orësh. Zgjidh kush mund të shohë postimet e tua të përkohshme ose krijo postime të reja të përkohshme për shikues ose grupe të veçanta.</string>
     <!-- Preference title to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__turn_off_stories">Çaktivizo postimet e përkohshme</string>
     <!-- Preference summary to turn off stories -->
@@ -5252,19 +5323,30 @@
     <!-- Preference title to turn on stories -->
     <string name="StoriesPrivacySettingsFragment__turn_on_stories">Aktivizo postimet e përkohshme</string>
     <!-- Preference summary to turn on stories -->
-    <string name="StoriesPrivacySettingsFragment__share_and_view">Shpërndaj dhe shiko postimet e përkohshme të të tjerëve. Postimet e përkohshme zhduken automatikisht pas 24 orësh.</string>
+    <string name="StoriesPrivacySettingsFragment__share_and_view">Shpërnda dhe shiko postimet e përkohshme të të tjerëve. Postimet e përkohshme zhduken automatikisht pas 24 orësh.</string>
     <!-- Dialog title to turn off stories -->
     <string name="StoriesPrivacySettingsFragment__turn_off_stories_question">Do t\'i çaktivizosh postimet e përkohshme?</string>
     <!-- Dialog message to turn off stories -->
-    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">You will no longer be able to share or view stories. Story updates you have recently shared will also be deleted.</string>
+    <string name="StoriesPrivacySettingsFragment__you_will_no_longer_be_able_to_share">Nuk do të mund të ndash apo shikosh më postime të përkohshme. Përditësimet e postimeve të përkohshme që ke ndarë së fundi do të fshihen gjithashtu.</string>
     <!-- Page title when launched from stories landing screen -->
     <string name="StoriesPrivacySettingsFragment__story_privacy">Privatësia e postimit të përkohshëm</string>
+    <!-- Header for section that lists out stories -->
+    <string name="StoriesPrivacySettingsFragment__stories">Postime të përkohshme</string>
+    <!-- Story views header -->
+    <string name="StoriesPrivacySettingsFragment__story_views">Shikimet e postimit të përkohshëm</string>
+    <!-- Story view receipts toggle title -->
+    <string name="StoriesPrivacySettingsFragment__view_receipts">Shiko kush e ka parë postimin</string>
+    <!-- Story view receipts toggle message -->
+    <string name="StoriesPrivacySettingsFragment__see_and_share">Shiko dhe shpërndaj kur janë parë postimet e përkohshme. Nëse çaktivizohet, nuk do të mund ta shohësh kur të tjerët të shikojnë postimin tënd të përkohshëm.</string>
+
+    <!-- NewStoryItem -->
+    <string name="NewStoryItem__new_story">Postim i përkohshëm i ri</string>
 
     <!-- GroupStorySettingsFragment -->
     <!-- Section header for who can view a group story -->
     <string name="GroupStorySettingsFragment__who_can_view_this_story">Kush mund ta shikojë këtë postim të përkohshëm</string>
     <!-- Explanation of who can view a group story -->
-    <string name="GroupStorySettingsFragment__members_of_the_group_s">"Anëtarët e grupit \"%1$s\" mund ta shikojnë këtë postim të përkohshëm dhe t'i përgjigjen. Ti mund të përditësosh anëtarësimin për këtë bisedë në grup."</string>
+    <string name="GroupStorySettingsFragment__members_of_the_group_s">"Anëtarët e grupit \"%1$s\" mund ta shikojnë këtë postim të përkohshëm dhe t'i përgjigjen. Mund të përditësosh anëtarësimin për këtë bisedë në grup."</string>
     <!-- Preference label for removing this group story -->
     <string name="GroupStorySettingsFragment__remove_group_story">Hiq postimin e përkohshëm të grupit</string>
 
@@ -5274,20 +5356,37 @@
     <!-- SMS Export Service -->
     <!-- Displayed in the notification while export is running -->
     <string name="SignalSmsExportService__exporting_messages">Mesazhet po eksportohen…</string>
+    <!-- Displayed in the notification title when export completes -->
+    <string name="SignalSmsExportService__signal_sms_export_complete">Eksportimi i SMS-ve të Signal përfundoi</string>
+    <!-- Displayed in the notification message when export completes -->
+    <string name="SignalSmsExportService__tap_to_return_to_signal">Kliko për t\'u kthyer te Signal</string>
 
     <!-- ExportYourSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportYourSmsMessagesFragment__export_your_sms_messages">Eksporto mesazhet e tua SMS</string>
     <!-- Message of the screen -->
-    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">Ti mund të eksportosh mesazhet e tua SMS në bazën e të dhënave SMS të telefonit tënd. Kjo lejon që aplikacionet e tjera SMS në telefonin tënd të hyjnë dhe t\'i importojnë ato. Kjo nuk krijon një skedar të ndashëm të historikut të mesazheve SMS.</string>
+    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database_and_youll_have_the_option_to_keep_or_remove_them_from_signal">Mund të eksportosh mesazhet SMS në bazën e të dhënave SMS të telefonit tënd dhe do kesh mundësinë që t\'i mbash ose t\'i fshish ato nga Signal. Kjo lejon që aplikacionet e tjera SMS në telefonin tënd t\'i importojnë ato. Kjo nuk krijon një skedar të ndashëm të historikut tënd të SMS-ve.</string>
     <!-- Button label to begin export -->
     <string name="ExportYourSmsMessagesFragment__continue">Vazhdo</string>
 
     <!-- ExportingSmsMessagesFragment -->
     <!-- Title of the screen -->
     <string name="ExportingSmsMessagesFragment__exporting_sms_messages">Mesazhet SMS po eksportohen</string>
+    <!-- Message of the screen when exporting sms messages -->
+    <string name="ExportingSmsMessagesFragment__this_may_take_awhile">Kjo mund të dojë pak kohë</string>
     <!-- Progress indicator for export -->
-    <string name="ExportingSmsMessagesFragment__exporting_d_of_d">Po eksportohen %1$d nga %2$d…</string>
+    <plurals name="ExportingSmsMessagesFragment__exporting_d_of_d">
+        <item quantity="one">Po eksportohet %1$d nga %2$d…</item>
+        <item quantity="other">Po eksportohen %1$d nga %2$d…</item>
+    </plurals>
+    <!-- Alert dialog title shown when we think a user may not have enough local storage available to export sms messages -->
+    <string name="ExportingSmsMessagesFragment__you_may_not_have_enough_disk_space">Mund të mos kesh hapësirë të mjaftueshme në disk</string>
+    <!-- Alert dialog message shown when we think a user may not have enough local storage available to export sms messages, placeholder is the file size, e.g., 128kB -->
+    <string name="ExportingSmsMessagesFragment__you_need_approximately_s_to_export_your_messages_ensure_you_have_enough_space_before_continuing">Të duhen afërsisht %1$s për të eksportuar mesazhet, sigurohu që të kesh hapësirë të mjaftueshme përpara se të vazhdosh.</string>
+    <!-- Alert dialog button to continue with exporting sms after seeing the lack of storage warning -->
+    <string name="ExportingSmsMessagesFragment__continue_anyway">Vazhdo gjithsesi</string>
+    <!-- Dialog text shown when Signal isn't granted the sms permission needed to export messages, different than being selected as the sms app -->
+    <string name="ExportingSmsMessagesFragment__signal_needs_the_sms_permission_to_be_able_to_export_your_sms_messages">Signal ka nevojë për autorizimin e SMS-ve, që të mund të eksportojë mesazhet e tua SMS.</string>
 
     <!-- ChooseANewDefaultSmsAppFragment -->
     <!-- Title of the screen -->
@@ -5334,6 +5433,144 @@
     <string name="SetSignalAsDefaultSmsAppFragment__to_export_your_sms_messages">Për të eksportuar mesazhet e tua SMS, duhet të vendosësh Signal si aplikacionin e parazgjedhur të SMS-ve.</string>
     <!-- Button label to start export -->
     <string name="SetSignalAsDefaultSmsAppFragment__next">Tjetër</string>
+
+    <!-- BackupSchedulePermission Megaphone -->
+    <!-- The title on an alert window that explains to the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__cant_back_up_chats">Bisedat nuk mund të rezervohen</string>
+    <!-- The body text of an alert window that tells the user that we are unable to backup their messages -->
+    <string name="BackupSchedulePermissionMegaphone__your_chats_are_no_longer_being_automatically_backed_up">Bisedat tuaja nuk po rezervohen më automatikisht.</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__back_up_chats">Bisedat e rezervuara</string>
+    <!-- The text on a button in an alert window that, when clicked, will take the user to a screen to re-enable backups -->
+    <string name="BackupSchedulePermissionMegaphone__not_now">Jo tani</string>
+    <!-- Re-enable backup permission bottom sheet title -->
+    <string name="BackupSchedulePermissionMegaphone__to_reenable_backups">Për të riaktivizuar kopjet rezervë:</string>
+    <!-- Re-enable backups permission bottom sheet instruction 1 text -->
+    <string name="BackupSchedulePermissionMegaphone__tap_the_go_to_settings_button_below">Kliko butonin \"Shko te parametrat\"</string>
+    <!-- Re-enable backups permission bottom sheet instruction 2 text -->
+    <string name="BackupSchedulePermissionMegaphone__turn_on_allow_settings_alarms_and_reminders">Aktivizo \"Lejo alarmet dhe rikujtuesit\".</string>
+    <!-- Re-enable backups permission bottom sheet call to action button to open settings -->
+    <string name="BackupSchedulePermissionMegaphone__go_to_settings">Shko te cilësimet</string>
+
+    <!-- SmsExportMegaphoneActivity -->
+    <!-- Phase 2 title of full screen megaphone indicating sms will no longer be supported in the near future -->
+    <string name="SmsExportMegaphoneActivity__signal_will_no_longer_support_sms">Signal nuk do të mbështesë më SMS</string>
+    <!-- Phase 3 title of full screen megaphone indicating sms is longer supported  -->
+    <string name="SmsExportMegaphoneActivity__signal_no_longer_supports_sms">Signal nuk mbështet më SMS</string>
+    <!-- Phase 2 message describing that sms is going away soon -->
+    <string name="SmsExportMegaphoneActivity__signal_will_soon_remove_support_for_sending_sms_messages">Signal së shpejti do të heqë mbështetjen për dërgimin e mesazheve SMS, sepse mesazhet e Signalit ofrojnë kodim të plotë dhe privatësi të fortë, që mesazhet SMS nuk e kanë. Kjo do të na lejojë të përmirësojmë edhe përvojën e mesazheve të Signal.</string>
+    <!-- Phase 3 message describing that sms has gone away -->
+    <string name="SmsExportMegaphoneActivity__signal_has_removed_support_for_sending_sms_messages">Signal ka hequr mbështetjen për dërgimin e mesazheve SMS, sepse mesazhet e Signalit ofrojnë kodim të plotë dhe privatësi të fortë, që mesazhet SMS nuk e kanë. Kjo do të na lejojë të përmirësojmë edhe përvojën e mesazheve të Signal.</string>
+    <!-- The text on a button in a popup that, when clicked, will take the user to a screen to export their SMS messages -->
+    <string name="SmsExportMegaphoneActivity__export_sms">Eksporto SMS</string>
+    <!-- The text on a button in a popup that, when clicked, will dismiss the popup and schedule the prompt to occur at a later time. -->
+    <string name="SmsExportMegaphoneActivity__remind_me_later">Kujtomë më vonë</string>
+    <!-- The text on a button in a popup that, when clicked, will navigate the user to a web article on SMS removal -->
+    <string name="SmsExportMegaphoneActivity__learn_more">Mësoni më tepër</string>
+
+    <!-- Phase 1 Small megaphone title indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_going_away">Mbështetja për SMS po largohet</string>
+    <!-- Phase 1 small megaphone description indicating sms is going away -->
+    <string name="SmsExportMegaphone__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Mbështetja për SMS do të hiqet së shpejti për t\'u përqendruar në mesazhet e koduara.</string>
+    <!-- Phase 1 small megaphone button that takes the user to the sms export flow -->
+    <string name="SmsExportMegaphone__export_sms">Eksporto SMS</string>
+    <!-- Title for screen shown after sms export has completed -->
+    <string name="ExportSmsCompleteFragment__export_complete">Eksportimi përfundoi</string>
+    <!-- Button to continue to next screen -->
+    <string name="ExportSmsCompleteFragment__next">Tjetër</string>
+    <!-- Message showing summary of sms export counts -->
+    <plurals name="ExportSmsCompleteFragment__d_of_d_messages_exported">
+        <item quantity="one">%1$d nga %2$d mesazhe u eksportuan</item>
+        <item quantity="other">%1$d nga %2$d mesazhet u eksportuan</item>
+    </plurals>
+
+    <!-- Title of screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__export_partially_complete">Eksportimi ka përfunduar pjesërisht</string>
+    <!-- Debug step 1 on screen shown when some sms messages did not export -->
+    <string name="ExportSmsPartiallyComplete__ensure_you_have_an_additional_s_free_on_your_phone_to_export_your_messages">Sigurohu që të kesh %1$s vend të lirë shtesë në telefon për të eksportuar mesazhet</string>
+    <!-- Debug step 2 on screen shown when some sms messages dit not export -->
+    <string name="ExportSmsPartiallyComplete__retry_export_which_will_only_retry_messages_that_have_not_yet_been_exported">Riprovo eksportimin, i cili do të riprovojë vetëm mesazhet që nuk janë eksportuar ende</string>
+    <!-- Partial sentence for Debug step 3 on screen shown when some sms messages did not export, is combined with 'contact us' -->
+    <string name="ExportSmsPartiallyComplete__if_the_problem_persists">Nëse problemi vazhdon, </string>
+    <!-- Partial sentence for deubg step 3 on screen shown when some sms messages did not export, combined with 'If the problem persists', link text to open contact support view -->
+    <string name="ExportSmsPartiallyComplete__contact_us">Lidhuni me ne</string>
+    <!-- Button text to retry sms export -->
+    <string name="ExportSmsPartiallyComplete__retry">Riprovo</string>
+    <!-- Button text to continue sms export flow and not retry failed message exports -->
+    <string name="ExportSmsPartiallyComplete__continue_anyway">Vazhdo gjithsesi</string>
+    <!-- Title of screen shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__error_exporting_sms_messages">Gabim gjatë eksportimit të mesazheve SMS</string>
+    <!-- Helper text shown when all sms messages failed to export -->
+    <string name="ExportSmsFullError__please_try_again_if_the_problem_persists">Të lutem, provoje sërish. Nëse problemi vazhdon, </string>
+
+
+    <!-- DonateToSignalFragment -->
+    <!-- Title below avatar -->
+    <string name="DonateToSignalFragment__privacy_over_profit">Privacy over profit</string>
+    <!-- Continue button label -->
+    <string name="DonateToSignalFragment__continue">Vazhdo</string>
+    <!-- Description below title -->
+    <string name="DonateToSignalFragment__private_messaging">Private messaging, funded by you. No ads, no tracking, no compromise. Donate now to support Signal.</string>
+    <!-- Donation pill toggle monthly text -->
+    <string name="DonationPillToggle__monthly">I përmuajshëm</string>
+    <!-- Donation pill toggle one-time text -->
+    <string name="DonationPillToggle__one_time">Një herë</string>
+
+    <!-- GatewaySelectorBottomSheet -->
+    <!-- Sheet title when subscribing -->
+    <string name="GatewaySelectorBottomSheet__donate_s_month_to_signal">Dhuro %1$s/muaj për Signal</string>
+    <!-- Sheet summary when subscribing -->
+    <string name="GatewaySelectorBottomSheet__get_a_s_badge">Merr një distinktiv %1$s</string>
+    <!-- Sheet title when giving a one-time donation -->
+    <string name="GatewaySelectorBottomSheet__donate_s_to_signal">Dhuro %1$s te Signal</string>
+    <!-- Sheet summary when giving a one-time donation -->
+    <plurals name="GatewaySelectorBottomSheet__get_a_s_badge_for_d_days">
+        <item quantity="one">Merr një distinktiv %1$s për %2$d ditë</item>
+        <item quantity="other">Merr një distinktiv %1$s për %2$d ditë</item>
+    </plurals>
+    <!-- Button label for paying with a credit card -->
+    <string name="GatewaySelectorBottomSheet__credit_or_debit_card">Kartë krediti ose debiti</string>
+
+    <!-- StripePaymentInProgressFragment -->
+    <string name="StripePaymentInProgressFragment__cancelling">Po anulohet…</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we temporarily can't process their contacts. -->
+    <string name="CdsTemporaryErrorBottomSheet_title">Too many contacts have been processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we temporarily can't process their contacts. The placeholder represents the number of days the user will have to wait until they can again. -->
+    <plurals name="CdsTemporaryErrorBottomSheet_body1">
+        <item quantity="one">Another attempt to process your contacts will be made within %1$d day.</item>
+        <item quantity="other">Another attempt to process your contacts will be made within %1$d days.</item>
+    </plurals>
+    <!-- The second part of the body text in a bottom sheet dialog that advises the user to remove contacts from their phone to fix the issue. -->
+    <string name="CdsTemporaryErrorBottomSheet_body2">To resolve this issue sooner, you can consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsTemporaryErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsTemporaryErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- The title of a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_title">Your contacts can\'t be processed</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_body">The number of contacts on your phone exceeds the limit Signal can process. To find contacts on Signal, consider removing contacts or accounts on your phone that are syncing a lot of contacts.</string>
+    <!-- The first part of the body text in a bottom sheet dialog that tells the user we can't process their contacts. -->
+    <string name="CdsPermanentErrorBottomSheet_learn_more">Mësoni më tepër</string>
+    <!-- A button label in a bottom sheet that will navigate the user to their contacts settings. -->
+    <string name="CdsPermanentErrorBottomSheet_contacts_button">Open contacts</string>
+    <!-- A toast that will be shown if we are unable to open the user's default contacts app. -->
+    <string name="CdsPermanentErrorBottomSheet_no_contacts_toast">No contacts app found</string>
+
+    <!-- PaymentMessageView -->
+    <!-- In-chat conversation message shown when you sent a payment to another person, placeholder is the other person name -->
+    <string name="PaymentMessageView_you_sent_s">You sent %1$s</string>
+    <!-- In-chat conversation message shown when another person sent a payment to you, placeholder is the other person name -->
+    <string name="PaymentMessageView_s_sent_you">%1$s sent you</string>
+
+    <!-- YourInformationIsPrivateBottomSheet -->
+    <string name="YourInformationIsPrivateBottomSheet__your_information_is_private">Your information is private</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_collect">Signal does not collect or store any of your personal information when you make a donation.</string>
+    <string name="YourInformationIsPrivateBottomSheet__we_use_stripe">We use Stripe as our payment processor to receive your donations. We don\'t access, store, or save any of the information you provide to them.</string>
+    <string name="YourInformationIsPrivateBottomSheet__signal_does_not_and_cannot">Signal does not and cannot connect your donation to your Signal account.</string>
+    <string name="YourInformationIsPrivateBottomSheet__thank_you">Faleminderit për përkrahjen tuaj!</string>
 
     <!-- EOF -->
 
