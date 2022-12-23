@@ -260,6 +260,29 @@ public final class ImageEditorView extends FrameLayout {
     }
   }
 
+  public void maybeResetElement(EditorElement element) {
+    // Given a Snapchat text, then set its scale back to 1.0 and move its x-coord to 0.
+    // Otherwise this is a no-op.
+    if (element.getRenderer() instanceof MultiLineTextRenderer) {
+      boolean isSnapchatText = ((MultiLineTextRenderer) element.getRenderer()).getMode() == MultiLineTextRenderer.Mode.SNAPCHAT;
+      if (isSnapchatText) {
+        // make a new EditSession manually i guess, idk
+        Matrix snapBack = new Matrix();  // snapBack = I
+        element.getLocalMatrix().invert(snapBack);  // snapBack = local^-1
+        element.animateEditorTo(snapBack, this::invalidate);  // editor = snapBack = local^-1
+        element.commitEditorMatrix();  // local = local @ editor = local @ snapBack = local @ local^-1 = I
+        Matrix resize = new Matrix();
+        resize.setScale(0.5f, 0.5f);
+        resize.preConcat(element.getLocalMatrix());
+        element.animateEditorTo(resize, this::invalidate);
+        element.commitEditorMatrix();
+
+        model.moving(element);
+        invalidate();
+      }
+    }
+  }
+
   @Override
   public boolean onTouchEvent(MotionEvent event) {
     switch (event.getActionMasked()) {

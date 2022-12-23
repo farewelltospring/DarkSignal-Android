@@ -346,9 +346,9 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
         rendererContext.canvas.drawRect(modeBounds, modePaint);
         modePaint.setAlpha(alpha);
       } else if (mode == Mode.SNAPCHAT) {
-        modeBounds.set(Bounds.LEFT,
+        modeBounds.set(Bounds.LEFT * 99,
                        selectionBounds.top - HIGHLIGHT_TOP_PADDING,
-                       Bounds.RIGHT,
+                       Bounds.RIGHT * 99,
                        selectionBounds.bottom + HIGHLIGHT_BOTTOM_PADDING);
         int alpha = modePaint.getAlpha();
         modePaint.setAlpha(rendererContext.getAlpha(alpha));

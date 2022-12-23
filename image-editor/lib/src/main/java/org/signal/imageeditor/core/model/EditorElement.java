@@ -343,11 +343,11 @@ public final class EditorElement implements Parcelable {
     animationMatrix = AnimationMatrix.animate(oldMatrixCopy, localMatrix, invalidate);
   }
 
-  void animateEditorTo(@NonNull Matrix newEditorMatrix, @Nullable Runnable invalidate) {
+  public void animateEditorTo(@NonNull Matrix newEditorMatrix, @Nullable Runnable invalidate) {
     setMatrixWithAnimation(editorMatrix, newEditorMatrix, invalidate);
   }
 
-  void animateLocalTo(@NonNull Matrix newLocalMatrix, @Nullable Runnable invalidate) {
+  public void animateLocalTo(@NonNull Matrix newLocalMatrix, @Nullable Runnable invalidate) {
     setMatrixWithAnimation(localMatrix, newLocalMatrix, invalidate);
   }
 

@@ -380,6 +380,8 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   public void onTextStyleToggle() {
     if (currentSelection != null && currentSelection.getRenderer() instanceof MultiLineTextRenderer) {
       ((MultiLineTextRenderer) currentSelection.getRenderer()).nextMode();
+      // TODO: notify imageEditorView's edit session to reset scale and x-coord for Snapchat text
+      imageEditorView.maybeResetElement(currentSelection);
     }
   }
 
