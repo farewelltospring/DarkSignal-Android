@@ -169,14 +169,14 @@ import org.thoughtcrime.securesms.conversation.ui.inlinequery.InlineQueryViewMod
 import org.thoughtcrime.securesms.conversation.ui.mentions.MentionsPickerViewModel;
 import org.thoughtcrime.securesms.crypto.ReentrantSessionLock;
 import org.thoughtcrime.securesms.crypto.SecurityEvent;
-import org.thoughtcrime.securesms.database.DraftDatabase.Draft;
-import org.thoughtcrime.securesms.database.DraftDatabase.Drafts;
-import org.thoughtcrime.securesms.database.GroupDatabase;
-import org.thoughtcrime.securesms.database.IdentityDatabase.VerifiedStatus;
-import org.thoughtcrime.securesms.database.RecipientDatabase;
-import org.thoughtcrime.securesms.database.RecipientDatabase.RegisteredState;
+import org.thoughtcrime.securesms.database.DraftTable.Draft;
+import org.thoughtcrime.securesms.database.DraftTable.Drafts;
+import org.thoughtcrime.securesms.database.GroupTable;
+import org.thoughtcrime.securesms.database.IdentityTable.VerifiedStatus;
+import org.thoughtcrime.securesms.database.RecipientTable;
+import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState;
 import org.thoughtcrime.securesms.database.SignalDatabase;
-import org.thoughtcrime.securesms.database.ThreadDatabase;
+import org.thoughtcrime.securesms.database.ThreadTable;
 import org.thoughtcrime.securesms.database.identity.IdentityRecordList;
 import org.thoughtcrime.securesms.database.model.IdentityRecord;
 import org.thoughtcrime.securesms.database.model.Mention;
@@ -238,7 +238,6 @@ import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.mms.ImageSlide;
 import org.thoughtcrime.securesms.mms.MediaConstraints;
 import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
-import org.thoughtcrime.securesms.mms.OutgoingSecureMediaMessage;
 import org.thoughtcrime.securesms.mms.QuoteId;
 import org.thoughtcrime.securesms.mms.QuoteModel;
 import org.thoughtcrime.securesms.mms.Slide;
@@ -331,7 +330,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-import static org.thoughtcrime.securesms.database.GroupDatabase.GroupRecord;
+import static org.thoughtcrime.securesms.database.GroupTable.GroupRecord;
 
 /**
  * Fragment for displaying a message thread, as well as
@@ -705,7 +704,7 @@ public class ConversationParentFragment extends Fragment
 
       onRecipientChanged(recipientSnapshot);
       titleView.setTitle(glideRequests, recipientSnapshot);
-      NotificationChannels.updateContactChannelName(requireContext(), recipientSnapshot);
+      NotificationChannels.getInstance().updateContactChannelName(recipientSnapshot);
       setBlockedUserState(recipientSnapshot, viewModel.getConversationStateSnapshot().getSecurityInfo());
       invalidateOptionsMenu();
       break;
@@ -946,7 +945,7 @@ public class ConversationParentFragment extends Fragment
 
       if (!isPushGroupConversation()) {
         inflater.inflate(R.menu.conversation_mms_group_options, menu);
-        if (distributionType == ThreadDatabase.DistributionTypes.BROADCAST) {
+        if (distributionType == ThreadTable.DistributionTypes.BROADCAST) {
           menu.findItem(R.id.menu_distribution_broadcast).setChecked(true);
         } else {
           menu.findItem(R.id.menu_distribution_conversation).setChecked(true);
@@ -1172,8 +1171,12 @@ public class ConversationParentFragment extends Fragment
   @Override
   public void onKeyboardShown() {
     inputPanel.onKeyboardShown();
-    if (emojiDrawerStub.resolved() && emojiDrawerStub.get().isShowing() && !emojiDrawerStub.get().isEmojiSearchMode()) {
-      emojiDrawerStub.get().hide(true);
+    if (emojiDrawerStub.resolved() && emojiDrawerStub.get().isShowing()) {
+      if (emojiDrawerStub.get().isEmojiSearchMode()) {
+        inputPanel.setToIme();
+      } else {
+        emojiDrawerStub.get().hide(true);
+      }
     }
     if (attachmentKeyboardStub.resolved() && attachmentKeyboardStub.get().isShowing()) {
       navigationBarBackground.setVisibility(View.GONE);
@@ -1429,7 +1432,7 @@ public class ConversationParentFragment extends Fragment
   }
 
   private void handleDistributionBroadcastEnabled(MenuItem item) {
-    distributionType = ThreadDatabase.DistributionTypes.BROADCAST;
+    distributionType = ThreadTable.DistributionTypes.BROADCAST;
     draftViewModel.setDistributionType(distributionType);
     item.setChecked(true);
 
@@ -1437,7 +1440,7 @@ public class ConversationParentFragment extends Fragment
       new AsyncTask<Void, Void, Void>() {
         @Override
         protected Void doInBackground(Void... params) {
-          SignalDatabase.threads().setDistributionType(threadId, ThreadDatabase.DistributionTypes.BROADCAST);
+          SignalDatabase.threads().setDistributionType(threadId, ThreadTable.DistributionTypes.BROADCAST);
           return null;
         }
       }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -1445,7 +1448,7 @@ public class ConversationParentFragment extends Fragment
   }
 
   private void handleDistributionConversationEnabled(MenuItem item) {
-    distributionType = ThreadDatabase.DistributionTypes.CONVERSATION;
+    distributionType = ThreadTable.DistributionTypes.CONVERSATION;
     draftViewModel.setDistributionType(distributionType);
     item.setChecked(true);
 
@@ -1453,7 +1456,7 @@ public class ConversationParentFragment extends Fragment
       new AsyncTask<Void, Void, Void>() {
         @Override
         protected Void doInBackground(Void... params) {
-          SignalDatabase.threads().setDistributionType(threadId, ThreadDatabase.DistributionTypes.CONVERSATION);
+          SignalDatabase.threads().setDistributionType(threadId, ThreadTable.DistributionTypes.CONVERSATION);
           return null;
         }
       }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -1732,7 +1735,7 @@ public class ConversationParentFragment extends Fragment
             throw new AssertionError();
         }
 
-        if (!leftGroup && !canCancelRequest && selfMembership.isAnnouncementGroup() && selfMembership.getMemberLevel() != GroupDatabase.MemberLevel.ADMINISTRATOR) {
+        if (!leftGroup && !canCancelRequest && selfMembership.isAnnouncementGroup() && selfMembership.getMemberLevel() != GroupTable.MemberLevel.ADMINISTRATOR) {
           canSendMessages = false;
           cannotSendInAnnouncementGroupBanner.get().setVisibility(View.VISIBLE);
           cannotSendInAnnouncementGroupBanner.get().setMovementMethod(LinkMovementMethod.getInstance());
@@ -1958,7 +1961,7 @@ public class ConversationParentFragment extends Fragment
         List<Recipient> recipients;
 
         if (params[0].isGroup()) {
-          recipients = SignalDatabase.groups().getGroupMembers(params[0].requireGroupId(), GroupDatabase.MemberSet.FULL_MEMBERS_EXCLUDING_SELF);
+          recipients = SignalDatabase.groups().getGroupMembers(params[0].requireGroupId(), GroupTable.MemberSet.FULL_MEMBERS_EXCLUDING_SELF);
         } else {
           recipients = Collections.singletonList(params[0]);
         }
@@ -2970,12 +2973,29 @@ public class ConversationParentFragment extends Fragment
   }
 
   private void sendMediaMessage(@NonNull MediaSendActivityResult result) {
-    long                 thread        = this.threadId;
-    long                 expiresIn     = TimeUnit.SECONDS.toMillis(recipient.get().getExpiresInSeconds());
-    QuoteModel           quote         = result.isViewOnce() ? null : inputPanel.getQuote().orElse(null);
-    List<Mention>        mentions      = new ArrayList<>(result.getMentions());
-    OutgoingMediaMessage message       = new OutgoingMediaMessage(recipient.get(), new SlideDeck(), result.getBody(), System.currentTimeMillis(), -1, expiresIn, result.isViewOnce(), distributionType, result.getStoryType(), null, false, quote, Collections.emptyList(), Collections.emptyList(), mentions, null);
-    OutgoingMediaMessage secureMessage = new OutgoingSecureMediaMessage(message);
+    long                 thread    = this.threadId;
+    long                 expiresIn = TimeUnit.SECONDS.toMillis(recipient.get().getExpiresInSeconds());
+    QuoteModel           quote     = result.isViewOnce() ? null : inputPanel.getQuote().orElse(null);
+    List<Mention>        mentions  = new ArrayList<>(result.getMentions());
+    OutgoingMediaMessage message   = new OutgoingMediaMessage(recipient.get(),
+                                                              result.getBody(),
+                                                              Collections.emptyList(),
+                                                              System.currentTimeMillis(),
+                                                              -1,
+                                                              expiresIn,
+                                                              result.isViewOnce(),
+                                                              distributionType,
+                                                              result.getStoryType(),
+                                                              null,
+                                                              false,
+                                                              quote,
+                                                              Collections.emptyList(),
+                                                              Collections.emptyList(),
+                                                              mentions,
+                                                              Collections.emptySet(),
+                                                              Collections.emptySet(),
+                                                              null,
+                                                              true);
 
     final Context context = requireContext().getApplicationContext();
 
@@ -2985,10 +3005,10 @@ public class ConversationParentFragment extends Fragment
     attachmentManager.clear(glideRequests, false);
     silentlySetComposeText("");
 
-    long id = fragment.stageOutgoingMessage(secureMessage);
+    long id = fragment.stageOutgoingMessage(message);
 
     SimpleTask.run(() -> {
-      long resultId = MessageSender.sendPushWithPreUploadedMedia(context, secureMessage, result.getPreUploadResults(), thread, null);
+      long resultId = MessageSender.sendPushWithPreUploadedMedia(context, message, result.getPreUploadResults(), thread, null);
 
       int deleted = SignalDatabase.attachments().deleteAbandonedPreuploadedAttachments();
       Log.i(TAG, "Deleted " + deleted + " abandoned attachments.");
@@ -3048,7 +3068,25 @@ public class ConversationParentFragment extends Fragment
       }
     }
 
-    OutgoingMediaMessage outgoingMessageCandidate = new OutgoingMediaMessage(Recipient.resolved(recipientId), slideDeck, body, System.currentTimeMillis(), sendType.getSimSubscriptionIdOr(-1), expiresIn, viewOnce, distributionType, StoryType.NONE, null, false, quote, contacts, previews, mentions, null);
+    OutgoingMediaMessage outgoingMessageCandidate = new OutgoingMediaMessage(Recipient.resolved(recipientId),
+                                                                             OutgoingMediaMessage.buildMessage(slideDeck, body),
+                                                                             slideDeck.asAttachments(),
+                                                                             System.currentTimeMillis(),
+                                                                             sendType.getSimSubscriptionIdOr(-1),
+                                                                             expiresIn,
+                                                                             viewOnce,
+                                                                             distributionType,
+                                                                             StoryType.NONE,
+                                                                             null,
+                                                                             false,
+                                                                             quote,
+                                                                             contacts,
+                                                                             previews,
+                                                                             mentions,
+                                                                             Collections.emptySet(),
+                                                                             Collections.emptySet(),
+                                                                             null,
+                                                                             false);
 
     final SettableFuture<Void> future  = new SettableFuture<>();
     final Context              context = requireContext().getApplicationContext();
@@ -3056,7 +3094,7 @@ public class ConversationParentFragment extends Fragment
     final OutgoingMediaMessage outgoingMessage;
 
     if (sendPush) {
-      outgoingMessage = new OutgoingSecureMediaMessage(outgoingMessageCandidate);
+      outgoingMessage = outgoingMessageCandidate.makeSecure();
       ApplicationDependencies.getTypingStatusSender().onTypingStopped(thread);
     } else {
       outgoingMessage = outgoingMessageCandidate.withExpiry(0);
@@ -3186,12 +3224,12 @@ public class ConversationParentFragment extends Fragment
     new AsyncTask<Void, Void, Void>() {
       @Override
       protected Void doInBackground(Void... params) {
-        RecipientDatabase recipientDatabase = SignalDatabase.recipients();
+        RecipientTable recipientTable = SignalDatabase.recipients();
 
-        recipientDatabase.setDefaultSubscriptionId(recipient.getId(), sendType.getSimSubscriptionIdOr(-1));
+        recipientTable.setDefaultSubscriptionId(recipient.getId(), sendType.getSimSubscriptionIdOr(-1));
 
         if (!recipient.resolve().isPushGroup()) {
-          recipientDatabase.setForceSmsSelection(recipient.getId(), recipient.get().getRegistered() == RegisteredState.REGISTERED && sendType.usesSmsTransport());
+          recipientTable.setForceSmsSelection(recipient.getId(), recipient.get().getRegistered() == RegisteredState.REGISTERED && sendType.usesSmsTransport());
         }
 
         return null;
