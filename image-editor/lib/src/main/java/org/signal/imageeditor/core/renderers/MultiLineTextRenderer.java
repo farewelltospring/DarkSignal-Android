@@ -345,6 +345,15 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
         modePaint.setAlpha(rendererContext.getAlpha(alpha));
         rendererContext.canvas.drawRect(modeBounds, modePaint);
         modePaint.setAlpha(alpha);
+      } else if (mode == Mode.SNAPCHAT) {
+        modeBounds.set(Bounds.LEFT * 99,
+                       selectionBounds.top - HIGHLIGHT_TOP_PADDING,
+                       Bounds.RIGHT * 99,
+                       selectionBounds.bottom + HIGHLIGHT_BOTTOM_PADDING);
+        int alpha = modePaint.getAlpha();
+        modePaint.setAlpha(rendererContext.getAlpha(alpha));
+        rendererContext.canvas.drawRect(modeBounds, modePaint);
+        modePaint.setAlpha(alpha);
       }
 
       if (hasFocus && showSelectionOrCursor()) {
@@ -465,22 +474,30 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
   private void setColorInternal(@ColorInt int color) {
     this.color = color;
 
-    if (mode == Mode.REGULAR) {
-      paint.setColor(color);
-      selectionPaint.setColor(color);
-    } else {
+    if (mode == Mode.SNAPCHAT) {
       paint.setColor(Color.WHITE);
       selectionPaint.setColor(Color.WHITE);
-    }
-
-    if (mode == Mode.OUTLINE) {
-      modePaint.setStrokeWidth(DimensionUnit.DP.toPixels(15) / 10f);
-      modePaint.setStyle(Paint.Style.STROKE);
-    } else {
+      modePaint.setColor(Color.BLACK);
+      modePaint.setAlpha(128);
       modePaint.setStyle(Paint.Style.FILL);
-    }
+    } else {
+      if (mode == Mode.REGULAR) {
+        paint.setColor(color);
+        selectionPaint.setColor(color);
+      } else {
+        paint.setColor(Color.WHITE);
+        selectionPaint.setColor(Color.WHITE);
+      }
 
-    modePaint.setColor(color);
+      if (mode == Mode.OUTLINE) {
+        modePaint.setStrokeWidth(DimensionUnit.DP.toPixels(15) / 10f);
+        modePaint.setStyle(Paint.Style.STROKE);
+      } else {
+        modePaint.setStyle(Paint.Style.FILL);
+      }
+
+      modePaint.setColor(color);
+    }
     invalidate();
   }
 
@@ -522,7 +539,8 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
     REGULAR(0),
     HIGHLIGHT(1),
     UNDERLINE(2),
-    OUTLINE(3);
+    OUTLINE(3),
+    SNAPCHAT(4);
 
     private final int code;
 
