@@ -1,3 +1,10 @@
+# What's different?
+
+We make Signal look better on dark mode with the following features:
+- `darkavatar`: Default profile icons (using the initials of your first and last name) are now rendered with a dark background with light letters.
+- `darkquote`: The quote part of quoted messages now has the same colour as the original message that got quoted, irrespective of who's quoting it. So if your chat bubbles are green, and the other person's chat bubbles are blue, then quoting your chat bubbles will have a green-ish quote, and quoting the other person's chat bubbles will have a blue-ish quote. (This works with gradient chat bubbles too). The `dumb` branch is my attempt to do things, which had some visual bugs. The `old` branch is how Signal _used_ to do this, but they removed the feature for some reason, so I just brought it back.
+- `snaptions`: Ok, I know this one has nothing to do with dark mode, but it basically just copies Snapchat's classic text captions.
+----
 # Signal Android 
 
 Signal is a simple, powerful, and secure messenger.
