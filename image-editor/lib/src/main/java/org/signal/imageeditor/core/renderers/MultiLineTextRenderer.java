@@ -536,11 +536,11 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
   }
 
   public enum Mode {
-    REGULAR(0),
+    SNAPCHAT(0),
     HIGHLIGHT(1),
     UNDERLINE(2),
     OUTLINE(3),
-    SNAPCHAT(4);
+    REGULAR(4);
 
     private final int code;
 
@@ -555,7 +555,7 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
         }
       }
 
-      return REGULAR;
+      return SNAPCHAT;
     }
   }
 }

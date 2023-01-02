@@ -400,7 +400,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   protected void addText() {
     String                initialText = "";
     int                   color       = imageEditorHud.getActiveColor();
-    MultiLineTextRenderer renderer    = new MultiLineTextRenderer(initialText, color, MultiLineTextRenderer.Mode.REGULAR);
+    MultiLineTextRenderer renderer    = new MultiLineTextRenderer(initialText, color, MultiLineTextRenderer.Mode.SNAPCHAT);
     EditorElement         element     = new EditorElement(renderer, EditorModel.Z_TEXT);
 
     imageEditorView.getModel().addElementCentered(element, 1);
