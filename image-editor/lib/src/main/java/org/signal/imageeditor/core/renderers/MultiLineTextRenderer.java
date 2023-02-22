@@ -97,8 +97,13 @@ public final class MultiLineTextRenderer extends InvalidateableRenderer implemen
 
     float height = 0;
     float width  = 0;
+    Matrix undoPaddingMatrix = new Matrix();
+    if (mode == Mode.SNAPCHAT) {
+      undoPaddingMatrix.setTranslate(0, (HIGHLIGHT_TOP_PADDING + HIGHLIGHT_BOTTOM_PADDING) * -1);
+    }
     for (Line line : lines) {
       line.render(rendererContext);
+      rendererContext.canvasMatrix.concat(undoPaddingMatrix);
       height += line.heightInBounds - line.ascentInBounds + line.descentInBounds;
       width = Math.max(line.textBounds.width(), width);
     }
