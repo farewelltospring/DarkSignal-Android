@@ -86,6 +86,7 @@ import org.whispersystems.signalservice.api.push.exceptions.RateLimitException;
 import org.whispersystems.signalservice.api.push.exceptions.RemoteAttestationResponseExpiredException;
 import org.whispersystems.signalservice.api.push.exceptions.ResumeLocationInvalidException;
 import org.whispersystems.signalservice.api.push.exceptions.ServerRejectedException;
+import org.whispersystems.signalservice.api.push.exceptions.TokenNotAcceptedException;
 import org.whispersystems.signalservice.api.push.exceptions.UnregisteredUserException;
 import org.whispersystems.signalservice.api.push.exceptions.UsernameIsNotAssociatedWithAnAccountException;
 import org.whispersystems.signalservice.api.push.exceptions.UsernameIsNotReservedException;
@@ -212,6 +213,7 @@ public class PushServiceSocket {
   private static final String DELETE_ACCOUNT_PATH        = "/v1/accounts/me";
   private static final String CHANGE_NUMBER_PATH         = "/v2/accounts/number";
   private static final String IDENTIFIER_REGISTERED_PATH = "/v1/accounts/account/%s";
+  private static final String REQUEST_ACCOUNT_DATA_PATH  = "/v2/accounts/data_report";
 
   private static final String PREKEY_METADATA_PATH      = "/v2/keys?identity=%s";
   private static final String PREKEY_PATH               = "/v2/keys/%s?identity=%s";
@@ -348,7 +350,7 @@ public class PushServiceSocket {
     String path = VERIFICATION_SESSION_PATH + "/" + sessionId;
 
     final UpdateVerificationSessionRequestBody requestBody = new UpdateVerificationSessionRequestBody(captchaToken, pushToken, pushChallengeToken, mcc, mnc);
-    try (Response response = makeServiceRequest(path, "PATCH", jsonRequestBody(JsonUtil.toJson(requestBody)), NO_HEADERS, new RegistrationSessionResponseHandler(), Optional.empty(), false)) {
+    try (Response response = makeServiceRequest(path, "PATCH", jsonRequestBody(JsonUtil.toJson(requestBody)), NO_HEADERS, new PatchRegistrationSessionResponseHandler(), Optional.empty(), false)) {
       return parseSessionMetadataResponse(response);
     }
   }
@@ -415,6 +417,10 @@ public class PushServiceSocket {
     } catch (NotFoundException e) {
       return false;
     }
+  }
+
+  public String getAccountDataReport() throws IOException {
+    return makeServiceRequest(REQUEST_ACCOUNT_DATA_PATH, "GET", null);
   }
 
   public CdsiAuthResponse getCdsiAuth() throws IOException {
@@ -2543,6 +2549,35 @@ public class PushServiceSocket {
     }
   }
 
+
+  private static class PatchRegistrationSessionResponseHandler implements ResponseCodeHandler {
+
+    @Override
+    public void handle(int responseCode, ResponseBody body) throws NonSuccessfulResponseCodeException, PushNetworkException {
+      switch (responseCode) {
+        case 403:
+          throw new TokenNotAcceptedException();
+        case 404:
+          throw new NoSuchSessionException();
+        case 409:
+          RegistrationSessionMetadataJson response;
+          try {
+            response = JsonUtil.fromJson(body.string(), RegistrationSessionMetadataJson.class);
+          } catch (IOException e) {
+            Log.e(TAG, "Unable to read response body.", e);
+            throw new NonSuccessfulResponseCodeException(409);
+          }
+          if (response.pushChallengedRequired()) {
+            throw new PushChallengeRequiredException();
+          } else if (response.captchaRequired()) {
+            throw new CaptchaRequiredException();
+          } else {
+            throw new HttpConflictException();
+          }
+      }
+    }
+  }
+
   private static class RegistrationCodeRequestResponseHandler implements ResponseCodeHandler {
     @Override public void handle(int responseCode, ResponseBody body) throws NonSuccessfulResponseCodeException, PushNetworkException {
       switch (responseCode) {
@@ -2595,7 +2630,7 @@ public class PushServiceSocket {
     RegistrationSessionMetadataHeaders responseHeaders = new RegistrationSessionMetadataHeaders(serverDeliveredTimestamp);
     RegistrationSessionMetadataJson responseBody = JsonUtil.fromJson(readBodyString(response), RegistrationSessionMetadataJson.class);
 
-    return new RegistrationSessionMetadataResponse(responseHeaders, responseBody);
+    return new RegistrationSessionMetadataResponse(responseHeaders, responseBody, null);
   }
 
   public static final class GroupHistory {

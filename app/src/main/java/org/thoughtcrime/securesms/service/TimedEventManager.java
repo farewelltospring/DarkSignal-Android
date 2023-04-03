@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import org.signal.core.util.PendingIntentFlags;
+import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.util.ServiceUtil;
 
@@ -30,7 +31,7 @@ public abstract class TimedEventManager<E> {
   private final Handler     handler;
 
   public TimedEventManager(@NonNull Application application, @NonNull String threadName) {
-    HandlerThread handlerThread = new HandlerThread(threadName);
+    HandlerThread handlerThread = new HandlerThread(threadName, ThreadUtil.PRIORITY_BACKGROUND_THREAD);
     handlerThread.start();
 
     this.application = application;
@@ -122,7 +123,11 @@ public abstract class TimedEventManager<E> {
     Intent        intent        = new Intent(context, alarmClass);
     PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intent, PendingIntentFlags.mutable());
 
-    pendingIntent.cancel();
-    ServiceUtil.getAlarmManager(context).cancel(pendingIntent);
+    try {
+      pendingIntent.cancel();
+      ServiceUtil.getAlarmManager(context).cancel(pendingIntent);
+    } catch (SecurityException e) {
+      Log.i(TAG, "Unable to cancel alarm because we don't have permission");
+    }
   }
 }
