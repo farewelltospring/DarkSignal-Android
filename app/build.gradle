@@ -46,8 +46,8 @@ ktlint {
     version = "0.47.1"
 }
 
-def canonicalVersionCode = 1237
-def canonicalVersionName = "6.16.1"
+def canonicalVersionCode = 1253
+def canonicalVersionName = "6.19.5"
 
 def postFixSize = 100
 def abiPostFix = ['universal'   : 0,
@@ -67,11 +67,13 @@ def selectableVariants = [
         'nightlyPnpRelease',
         'playProdDebug',
         'playProdSpinner',
+        'playProdCanary',
         'playProdPerf',
         'playProdBenchmark',
         'playProdInstrumentation',
         'playProdRelease',
         'playStagingDebug',
+        'playStagingCanary',
         'playStagingSpinner',
         'playStagingPerf',
         'playStagingInstrumentation',
@@ -318,6 +320,14 @@ android {
             buildConfigField "String", "BUILD_VARIANT_TYPE", "\"Benchmark\""
             buildConfigField "boolean", "TRACING_ENABLED", "true"
         }
+
+        canary {
+            initWith debug
+            isDefault false
+            minifyEnabled false
+            matchingFallbacks = ['debug']
+            buildConfigField "String", "BUILD_VARIANT_TYPE", "\"Canary\""
+        }
     }
 
     productFlavors {
@@ -437,7 +447,6 @@ android {
 }
 
 dependencies {
-    implementation libs.androidx.core.ktx
     implementation libs.androidx.fragment.ktx
     lintChecks project(':lintchecks')
 
@@ -556,9 +565,11 @@ dependencies {
         exclude group: 'org.freemarker'
     }
     implementation libs.dnsjava
+    implementation libs.kotlinx.collections.immutable
 
     spinnerImplementation project(":spinner")
-    spinnerImplementation libs.square.leakcanary
+
+    canaryImplementation libs.square.leakcanary
 
     testImplementation testLibs.junit.junit
     testImplementation testLibs.assertj.core
