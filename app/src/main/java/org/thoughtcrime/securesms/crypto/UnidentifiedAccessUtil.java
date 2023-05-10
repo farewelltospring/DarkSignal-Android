@@ -17,8 +17,6 @@ import org.signal.libsignal.protocol.ecc.Curve;
 import org.signal.libsignal.protocol.ecc.ECPublicKey;
 import org.signal.libsignal.zkgroup.profiles.ProfileKey;
 import org.thoughtcrime.securesms.BuildConfig;
-import org.thoughtcrime.securesms.database.RecipientDatabase;
-import org.thoughtcrime.securesms.database.RecipientDatabase.UnidentifiedAccessMode;
 import org.thoughtcrime.securesms.keyvalue.CertificateType;
 import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
@@ -46,12 +44,7 @@ public class UnidentifiedAccessUtil {
   private static final byte[] UNRESTRICTED_KEY = new byte[16];
 
   public static CertificateValidator getCertificateValidator() {
-    try {
-      ECPublicKey unidentifiedSenderTrustRoot = Curve.decodePoint(Base64.decode(BuildConfig.UNIDENTIFIED_SENDER_TRUST_ROOT), 0);
-      return new CertificateValidator(unidentifiedSenderTrustRoot);
-    } catch (InvalidKeyException | IOException e) {
-      throw new AssertionError(e);
-    }
+    return CertificateValidatorHolder.INSTANCE.certificateValidator;
   }
 
   @WorkerThread
@@ -71,7 +64,7 @@ public class UnidentifiedAccessUtil {
 
   @WorkerThread
   public static Map<RecipientId, Optional<UnidentifiedAccessPair>> getAccessMapFor(@NonNull Context context, @NonNull List<Recipient> recipients, boolean isForStory) {
-    List<Optional<UnidentifiedAccessPair>> accessList = getAccessFor(context, recipients, true, isForStory);
+    List<Optional<UnidentifiedAccessPair>> accessList = getAccessFor(context, recipients, isForStory, true);
 
     Iterator<Recipient>                        recipientIterator = recipients.iterator();
     Iterator<Optional<UnidentifiedAccessPair>> accessIterator    = accessList.iterator();
@@ -210,5 +203,20 @@ public class UnidentifiedAccessUtil {
     }
 
     return accessKey;
+  }
+
+  private enum CertificateValidatorHolder {
+    INSTANCE;
+
+    final CertificateValidator certificateValidator = buildCertificateValidator();
+
+    private static CertificateValidator buildCertificateValidator() {
+      try {
+        ECPublicKey unidentifiedSenderTrustRoot = Curve.decodePoint(Base64.decode(BuildConfig.UNIDENTIFIED_SENDER_TRUST_ROOT), 0);
+        return new CertificateValidator(unidentifiedSenderTrustRoot);
+      } catch (InvalidKeyException | IOException e) {
+        throw new AssertionError(e);
+      }
+    }
   }
 }

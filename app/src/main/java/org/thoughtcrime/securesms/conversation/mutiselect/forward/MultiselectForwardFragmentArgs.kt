@@ -23,6 +23,7 @@ import org.thoughtcrime.securesms.mms.PartAuthority
 import org.thoughtcrime.securesms.sharing.MultiShareArgs
 import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.util.MediaUtil
+import org.thoughtcrime.securesms.util.hasSharedContact
 import java.util.Optional
 import java.util.function.Consumer
 
@@ -35,6 +36,7 @@ import java.util.function.Consumer
  * @param forceDisableAddMessage Hide the add message field even if it would normally be available.
  * @param forceSelectionOnly     Force the fragment to only select recipients, never actually performing the send.
  * @param selectSingleRecipient  Only allow the selection of a single recipient.
+ * @param isWrappedInBottomSheet Whether the fragment is wrapped in a bottom sheet.
  */
 @Parcelize
 data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
@@ -44,9 +46,11 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
   val forceDisableAddMessage: Boolean = false,
   val forceSelectionOnly: Boolean = false,
   val selectSingleRecipient: Boolean = false,
-  val sendButtonColors: ViewColorSet? = null,
+  val sendButtonColors: ViewColorSet = ViewColorSet.PRIMARY,
   val storySendRequirements: Stories.MediaTransform.SendRequirements = Stories.MediaTransform.SendRequirements.CAN_NOT_SEND,
-  val isSearchEnabled: Boolean = true
+  val isSearchEnabled: Boolean = true,
+  val isViewOnce: Boolean = false,
+  val isWrappedInBottomSheet: Boolean = false
 ) : Parcelable {
 
   fun withSendButtonTint(@ColorInt sendButtonTint: Int) = copy(sendButtonColors = ViewColorSet.forCustomColor(sendButtonTint))
@@ -74,7 +78,7 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
               isMmsSupported,
               listOf(multiShareArgs),
               storySendRequirements = Stories.MediaTransform.SendRequirements.CAN_NOT_SEND,
-              sendButtonColors = sendButtonColors
+              sendButtonColors = sendButtonColors ?: ViewColorSet.PRIMARY
             )
           )
         }
@@ -113,6 +117,7 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
         .withMentions(conversationMessage.mentions)
         .withTimestamp(conversationMessage.messageRecord.timestamp)
         .withExpiration(conversationMessage.messageRecord.expireStarted + conversationMessage.messageRecord.expiresIn)
+        .withBodyRanges(conversationMessage.messageRecord.messageRanges)
 
       if (conversationMessage.multiselectCollection.isTextSelected(selectedParts)) {
         val mediaMessage: MmsMessageRecord? = conversationMessage.messageRecord as? MmsMessageRecord
@@ -130,6 +135,10 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
         val linkPreview = mediaMessage?.linkPreviews?.firstOrNull()
         builder.withLinkPreview(linkPreview)
         builder.asTextStory(mediaMessage?.storyType?.isTextStory ?: false)
+      }
+
+      if (conversationMessage.messageRecord.hasSharedContact() && conversationMessage.multiselectCollection.isMediaSelected(selectedParts)) {
+        builder.withSharedContacts((conversationMessage.messageRecord as MmsMessageRecord).sharedContacts)
       }
 
       if (conversationMessage.messageRecord.isMms && conversationMessage.multiselectCollection.isMediaSelected(selectedParts)) {

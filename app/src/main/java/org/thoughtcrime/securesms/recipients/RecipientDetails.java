@@ -10,11 +10,11 @@ import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential;
 import org.thoughtcrime.securesms.badges.models.Badge;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor;
 import org.thoughtcrime.securesms.conversation.colors.ChatColors;
-import org.thoughtcrime.securesms.database.RecipientDatabase.InsightsBannerTier;
-import org.thoughtcrime.securesms.database.RecipientDatabase.MentionSetting;
-import org.thoughtcrime.securesms.database.RecipientDatabase.RegisteredState;
-import org.thoughtcrime.securesms.database.RecipientDatabase.UnidentifiedAccessMode;
-import org.thoughtcrime.securesms.database.RecipientDatabase.VibrateState;
+import org.thoughtcrime.securesms.database.RecipientTable.InsightsBannerTier;
+import org.thoughtcrime.securesms.database.RecipientTable.MentionSetting;
+import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState;
+import org.thoughtcrime.securesms.database.RecipientTable.UnidentifiedAccessMode;
+import org.thoughtcrime.securesms.database.RecipientTable.VibrateState;
 import org.thoughtcrime.securesms.database.model.DistributionListId;
 import org.thoughtcrime.securesms.database.model.ProfileAvatarFileDetails;
 import org.thoughtcrime.securesms.database.model.RecipientRecord;
@@ -63,6 +63,7 @@ public class RecipientDetails {
   final String                       profileAvatar;
   final ProfileAvatarFileDetails     profileAvatarFileDetails;
   final boolean                      profileSharing;
+  final boolean                      isHidden;
   final long                         lastProfileFetch;
   final boolean                      systemContact;
   final boolean                      isSelf;
@@ -122,6 +123,7 @@ public class RecipientDetails {
     this.profileAvatar                = record.getProfileAvatar();
     this.profileAvatarFileDetails     = record.getProfileAvatarFileDetails();
     this.profileSharing               = record.isProfileSharing();
+    this.isHidden                     = record.isHidden();
     this.lastProfileFetch             = record.getLastProfileFetch();
     this.systemContact                = systemContact;
     this.isSelf                       = isSelf;
@@ -176,6 +178,7 @@ public class RecipientDetails {
     this.profileAvatar                = null;
     this.profileAvatarFileDetails     = ProfileAvatarFileDetails.NO_DETAILS;
     this.profileSharing               = false;
+    this.isHidden                     = false;
     this.lastProfileFetch             = 0;
     this.systemContact                = true;
     this.isSelf                       = false;
@@ -209,7 +212,7 @@ public class RecipientDetails {
     RegisteredState registeredState = settings.getRegistered();
 
     if (isSelf) {
-      if (SignalStore.account().isRegistered() && !TextSecurePreferences.isUnauthorizedRecieved(context)) {
+      if (SignalStore.account().isRegistered() && !TextSecurePreferences.isUnauthorizedReceived(context)) {
         registeredState = RegisteredState.REGISTERED;
       } else {
         registeredState = RegisteredState.NOT_REGISTERED;

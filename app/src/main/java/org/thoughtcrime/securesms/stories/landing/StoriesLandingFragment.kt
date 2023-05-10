@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.transition.TransitionInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -16,11 +15,13 @@ import androidx.core.app.SharedElementCallback
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.transition.TransitionInflater
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.kotlin.subscribeBy
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.Material3SearchToolbar
 import org.thoughtcrime.securesms.components.settings.DSLConfiguration
@@ -33,6 +34,7 @@ import org.thoughtcrime.securesms.conversation.mutiselect.forward.MultiselectFor
 import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.StoryViewState
+import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
 import org.thoughtcrime.securesms.main.Material3OnScrollHelperBinder
 import org.thoughtcrime.securesms.main.SearchBinder
 import org.thoughtcrime.securesms.mediasend.v2.MediaSelectionActivity
@@ -47,7 +49,6 @@ import org.thoughtcrime.securesms.stories.settings.StorySettingsActivity
 import org.thoughtcrime.securesms.stories.tabs.ConversationListTab
 import org.thoughtcrime.securesms.stories.tabs.ConversationListTabsViewModel
 import org.thoughtcrime.securesms.stories.viewer.StoryViewerActivity
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingAdapter
 import org.thoughtcrime.securesms.util.fragments.requireListener
 import org.thoughtcrime.securesms.util.visible
@@ -91,6 +92,9 @@ class StoriesLandingFragment : DSLSettingsFragment(layoutId = R.layout.stories_l
     super.onResume()
     viewModel.isTransitioningToAnotherScreen = false
     initializeSearchAction()
+    viewModel.markStoriesRead()
+
+    ApplicationDependencies.getExpireStoriesManager().scheduleIfNecessary()
   }
 
   override fun onPause() {
@@ -102,6 +106,7 @@ class StoriesLandingFragment : DSLSettingsFragment(layoutId = R.layout.stories_l
     val searchBinder = requireListener<SearchBinder>()
     searchBinder.getSearchAction().setOnClickListener {
       searchBinder.onSearchOpened()
+      searchBinder.getSearchToolbar().get().setSearchInputHint(R.string.SearchToolbar_search)
 
       searchBinder.getSearchToolbar().get().listener = object : Material3SearchToolbar.Listener {
         override fun onSearchTextChange(text: String) {
@@ -128,16 +133,21 @@ class StoriesLandingFragment : DSLSettingsFragment(layoutId = R.layout.stories_l
     lifecycleDisposable.bindTo(viewLifecycleOwner)
     emptyNotice = requireView().findViewById(R.id.empty_notice)
     cameraFab = requireView().findViewById(R.id.camera_fab)
+    val sharedElementTarget: View = requireView().findViewById(R.id.camera_fab_shared_element_target)
+
+    ViewCompat.setTransitionName(cameraFab, "new_convo_fab")
+    ViewCompat.setTransitionName(sharedElementTarget, "camera_fab")
 
     sharedElementEnterTransition = TransitionInflater.from(requireContext()).inflateTransition(R.transition.change_transform_fabs)
     setEnterSharedElementCallback(object : SharedElementCallback() {
       override fun onSharedElementStart(sharedElementNames: MutableList<String>?, sharedElements: MutableList<View>?, sharedElementSnapshots: MutableList<View>?) {
         if (sharedElementNames?.contains("camera_fab") == true) {
-          cameraFab.setImageResource(R.drawable.ic_compose_outline_24)
+          cameraFab.setImageResource(R.drawable.symbol_edit_24)
           lifecycleDisposable += Single.timer(200, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy {
-              cameraFab.setImageResource(R.drawable.ic_camera_outline_24)
+              cameraFab.setImageResource(R.drawable.symbol_camera_24)
+              sharedElementTarget.alpha = 0f
             }
         }
       }
@@ -147,7 +157,7 @@ class StoriesLandingFragment : DSLSettingsFragment(layoutId = R.layout.stories_l
       Permissions.with(this)
         .request(Manifest.permission.CAMERA)
         .ifNecessary()
-        .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.ic_camera_24)
+        .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.symbol_camera_24)
         .withPermanentDenialDialog(getString(R.string.ConversationActivity_signal_needs_the_camera_permission_to_take_photos_or_video))
         .onAllGranted {
           startActivityIfAble(MediaSelectionActivity.camera(requireContext(), isStory = true))
@@ -270,6 +280,12 @@ class StoriesLandingFragment : DSLSettingsFragment(layoutId = R.layout.stories_l
       },
       onAvatarClick = {
         cameraFab.performClick()
+      },
+      onLockList = {
+        recyclerView?.suppressLayout(true)
+      },
+      onUnlockList = {
+        recyclerView?.suppressLayout(false)
       }
     )
   }

@@ -1,20 +1,30 @@
 package org.thoughtcrime.securesms.stories.viewer
 
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.viewpager2.widget.ViewPager2
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.getParcelableArrayListCompat
+import org.signal.core.util.getParcelableCompat
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.components.spoiler.SpoilerAnnotation
+import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.stories.StoryViewerArgs
+import org.thoughtcrime.securesms.stories.viewer.first.StoryFirstTimeNavigationFragment
 import org.thoughtcrime.securesms.stories.viewer.page.StoryViewerPageArgs
 import org.thoughtcrime.securesms.stories.viewer.page.StoryViewerPageFragment
 import org.thoughtcrime.securesms.stories.viewer.reply.StoriesSharedElementCrossFaderView
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 
 /**
  * Fragment which manages a vertical pager fragment of stories.
@@ -36,7 +46,7 @@ class StoryViewerFragment :
 
   private val lifecycleDisposable = LifecycleDisposable()
 
-  private val storyViewerArgs: StoryViewerArgs by lazy { requireArguments().getParcelable(ARGS)!! }
+  private val storyViewerArgs: StoryViewerArgs by lazy { requireArguments().getParcelableCompat(ARGS, StoryViewerArgs::class.java)!! }
 
   private lateinit var storyCrossfader: StoriesSharedElementCrossFaderView
 
@@ -46,7 +56,10 @@ class StoryViewerFragment :
     storyCrossfader = view.findViewById(R.id.story_content_crossfader)
     storyPager = view.findViewById(R.id.story_item_pager)
 
+    ViewCompat.setTransitionName(storyCrossfader, "story")
     storyCrossfader.callback = this
+
+    SpoilerAnnotation.resetRevealedSpoilers()
 
     val adapter = StoryViewerPagerAdapter(
       this,
@@ -88,12 +101,14 @@ class StoryViewerFragment :
 
         if (state.page >= state.pages.size) {
           ActivityCompat.finishAfterTransition(requireActivity())
+          lifecycleDisposable.clear()
         }
       }
 
       when (state.crossfadeSource) {
         is StoryViewerState.CrossfadeSource.TextModel -> storyCrossfader.setSourceView(state.crossfadeSource.storyTextPostModel)
         is StoryViewerState.CrossfadeSource.ImageUri -> storyCrossfader.setSourceView(state.crossfadeSource.imageUri, state.crossfadeSource.imageBlur)
+        StoryViewerState.CrossfadeSource.None -> Unit
       }
 
       if (state.crossfadeTarget is StoryViewerState.CrossfadeTarget.Record) {
@@ -104,17 +119,34 @@ class StoryViewerFragment :
       if (state.skipCrossfade) {
         viewModel.setCrossfaderIsReady(true)
       }
+    }
 
-      if (state.loadState.isReady()) {
+    lifecycleDisposable += viewModel.loadState.subscribe {
+      if (it.isReady()) {
+        Log.d(TAG, "Content is ready, clearing crossfader.")
         storyCrossfader.alpha = 0f
       }
     }
 
     if (savedInstanceState != null && savedInstanceState.containsKey(HIDDEN)) {
-      val ids: List<RecipientId> = savedInstanceState.getParcelableArrayList(HIDDEN)!!
+      val ids: List<RecipientId> = savedInstanceState.getParcelableArrayListCompat(HIDDEN, RecipientId::class.java)!!
       viewModel.addHiddenAndRefresh(ids.toSet())
     } else {
       viewModel.refresh()
+
+      if (!SignalStore.storyValues().userHasSeenFirstNavView) {
+        StoryFirstTimeNavigationFragment().show(childFragmentManager, null)
+      }
+    }
+
+    if (Build.VERSION.SDK_INT >= 31) {
+      lifecycleDisposable += viewModel.isFirstTimeNavigationShowing.subscribe {
+        if (it) {
+          requireView().rootView.setRenderEffect(RenderEffect.createBlurEffect(100f, 100f, Shader.TileMode.CLAMP))
+        } else {
+          requireView().rootView.setRenderEffect(null)
+        }
+      }
     }
   }
 
@@ -178,6 +210,8 @@ class StoryViewerFragment :
   }
 
   companion object {
+    private val TAG = Log.tag(StoryViewerFragment::class.java)
+
     private const val ARGS = "args"
     private const val HIDDEN = "hidden"
 

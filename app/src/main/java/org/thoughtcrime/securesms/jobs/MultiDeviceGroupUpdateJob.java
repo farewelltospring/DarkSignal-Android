@@ -4,14 +4,15 @@ import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.conversation.colors.ChatColorsMapper;
 import org.thoughtcrime.securesms.crypto.UnidentifiedAccessUtil;
-import org.thoughtcrime.securesms.database.GroupDatabase;
+import org.thoughtcrime.securesms.database.GroupTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.database.model.GroupRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class MultiDeviceGroupUpdateJob extends BaseJob {
@@ -68,8 +70,8 @@ public class MultiDeviceGroupUpdateJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return Data.EMPTY;
+  public @Nullable byte[] serialize() {
+    return null;
   }
 
   @Override
@@ -90,18 +92,18 @@ public class MultiDeviceGroupUpdateJob extends BaseJob {
 
     ParcelFileDescriptor[] pipe        = ParcelFileDescriptor.createPipe();
     InputStream            inputStream = new ParcelFileDescriptor.AutoCloseInputStream(pipe[0]);
-    Uri                    uri         = BlobProvider.getInstance()
+    Future<Uri>            futureUri   = BlobProvider.getInstance()
                                                      .forData(inputStream, 0)
                                                      .withFileName("multidevice-group-update")
-                                                     .createForSingleSessionOnDiskAsync(context,
-                                                                                        () -> Log.i(TAG, "Write successful."),
-                                                                                        e  -> Log.w(TAG, "Error during write.", e));
+                                                     .createForSingleSessionOnDiskAsync(context);
 
-    try (GroupDatabase.Reader reader = SignalDatabase.groups().getGroups()) {
+    Uri blobUri = null;
+
+    try (GroupTable.Reader reader = SignalDatabase.groups().getGroups()) {
       DeviceGroupsOutputStream out     = new DeviceGroupsOutputStream(new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]));
       boolean                  hasData = false;
 
-      GroupDatabase.GroupRecord record;
+      GroupRecord record;
 
       while ((record = reader.getNext()) != null) {
         if (record.isV1Group()) {
@@ -136,10 +138,11 @@ public class MultiDeviceGroupUpdateJob extends BaseJob {
       out.close();
 
       if (hasData) {
-        long length = BlobProvider.getInstance().calculateFileSize(context, uri);
+        blobUri = futureUri.get();
+        long length = BlobProvider.getInstance().calculateFileSize(context, blobUri);
 
         sendUpdate(ApplicationDependencies.getSignalServiceMessageSender(),
-                   BlobProvider.getInstance().getStream(context, uri),
+                   BlobProvider.getInstance().getStream(context, blobUri),
                    length);
       } else {
         Log.w(TAG, "No groups present for sync message. Sending an empty update.");
@@ -149,7 +152,9 @@ public class MultiDeviceGroupUpdateJob extends BaseJob {
                    0);
       }
     } finally {
-      BlobProvider.getInstance().delete(context, uri);
+      if (blobUri != null) {
+        BlobProvider.getInstance().delete(context, blobUri);
+      }
     }
   }
 
@@ -204,7 +209,7 @@ public class MultiDeviceGroupUpdateJob extends BaseJob {
 
   public static final class Factory implements Job.Factory<MultiDeviceGroupUpdateJob> {
     @Override
-    public @NonNull MultiDeviceGroupUpdateJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull MultiDeviceGroupUpdateJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
       return new MultiDeviceGroupUpdateJob(parameters);
     }
   }

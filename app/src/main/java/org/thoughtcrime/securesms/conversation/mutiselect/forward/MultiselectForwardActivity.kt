@@ -6,11 +6,13 @@ import android.os.Bundle
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.appcompat.widget.Toolbar
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import org.signal.core.util.getParcelableArrayListExtraCompat
+import org.signal.core.util.getParcelableExtraCompat
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
-import org.thoughtcrime.securesms.color.ViewColorSet
 import org.thoughtcrime.securesms.components.FragmentWrapperActivity
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchKey
 import org.thoughtcrime.securesms.conversation.mutiselect.forward.MultiselectForwardFragment.Companion.RESULT_SELECTION
@@ -22,7 +24,7 @@ open class MultiselectForwardActivity : FragmentWrapperActivity(), MultiselectFo
     private const val ARGS = "args"
   }
 
-  private val args: MultiselectForwardFragmentArgs get() = intent.getParcelableExtra(ARGS)!!
+  private val args: MultiselectForwardFragmentArgs get() = intent.getParcelableExtraCompat(ARGS, MultiselectForwardFragmentArgs::class.java)!!
 
   override val contentViewId: Int = R.layout.multiselect_forward_activity
 
@@ -35,21 +37,7 @@ open class MultiselectForwardActivity : FragmentWrapperActivity(), MultiselectFo
   }
 
   override fun getFragment(): Fragment {
-    return MultiselectForwardFragment.create(
-      args.let {
-        if (it.sendButtonColors == null) {
-          args.withSendButtonTint(ContextCompat.getColor(this, R.color.signal_colorPrimary))
-          args.copy(
-            sendButtonColors = ViewColorSet(
-              foreground = ViewColorSet.ViewColor.ColorResource(R.color.signal_colorOnPrimary),
-              background = ViewColorSet.ViewColor.ColorResource(R.color.signal_colorPrimary)
-            )
-          )
-        } else {
-          args
-        }
-      }
-    )
+    return MultiselectForwardFragment.create(args)
   }
 
   override fun onFinishForwardAction() {
@@ -58,7 +46,7 @@ open class MultiselectForwardActivity : FragmentWrapperActivity(), MultiselectFo
 
   override fun exitFlow() {
     Log.d(TAG, "Exiting flow...")
-    onBackPressedDispatcher.onBackPressed()
+    ActivityCompat.finishAfterTransition(this)
   }
 
   override fun onSearchInputFocused() = Unit
@@ -87,8 +75,8 @@ open class MultiselectForwardActivity : FragmentWrapperActivity(), MultiselectFo
       } else if (intent == null || !intent.hasExtra(RESULT_SELECTION)) {
         throw IllegalStateException("Selection contract requires a selection.")
       } else {
-        val selection: List<ContactSearchKey.ParcelableRecipientSearchKey> = intent.getParcelableArrayListExtra(RESULT_SELECTION)!!
-        selection.map { it.asRecipientSearchKey() }
+        val selection: List<ContactSearchKey.RecipientSearchKey> = intent.getParcelableArrayListExtraCompat(RESULT_SELECTION, ContactSearchKey.RecipientSearchKey::class.java)!!
+        selection
       }
     }
   }

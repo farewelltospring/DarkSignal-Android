@@ -28,11 +28,11 @@ import org.thoughtcrime.securesms.contacts.avatars.TransparentContactPhoto;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor;
 import org.thoughtcrime.securesms.conversation.colors.ChatColors;
 import org.thoughtcrime.securesms.conversation.colors.ChatColorsPalette;
-import org.thoughtcrime.securesms.database.RecipientDatabase;
-import org.thoughtcrime.securesms.database.RecipientDatabase.MentionSetting;
-import org.thoughtcrime.securesms.database.RecipientDatabase.RegisteredState;
-import org.thoughtcrime.securesms.database.RecipientDatabase.UnidentifiedAccessMode;
-import org.thoughtcrime.securesms.database.RecipientDatabase.VibrateState;
+import org.thoughtcrime.securesms.database.RecipientTable;
+import org.thoughtcrime.securesms.database.RecipientTable.MentionSetting;
+import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState;
+import org.thoughtcrime.securesms.database.RecipientTable.UnidentifiedAccessMode;
+import org.thoughtcrime.securesms.database.RecipientTable.VibrateState;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.DistributionListId;
 import org.thoughtcrime.securesms.database.model.ProfileAvatarFileDetails;
@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-import static org.thoughtcrime.securesms.database.RecipientDatabase.InsightsBannerTier;
+import static org.thoughtcrime.securesms.database.RecipientTable.InsightsBannerTier;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class Recipient {
@@ -115,6 +115,7 @@ public class Recipient {
   private final String                       profileAvatar;
   private final ProfileAvatarFileDetails     profileAvatarFileDetails;
   private final boolean                      profileSharing;
+  private final boolean                      isHidden;
   private final long                         lastProfileFetch;
   private final String                       notificationChannel;
   private final UnidentifiedAccessMode       unidentifiedAccessMode;
@@ -230,7 +231,7 @@ public class Recipient {
       throw new AssertionError("Unknown serviceId!");
     }
 
-    RecipientDatabase db = SignalDatabase.recipients();
+    RecipientTable db = SignalDatabase.recipients();
 
     RecipientId recipientId;
 
@@ -269,8 +270,8 @@ public class Recipient {
       throw new AssertionError();
     }
 
-    RecipientDatabase db          = SignalDatabase.recipients();
-    RecipientId       recipientId = db.getAndPossiblyMerge(serviceId, e164);
+    RecipientTable db          = SignalDatabase.recipients();
+    RecipientId    recipientId = db.getAndPossiblyMerge(serviceId, e164);
 
     Recipient resolved = resolved(recipientId);
 
@@ -297,8 +298,8 @@ public class Recipient {
    */
   @WorkerThread
   public static @NonNull Recipient externalContact(@NonNull String identifier) {
-    RecipientDatabase db = SignalDatabase.recipients();
-    RecipientId       id = null;
+    RecipientTable db = SignalDatabase.recipients();
+    RecipientId    id = null;
 
     if (UuidUtil.isUuid(identifier)) {
       throw new AssertionError("UUIDs are not valid system contact identifiers!");
@@ -353,8 +354,8 @@ public class Recipient {
   public static @NonNull Recipient external(@NonNull Context context, @NonNull String identifier) {
     Preconditions.checkNotNull(identifier, "Identifier cannot be null!");
 
-    RecipientDatabase db = SignalDatabase.recipients();
-    RecipientId       id = null;
+    RecipientTable db = SignalDatabase.recipients();
+    RecipientId    id = null;
 
     if (UuidUtil.isUuid(identifier)) {
       ServiceId serviceId = ServiceId.parseOrThrow(identifier);
@@ -412,6 +413,7 @@ public class Recipient {
     this.profileAvatar                = null;
     this.profileAvatarFileDetails     = ProfileAvatarFileDetails.NO_DETAILS;
     this.profileSharing               = false;
+    this.isHidden                     = false;
     this.lastProfileFetch             = 0;
     this.notificationChannel          = null;
     this.unidentifiedAccessMode       = UnidentifiedAccessMode.DISABLED;
@@ -466,6 +468,7 @@ public class Recipient {
     this.profileAvatar                = details.profileAvatar;
     this.profileAvatarFileDetails     = details.profileAvatarFileDetails;
     this.profileSharing               = details.profileSharing;
+    this.isHidden                     = details.isHidden;
     this.lastProfileFetch             = details.lastProfileFetch;
     this.notificationChannel          = details.notificationChannel;
     this.unidentifiedAccessMode       = details.unidentifiedAccessMode;
@@ -650,8 +653,9 @@ public class Recipient {
     String name = Util.getFirstNonEmpty(getGroupName(context),
                                         getSystemProfileName().getGivenName(),
                                         getProfileName().getGivenName(),
-                                        getDisplayName(context),
-                                        getUsername().orElse(null));
+                                        getE164().orElse(null),
+                                        getUsername().orElse(null),
+                                        getDisplayName(context));
 
     return StringUtil.isolateBidi(name);
   }
@@ -832,6 +836,10 @@ public class Recipient {
     return profileSharing;
   }
 
+  public boolean isHidden() {
+    return isHidden;
+  }
+
   public long getLastProfileFetchTime() {
     return lastProfileFetch;
   }
@@ -875,6 +883,10 @@ public class Recipient {
   public boolean isActiveGroup() {
     RecipientId selfId = Recipient.self().getId();
     return Stream.of(getParticipantIds()).anyMatch(p -> p.equals(selfId));
+  }
+
+  public boolean isInactiveGroup() {
+    return isGroup() && !isActiveGroup();
   }
 
   public @NonNull List<RecipientId> getParticipantIds() {
@@ -979,22 +991,25 @@ public class Recipient {
   }
 
   public @NonNull RegisteredState getRegistered() {
-    if      (isPushGroup()) return RegisteredState.REGISTERED;
-    else if (isMmsGroup())  return RegisteredState.NOT_REGISTERED;
-
-    return registered;
+    if (isPushGroup() || isDistributionList()) {
+      return RegisteredState.REGISTERED;
+    } else if (isMmsGroup()) {
+      return RegisteredState.NOT_REGISTERED;
+    } else {
+      return registered;
+    }
   }
 
   public boolean isRegistered() {
-    return registered == RegisteredState.REGISTERED || isPushGroup();
+    return getRegistered() == RegisteredState.REGISTERED;
   }
 
   public boolean isMaybeRegistered() {
-    return registered != RegisteredState.NOT_REGISTERED || isPushGroup();
+    return getRegistered() != RegisteredState.NOT_REGISTERED;
   }
 
   public boolean isUnregistered() {
-    return registered == RegisteredState.NOT_REGISTERED && !isPushGroup();
+    return getRegistered() == RegisteredState.NOT_REGISTERED;
   }
 
   public @Nullable String getNotificationChannel() {
@@ -1003,10 +1018,6 @@ public class Recipient {
 
   public boolean isForceSmsSelection() {
     return forceSmsSelection;
-  }
-
-  public @NonNull Capability getChangeNumberCapability() {
-    return capabilities.getChangeNumberCapability();
   }
 
   public @NonNull Capability getStoriesCapability() {
@@ -1019,6 +1030,10 @@ public class Recipient {
 
   public @NonNull Capability getPnpCapability() {
     return capabilities.getPnpCapability();
+  }
+
+  public @NonNull Capability getPaymentActivationCapability() {
+    return capabilities.getPaymentActivation();
   }
 
   public @Nullable byte[] getProfileKey() {
@@ -1034,7 +1049,11 @@ public class Recipient {
   }
 
   public @NonNull UnidentifiedAccessMode getUnidentifiedAccessMode() {
-    return unidentifiedAccessMode;
+    if (getPni().isPresent() && getPni().equals(getServiceId())) {
+      return UnidentifiedAccessMode.DISABLED;
+    } else {
+      return unidentifiedAccessMode;
+    }
   }
 
   public @Nullable ChatWallpaper getWallpaper() {
@@ -1210,6 +1229,10 @@ public class Recipient {
       return value;
     }
 
+    public boolean isSupported() {
+      return this == SUPPORTED;
+    }
+
     public static Capability deserialize(int value) {
       switch (value) {
         case 0:  return UNKNOWN;
@@ -1274,7 +1297,7 @@ public class Recipient {
            expireMessages == other.expireMessages &&
            Objects.equals(profileAvatarFileDetails, other.profileAvatarFileDetails) &&
            profileSharing == other.profileSharing &&
-           lastProfileFetch == other.lastProfileFetch &&
+           isHidden == other.isHidden &&
            forceSmsSelection == other.forceSmsSelection &&
            Objects.equals(serviceId, other.serviceId) &&
            Objects.equals(username, other.username) &&
@@ -1350,7 +1373,7 @@ public class Recipient {
     }
 
     public @NonNull FallbackContactPhoto getPhotoForDistributionList() {
-      return new ResourceContactPhoto(R.drawable.ic_lock_24, R.drawable.ic_lock_24, R.drawable.ic_lock_40);
+      return new ResourceContactPhoto(R.drawable.symbol_stories_24, R.drawable.symbol_stories_24, R.drawable.symbol_stories_24);
     }
   }
 

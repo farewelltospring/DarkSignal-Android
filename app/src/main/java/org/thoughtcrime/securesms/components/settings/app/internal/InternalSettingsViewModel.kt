@@ -64,6 +64,11 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
+  fun resetPnpInitializedState() {
+    SignalStore.misc().setPniInitializedDevices(false)
+    refresh()
+  }
+
   fun setUseBuiltInEmoji(enabled: Boolean) {
     preferenceDataStore.putBoolean(InternalValues.FORCE_BUILT_IN_EMOJI, enabled)
     refresh()
@@ -99,11 +104,16 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
+  fun setUseConversationFragmentV2(enabled: Boolean) {
+    SignalStore.internalValues().setUseConversationFragmentV2(enabled)
+    refresh()
+  }
+
   fun addSampleReleaseNote() {
     repository.addSampleReleaseNote()
   }
 
-  private fun refresh() {
+  fun refresh() {
     store.update { getState().copy(emojiVersion = it.emojiVersion) }
   }
 
@@ -124,12 +134,14 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     removeSenderKeyMinimium = SignalStore.internalValues().removeSenderKeyMinimum(),
     delayResends = SignalStore.internalValues().delayResends(),
     disableStorageService = SignalStore.internalValues().storageServiceDisabled(),
-    canClearOnboardingState = SignalStore.storyValues().hasDownloadedOnboardingStory && Stories.isFeatureEnabled()
+    canClearOnboardingState = SignalStore.storyValues().hasDownloadedOnboardingStory && Stories.isFeatureEnabled(),
+    pnpInitialized = SignalStore.misc().hasPniInitializedDevices(),
+    useConversationFragmentV2 = SignalStore.internalValues().useConversationFragmentV2()
   )
 
   fun onClearOnboardingState() {
     SignalStore.storyValues().hasDownloadedOnboardingStory = false
-    SignalStore.storyValues().userHasSeenOnboardingStory = false
+    SignalStore.storyValues().userHasViewedOnboardingStory = false
     Stories.onStorySettingsChanged(Recipient.self().id)
     refresh()
     StoryOnboardingDownloadJob.enqueueIfNeeded()
