@@ -269,12 +269,13 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
 
     private const val INDEX_THREAD_DATE = "message_thread_date_index"
     private const val INDEX_THREAD_STORY_SCHEDULED_DATE_LATEST_REVISION_ID = "message_thread_story_parent_story_scheduled_date_latest_revision_id_index"
+    private const val INDEX_DATE_SENT_FROM_TO_THREAD = "message_date_sent_from_to_thread_index"
 
     @JvmField
     val CREATE_INDEXS = arrayOf(
       "CREATE INDEX IF NOT EXISTS message_read_and_notified_and_thread_id_index ON $TABLE_NAME ($READ, $NOTIFIED, $THREAD_ID)",
       "CREATE INDEX IF NOT EXISTS message_type_index ON $TABLE_NAME ($TYPE)",
-      "CREATE INDEX IF NOT EXISTS message_date_sent_from_to_thread_index ON $TABLE_NAME ($DATE_SENT, $FROM_RECIPIENT_ID, $TO_RECIPIENT_ID, $THREAD_ID)",
+      "CREATE INDEX IF NOT EXISTS $INDEX_DATE_SENT_FROM_TO_THREAD ON $TABLE_NAME ($DATE_SENT, $FROM_RECIPIENT_ID, $TO_RECIPIENT_ID, $THREAD_ID)",
       "CREATE INDEX IF NOT EXISTS message_date_server_index ON $TABLE_NAME ($DATE_SERVER)",
       "CREATE INDEX IF NOT EXISTS $INDEX_THREAD_DATE ON $TABLE_NAME ($THREAD_ID, $DATE_RECEIVED);",
       "CREATE INDEX IF NOT EXISTS message_reactions_unread_index ON $TABLE_NAME ($REACTIONS_UNREAD);",
@@ -283,7 +284,11 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       "CREATE INDEX IF NOT EXISTS $INDEX_THREAD_STORY_SCHEDULED_DATE_LATEST_REVISION_ID ON $TABLE_NAME ($THREAD_ID, $DATE_RECEIVED, $STORY_TYPE, $PARENT_STORY_ID, $SCHEDULED_DATE, $LATEST_REVISION_ID);",
       "CREATE INDEX IF NOT EXISTS message_quote_id_quote_author_scheduled_date_latest_revision_id_index ON $TABLE_NAME ($QUOTE_ID, $QUOTE_AUTHOR, $SCHEDULED_DATE, $LATEST_REVISION_ID);",
       "CREATE INDEX IF NOT EXISTS message_exported_index ON $TABLE_NAME ($EXPORTED);",
-      "CREATE INDEX IF NOT EXISTS message_id_type_payment_transactions_index ON $TABLE_NAME ($ID,$TYPE) WHERE $TYPE & ${MessageTypes.SPECIAL_TYPE_PAYMENTS_NOTIFICATION} != 0;"
+      "CREATE INDEX IF NOT EXISTS message_id_type_payment_transactions_index ON $TABLE_NAME ($ID,$TYPE) WHERE $TYPE & ${MessageTypes.SPECIAL_TYPE_PAYMENTS_NOTIFICATION} != 0;",
+      "CREATE INDEX IF NOT EXISTS message_original_message_id_index ON $TABLE_NAME ($ORIGINAL_MESSAGE_ID);",
+      "CREATE INDEX IF NOT EXISTS message_latest_revision_id_index ON $TABLE_NAME ($LATEST_REVISION_ID)",
+      "CREATE INDEX IF NOT EXISTS message_from_recipient_id_index ON $TABLE_NAME ($FROM_RECIPIENT_ID)",
+      "CREATE INDEX IF NOT EXISTS message_to_recipient_id_index ON $TABLE_NAME ($TO_RECIPIENT_ID)"
     )
 
     private val MMS_PROJECTION_BASE = arrayOf(
@@ -4177,10 +4182,17 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       .readToSingleInt()
   }
 
-  fun checkMessageExists(messageRecord: MessageRecord): Boolean {
+  fun messageExists(messageRecord: MessageRecord): Boolean {
     return readableDatabase
       .exists(TABLE_NAME)
       .where("$ID = ?", messageRecord.id)
+      .run()
+  }
+
+  fun messageExists(sentTimestamp: Long, author: RecipientId): Boolean {
+    return readableDatabase
+      .exists("$TABLE_NAME INDEXED BY $INDEX_DATE_SENT_FROM_TO_THREAD")
+      .where("$DATE_SENT = ? AND $FROM_RECIPIENT_ID = ?", sentTimestamp, author)
       .run()
   }
 
@@ -4573,7 +4585,7 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
 
     return readableDatabase
       .select(*MMS_PROJECTION)
-      .from(TABLE_NAME)
+      .from("$TABLE_NAME INDEXED BY $INDEX_THREAD_STORY_SCHEDULED_DATE_LATEST_REVISION_ID")
       .where("$THREAD_ID = ? AND $STORY_TYPE = ? AND $PARENT_STORY_ID <= ? AND $SCHEDULED_DATE = ? AND $LATEST_REVISION_ID IS NULL", threadId, 0, 0, -1)
       .orderBy("$DATE_RECEIVED DESC")
       .limit(limitStr)
@@ -4651,6 +4663,22 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       .where("$NOTIFIED = 0 AND $STORY_TYPE = 0 AND ($READ = 0 OR $REACTIONS_UNREAD = 1 ${if (stickyQuery.isNotEmpty()) "OR ($stickyQuery)" else ""})")
       .orderBy("$DATE_RECEIVED ASC")
       .run()
+  }
+
+  fun updatePendingSelfData(placeholder: RecipientId, self: RecipientId) {
+    val fromUpdates = writableDatabase
+      .update(TABLE_NAME)
+      .values(FROM_RECIPIENT_ID to self.serialize())
+      .where("$FROM_RECIPIENT_ID = ?", placeholder)
+      .run()
+
+    val toUpdates = writableDatabase
+      .update(TABLE_NAME)
+      .values(TO_RECIPIENT_ID to self.serialize())
+      .where("$TO_RECIPIENT_ID = ?", placeholder)
+      .run()
+
+    Log.i(TAG, "Updated $fromUpdates FROM_RECIPIENT_ID rows and $toUpdates TO_RECIPIENT_ID rows.")
   }
 
   private fun getStickyWherePartForParentStoryId(parentStoryId: Long?): String {
