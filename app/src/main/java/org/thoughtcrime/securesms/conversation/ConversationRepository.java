@@ -28,7 +28,9 @@ import org.thoughtcrime.securesms.recipients.RecipientUtil;
 import org.thoughtcrime.securesms.util.BubbleUtil;
 import org.thoughtcrime.securesms.util.ConversationUtil;
 import org.thoughtcrime.securesms.util.MessageRecordUtil;
+import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.Util;
+import org.whispersystems.signalservice.api.push.ServiceId;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,8 +67,8 @@ public class ConversationRepository {
 
   @WorkerThread
   public @NonNull ConversationData getConversationData(long threadId, @NonNull Recipient conversationRecipient, int jumpToPosition) {
-    ThreadTable.ConversationMetadata metadata   = SignalDatabase.threads().getConversationMetadata(threadId);
-    int                              threadSize = SignalDatabase.messages().getMessageCountForThread(threadId);
+    ThreadTable.ConversationMetadata    metadata                       = SignalDatabase.threads().getConversationMetadata(threadId);
+    int                                 threadSize                     = SignalDatabase.messages().getMessageCountForThread(threadId);
     long                                lastSeen                       = metadata.getLastSeen();
     int                                 lastSeenPosition               = 0;
     long                                lastScrolled                   = metadata.getLastScrolled();
@@ -109,6 +111,13 @@ public class ConversationRepository {
       messageRequestData = new ConversationData.MessageRequestData(isMessageRequestAccepted, isConversationHidden, recipientIsKnownOrHasGroupsInCommon, isGroup);
     }
 
+    List<ServiceId> groupMemberAcis;
+    if (conversationRecipient.isPushV2Group()) {
+      groupMemberAcis = conversationRecipient.getParticipantAcis();
+    } else {
+      groupMemberAcis = Collections.emptyList();
+    }
+
     if (SignalStore.settings().getUniversalExpireTimer() != 0 &&
         conversationRecipient.getExpiresInSeconds() == 0 &&
         !conversationRecipient.isGroup() &&
@@ -118,7 +127,7 @@ public class ConversationRepository {
       showUniversalExpireTimerUpdate = true;
     }
 
-    return new ConversationData(threadId, lastSeen, lastSeenPosition, lastScrolledPosition, jumpToPosition, threadSize, messageRequestData, showUniversalExpireTimerUpdate);
+    return new ConversationData(conversationRecipient, threadId, lastSeen, lastSeenPosition, lastScrolledPosition, jumpToPosition, threadSize, messageRequestData, showUniversalExpireTimerUpdate, metadata.getUnreadCount(), groupMemberAcis);
   }
 
   public void markGiftBadgeRevealed(long messageId) {
@@ -187,7 +196,9 @@ public class ConversationRepository {
                                           registeredState == RecipientTable.RegisteredState.REGISTERED && signalEnabled,
                                           Util.isDefaultSmsProvider(context),
                                           true,
-                                          hasUnexportedInsecureMessages);
+                                          hasUnexportedInsecureMessages,
+                                          SignalStore.misc().isClientDeprecated(),
+                                          TextSecurePreferences.isUnauthorizedReceived(context));
     }).subscribeOn(Schedulers.io());
   }
 
@@ -203,7 +214,7 @@ public class ConversationRepository {
 
                      try (InputStream stream = PartAuthority.getAttachmentStream(context, textSlide.getUri())) {
                        String body = StreamUtil.readFullyAsString(stream);
-                       return ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, messageRecord, body);
+                       return ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, messageRecord, body, message.getThreadRecipient());
                      } catch (IOException e) {
                        Log.w(TAG, "Failed to read text slide data.");
                      }

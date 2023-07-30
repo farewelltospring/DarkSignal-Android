@@ -1,12 +1,14 @@
 package org.thoughtcrime.securesms.components
 
 import android.view.View
+import androidx.annotation.AnyThread
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.kotlin.addTo
 import io.reactivex.rxjava3.kotlin.plusAssign
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -26,7 +28,7 @@ class ScrollToPositionDelegate private constructor(
   private val recyclerView: RecyclerView,
   canJumpToPosition: (Int) -> Boolean,
   mapToTruePosition: (Int) -> Int,
-  disposables: CompositeDisposable
+  private val disposables: CompositeDisposable
 ) : Disposable by disposables {
   companion object {
     private val TAG = Log.tag(ScrollToPositionDelegate::class.java)
@@ -36,14 +38,15 @@ class ScrollToPositionDelegate private constructor(
     private val EMPTY = ScrollToPositionRequest(
       position = NO_POSITION,
       smooth = true,
-      awaitLayout = true,
       scrollStrategy = DefaultScrollStrategy
     )
   }
 
-  private val listCommitted = BehaviorSubject.create<Unit>()
+  private val listCommitted = BehaviorSubject.create<Long>()
   private val scrollPositionRequested = BehaviorSubject.createDefault(EMPTY)
   private val scrollPositionRequests: Observable<ScrollToPositionRequest> = Observable.combineLatest(listCommitted, scrollPositionRequested) { _, b -> b }
+
+  private var markedListCommittedTimestamp: Long = 0L
 
   constructor(
     recyclerView: RecyclerView,
@@ -57,14 +60,8 @@ class ScrollToPositionDelegate private constructor(
       .filter { it.position >= 0 && canJumpToPosition(it.position) }
       .map { it.copy(position = mapToTruePosition(it.position)) }
       .subscribeBy(onNext = { position ->
-        if (position.awaitLayout) {
-          recyclerView.doAfterNextLayout {
-            handleScrollPositionRequest(position, recyclerView)
-          }
-        } else {
-          recyclerView.post {
-            handleScrollPositionRequest(position, recyclerView)
-          }
+        recyclerView.doAfterNextLayout {
+          handleScrollPositionRequest(position, recyclerView)
         }
 
         if (!(recyclerView.isLayoutRequested || recyclerView.isInLayout)) {
@@ -78,33 +75,55 @@ class ScrollToPositionDelegate private constructor(
    *
    * @param position The desired position to jump to. -1 to clear the current request.
    * @param smooth Whether a smooth scroll will be attempted. Only done if we are within a certain distance.
-   * @param awaitLayout Whether this scroll should await for the next layout to complete before being attempted.
    * @param scrollStrategy See [ScrollStrategy]
    */
+  @AnyThread
   fun requestScrollPosition(
     position: Int,
     smooth: Boolean = true,
-    awaitLayout: Boolean = true,
     scrollStrategy: ScrollStrategy = DefaultScrollStrategy
   ) {
-    scrollPositionRequested.onNext(ScrollToPositionRequest(position, smooth, awaitLayout, scrollStrategy))
+    scrollPositionRequested.onNext(ScrollToPositionRequest(position, smooth, scrollStrategy))
   }
 
   /**
    * Reset the scroll position to 0
    */
+  @AnyThread
   fun resetScrollPosition() {
     requestScrollPosition(0, true)
   }
 
   /**
+   * Reset the scroll position to 0 after a list update is committed that occurs later
+   * than the version set by [markListCommittedVersion].
+   */
+  @AnyThread
+  fun resetScrollPositionAfterMarkListVersionSurpassed() {
+    val currentMark = markedListCommittedTimestamp
+    listCommitted
+      .observeOn(AndroidSchedulers.mainThread())
+      .filter { it > currentMark }
+      .firstElement()
+      .subscribeBy {
+        requestScrollPosition(0, true)
+      }
+      .addTo(disposables)
+  }
+
+  /**
    * This should be called every time a list is submitted to the RecyclerView's adapter.
    */
+  @AnyThread
   fun notifyListCommitted() {
-    listCommitted.onNext(Unit)
+    listCommitted.onNext(System.currentTimeMillis())
   }
 
   fun isListCommitted(): Boolean = listCommitted.value != null
+
+  fun markListCommittedVersion() {
+    markedListCommittedTimestamp = listCommitted.value ?: 0L
+  }
 
   private fun handleScrollPositionRequest(
     request: ScrollToPositionRequest,
@@ -135,7 +154,6 @@ class ScrollToPositionDelegate private constructor(
   private data class ScrollToPositionRequest(
     val position: Int,
     val smooth: Boolean,
-    val awaitLayout: Boolean,
     val scrollStrategy: ScrollStrategy
   )
 

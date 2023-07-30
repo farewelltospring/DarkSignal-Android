@@ -89,10 +89,10 @@ object MessageDecryptor {
 
     val destination: ServiceId = envelope.getDestination(selfAci, selfPni)
 
-    if (destination == selfPni && envelope.hasSourceUuid()) {
+    if (destination == selfPni && envelope.hasSourceServiceId()) {
       Log.i(TAG, "${logPrefix(envelope)} Received a message at our PNI. Marking as needing a PNI signature.")
 
-      val sourceServiceId = ServiceId.parseOrNull(envelope.sourceUuid)
+      val sourceServiceId = ServiceId.parseOrNull(envelope.sourceServiceId)
 
       if (sourceServiceId != null) {
         val sender = RecipientId.from(sourceServiceId)
@@ -102,7 +102,7 @@ object MessageDecryptor {
       }
     }
 
-    if (destination == selfPni && !envelope.hasSourceUuid()) {
+    if (destination == selfPni && !envelope.hasSourceServiceId()) {
       Log.w(TAG, "${logPrefix(envelope)} Got a sealed sender message to our PNI? Invalid message, ignoring.")
       return Result.Ignore(envelope, serverDeliveredTimestamp, emptyList())
     }
@@ -133,6 +133,11 @@ object MessageDecryptor {
 
       if (validationResult is EnvelopeContentValidator.Result.Invalid) {
         Log.w(TAG, "${logPrefix(envelope, cipherResult)} Invalid content! ${validationResult.reason}", validationResult.throwable)
+
+        if (FeatureFlags.internalUser()) {
+          postInvalidMessageNotification(context, validationResult.reason)
+        }
+
         return Result.Ignore(envelope, serverDeliveredTimestamp, followUpOperations.toUnmodifiableList())
       }
 
@@ -182,7 +187,7 @@ object MessageDecryptor {
           Log.w(TAG, "${logPrefix(envelope, e)} Decryption error!", e, true)
 
           if (FeatureFlags.internalUser()) {
-            postErrorNotification(context)
+            postDecryptionErrorNotification(context)
           }
 
           if (FeatureFlags.retryReceipts()) {
@@ -324,11 +329,22 @@ object MessageDecryptor {
     }
   }
 
-  private fun postErrorNotification(context: Context) {
+  private fun postDecryptionErrorNotification(context: Context) {
     val notification: Notification = NotificationCompat.Builder(context, NotificationChannels.getInstance().FAILURES)
       .setSmallIcon(R.drawable.ic_notification)
-      .setContentTitle(context.getString(R.string.MessageDecryptionUtil_failed_to_decrypt_message))
-      .setContentText(context.getString(R.string.MessageDecryptionUtil_tap_to_send_a_debug_log))
+      .setContentTitle("[Internal-only] Failed to decrypt a message!")
+      .setContentText("Tap to send a debug log")
+      .setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, SubmitDebugLogActivity::class.java), PendingIntentFlags.mutable()))
+      .build()
+
+    NotificationManagerCompat.from(context).notify(NotificationIds.INTERNAL_ERROR, notification)
+  }
+
+  private fun postInvalidMessageNotification(context: Context, message: String) {
+    val notification: Notification = NotificationCompat.Builder(context, NotificationChannels.getInstance().FAILURES)
+      .setSmallIcon(R.drawable.ic_notification)
+      .setContentTitle("[Internal-only] Received an invalid message!")
+      .setContentText("$message Tap to send a debug log.")
       .setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, SubmitDebugLogActivity::class.java), PendingIntentFlags.mutable()))
       .build()
 
@@ -336,7 +352,7 @@ object MessageDecryptor {
   }
 
   private fun logPrefix(envelope: Envelope): String {
-    return logPrefix(envelope.timestamp, envelope.sourceUuid ?: "<sealed>", envelope.sourceDevice)
+    return logPrefix(envelope.timestamp, envelope.sourceServiceId ?: "<sealed>", envelope.sourceDevice)
   }
 
   private fun logPrefix(envelope: Envelope, sender: ServiceId): String {
@@ -351,7 +367,7 @@ object MessageDecryptor {
     return if (exception.sender != null) {
       logPrefix(envelope.timestamp, exception.sender, exception.senderDevice)
     } else {
-      logPrefix(envelope.timestamp, envelope.sourceUuid, envelope.sourceDevice)
+      logPrefix(envelope.timestamp, envelope.sourceServiceId, envelope.sourceDevice)
     }
   }
 
@@ -393,8 +409,8 @@ object MessageDecryptor {
   private fun Envelope.getDestination(selfAci: ServiceId, selfPni: ServiceId): ServiceId {
     return if (!FeatureFlags.phoneNumberPrivacy()) {
       selfAci
-    } else if (this.hasDestinationUuid()) {
-      val serviceId = ServiceId.parseOrThrow(this.destinationUuid)
+    } else if (this.hasDestinationServiceId()) {
+      val serviceId = ServiceId.parseOrThrow(this.destinationServiceId)
       if (serviceId == selfAci || serviceId == selfPni) {
         serviceId
       } else {
