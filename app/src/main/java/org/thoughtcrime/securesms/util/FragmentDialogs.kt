@@ -8,10 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import org.thoughtcrime.securesms.stories.viewer.text.StoryTextPostPreviewFragment
-import org.thoughtcrime.securesms.util.fragments.requireListener
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
  * Helper functions to display custom views in AlertDialogs anchored to the top of the specified view.
@@ -40,9 +38,10 @@ object FragmentDialogs {
     anchorView: View,
     contentView: View,
     windowDim: Float = -1f,
-    onShow: (DialogInterface, View) -> Unit = { _, _ -> }
+    onShow: (DialogInterface, View) -> Unit = { _, _ -> },
+    onDismiss: (DialogInterface) -> Unit = { }
   ): DialogInterface {
-    val alertDialog = AlertDialog.Builder(requireContext())
+    val alertDialog = MaterialAlertDialogBuilder(requireContext())
       .setView(contentView)
       .create()
 
@@ -59,9 +58,7 @@ object FragmentDialogs {
     }
 
     alertDialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-    alertDialog.setOnDismissListener {
-      requireListener<StoryTextPostPreviewFragment.Callback>().setIsDisplayingLinkPreviewTooltip(false)
-    }
+    alertDialog.setOnDismissListener(onDismiss)
 
     alertDialog.setOnShowListener { onShow(alertDialog, contentView) }
 

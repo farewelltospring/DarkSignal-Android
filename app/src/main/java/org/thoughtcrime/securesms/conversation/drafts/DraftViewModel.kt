@@ -3,18 +3,20 @@ package org.thoughtcrime.securesms.conversation.drafts
 import androidx.lifecycle.ViewModel
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.schedulers.Schedulers
 import org.thoughtcrime.securesms.components.location.SignalPlace
-import org.thoughtcrime.securesms.components.voice.VoiceNoteDraft
-import org.thoughtcrime.securesms.database.DraftDatabase.Draft
+import org.thoughtcrime.securesms.conversation.ConversationMessage
+import org.thoughtcrime.securesms.database.DraftTable.Draft
 import org.thoughtcrime.securesms.database.MentionUtil
 import org.thoughtcrime.securesms.database.model.Mention
+import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
 import org.thoughtcrime.securesms.mms.QuoteId
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.Base64
-import org.thoughtcrime.securesms.util.concurrent.ListenableFuture
 import org.thoughtcrime.securesms.util.rx.RxStore
 
 /**
@@ -23,10 +25,11 @@ import org.thoughtcrime.securesms.util.rx.RxStore
  * management pattern going forward for drafts.
  */
 class DraftViewModel @JvmOverloads constructor(
+  threadId: Long = -1,
   private val repository: DraftRepository = DraftRepository()
 ) : ViewModel() {
 
-  private val store = RxStore(DraftState())
+  private val store = RxStore(DraftState(threadId = threadId))
 
   val state: Flowable<DraftState> = store.stateFlowable.observeOn(AndroidSchedulers.mainThread())
 
@@ -37,17 +40,19 @@ class DraftViewModel @JvmOverloads constructor(
     store.dispose()
   }
 
+  @Deprecated("Not needed for CFv2")
   fun setThreadId(threadId: Long) {
     store.update { it.copy(threadId = threadId) }
   }
 
+  @Deprecated("Not needed for CFv2")
   fun setDistributionType(distributionType: Int) {
     store.update { it.copy(distributionType = distributionType) }
   }
 
-  fun saveEphemeralVoiceNoteDraft(voiceNoteDraftFuture: ListenableFuture<VoiceNoteDraft>) {
-    store.update {
-      saveDrafts(it.copy(voiceNoteDraft = voiceNoteDraftFuture.get().asDraft()))
+  fun saveEphemeralVoiceNoteDraft(draft: Draft) {
+    store.update { draftState ->
+      saveDrafts(draftState.copy(voiceNoteDraft = draft))
     }
   }
 
@@ -62,19 +67,52 @@ class DraftViewModel @JvmOverloads constructor(
     }
   }
 
+  @Deprecated("Not needed for CFv2")
   fun onRecipientChanged(recipient: Recipient) {
     store.update { it.copy(recipientId = recipient.id) }
   }
 
-  fun setTextDraft(text: String, mentions: List<Mention>) {
+  fun setMessageEditDraft(messageId: MessageId, text: String, mentions: List<Mention>, styleBodyRanges: BodyRangeList?) {
     store.update {
-      saveDrafts(it.copy(textDraft = text.toTextDraft(), mentionsDraft = mentions.toMentionsDraft()))
+      val mentionRanges: BodyRangeList? = MentionUtil.mentionsToBodyRangeList(mentions)
+
+      val bodyRanges: BodyRangeList? = if (styleBodyRanges == null) {
+        mentionRanges
+      } else if (mentionRanges == null) {
+        styleBodyRanges
+      } else {
+        styleBodyRanges.toBuilder().addAllRanges(mentionRanges.rangesList).build()
+      }
+
+      saveDrafts(it.copy(textDraft = text.toTextDraft(), bodyRangesDraft = bodyRanges?.toDraft(), messageEditDraft = Draft(Draft.MESSAGE_EDIT, messageId.serialize())))
+    }
+  }
+
+  fun deleteMessageEditDraft() {
+    store.update {
+      saveDrafts(it.copy(textDraft = null, bodyRangesDraft = null, messageEditDraft = null))
+    }
+  }
+
+  fun setTextDraft(text: String, mentions: List<Mention>, styleBodyRanges: BodyRangeList?) {
+    store.update {
+      val mentionRanges: BodyRangeList? = MentionUtil.mentionsToBodyRangeList(mentions)
+
+      val bodyRanges: BodyRangeList? = if (styleBodyRanges == null) {
+        mentionRanges
+      } else if (mentionRanges == null) {
+        styleBodyRanges
+      } else {
+        styleBodyRanges.toBuilder().addAllRanges(mentionRanges.rangesList).build()
+      }
+
+      saveDrafts(it.copy(textDraft = text.toTextDraft(), bodyRangesDraft = bodyRanges?.toDraft()))
     }
   }
 
   fun setLocationDraft(place: SignalPlace) {
     store.update {
-      saveDrafts(it.copy(locationDraft = Draft(Draft.LOCATION, place.serialize())))
+      saveDrafts(it.copy(locationDraft = Draft(Draft.LOCATION, place.serialize() ?: "")))
     }
   }
 
@@ -96,21 +134,53 @@ class DraftViewModel @JvmOverloads constructor(
     }
   }
 
-  fun onSendComplete(threadId: Long) {
+  fun onSendComplete(threadId: Long = store.state.threadId) {
     repository.deleteVoiceNoteDraftData(store.state.voiceNoteDraft)
     store.update { saveDrafts(it.copyAndClearDrafts(threadId)) }
   }
 
   private fun saveDrafts(state: DraftState): DraftState {
-    repository.saveDrafts(Recipient.resolved(state.recipientId), state.threadId, state.distributionType, state.toDrafts())
+    repository.saveDrafts(state.recipientId?.let { Recipient.resolved(it) }, state.threadId, state.distributionType, state.toDrafts())
     return state
   }
 
+  @Deprecated("Not needed for CFv2")
   fun loadDrafts(threadId: Long): Single<DraftRepository.DatabaseDraft> {
     return repository
       .loadDrafts(threadId)
       .doOnSuccess { drafts ->
-        store.update { it.copyAndSetDrafts(threadId, drafts.drafts) }
+        store.update { saveDrafts(it.copyAndSetDrafts(threadId, drafts.drafts)) }
+      }
+      .observeOn(AndroidSchedulers.mainThread())
+  }
+
+  @Deprecated("Not needed for CFv2")
+  fun loadDraftQuote(serialized: String): Maybe<ConversationMessage> {
+    return repository.loadDraftQuote(serialized)
+      .subscribeOn(Schedulers.io())
+      .observeOn(AndroidSchedulers.mainThread())
+  }
+
+  @Deprecated("Not needed for CFv2")
+  fun loadDraftEditMessage(serialized: String): Maybe<ConversationMessage> {
+    return repository.loadDraftMessageEdit(serialized)
+      .subscribeOn(Schedulers.io())
+      .observeOn(AndroidSchedulers.mainThread())
+  }
+
+  fun loadShareOrDraftData(lastShareDataTimestamp: Long): Maybe<DraftRepository.ShareOrDraftData> {
+    return repository.getShareOrDraftData(lastShareDataTimestamp)
+      .doOnSuccess { (_, drafts) ->
+        if (drafts != null) {
+          store.update { saveDrafts(it.copyAndSetDrafts(drafts = drafts)) }
+        }
+      }
+      .flatMap { (data, _) ->
+        if (data == null) {
+          Maybe.empty()
+        } else {
+          Maybe.just(data)
+        }
       }
       .observeOn(AndroidSchedulers.mainThread())
   }
@@ -120,11 +190,6 @@ private fun String.toTextDraft(): Draft? {
   return if (isNotEmpty()) Draft(Draft.TEXT, this) else null
 }
 
-private fun List<Mention>.toMentionsDraft(): Draft? {
-  val mentions: BodyRangeList? = MentionUtil.mentionsToBodyRangeList(this)
-  return if (mentions != null) {
-    Draft(Draft.MENTION, Base64.encodeBytes(mentions.toByteArray()))
-  } else {
-    null
-  }
+private fun BodyRangeList.toDraft(): Draft {
+  return Draft(Draft.BODY_RANGES, Base64.encodeBytes(toByteArray()))
 }

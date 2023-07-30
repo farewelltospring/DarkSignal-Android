@@ -31,7 +31,7 @@ class PrivateStorySettingsFragment : DSLSettingsFragment(
   menuId = R.menu.story_private_menu
 ) {
 
-  private val progressDisplayManager = DialogFragmentDisplayManager { ProgressCardDialogFragment() }
+  private val progressDisplayManager = DialogFragmentDisplayManager { ProgressCardDialogFragment.create() }
 
   private val viewModel: PrivateStorySettingsViewModel by viewModels(
     factoryProducer = {
@@ -97,7 +97,7 @@ class PrivateStorySettingsFragment : DSLSettingsFragment(
 
       dividerPref()
       clickPref(
-        title = DSLSettingsText.from(R.string.PrivateStorySettingsFragment__delete_private_story, DSLSettingsText.ColorModifier(ContextCompat.getColor(requireContext(), R.color.signal_alert_primary))),
+        title = DSLSettingsText.from(R.string.PrivateStorySettingsFragment__delete_custom_story, DSLSettingsText.ColorModifier(ContextCompat.getColor(requireContext(), R.color.signal_alert_primary))),
         onClick = {
           val privateStoryName = viewModel.state.value?.privateStory?.name
           handleDeletePrivateStory(privateStoryName)

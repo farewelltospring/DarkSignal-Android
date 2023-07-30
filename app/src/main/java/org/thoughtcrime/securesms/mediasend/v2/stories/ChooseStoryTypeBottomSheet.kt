@@ -24,20 +24,21 @@ class ChooseStoryTypeBottomSheet : DSLSettingsBottomSheetFragment(
       textPref(
         title = DSLSettingsText.from(
           stringId = R.string.ChooseStoryTypeBottomSheet__choose_your_story_type,
-          DSLSettingsText.CenterModifier, DSLSettingsText.TitleMediumModifier
+          DSLSettingsText.CenterModifier,
+          DSLSettingsText.TitleMediumModifier
         )
       )
 
       customPref(
         LargeIconClickPreference.Model(
           title = DSLSettingsText.from(
-            stringId = R.string.ChooseStoryTypeBottomSheet__new_private_story
+            stringId = R.string.ChooseStoryTypeBottomSheet__new_custom_story
           ),
           summary = DSLSettingsText.from(
             stringId = R.string.ChooseStoryTypeBottomSheet__visible_only_to
           ),
           icon = DSLSettingsIcon.from(
-            iconId = R.drawable.ic_plus_24,
+            iconId = R.drawable.symbol_stories_24,
             iconTintId = R.color.signal_colorOnSurface,
             backgroundId = R.drawable.circle_tintable,
             backgroundTint = R.color.signal_colorSurface5,

@@ -64,6 +64,11 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
+  fun resetPnpInitializedState() {
+    SignalStore.misc().setPniInitializedDevices(false)
+    refresh()
+  }
+
   fun setUseBuiltInEmoji(enabled: Boolean) {
     preferenceDataStore.putBoolean(InternalValues.FORCE_BUILT_IN_EMOJI, enabled)
     refresh()
@@ -89,8 +94,8 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
-  fun setInternalCallingBandwidthMode(bandwidthMode: CallManager.BandwidthMode) {
-    preferenceDataStore.putInt(InternalValues.CALLING_BANDWIDTH_MODE, bandwidthMode.ordinal)
+  fun setInternalCallingDataMode(dataMode: CallManager.DataMode) {
+    preferenceDataStore.putInt(InternalValues.CALLING_DATA_MODE, dataMode.ordinal)
     refresh()
   }
 
@@ -99,11 +104,16 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
+  fun setUseConversationItemV2(enabled: Boolean) {
+    SignalStore.internalValues().setUseConversationItemV2(enabled)
+    refresh()
+  }
+
   fun addSampleReleaseNote() {
     repository.addSampleReleaseNote()
   }
 
-  private fun refresh() {
+  fun refresh() {
     store.update { getState().copy(emojiVersion = it.emojiVersion) }
   }
 
@@ -117,19 +127,21 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     forceWebsocketMode = SignalStore.internalValues().isWebsocketModeForced,
     callingServer = SignalStore.internalValues().groupCallingServer(),
     callingAudioProcessingMethod = SignalStore.internalValues().callingAudioProcessingMethod(),
-    callingBandwidthMode = SignalStore.internalValues().callingBandwidthMode(),
+    callingDataMode = SignalStore.internalValues().callingDataMode(),
     callingDisableTelecom = SignalStore.internalValues().callingDisableTelecom(),
     useBuiltInEmojiSet = SignalStore.internalValues().forceBuiltInEmoji(),
     emojiVersion = null,
     removeSenderKeyMinimium = SignalStore.internalValues().removeSenderKeyMinimum(),
     delayResends = SignalStore.internalValues().delayResends(),
     disableStorageService = SignalStore.internalValues().storageServiceDisabled(),
-    canClearOnboardingState = SignalStore.storyValues().hasDownloadedOnboardingStory && Stories.isFeatureEnabled()
+    canClearOnboardingState = SignalStore.storyValues().hasDownloadedOnboardingStory && Stories.isFeatureEnabled(),
+    pnpInitialized = SignalStore.misc().hasPniInitializedDevices(),
+    useConversationItemV2 = SignalStore.internalValues().useConversationItemV2()
   )
 
   fun onClearOnboardingState() {
     SignalStore.storyValues().hasDownloadedOnboardingStory = false
-    SignalStore.storyValues().userHasSeenOnboardingStory = false
+    SignalStore.storyValues().userHasViewedOnboardingStory = false
     Stories.onStorySettingsChanged(Recipient.self().id)
     refresh()
     StoryOnboardingDownloadJob.enqueueIfNeeded()

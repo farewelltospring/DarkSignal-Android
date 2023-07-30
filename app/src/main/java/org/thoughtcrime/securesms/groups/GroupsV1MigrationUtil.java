@@ -10,18 +10,15 @@ import com.annimon.stream.Stream;
 import org.signal.core.util.logging.Log;
 import org.signal.libsignal.zkgroup.groups.GroupMasterKey;
 import org.signal.storageservice.protos.groups.local.DecryptedGroup;
-import org.thoughtcrime.securesms.database.GroupDatabase;
-import org.thoughtcrime.securesms.database.RecipientDatabase;
+import org.thoughtcrime.securesms.database.GroupTable;
+import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
-import org.thoughtcrime.securesms.mms.MmsException;
-import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.recipients.RecipientUtil;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
 import org.thoughtcrime.securesms.util.FeatureFlags;
-import org.thoughtcrime.securesms.util.GroupUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -39,8 +36,8 @@ public final class GroupsV1MigrationUtil {
       throws IOException, RetryLaterException, GroupChangeBusyException, InvalidMigrationStateException
   {
     Recipient     groupRecipient = Recipient.resolved(recipientId);
-    Long          threadId       = SignalDatabase.threads().getThreadIdFor(recipientId);
-    GroupDatabase groupDatabase  = SignalDatabase.groups();
+    Long       threadId      = SignalDatabase.threads().getThreadIdFor(recipientId);
+    GroupTable groupDatabase = SignalDatabase.groups();
 
     if (threadId == null) {
       Log.w(TAG, "No thread found!");
@@ -140,7 +137,7 @@ public final class GroupsV1MigrationUtil {
   public static void performLocalMigration(@NonNull Context context, @NonNull GroupId.V1 gv1Id) throws IOException
   {
     Log.i(TAG, "Beginning local migration! V1 ID: " + gv1Id, new Throwable());
-    try (Closeable ignored = GroupsV2ProcessingLock.acquireGroupProcessingLock()) {
+    try (Closeable ignored = GroupsV2ProcessingLock.acquireGroupProcessingLock(1000)) {
       if (SignalDatabase.groups().groupExists(gv1Id.deriveV2MigrationGroupId())) {
         Log.w(TAG, "Group was already migrated! Could have been waiting for the lock.", new Throwable());
         return;
@@ -210,7 +207,7 @@ public final class GroupsV1MigrationUtil {
    */
   public static boolean isAutoMigratable(@NonNull Recipient recipient) {
     return recipient.hasServiceId() &&
-           recipient.getRegistered() == RecipientDatabase.RegisteredState.REGISTERED &&
+           recipient.getRegistered() == RecipientTable.RegisteredState.REGISTERED &&
            recipient.getProfileKey() != null;
   }
 

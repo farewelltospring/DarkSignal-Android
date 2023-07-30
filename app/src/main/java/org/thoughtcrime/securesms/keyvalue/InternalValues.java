@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import org.signal.ringrtc.CallManager;
 import org.thoughtcrime.securesms.BuildConfig;
+import org.thoughtcrime.securesms.util.Environment;
 import org.thoughtcrime.securesms.util.FeatureFlags;
 
 import java.util.Arrays;
@@ -22,11 +23,13 @@ public final class InternalValues extends SignalStoreValues {
   public static final String DELAY_RESENDS                        = "internal.delay_resends";
   public static final String CALLING_SERVER                       = "internal.calling_server";
   public static final String CALLING_AUDIO_PROCESSING_METHOD      = "internal.calling_audio_processing_method";
-  public static final String CALLING_BANDWIDTH_MODE               = "internal.calling_bandwidth_mode";
+  public static final String CALLING_DATA_MODE                    = "internal.calling_bandwidth_mode";
   public static final String CALLING_DISABLE_TELECOM              = "internal.calling_disable_telecom";
   public static final String SHAKE_TO_REPORT                      = "internal.shake_to_report";
   public static final String DISABLE_STORAGE_SERVICE              = "internal.disable_storage_service";
   public static final String FORCE_WEBSOCKET_MODE                 = "internal.force_websocket_mode";
+  public static final String LAST_SCROLL_POSITION                 = "internal.last_scroll_position";
+  public static final String CONVERSATION_ITEM_V2                 = "internal.conversation_item_v2";
 
   InternalValues(KeyValueStore store) {
     super(store);
@@ -126,7 +129,7 @@ public final class InternalValues extends SignalStoreValues {
    * internal users cannot be left on old servers.
    */
   public synchronized @NonNull String groupCallingServer() {
-    String internalServer = FeatureFlags.internalUser() ? getString(CALLING_SERVER, null) : null;
+    String internalServer = FeatureFlags.internalUser() ? getString(CALLING_SERVER, Environment.Calling.defaultSfuUrl()) : null;
     if (internalServer != null && !Arrays.asList(BuildConfig.SIGNAL_SFU_INTERNAL_URLS).contains(internalServer)) {
       internalServer = null;
     }
@@ -147,11 +150,14 @@ public final class InternalValues extends SignalStoreValues {
   /**
    * Setting to override the default calling bandwidth mode.
    */
-  public synchronized CallManager.BandwidthMode callingBandwidthMode() {
+  public synchronized CallManager.DataMode callingDataMode() {
     if (FeatureFlags.internalUser()) {
-      return CallManager.BandwidthMode.values()[getInteger(CALLING_BANDWIDTH_MODE, CallManager.BandwidthMode.NORMAL.ordinal())];
+      int                    index = getInteger(CALLING_DATA_MODE, CallManager.DataMode.NORMAL.ordinal());
+      CallManager.DataMode[] modes = CallManager.DataMode.values();
+
+      return index < modes.length ? modes[index] : CallManager.DataMode.NORMAL;
     } else {
-      return CallManager.BandwidthMode.NORMAL;
+      return CallManager.DataMode.NORMAL;
     }
   }
 
@@ -175,5 +181,21 @@ public final class InternalValues extends SignalStoreValues {
     } else {
       return false;
     }
+  }
+
+  public void setLastScrollPosition(int position) {
+    putInteger(LAST_SCROLL_POSITION, position);
+  }
+
+  public int getLastScrollPosition() {
+    return getInteger(LAST_SCROLL_POSITION, 0);
+  }
+
+  public void setUseConversationItemV2(boolean useConversationFragmentV2) {
+    putBoolean(CONVERSATION_ITEM_V2, useConversationFragmentV2);
+  }
+
+  public boolean useConversationItemV2() {
+    return FeatureFlags.internalUser() && getBoolean(CONVERSATION_ITEM_V2, false);
   }
 }

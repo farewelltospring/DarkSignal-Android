@@ -12,12 +12,16 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchKey
 import org.thoughtcrime.securesms.conversation.mutiselect.forward.MultiselectForwardFragmentArgs
 import org.thoughtcrime.securesms.databinding.StoriesTextPostCreationFragmentBinding
+import org.thoughtcrime.securesms.linkpreview.LinkPreview
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewRepository
+import org.thoughtcrime.securesms.linkpreview.LinkPreviewState
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewViewModel
 import org.thoughtcrime.securesms.mediasend.CameraDisplay
 import org.thoughtcrime.securesms.mediasend.v2.HudCommand
@@ -27,9 +31,9 @@ import org.thoughtcrime.securesms.mediasend.v2.text.send.TextStoryPostSendReposi
 import org.thoughtcrime.securesms.mediasend.v2.text.send.TextStoryPostSendResult
 import org.thoughtcrime.securesms.safety.SafetyNumberBottomSheet
 import org.thoughtcrime.securesms.stories.Stories
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.livedata.LiveDataUtil
 import org.thoughtcrime.securesms.util.visible
+import java.util.Optional
 
 class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creation_fragment), TextStoryPostTextEntryFragment.Callback, SafetyNumberBottomSheet.Callbacks {
 
@@ -67,7 +71,7 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
 
     _binding = StoriesTextPostCreationFragmentBinding.bind(view)
 
-    binding.storyTextPost.showCloseButton()
+    binding.storyTextPost.enableCreationMode()
 
     lifecycleDisposable.bindTo(viewLifecycleOwner)
     lifecycleDisposable += sharedViewModel.hudCommands.subscribe {
@@ -133,7 +137,7 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
       binding.send.isClickable = false
       binding.sendInProgressIndicator.visible = true
 
-      binding.storyTextPost.hideCloseButton()
+      binding.storyTextPost.disableCreationMode()
 
       val contacts = (sharedViewModel.destination.getRecipientSearchKeyList() + sharedViewModel.destination.getRecipientSearchKey())
         .filterIsInstance(ContactSearchKey::class.java)
@@ -154,6 +158,12 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
             )
           )
         }
+      } else if (sharedViewModel.isAddToGroupStoryFlow) {
+        MaterialAlertDialogBuilder(requireContext())
+          .setMessage(getString(R.string.MediaReviewFragment__add_to_the_group_story, sharedViewModel.state.value!!.recipient!!.getDisplayName(requireContext())))
+          .setPositiveButton(R.string.MediaReviewFragment__add_to_story) { _, _ -> performSend(contacts) }
+          .setNegativeButton(android.R.string.cancel) { _, _ -> }
+          .show()
       } else {
         performSend(contacts)
       }
@@ -164,7 +174,7 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
 
   override fun onResume() {
     super.onResume()
-    binding.storyTextPost.showCloseButton()
+    binding.storyTextPost.enableCreationMode()
     requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
   }
 
@@ -212,7 +222,7 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
   private fun performSend(contacts: Set<ContactSearchKey>) {
     lifecycleDisposable += viewModel.send(
       contacts = contacts,
-      linkPreviewViewModel.linkPreviewState.value?.linkPreview?.orElse(null)
+      getLinkPreview()
     ).observeOn(AndroidSchedulers.mainThread()).subscribe { result ->
       when (result) {
         TextStoryPostSendResult.Success -> {
@@ -232,6 +242,18 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
             .show(childFragmentManager)
         }
       }
+    }
+  }
+
+  private fun getLinkPreview(): LinkPreview? {
+    val linkPreviewState: LinkPreviewState = linkPreviewViewModel.linkPreviewState.value ?: return null
+
+    return if (linkPreviewState.linkPreview.isPresent) {
+      linkPreviewState.linkPreview.get()
+    } else if (!linkPreviewState.activeUrlForError.isNullOrEmpty()) {
+      LinkPreview(linkPreviewState.activeUrlForError!!, linkPreviewState.activeUrlForError!!, "", 0L, Optional.empty())
+    } else {
+      null
     }
   }
 

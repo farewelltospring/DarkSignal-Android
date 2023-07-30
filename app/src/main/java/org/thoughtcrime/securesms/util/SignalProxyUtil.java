@@ -67,6 +67,11 @@ public final class SignalProxyUtil {
     startListeningToWebsocket();
   }
 
+  public static void disableAndClearProxy(){
+    disableProxy();
+    SignalStore.proxy().setProxy(null);
+  }
+
   /**
    * A blocking call that will wait until the websocket either successfully connects, or fails.
    * It is assumed that the app state is already configured how you would like it, e.g. you've
@@ -153,7 +158,7 @@ public final class SignalProxyUtil {
   private static boolean testWebsocketConnectionUnregistered(long timeout) {
     CountDownLatch              latch          = new CountDownLatch(1);
     AtomicBoolean               success        = new AtomicBoolean(false);
-    SignalServiceAccountManager accountManager = AccountManagerFactory.createUnauthenticated(ApplicationDependencies.getApplication(), "", SignalServiceAddress.DEFAULT_DEVICE_ID, "");
+    SignalServiceAccountManager accountManager = AccountManagerFactory.getInstance().createUnauthenticated(ApplicationDependencies.getApplication(), "", SignalServiceAddress.DEFAULT_DEVICE_ID, "");
 
     SignalExecutors.UNBOUNDED.execute(() -> {
       try {

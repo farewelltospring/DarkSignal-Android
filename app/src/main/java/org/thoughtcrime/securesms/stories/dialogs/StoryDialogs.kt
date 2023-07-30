@@ -29,7 +29,7 @@ object StoryDialogs {
     onDelete: () -> Unit
   ) {
     MaterialAlertDialogBuilder(context)
-      .setTitle(R.string.StoryDialogs__delete_private_story)
+      .setTitle(R.string.StoryDialogs__delete_custom_story)
       .setMessage(context.getString(R.string.StoryDialogs__s_and_updates_shared, distributionListName))
       .setPositiveButton(R.string.StoryDialogs__delete) { _, _ -> onDelete() }
       .setNegativeButton(android.R.string.cancel) { _, _ -> }
@@ -55,23 +55,14 @@ object StoryDialogs {
       .show()
   }
 
-  fun displayBetaDialog(context: Context, onConfirmed: () -> Unit) {
+  fun resendStory(context: Context, onDismiss: () -> Unit = {}, resend: () -> Unit) {
     MaterialAlertDialogBuilder(context)
-      .setTitle(R.string.StoryDialogs__stories_is_available_to)
-      .setMessage(R.string.StoryDialogs__if_you_share_a_story)
-      .setPositiveButton(R.string.Permissions_continue) { _, _ -> onConfirmed() }
-      .setNegativeButton(android.R.string.cancel) { _, _ -> }
+      .setMessage(R.string.StoryDialogs__story_could_not_be_sent)
+      .setNegativeButton(android.R.string.cancel, null)
+      .setPositiveButton(R.string.StoryDialogs__send) { _, _ -> resend() }
+      .setOnDismissListener { onDismiss() }
       .show()
   }
-
-  fun resendStory(context: Context, onDismiss: () -> Unit = {}, resend: () -> Unit) {
-  MaterialAlertDialogBuilder(context)
-    .setMessage(R.string.StoryDialogs__story_could_not_be_sent)
-    .setNegativeButton(android.R.string.cancel, null)
-    .setPositiveButton(R.string.StoryDialogs__send) { _, _ -> resend() }
-    .setOnDismissListener { onDismiss() }
-    .show()
-}
 
   fun displayStoryOrProfileImage(
     context: Context,
@@ -101,7 +92,7 @@ object StoryDialogs {
     context: Context,
     recipientName: String,
     onCancelled: () -> Unit = {},
-    onHideStoryConfirmed: () -> Unit,
+    onHideStoryConfirmed: () -> Unit
   ) {
     MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_Signal_MaterialAlertDialog)
       .setTitle(R.string.StoriesLandingFragment__hide_story)

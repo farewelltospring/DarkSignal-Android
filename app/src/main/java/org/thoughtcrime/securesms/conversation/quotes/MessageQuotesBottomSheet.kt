@@ -10,10 +10,16 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.FixedRoundedCornerBottomSheetDialogFragment
 import org.thoughtcrime.securesms.components.recyclerview.SmoothScrollingLinearLayoutManager
 import org.thoughtcrime.securesms.conversation.ConversationAdapter
+import org.thoughtcrime.securesms.conversation.ConversationAdapterBridge
+import org.thoughtcrime.securesms.conversation.ConversationBottomSheetCallback
+import org.thoughtcrime.securesms.conversation.ConversationItemDisplayMode
 import org.thoughtcrime.securesms.conversation.colors.Colorizer
 import org.thoughtcrime.securesms.conversation.colors.RecyclerViewColorizer
 import org.thoughtcrime.securesms.conversation.mutiselect.MultiselectPart
@@ -33,7 +39,6 @@ import org.thoughtcrime.securesms.mms.GlideApp
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.BottomSheetUtil
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.StickyHeaderDecoration
 import org.thoughtcrime.securesms.util.fragments.findListener
 import java.util.Locale
@@ -68,15 +73,15 @@ class MessageQuotesBottomSheet : FixedRoundedCornerBottomSheetDialogFragment() {
 
     val colorizer = Colorizer()
 
-    messageAdapter = ConversationAdapter(requireContext(), viewLifecycleOwner, GlideApp.with(this), Locale.getDefault(), ConversationAdapterListener(), conversationRecipient, colorizer).apply {
-      setCondensedMode(true)
+    messageAdapter = ConversationAdapter(requireContext(), viewLifecycleOwner, GlideApp.with(this), Locale.getDefault(), ConversationAdapterListener(), conversationRecipient.hasWallpaper(), colorizer).apply {
+      setCondensedMode(ConversationItemDisplayMode.CONDENSED)
     }
 
     val list: RecyclerView = view.findViewById<RecyclerView>(R.id.quotes_list).apply {
       layoutManager = SmoothScrollingLinearLayoutManager(requireContext(), true)
       adapter = messageAdapter
       itemAnimator = null
-      addItemDecoration(MessageQuoteHeaderDecoration(context))
+      addItemDecoration(OriginalMessageSeparatorDecoration(context, R.string.MessageQuotesBottomSheet_replies))
 
       doOnNextLayout {
         // Adding this without waiting for a layout pass would result in an indeterminate amount of padding added to the top of the view
@@ -93,7 +98,16 @@ class MessageQuotesBottomSheet : FixedRoundedCornerBottomSheetDialogFragment() {
 
       messageAdapter.submitList(messages) {
         if (firstRender) {
-          (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(messages.size - 1, 100)
+          val targetMessageId = MessageId.deserialize(arguments?.getString(KEY_MESSAGE_ID, null) ?: throw IllegalArgumentException())
+          val targetMessagePosition = messages.indexOfFirst { it.messageRecord.id == targetMessageId.id }
+
+          (list.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(targetMessagePosition, 100)
+
+          if (targetMessagePosition != messages.size - 1) {
+            (dialog as BottomSheetDialog).behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            messageAdapter.pulseAtPosition(targetMessagePosition)
+          }
+
           firstRender = false
         } else if (!list.canScrollVertically(1)) {
           list.layoutManager?.scrollToPosition(0)
@@ -104,7 +118,7 @@ class MessageQuotesBottomSheet : FixedRoundedCornerBottomSheetDialogFragment() {
 
     disposables += viewModel.getNameColorsMap().subscribe { map ->
       colorizer.onNameColorsChanged(map)
-      messageAdapter.notifyItemRangeChanged(0, messageAdapter.itemCount, ConversationAdapter.PAYLOAD_NAME_COLORS)
+      messageAdapter.notifyItemRangeChanged(0, messageAdapter.itemCount, ConversationAdapterBridge.PAYLOAD_NAME_COLORS)
     }
 
     initializeGiphyMp4(view.findViewById(R.id.video_container) as ViewGroup, list)
@@ -126,8 +140,8 @@ class MessageQuotesBottomSheet : FixedRoundedCornerBottomSheetDialogFragment() {
     return callback
   }
 
-  private fun getCallback(): Callback {
-    return findListener<Callback>() ?: throw IllegalStateException("Parent must implement callback interface!")
+  private fun getCallback(): ConversationBottomSheetCallback {
+    return findListener<ConversationBottomSheetCallback>() ?: throw IllegalStateException("Parent must implement callback interface!")
   }
 
   private fun getAdapterListener(): ConversationAdapter.ItemClickListener {
@@ -228,11 +242,21 @@ class MessageQuotesBottomSheet : FixedRoundedCornerBottomSheetDialogFragment() {
       dismiss()
       getAdapterListener().onViewGiftBadgeClicked(messageRecord)
     }
-  }
 
-  interface Callback {
-    fun getConversationAdapterListener(): ConversationAdapter.ItemClickListener
-    fun jumpToMessage(messageRecord: MessageRecord)
+    override fun onActivatePaymentsClicked() {
+      dismiss()
+      getAdapterListener().onActivatePaymentsClicked()
+    }
+
+    override fun onSendPaymentClicked(recipientId: RecipientId) {
+      dismiss()
+      getAdapterListener().onSendPaymentClicked(recipientId)
+    }
+
+    override fun onEditedIndicatorClicked(messageRecord: MessageRecord) {
+      dismiss()
+      getAdapterListener().onEditedIndicatorClicked(messageRecord)
+    }
   }
 
   companion object {

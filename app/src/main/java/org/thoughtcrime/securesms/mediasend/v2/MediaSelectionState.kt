@@ -8,6 +8,7 @@ import org.thoughtcrime.securesms.mediasend.MediaSendConstants
 import org.thoughtcrime.securesms.mms.SentMediaQuality
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.stories.Stories
+import org.thoughtcrime.securesms.util.FeatureFlags
 
 data class MediaSelectionState(
   val sendType: MessageSendType,
@@ -24,13 +25,14 @@ data class MediaSelectionState(
   val editorStateMap: Map<Uri, Any> = mapOf(),
   val cameraFirstCapture: Media? = null,
   val isStory: Boolean,
-  val storySendRequirements: Stories.MediaTransform.SendRequirements = Stories.MediaTransform.SendRequirements.CAN_NOT_SEND
+  val storySendRequirements: Stories.MediaTransform.SendRequirements = Stories.MediaTransform.SendRequirements.CAN_NOT_SEND,
+  val suppressEmptyError: Boolean = true
 ) {
 
   val maxSelection = if (sendType.usesSmsTransport) {
     MediaSendConstants.MAX_SMS
   } else {
-    MediaSendConstants.MAX_PUSH
+    FeatureFlags.maxAttachmentCount()
   }
 
   val canSend = !isSent && selectedMedia.isNotEmpty()

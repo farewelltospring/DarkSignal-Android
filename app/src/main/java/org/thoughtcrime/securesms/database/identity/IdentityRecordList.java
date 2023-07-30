@@ -2,7 +2,7 @@ package org.thoughtcrime.securesms.database.identity;
 
 import androidx.annotation.NonNull;
 
-import org.thoughtcrime.securesms.database.IdentityDatabase.VerifiedStatus;
+import org.thoughtcrime.securesms.database.IdentityTable.VerifiedStatus;
 import org.thoughtcrime.securesms.database.model.IdentityRecord;
 import org.thoughtcrime.securesms.recipients.Recipient;
 
@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class IdentityRecordList {
@@ -145,4 +146,16 @@ public final class IdentityRecordList {
            System.currentTimeMillis() - identityRecord.getTimestamp() < untrustedWindowMillis;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    final IdentityRecordList that = (IdentityRecordList) o;
+    return Objects.equals(identityRecords, that.identityRecords);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(identityRecords);
+  }
 }

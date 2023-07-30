@@ -15,11 +15,10 @@ import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.BuildConfig;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.groups.SelectionLimits;
-import org.thoughtcrime.securesms.jobs.RefreshAttributesJob;
-import org.thoughtcrime.securesms.jobs.RefreshOwnProfileJob;
 import org.thoughtcrime.securesms.jobs.RemoteConfigRefreshJob;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.messageprocessingalarm.MessageProcessReceiver;
+import org.whispersystems.signalservice.api.RemoteConfigResult;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -55,7 +54,6 @@ public final class FeatureFlags {
   private static final long FETCH_INTERVAL = TimeUnit.HOURS.toMillis(2);
 
   private static final String PAYMENTS_KILL_SWITCH              = "android.payments.kill";
-  private static final String USERNAMES                         = "android.usernames";
   private static final String GROUPS_V2_RECOMMENDED_LIMIT       = "global.groupsv2.maxGroupSize";
   private static final String GROUPS_V2_HARD_LIMIT              = "global.groupsv2.groupSizeHardLimit";
   private static final String GROUP_NAME_MAX_LENGTH             = "global.groupsv2.maxNameLength";
@@ -81,31 +79,37 @@ public final class FeatureFlags {
   private static final String SENDER_KEY_MAX_AGE                = "android.senderKeyMaxAge";
   private static final String RETRY_RECEIPTS                    = "android.retryReceipts";
   private static final String MAX_GROUP_CALL_RING_SIZE          = "global.calling.maxGroupCallRingSize";
-  private static final String GROUP_CALL_RINGING                = "android.calling.groupCallRinging";
-  private static final String STORIES                           = "android.stories.3";
   private static final String STORIES_TEXT_FUNCTIONS            = "android.stories.text.functions";
   private static final String HARDWARE_AEC_BLOCKLIST_MODELS     = "android.calling.hardwareAecBlockList";
   private static final String SOFTWARE_AEC_BLOCKLIST_MODELS     = "android.calling.softwareAecBlockList";
   private static final String USE_HARDWARE_AEC_IF_OLD           = "android.calling.useHardwareAecIfOlderThanApi29";
   private static final String USE_AEC3                          = "android.calling.useAec3";
-  private static final String PAYMENTS_COUNTRY_BLOCKLIST        = "android.payments.blocklist";
-  private static final String PHONE_NUMBER_PRIVACY              = "android.pnp";
-  private static final String USE_FCM_FOREGROUND_SERVICE        = "android.useFcmForegroundService.3";
+  private static final String PAYMENTS_COUNTRY_BLOCKLIST        = "global.payments.disabledRegions";
+  public  static final String PHONE_NUMBER_PRIVACY              = "android.pnp";
   private static final String STORIES_AUTO_DOWNLOAD_MAXIMUM     = "android.stories.autoDownloadMaximum";
-  private static final String GIFT_BADGE_RECEIVE_SUPPORT        = "android.giftBadges.receiving";
-  private static final String GIFT_BADGE_SEND_SUPPORT           = "android.giftBadges.sending.3";
   private static final String TELECOM_MANUFACTURER_ALLOWLIST    = "android.calling.telecomAllowList";
   private static final String TELECOM_MODEL_BLOCKLIST           = "android.calling.telecomModelBlockList";
   private static final String CAMERAX_MODEL_BLOCKLIST           = "android.cameraXModelBlockList";
   private static final String CAMERAX_MIXED_MODEL_BLOCKLIST     = "android.cameraXMixedModelBlockList";
-  private static final String RECIPIENT_MERGE_V2                = "android.recipientMergeV2";
-  private static final String CDS_V2_LOAD_TEST                  = "android.cdsV2LoadTest";
-  private static final String SMS_EXPORTER                      = "android.sms.exporter";
-  private static final String CDS_V2_COMPAT                     = "android.cdsV2Compat.4";
-  public  static final String STORIES_LOCALE                    = "android.stories.locale";
   private static final String HIDE_CONTACTS                     = "android.hide.contacts";
-  public  static final String MEDIA_PREVIEW_V2                  = "android.mediaPreviewV2";
-
+  private static final String PAYMENTS_REQUEST_ACTIVATE_FLOW    = "android.payments.requestActivateFlow";
+  public  static final String GOOGLE_PAY_DISABLED_REGIONS       = "global.donations.gpayDisabledRegions";
+  public  static final String CREDIT_CARD_DISABLED_REGIONS      = "global.donations.ccDisabledRegions";
+  public  static final String PAYPAL_DISABLED_REGIONS           = "global.donations.paypalDisabledRegions";
+  private static final String CDS_HARD_LIMIT                    = "android.cds.hardLimit";
+  private static final String PAYPAL_ONE_TIME_DONATIONS         = "android.oneTimePayPalDonations.2";
+  private static final String PAYPAL_RECURRING_DONATIONS        = "android.recurringPayPalDonations.3";
+  private static final String ANY_ADDRESS_PORTS_KILL_SWITCH     = "android.calling.fieldTrial.anyAddressPortsKillSwitch";
+  private static final String AD_HOC_CALLING                    = "android.calling.ad.hoc.2";
+  private static final String EDIT_MESSAGE_SEND                 = "android.editMessage.send.5";
+  private static final String MAX_ATTACHMENT_COUNT              = "android.attachments.maxCount";
+  private static final String MAX_ATTACHMENT_RECEIVE_SIZE_BYTES = "global.attachments.maxReceiveBytes";
+  private static final String MAX_ATTACHMENT_SIZE_BYTES         = "global.attachments.maxBytes";
+  private static final String SVR2_KILLSWITCH                   = "android.svr2.killSwitch";
+  private static final String CDS_COMPAT_MODE                   = "global.cds.return_acis_without_uaks";
+  private static final String CONVERSATION_FRAGMENT_V2          = "android.conversationFragmentV2.2";
+  private static final String FCM_MAY_HAVE_MESSAGES_KILL_SWITCH = "android.fcmNotificationFallbackKillSwitch";
+  private static final String SAFETY_NUMBER_ACI                 = "global.safetyNumberAci";
   /**
    * We will only store remote values for flags in this set. If you want a flag to be controllable
    * remotely, place it in here.
@@ -113,10 +117,8 @@ public final class FeatureFlags {
   @VisibleForTesting
   static final Set<String> REMOTE_CAPABLE = SetUtil.newHashSet(
       PAYMENTS_KILL_SWITCH,
-      GROUPS_V2_RECOMMENDED_LIMIT,
-      GROUPS_V2_HARD_LIMIT,
+      GROUPS_V2_RECOMMENDED_LIMIT, GROUPS_V2_HARD_LIMIT,
       INTERNAL_USER,
-      USERNAMES,
       VERIFY_V2,
       CLIENT_EXPIRATION,
       DONATE_MEGAPHONE,
@@ -138,30 +140,37 @@ public final class FeatureFlags {
       RETRY_RESPOND_MAX_AGE,
       RETRY_RECEIPTS,
       MAX_GROUP_CALL_RING_SIZE,
-      GROUP_CALL_RINGING,
       SENDER_KEY_MAX_AGE,
-      STORIES,
       STORIES_TEXT_FUNCTIONS,
       HARDWARE_AEC_BLOCKLIST_MODELS,
       SOFTWARE_AEC_BLOCKLIST_MODELS,
       USE_HARDWARE_AEC_IF_OLD,
       USE_AEC3,
       PAYMENTS_COUNTRY_BLOCKLIST,
-      USE_FCM_FOREGROUND_SERVICE,
       STORIES_AUTO_DOWNLOAD_MAXIMUM,
-      GIFT_BADGE_RECEIVE_SUPPORT,
-      GIFT_BADGE_SEND_SUPPORT,
       TELECOM_MANUFACTURER_ALLOWLIST,
       TELECOM_MODEL_BLOCKLIST,
       CAMERAX_MODEL_BLOCKLIST,
       CAMERAX_MIXED_MODEL_BLOCKLIST,
-      RECIPIENT_MERGE_V2,
-      CDS_V2_LOAD_TEST,
-      SMS_EXPORTER,
-      CDS_V2_COMPAT,
-      STORIES_LOCALE,
       HIDE_CONTACTS,
-      MEDIA_PREVIEW_V2
+      PAYMENTS_REQUEST_ACTIVATE_FLOW,
+      GOOGLE_PAY_DISABLED_REGIONS,
+      CREDIT_CARD_DISABLED_REGIONS,
+      PAYPAL_DISABLED_REGIONS,
+      CDS_HARD_LIMIT,
+      PAYPAL_ONE_TIME_DONATIONS,
+      PAYPAL_RECURRING_DONATIONS,
+      ANY_ADDRESS_PORTS_KILL_SWITCH,
+      EDIT_MESSAGE_SEND,
+      MAX_ATTACHMENT_COUNT,
+      MAX_ATTACHMENT_RECEIVE_SIZE_BYTES,
+      MAX_ATTACHMENT_SIZE_BYTES,
+      AD_HOC_CALLING,
+      SVR2_KILLSWITCH,
+      CDS_COMPAT_MODE,
+      CONVERSATION_FRAGMENT_V2,
+      SAFETY_NUMBER_ACI,
+      FCM_MAY_HAVE_MESSAGES_KILL_SWITCH
   );
 
   @VisibleForTesting
@@ -209,7 +218,6 @@ public final class FeatureFlags {
       RETRY_RESPOND_MAX_AGE,
       RETRY_RECEIPTS,
       MAX_GROUP_CALL_RING_SIZE,
-      GROUP_CALL_RINGING,
       SENDER_KEY_MAX_AGE,
       DONATE_MEGAPHONE,
       HARDWARE_AEC_BLOCKLIST_MODELS,
@@ -217,15 +225,20 @@ public final class FeatureFlags {
       USE_HARDWARE_AEC_IF_OLD,
       USE_AEC3,
       PAYMENTS_COUNTRY_BLOCKLIST,
-      USE_FCM_FOREGROUND_SERVICE,
       TELECOM_MANUFACTURER_ALLOWLIST,
       TELECOM_MODEL_BLOCKLIST,
       CAMERAX_MODEL_BLOCKLIST,
-      RECIPIENT_MERGE_V2,
-      CDS_V2_LOAD_TEST,
-      CDS_V2_COMPAT,
-      STORIES,
-      MEDIA_PREVIEW_V2
+      PAYMENTS_REQUEST_ACTIVATE_FLOW,
+      CDS_HARD_LIMIT,
+      EDIT_MESSAGE_SEND,
+      MAX_ATTACHMENT_COUNT,
+      MAX_ATTACHMENT_RECEIVE_SIZE_BYTES,
+      MAX_ATTACHMENT_SIZE_BYTES,
+      SVR2_KILLSWITCH,
+      CDS_COMPAT_MODE,
+      CONVERSATION_FRAGMENT_V2,
+      SAFETY_NUMBER_ACI,
+      FCM_MAY_HAVE_MESSAGES_KILL_SWITCH
   );
 
   /**
@@ -233,7 +246,9 @@ public final class FeatureFlags {
    */
   @VisibleForTesting
   static final Set<String> STICKY = SetUtil.newHashSet(
-      VERIFY_V2
+      VERIFY_V2,
+      SVR2_KILLSWITCH,
+      FCM_MAY_HAVE_MESSAGES_KILL_SWITCH
   );
 
   /**
@@ -249,11 +264,6 @@ public final class FeatureFlags {
    */
   private static final Map<String, OnFlagChange> FLAG_CHANGE_LISTENERS = new HashMap<String, OnFlagChange>() {{
     put(MESSAGE_PROCESSOR_ALARM_INTERVAL, change -> MessageProcessReceiver.startOrUpdateAlarm(ApplicationDependencies.getApplication()));
-    put(STORIES, change -> {
-      ApplicationDependencies.getJobManager().startChain(new RefreshAttributesJob()).then(new RefreshOwnProfileJob()).enqueue();
-      ApplicationDependencies.resetAllNetworkConnections();
-    });
-    put(GIFT_BADGE_RECEIVE_SUPPORT, change -> ApplicationDependencies.getJobManager().startChain(new RefreshAttributesJob()).then(new RefreshOwnProfileJob()).enqueue());
   }};
 
   private static final Map<String, Object> REMOTE_VALUES = new TreeMap<>();
@@ -285,8 +295,8 @@ public final class FeatureFlags {
 
   @WorkerThread
   public static void refreshSync() throws IOException {
-    Map<String, Object> config = ApplicationDependencies.getSignalServiceAccountManager().getRemoteConfig();
-    FeatureFlags.update(config);
+    RemoteConfigResult result = ApplicationDependencies.getSignalServiceAccountManager().getRemoteConfig();
+    FeatureFlags.update(result.getConfig());
   }
 
   public static synchronized void update(@NonNull Map<String, Object> config) {
@@ -309,7 +319,8 @@ public final class FeatureFlags {
 
   /** Creating usernames, sending messages by username. */
   public static synchronized boolean usernames() {
-    return getBoolean(USERNAMES, false);
+    // For now these features are paired, but leaving the separate method in case we decide to separate in the future.
+    return phoneNumberPrivacy();
   }
 
   /**
@@ -327,12 +338,20 @@ public final class FeatureFlags {
 
   /** Internal testing extensions. */
   public static boolean internalUser() {
-    return getBoolean(INTERNAL_USER, false);
+    return getBoolean(INTERNAL_USER, false) || Environment.IS_PNP;
   }
 
   /** Whether or not to use the UUID in verification codes. */
   public static boolean verifyV2() {
     return getBoolean(VERIFY_V2, false);
+  }
+
+  /** Whether or not we show the ACI safety number as the default initial safety number. */
+  public static boolean showAciSafetyNumberAsDefault() {
+    long estimatedServerTimeSeconds = (System.currentTimeMillis() - SignalStore.misc().getLastKnownServerTimeOffset()) / 1000;
+    long flagEnableTimeSeconds      = getLong(SAFETY_NUMBER_ACI, Long.MAX_VALUE);
+
+    return estimatedServerTimeSeconds > flagEnableTimeSeconds;
   }
 
   /** The raw client expiration JSON string. */
@@ -350,7 +369,7 @@ public final class FeatureFlags {
    * IMPORTANT: This is under active development. Enabling this *will* break your contacts in terrible, irreversible ways.
    */
   public static boolean phoneNumberPrivacy() {
-    return getBoolean(PHONE_NUMBER_PRIVACY, false);
+    return getBoolean(PHONE_NUMBER_PRIVACY, false) || Environment.IS_PNP;
   }
 
   /** Whether to use the custom streaming muxer or built in android muxer. */
@@ -417,11 +436,6 @@ public final class FeatureFlags {
     return getBoolean(RETRY_RECEIPTS, true);
   }
 
-  /** How long to wait before considering a retry to be a failure. */
-  public static long retryReceiptLifespan() {
-    return getLong(RETRY_RECEIPT_LIFESPAN, TimeUnit.HOURS.toMillis(1));
-  }
-
   /** How old a message is allowed to be while still resending in response to a retry receipt . */
   public static long retryRespondMaxAge() {
     return getLong(RETRY_RESPOND_MAX_AGE, TimeUnit.DAYS.toMillis(14));
@@ -437,23 +451,9 @@ public final class FeatureFlags {
     return getLong(MAX_GROUP_CALL_RING_SIZE, 16);
   }
 
-  /** Whether or not to show the group call ring toggle in the UI. */
-  public static boolean groupCallRinging() {
-    return getBoolean(GROUP_CALL_RINGING, false);
-  }
-
   /** A comma-separated list of country codes where payments should be disabled. */
   public static String paymentsCountryBlocklist() {
     return getString(PAYMENTS_COUNTRY_BLOCKLIST, "98,963,53,850,7");
-  }
-
-  /**
-   * Whether or not stories are available
-   *
-   * NOTE: This feature is still under ongoing development, do not enable.
-   */
-  public static boolean stories() {
-    return getBoolean(STORIES, false);
   }
 
   /**
@@ -463,13 +463,6 @@ public final class FeatureFlags {
    */
   public static boolean storiesTextFunctions() {
     return getBoolean(STORIES_TEXT_FUNCTIONS, false);
-  }
-
-  /**
-   * List of locales in which stories have been enabled. Overridden by the stories flag.
-   */
-  public static @NonNull String storiesLocale() {
-    return getString(STORIES_LOCALE, "");
   }
 
   /** A comma-separated list of models that should *not* use hardware AEC for calling. */
@@ -512,60 +505,11 @@ public final class FeatureFlags {
     return getBoolean(USE_AEC3, true);
   }
 
-  public static boolean useFcmForegroundService() {
-    return getBoolean(USE_FCM_FOREGROUND_SERVICE, false);
-  }
-
   /**
    * Prefetch count for stories from a given user.
    */
   public static int storiesAutoDownloadMaximum() {
     return getInteger(STORIES_AUTO_DOWNLOAD_MAXIMUM, 2);
-  }
-
-  /**
-   * Whether or not receiving Gifting Badges should be available on this client.
-   */
-  public static boolean giftBadgeReceiveSupport() {
-    return getBoolean(GIFT_BADGE_RECEIVE_SUPPORT, Environment.IS_STAGING);
-  }
-
-  /**
-   * Whether or not sending Gifting Badges should be available on this client.
-   */
-  public static boolean giftBadgeSendSupport() {
-    return giftBadgeReceiveSupport() && getBoolean(GIFT_BADGE_SEND_SUPPORT, Environment.IS_STAGING);
-  }
-
-  /**
-   * Whether or not we should use the new recipient merging strategy.
-   */
-  public static boolean recipientMergeV2() {
-    return getBoolean(RECIPIENT_MERGE_V2, false);
-  }
-
-  /**
-   * Whether or not we should also query CDSv2 as a form of load test.
-   */
-  public static boolean cdsV2LoadTesting() {
-    return getBoolean(CDS_V2_LOAD_TEST, false);
-  }
-
-  /**
-   * Whether or not we should enable the SMS exporter
-   *
-   * WARNING: This feature is under active development and is off for a reason. The exporter writes messages out to your
-   * system SMS / MMS database, and hasn't been adequately tested for public use. Don't enable this. You've been warned.
-   */
-  public static boolean smsExporter() {
-    return getBoolean(SMS_EXPORTER, false);
-  }
-
-  /**
-   * Whether or not we should use CDSv2 with the compat flag on as our primary CDS.
-   */
-  public static boolean cdsV2Compat() {
-    return getBoolean(CDS_V2_COMPAT, false);
   }
 
   /**
@@ -578,11 +522,103 @@ public final class FeatureFlags {
     return getBoolean(HIDE_CONTACTS, false);
   }
 
+  /** Whether client supports sending a request to another to activate payments */
+  public static boolean paymentsRequestActivateFlow() {
+    return getBoolean(PAYMENTS_REQUEST_ACTIVATE_FLOW, false);
+  }
+
   /**
-   * Whether or not we should use the new media preview fragment implementation.
+   * @return Serialized list of regions in which Google Pay is disabled for donations
    */
-  public static boolean mediaPreviewV2() {
-    return getBoolean(MEDIA_PREVIEW_V2, false);
+  public static @NonNull String googlePayDisabledRegions() {
+    return getString(GOOGLE_PAY_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * @return Serialized list of regions in which credit cards are disabled for donations
+   */
+  public static @NonNull String creditCardDisabledRegions() {
+    return getString(CREDIT_CARD_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * @return Serialized list of regions in which PayPal is disabled for donations
+   */
+  public static @NonNull String paypalDisabledRegions() {
+    return getString(PAYPAL_DISABLED_REGIONS, "*");
+  }
+
+  /**
+   * If the user has more than this number of contacts, the CDS request will certainly be rejected, so we must fail.
+   */
+  public static int cdsHardLimit() {
+    return getInteger(CDS_HARD_LIMIT, 50_000);
+  }
+
+  /**
+   * Whether or not we should allow PayPal payments for one-time donations
+   */
+  public static boolean paypalOneTimeDonations() {
+    return getBoolean(PAYPAL_ONE_TIME_DONATIONS, Environment.IS_STAGING);
+  }
+
+  /**
+   * Whether or not we should allow PayPal payments for recurring donations
+   */
+  public static boolean paypalRecurringDonations() {
+    return getBoolean(PAYPAL_RECURRING_DONATIONS, Environment.IS_STAGING);
+  }
+
+  /**
+   * Enable/disable RingRTC field trial for "AnyAddressPortsKillSwitch"
+   */
+  public static boolean callingFieldTrialAnyAddressPortsKillSwitch() {
+    return getBoolean(ANY_ADDRESS_PORTS_KILL_SWITCH, false);
+  }
+
+  /**
+   * Enable/disable for notification when we cannot fetch messages despite receiving an urgent push.
+   */
+  public static boolean fcmMayHaveMessagesNotificationKillSwitch() {
+    return getBoolean(FCM_MAY_HAVE_MESSAGES_KILL_SWITCH, false);
+  }
+
+  public static boolean editMessageSending() {
+    return getBoolean(EDIT_MESSAGE_SEND, false);
+  }
+
+  /**
+   * Whether or not ad-hoc calling is enabled
+   */
+  public static boolean adHocCalling() {
+    return getBoolean(AD_HOC_CALLING, false);
+  }
+
+  /** Maximum number of attachments allowed to be sent/received. */
+  public static int maxAttachmentCount() {
+    return getInteger(MAX_ATTACHMENT_COUNT, 32);
+  }
+
+  /** Maximum attachment size for ciphertext in bytes. */
+  public static long maxAttachmentReceiveSizeBytes() {
+    long maxAttachmentSize = maxAttachmentSizeBytes();
+    long maxReceiveSize    = getLong(MAX_ATTACHMENT_RECEIVE_SIZE_BYTES, (int) (maxAttachmentSize * 1.25));
+    return Math.max(maxAttachmentSize, maxReceiveSize);
+  }
+
+  /** Maximum attachment ciphertext size when sending in bytes */
+  public static long maxAttachmentSizeBytes() {
+    return getLong(MAX_ATTACHMENT_SIZE_BYTES, ByteUnit.MEGABYTES.toBytes(100));
+  }
+
+  /** True if you should use CDS in compat mode (i.e. request ACI's even if you don't know the access key), otherwise false. */
+  public static boolean cdsCompatMode() {
+    return getBoolean(CDS_COMPAT_MODE, true);
+  }
+
+  /** True if the new conversation fragment should be used. */
+  public static boolean useConversationFragmentV2() {
+    return getBoolean(CONVERSATION_FRAGMENT_V2, false);
   }
 
   /** Only for rendering debug info. */
@@ -727,6 +763,14 @@ public final class FeatureFlags {
     return getInteger(MESSAGE_PROCESSOR_DELAY, 300);
   }
 
+  /**
+   * Whether or not SVR2 should be used at all. Defaults to true. In practice this is reserved as a killswitch.
+   */
+  public static boolean svr2() {
+    // Despite us always inverting the value, it's important that this defaults to false so that the STICKY property works as intended
+    return !getBoolean(SVR2_KILLSWITCH, false);
+  }
+
   private enum VersionFlag {
     /** The flag is no set */
     OFF,
@@ -747,6 +791,15 @@ public final class FeatureFlags {
     Object remote = REMOTE_VALUES.get(key);
     if (remote instanceof Boolean) {
       return (boolean) remote;
+    } else if (remote instanceof String) {
+      String stringValue = ((String) remote).toLowerCase();
+      if (stringValue.equals("true")) {
+        return true;
+      } else if (stringValue.equals("false")) {
+        return false;
+      } else {
+        Log.w(TAG, "Expected a boolean for key '" + key + "', but got something else (" + stringValue + ")! Falling back to the default.");
+      }
     } else if (remote != null) {
       Log.w(TAG, "Expected a boolean for key '" + key + "', but got something else! Falling back to the default.");
     }

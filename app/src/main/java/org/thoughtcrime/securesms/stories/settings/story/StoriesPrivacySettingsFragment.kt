@@ -4,6 +4,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ConcatAdapter
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.dp
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.DialogFragmentDisplayManager
@@ -13,16 +14,18 @@ import org.thoughtcrime.securesms.components.settings.DSLSettingsAdapter
 import org.thoughtcrime.securesms.components.settings.DSLSettingsFragment
 import org.thoughtcrime.securesms.components.settings.DSLSettingsText
 import org.thoughtcrime.securesms.components.settings.configure
-import org.thoughtcrime.securesms.contacts.paged.ContactSearchItems
+import org.thoughtcrime.securesms.contacts.paged.ContactSearchAdapter
 import org.thoughtcrime.securesms.contacts.paged.ContactSearchKey
+import org.thoughtcrime.securesms.contacts.paged.ContactSearchPagedDataSourceRepository
 import org.thoughtcrime.securesms.groups.ParcelableGroupId
+import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.mediasend.v2.stories.ChooseGroupStoryBottomSheet
 import org.thoughtcrime.securesms.mediasend.v2.stories.ChooseStoryTypeBottomSheet
+import org.thoughtcrime.securesms.stories.GroupStoryEducationSheet
 import org.thoughtcrime.securesms.stories.dialogs.StoryDialogs
 import org.thoughtcrime.securesms.stories.settings.create.CreateStoryFlowDialogFragment
 import org.thoughtcrime.securesms.stories.settings.create.CreateStoryWithViewersFragment
 import org.thoughtcrime.securesms.util.BottomSheetUtil
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingAdapter
 import org.thoughtcrime.securesms.util.adapter.mapping.PagingMappingAdapter
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
@@ -34,11 +37,15 @@ class StoriesPrivacySettingsFragment :
   DSLSettingsFragment(
     titleId = R.string.preferences__stories
   ),
-  ChooseStoryTypeBottomSheet.Callback {
+  ChooseStoryTypeBottomSheet.Callback,
+  GroupStoryEducationSheet.Callback {
 
-  private val viewModel: StoriesPrivacySettingsViewModel by viewModels()
+  private val viewModel: StoriesPrivacySettingsViewModel by viewModels(factoryProducer = {
+    StoriesPrivacySettingsViewModel.Factory(ContactSearchPagedDataSourceRepository(requireContext()))
+  })
+
   private val lifecycleDisposable = LifecycleDisposable()
-  private val progressDisplayManager = DialogFragmentDisplayManager { ProgressCardDialogFragment() }
+  private val progressDisplayManager = DialogFragmentDisplayManager { ProgressCardDialogFragment.create() }
 
   override fun createAdapters(): Array<MappingAdapter> {
     return arrayOf(DSLSettingsAdapter(), PagingMappingAdapter<ContactSearchKey>(), DSLSettingsAdapter())
@@ -59,7 +66,7 @@ class StoriesPrivacySettingsFragment :
     }
 
     @Suppress("UNCHECKED_CAST")
-    ContactSearchItems.registerStoryItems(
+    ContactSearchAdapter.registerStoryItems(
       mappingAdapter = middle as PagingMappingAdapter<ContactSearchKey>,
       storyListener = { _, story, _ ->
         when {
@@ -69,7 +76,8 @@ class StoriesPrivacySettingsFragment :
         }
       }
     )
-    ContactSearchItems.registerHeaders(middle)
+
+    NewStoryItem.register(top as MappingAdapter)
 
     middle.setPagingController(viewModel.pagingController)
 
@@ -82,10 +90,6 @@ class StoriesPrivacySettingsFragment :
       viewModel.pagingController.onDataInvalidated()
     }
 
-    lifecycleDisposable += viewModel.headerActionRequests.subscribe {
-      ChooseStoryTypeBottomSheet().show(childFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
-    }
-
     lifecycleDisposable += viewModel.state.subscribe { state ->
       if (state.isUpdatingEnabledState) {
         progressDisplayManager.show(viewLifecycleOwner, childFragmentManager)
@@ -93,7 +97,7 @@ class StoriesPrivacySettingsFragment :
         progressDisplayManager.hide()
       }
 
-      (top as MappingAdapter).submitList(getTopConfiguration(state).toMappingModelList())
+      top.submitList(getTopConfiguration(state).toMappingModelList())
       middle.submitList(getMiddleConfiguration(state).toMappingModelList())
       (bottom as MappingAdapter).submitList(getBottomConfiguration(state).toMappingModelList())
     }
@@ -106,13 +110,21 @@ class StoriesPrivacySettingsFragment :
 
         noPadTextPref(
           title = DSLSettingsText.from(
-            R.string.StoriesPrivacySettingsFragment__stories_automatically_disappear,
+            R.string.StoriesPrivacySettingsFragment__story_updates_automatically_disappear,
             DSLSettingsText.TextAppearanceModifier(R.style.Signal_Text_BodyMedium),
             DSLSettingsText.ColorModifier(ContextCompat.getColor(requireContext(), R.color.signal_colorOnSurfaceVariant))
           )
         )
 
         space(20.dp)
+
+        sectionHeaderPref(R.string.StoriesPrivacySettingsFragment__stories)
+
+        customPref(
+          NewStoryItem.Model {
+            ChooseStoryTypeBottomSheet().show(childFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
+          }
+        )
       } else {
         clickPref(
           title = DSLSettingsText.from(R.string.StoriesPrivacySettingsFragment__turn_on_stories),
@@ -128,9 +140,10 @@ class StoriesPrivacySettingsFragment :
   private fun getMiddleConfiguration(state: StoriesPrivacySettingsState): DSLConfiguration {
     return if (state.areStoriesEnabled) {
       configure {
-        ContactSearchItems.toMappingModelList(
+        ContactSearchAdapter.toMappingModelList(
           state.storyContactItems,
-          emptySet()
+          emptySet(),
+          null
         ).forEach {
           customPref(it)
         }
@@ -143,6 +156,17 @@ class StoriesPrivacySettingsFragment :
   private fun getBottomConfiguration(state: StoriesPrivacySettingsState): DSLConfiguration {
     return if (state.areStoriesEnabled) {
       configure {
+        dividerPref()
+
+        switchPref(
+          title = DSLSettingsText.from(R.string.StoriesPrivacySettingsFragment__view_receipts),
+          summary = DSLSettingsText.from(R.string.StoriesPrivacySettingsFragment__see_and_share),
+          isChecked = state.areViewReceiptsEnabled,
+          onClick = {
+            viewModel.toggleViewReceipts()
+          }
+        )
+
         dividerPref()
 
         clickPref(
@@ -165,10 +189,18 @@ class StoriesPrivacySettingsFragment :
   }
 
   override fun onGroupStoryClicked() {
-    ChooseGroupStoryBottomSheet().show(parentFragmentManager, ChooseGroupStoryBottomSheet.GROUP_STORY)
+    if (SignalStore.storyValues().userHasSeenGroupStoryEducationSheet) {
+      onGroupStoryEducationSheetNext()
+    } else {
+      GroupStoryEducationSheet().show(childFragmentManager, GroupStoryEducationSheet.KEY)
+    }
   }
 
   override fun onNewStoryClicked() {
     CreateStoryFlowDialogFragment().show(parentFragmentManager, CreateStoryWithViewersFragment.REQUEST_KEY)
+  }
+
+  override fun onGroupStoryEducationSheetNext() {
+    ChooseGroupStoryBottomSheet().show(parentFragmentManager, ChooseGroupStoryBottomSheet.GROUP_STORY)
   }
 }

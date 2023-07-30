@@ -2,10 +2,12 @@ package org.thoughtcrime.securesms.database
 
 import android.net.Uri
 import org.signal.core.util.Bitmask
+import org.signal.core.util.toOptional
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential
 import org.thoughtcrime.securesms.badges.models.Badge
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
 import org.thoughtcrime.securesms.conversation.colors.ChatColors
+import org.thoughtcrime.securesms.database.model.GroupRecord
 import org.thoughtcrime.securesms.database.model.ProfileAvatarFileDetails
 import org.thoughtcrime.securesms.database.model.RecipientRecord
 import org.thoughtcrime.securesms.groups.GroupId
@@ -37,16 +39,16 @@ object RecipientDatabaseTestUtils {
     e164: String? = null,
     email: String? = null,
     groupId: GroupId? = null,
-    groupType: RecipientDatabase.GroupType = RecipientDatabase.GroupType.NONE,
+    groupType: RecipientTable.GroupType = RecipientTable.GroupType.NONE,
     blocked: Boolean = false,
     muteUntil: Long = -1,
-    messageVibrateState: RecipientDatabase.VibrateState = RecipientDatabase.VibrateState.DEFAULT,
-    callVibrateState: RecipientDatabase.VibrateState = RecipientDatabase.VibrateState.DEFAULT,
+    messageVibrateState: RecipientTable.VibrateState = RecipientTable.VibrateState.DEFAULT,
+    callVibrateState: RecipientTable.VibrateState = RecipientTable.VibrateState.DEFAULT,
     messageRingtone: Uri = Uri.EMPTY,
     callRingtone: Uri = Uri.EMPTY,
     defaultSubscriptionId: Int = 0,
     expireMessages: Int = 0,
-    registered: RecipientDatabase.RegisteredState = RecipientDatabase.RegisteredState.REGISTERED,
+    registered: RecipientTable.RegisteredState = RecipientTable.RegisteredState.REGISTERED,
     profileKey: ByteArray = Random.nextBytes(32),
     expiringProfileKeyCredential: ExpiringProfileKeyCredential? = null,
     systemProfileName: ProfileName = ProfileName.EMPTY,
@@ -60,12 +62,12 @@ object RecipientDatabaseTestUtils {
     profileSharing: Boolean = false,
     lastProfileFetch: Long = 0L,
     notificationChannel: String? = null,
-    unidentifiedAccessMode: RecipientDatabase.UnidentifiedAccessMode = RecipientDatabase.UnidentifiedAccessMode.UNKNOWN,
+    unidentifiedAccessMode: RecipientTable.UnidentifiedAccessMode = RecipientTable.UnidentifiedAccessMode.UNKNOWN,
     forceSmsSelection: Boolean = false,
     capabilities: Long = 0L,
-    insightBannerTier: RecipientDatabase.InsightsBannerTier = RecipientDatabase.InsightsBannerTier.NO_TIER,
+    insightBannerTier: RecipientTable.InsightsBannerTier = RecipientTable.InsightsBannerTier.NO_TIER,
     storageId: ByteArray? = null,
-    mentionSetting: RecipientDatabase.MentionSetting = RecipientDatabase.MentionSetting.ALWAYS_NOTIFY,
+    mentionSetting: RecipientTable.MentionSetting = RecipientTable.MentionSetting.ALWAYS_NOTIFY,
     wallpaper: ChatWallpaper? = null,
     chatColors: ChatColors? = null,
     avatarColor: AvatarColor = AvatarColor.A100,
@@ -75,15 +77,18 @@ object RecipientDatabaseTestUtils {
       null,
       null,
       null,
-      IdentityDatabase.VerifiedStatus.DEFAULT,
+      IdentityTable.VerifiedStatus.DEFAULT,
       false,
       false,
-      0
+      0,
+      null
     ),
     extras: Recipient.Extras? = null,
     hasGroupsInCommon: Boolean = false,
     badges: List<Badge> = emptyList(),
-    isReleaseChannel: Boolean = false
+    isReleaseChannel: Boolean = false,
+    isActive: Boolean = true,
+    groupRecord: GroupRecord? = null
   ): Recipient = Recipient(
     recipientId,
     RecipientDetails(
@@ -129,13 +134,14 @@ object RecipientDatabaseTestUtils {
         forceSmsSelection,
         RecipientRecord.Capabilities(
           capabilities,
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.GROUPS_V1_MIGRATION, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.SENDER_KEY, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.ANNOUNCEMENT_GROUPS, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.CHANGE_NUMBER, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.STORIES, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.GIFT_BADGES, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
-          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientDatabase.Capabilities.PNP, RecipientDatabase.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.GROUPS_V1_MIGRATION, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.SENDER_KEY, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.ANNOUNCEMENT_GROUPS, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.CHANGE_NUMBER, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.STORIES, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.GIFT_BADGES, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.PNP, RecipientTable.Capabilities.BIT_LENGTH).toInt()),
+          Recipient.Capability.deserialize(Bitmask.read(capabilities, RecipientTable.Capabilities.PAYMENT_ACTIVATION, RecipientTable.Capabilities.BIT_LENGTH).toInt())
         ),
         insightBannerTier,
         storageId,
@@ -150,10 +156,14 @@ object RecipientDatabaseTestUtils {
         hasGroupsInCommon,
         badges,
         needsPniSignature = false,
-        isHidden = false
+        isHidden = false,
+        null
       ),
       participants,
-      isReleaseChannel
+      isReleaseChannel,
+      isActive,
+      null,
+      groupRecord.toOptional()
     ),
     resolved
   )

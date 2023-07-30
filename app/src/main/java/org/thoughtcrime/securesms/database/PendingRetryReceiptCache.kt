@@ -6,7 +6,7 @@ import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.FeatureFlags
 
 /**
- * A write-through cache for [PendingRetryReceiptDatabase].
+ * A write-through cache for [PendingRetryReceiptTable].
  *
  * We have to read from this cache every time we process an incoming message. As a result, it's a very performance-sensitive operation.
  *
@@ -14,7 +14,7 @@ import org.thoughtcrime.securesms.util.FeatureFlags
  * future reads can happen in memory.
  */
 class PendingRetryReceiptCache @VisibleForTesting constructor(
-  private val database: PendingRetryReceiptDatabase = SignalDatabase.pendingRetryReceipts
+  private val database: PendingRetryReceiptTable = SignalDatabase.pendingRetryReceipts
 ) {
 
   private val pendingRetries: MutableMap<RemoteMessageId, PendingRetryReceiptModel> = HashMap()
@@ -23,10 +23,15 @@ class PendingRetryReceiptCache @VisibleForTesting constructor(
   fun insert(author: RecipientId, authorDevice: Int, sentTimestamp: Long, receivedTimestamp: Long, threadId: Long) {
     if (!FeatureFlags.retryReceipts()) return
     ensurePopulated()
-
+    val model: PendingRetryReceiptModel = database.insert(author, authorDevice, sentTimestamp, receivedTimestamp, threadId)
     synchronized(pendingRetries) {
-      val model: PendingRetryReceiptModel = database.insert(author, authorDevice, sentTimestamp, receivedTimestamp, threadId)
-      pendingRetries[RemoteMessageId(author, sentTimestamp)] = model
+      val key = RemoteMessageId(author, sentTimestamp)
+      val existing: PendingRetryReceiptModel? = pendingRetries[key]
+
+      // We rely on db unique constraint and auto-incrementing ids for conflict resolution here.
+      if (existing == null || existing.id < model.id) {
+        pendingRetries[key] = model
+      }
     }
   }
 
@@ -54,8 +59,8 @@ class PendingRetryReceiptCache @VisibleForTesting constructor(
 
     synchronized(pendingRetries) {
       pendingRetries.remove(RemoteMessageId(model.author, model.sentTimestamp))
-      database.delete(model)
     }
+    database.delete(model)
   }
 
   fun clear() {

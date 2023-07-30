@@ -40,7 +40,7 @@ class VoiceNoteNotificationManager {
   {
     this.context        = context;
     controller          = new MediaControllerCompat(context, token);
-    notificationManager = new PlayerNotificationManager.Builder(context, NOW_PLAYING_NOTIFICATION_ID, NotificationChannels.VOICE_NOTES)
+    notificationManager = new PlayerNotificationManager.Builder(context, NOW_PLAYING_NOTIFICATION_ID, NotificationChannels.getInstance().VOICE_NOTES)
                                                        .setChannelNameResourceId(R.string.NotificationChannel_voice_notes)
                                                        .setMediaDescriptionAdapter(new DescriptionAdapter())
                                                        .setNotificationListener(listener)
@@ -99,7 +99,7 @@ class VoiceNoteNotificationManager {
 
       notificationManager.setColor(color);
 
-      Intent conversationActivity = ConversationIntents.createBuilder(context, recipientId, threadId)
+      Intent conversationActivity = ConversationIntents.createBuilderSync(context, recipientId, threadId)
                                                        .withStartingPosition(startingPosition)
                                                        .build();
 

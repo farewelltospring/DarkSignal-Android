@@ -1,6 +1,5 @@
 package org.thoughtcrime.securesms.payments.preferences;
 
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,19 +25,25 @@ import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.LoggingFragment;
 import org.thoughtcrime.securesms.PaymentPreferencesDirections;
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.components.reminder.EnclaveFailureReminder;
+import org.thoughtcrime.securesms.components.reminder.ReminderView;
 import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity;
 import org.thoughtcrime.securesms.help.HelpFragment;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
-import org.thoughtcrime.securesms.lock.v2.CreateKbsPinActivity;
+import org.thoughtcrime.securesms.lock.v2.CreateSvrPinActivity;
 import org.thoughtcrime.securesms.payments.FiatMoneyUtil;
 import org.thoughtcrime.securesms.payments.MoneyView;
 import org.thoughtcrime.securesms.payments.backup.RecoveryPhraseStates;
 import org.thoughtcrime.securesms.payments.backup.confirm.PaymentsRecoveryPhraseConfirmFragment;
 import org.thoughtcrime.securesms.payments.preferences.model.InfoCard;
 import org.thoughtcrime.securesms.payments.preferences.model.PaymentItem;
+import org.thoughtcrime.securesms.registration.RegistrationNavigationActivity;
 import org.thoughtcrime.securesms.util.CommunicationActions;
+import org.thoughtcrime.securesms.util.PlayStoreUtil;
 import org.thoughtcrime.securesms.util.SpanUtil;
+import org.thoughtcrime.securesms.util.ViewUtil;
 import org.thoughtcrime.securesms.util.navigation.SafeNavigation;
+import org.thoughtcrime.securesms.util.views.Stub;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,8 +54,6 @@ public class PaymentsHomeFragment extends LoggingFragment {
   private static final String TAG = Log.tag(PaymentsHomeFragment.class);
 
   private PaymentsHomeViewModel viewModel;
-
-  private final OnBackPressed onBackPressed = new OnBackPressed();
 
   public PaymentsHomeFragment() {
     super(R.layout.payments_home_fragment);
@@ -95,6 +98,7 @@ public class PaymentsHomeFragment extends LoggingFragment {
     View                sendMoney        = view.findViewById(R.id.button_end_frame);
     View                refresh          = view.findViewById(R.id.payments_home_fragment_header_refresh);
     LottieAnimationView refreshAnimation = view.findViewById(R.id.payments_home_fragment_header_refresh_animation);
+    Stub<ReminderView>  reminderView     = ViewUtil.findStubById(view, R.id.reminder);
 
     toolbar.setNavigationOnClickListener(v -> {
       viewModel.markAllPaymentsSeen();
@@ -104,14 +108,18 @@ public class PaymentsHomeFragment extends LoggingFragment {
     toolbar.setOnMenuItemClickListener(this::onMenuItemSelected);
 
     addMoney.setOnClickListener(v -> {
-      if (SignalStore.paymentsValues().getPaymentsAvailability().isSendAllowed()) {
+      if (viewModel.isEnclaveFailurePresent()) {
+        showUpdateIsRequiredDialog();
+      } else if (SignalStore.paymentsValues().getPaymentsAvailability().isSendAllowed()) {
         SafeNavigation.safeNavigate(Navigation.findNavController(v), PaymentsHomeFragmentDirections.actionPaymentsHomeToPaymentsAddMoney());
       } else {
         showPaymentsDisabledDialog();
       }
     });
     sendMoney.setOnClickListener(v -> {
-      if (SignalStore.paymentsValues().getPaymentsAvailability().isSendAllowed()) {
+      if (viewModel.isEnclaveFailurePresent()) {
+        showUpdateIsRequiredDialog();
+      } else if (SignalStore.paymentsValues().getPaymentsAvailability().isSendAllowed()) {
         SafeNavigation.safeNavigate(Navigation.findNavController(v), PaymentsHomeFragmentDirections.actionPaymentsHomeToPaymentRecipientSelectionFragment());
       } else {
         showPaymentsDisabledDialog();
@@ -246,7 +254,23 @@ public class PaymentsHomeFragment extends LoggingFragment {
       }
     });
 
-    requireActivity().getOnBackPressedDispatcher().addCallback(onBackPressed);
+    viewModel.getEnclaveFailure().observe(getViewLifecycleOwner(), failure -> {
+      if (failure) {
+        showUpdateIsRequiredDialog();
+        reminderView.get().showReminder(new EnclaveFailureReminder(requireContext()));
+        reminderView.get().setOnActionClickListener(actionId -> {
+          if (actionId == R.id.reminder_action_update_now) {
+            PlayStoreUtil.openPlayStoreOrOurApkDownloadPage(requireContext());
+          } else if (actionId == R.id.reminder_action_re_register) {
+            startActivity(RegistrationNavigationActivity.newIntentForReRegistration(requireContext()));
+          }
+        });
+      } else {
+        reminderView.get().requestDismiss();
+      }
+    });
+
+    requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressed());
   }
 
   @Override
@@ -255,15 +279,23 @@ public class PaymentsHomeFragment extends LoggingFragment {
     viewModel.checkPaymentActivationState();
   }
 
-  @Override
-  public void onDestroyView() {
-    super.onDestroyView();
-    onBackPressed.setEnabled(false);
+  private void showUpdateIsRequiredDialog() {
+    new MaterialAlertDialogBuilder(requireContext())
+        .setTitle(getString(R.string.PaymentsHomeFragment__update_required))
+        .setMessage(getString(R.string.PaymentsHomeFragment__an_update_is_required))
+        .setPositiveButton(R.string.PaymentsHomeFragment__update_now, (dialog, which) -> { PlayStoreUtil.openPlayStoreOrOurApkDownloadPage(requireContext()); })
+        .setNegativeButton(R.string.PaymentsHomeFragment__cancel, (dialog, which) -> {})
+        .setCancelable(false)
+        .show();
   }
 
   private boolean onMenuItemSelected(@NonNull MenuItem item) {
     if (item.getItemId() == R.id.payments_home_fragment_menu_transfer_to_exchange) {
-      SafeNavigation.safeNavigate(NavHostFragment.findNavController(this), R.id.action_paymentsHome_to_paymentsTransfer);
+      if (viewModel.isEnclaveFailurePresent()) {
+        showUpdateIsRequiredDialog();
+      } else {
+        SafeNavigation.safeNavigate(NavHostFragment.findNavController(this), R.id.action_paymentsHome_to_paymentsTransfer);
+      }
       return true;
     } else if (item.getItemId() == R.id.payments_home_fragment_menu_set_currency) {
       SafeNavigation.safeNavigate(NavHostFragment.findNavController(this), R.id.action_paymentsHome_to_setCurrency);
@@ -286,7 +318,7 @@ public class PaymentsHomeFragment extends LoggingFragment {
   }
 
   private void showPaymentsDisabledDialog() {
-    new AlertDialog.Builder(requireActivity())
+    new MaterialAlertDialogBuilder(requireActivity())
                    .setMessage(R.string.PaymentsHomeFragment__payments_not_available)
                    .setPositiveButton(android.R.string.ok, null)
                    .show();
@@ -336,7 +368,7 @@ public class PaymentsHomeFragment extends LoggingFragment {
 
     @Override
     public void onUpdatePin() {
-      startActivityForResult(CreateKbsPinActivity.getIntentForPinChangeFromSettings(requireContext()), CreateKbsPinActivity.REQUEST_NEW_PIN);
+      startActivityForResult(CreateSvrPinActivity.getIntentForPinChangeFromSettings(requireContext()), CreateSvrPinActivity.REQUEST_NEW_PIN);
     }
 
     @Override

@@ -64,7 +64,7 @@ public final class GroupsV2Operations {
   public static final UUID UNKNOWN_UUID = UuidUtil.UNKNOWN_UUID;
 
   /** Highest change epoch this class knows now to decrypt */
-  public static final int HIGHEST_KNOWN_EPOCH = 4;
+  public static final int HIGHEST_KNOWN_EPOCH = 5;
 
   private final ServerPublicParams        serverPublicParams;
   private final ClientZkProfileOperations clientZkProfileOperations;
@@ -958,6 +958,7 @@ public final class GroupsV2Operations {
       try {
         signature = new NotarySignature(groupChange.getServerSignature().toByteArray());
       } catch (InvalidInputException e) {
+        Log.w(TAG, "Invalid input while verifying group change", e);
         throw new VerificationFailedException();
       }
 

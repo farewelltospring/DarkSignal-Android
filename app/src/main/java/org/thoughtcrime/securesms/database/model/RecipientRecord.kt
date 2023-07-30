@@ -6,24 +6,25 @@ import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential
 import org.thoughtcrime.securesms.badges.models.Badge
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
 import org.thoughtcrime.securesms.conversation.colors.ChatColors
-import org.thoughtcrime.securesms.database.IdentityDatabase.VerifiedStatus
-import org.thoughtcrime.securesms.database.RecipientDatabase
-import org.thoughtcrime.securesms.database.RecipientDatabase.InsightsBannerTier
-import org.thoughtcrime.securesms.database.RecipientDatabase.MentionSetting
-import org.thoughtcrime.securesms.database.RecipientDatabase.RegisteredState
-import org.thoughtcrime.securesms.database.RecipientDatabase.UnidentifiedAccessMode
-import org.thoughtcrime.securesms.database.RecipientDatabase.VibrateState
+import org.thoughtcrime.securesms.database.IdentityTable.VerifiedStatus
+import org.thoughtcrime.securesms.database.RecipientTable
+import org.thoughtcrime.securesms.database.RecipientTable.InsightsBannerTier
+import org.thoughtcrime.securesms.database.RecipientTable.MentionSetting
+import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState
+import org.thoughtcrime.securesms.database.RecipientTable.UnidentifiedAccessMode
+import org.thoughtcrime.securesms.database.RecipientTable.VibrateState
 import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.profiles.ProfileName
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
+import org.thoughtcrime.securesms.service.webrtc.links.CallLinkRoomId
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
 import org.whispersystems.signalservice.api.push.PNI
 import org.whispersystems.signalservice.api.push.ServiceId
 import java.util.Optional
 
 /**
- * Database model for [RecipientDatabase].
+ * Database model for [RecipientTable].
  */
 data class RecipientRecord(
   val id: RecipientId,
@@ -34,7 +35,7 @@ data class RecipientRecord(
   val email: String?,
   val groupId: GroupId?,
   val distributionListId: DistributionListId?,
-  val groupType: RecipientDatabase.GroupType,
+  val groupType: RecipientTable.GroupType,
   val isBlocked: Boolean,
   val muteUntil: Long,
   val messageVibrateState: VibrateState,
@@ -79,7 +80,8 @@ data class RecipientRecord(
   val badges: List<Badge>,
   @get:JvmName("needsPniSignature")
   val needsPniSignature: Boolean,
-  val isHidden: Boolean
+  val isHidden: Boolean,
+  val callLinkRoomId: CallLinkRoomId?
 ) {
 
   fun getDefaultSubscriptionId(): Optional<Int> {
@@ -113,7 +115,8 @@ data class RecipientRecord(
     val identityStatus: VerifiedStatus,
     val isArchived: Boolean,
     val isForcedUnread: Boolean,
-    val unregisteredTimestamp: Long
+    val unregisteredTimestamp: Long,
+    val systemNickname: String?
   )
 
   data class Capabilities(
@@ -125,11 +128,13 @@ data class RecipientRecord(
     val storiesCapability: Recipient.Capability,
     val giftBadgesCapability: Recipient.Capability,
     val pnpCapability: Recipient.Capability,
+    val paymentActivation: Recipient.Capability
   ) {
     companion object {
       @JvmField
       val UNKNOWN = Capabilities(
         0,
+        Recipient.Capability.UNKNOWN,
         Recipient.Capability.UNKNOWN,
         Recipient.Capability.UNKNOWN,
         Recipient.Capability.UNKNOWN,

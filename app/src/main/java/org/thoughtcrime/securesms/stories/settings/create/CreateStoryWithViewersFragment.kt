@@ -7,6 +7,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.ViewBinderDelegate
 import org.thoughtcrime.securesms.components.settings.DSLConfiguration
@@ -43,6 +44,7 @@ class CreateStoryWithViewersFragment : DSLSettingsFragment(
   )
 
   private val binding by ViewBinderDelegate(StoriesCreateWithRecipientsFragmentBinding::bind)
+  private val disposables = LifecycleDisposable()
 
   private val recipientIds: Array<RecipientId>
     get() = CreateStoryWithViewersFragmentArgs.fromBundle(requireArguments()).recipients
@@ -56,8 +58,9 @@ class CreateStoryWithViewersFragment : DSLSettingsFragment(
       viewModel.setLabel(it)
     }
 
+    disposables.bindTo(viewLifecycleOwner)
     adapter.submitList(getConfiguration().toMappingModelList())
-    viewModel.state.observe(viewLifecycleOwner) { state ->
+    disposables += viewModel.state.subscribe { state ->
 
       val nameModel = CreateStoryNameFieldItem.Model(
         body = state.label,
@@ -73,7 +76,13 @@ class CreateStoryWithViewersFragment : DSLSettingsFragment(
       }
     }
 
-    Material3OnScrollHelper(requireContext(), { requireListener<Callback>().setStatusBarColor(it) }, listOf(binding.toolbar)).attach(binding.appBarLayout)
+    Material3OnScrollHelper(
+      context = requireContext(),
+      setStatusBarColor = { requireListener<Callback>().setStatusBarColor(it) },
+      getStatusBarColor = { requireListener<Callback>().getStatusBarColor() },
+      views = listOf(binding.toolbar),
+      lifecycleOwner = viewLifecycleOwner
+    ).attach(binding.appBarLayout)
     ViewUtil.focusAndShowKeyboard(binding.nameField.editText)
   }
 
@@ -132,6 +141,7 @@ class CreateStoryWithViewersFragment : DSLSettingsFragment(
 
   interface Callback {
     fun setStatusBarColor(@ColorInt color: Int)
+    fun getStatusBarColor(): Int
     fun onDone(recipientId: RecipientId)
   }
 }
