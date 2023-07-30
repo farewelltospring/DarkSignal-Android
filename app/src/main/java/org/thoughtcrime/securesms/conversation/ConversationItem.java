@@ -399,7 +399,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     setGroupMessageStatus(messageRecord, author.get());
     setGroupAuthorColor(messageRecord, hasWallpaper, colorizer);
     setAuthor(messageRecord, previousMessageRecord, nextMessageRecord, groupThread, hasWallpaper);
-    setQuote(messageRecord, previousMessageRecord, nextMessageRecord, groupThread, messageRecord.getToRecipient().getChatColors());
+    setQuote(messageRecord, previousMessageRecord, nextMessageRecord, groupThread);
     setMessageSpacing(context, messageRecord, previousMessageRecord, nextMessageRecord, groupThread);
     setReactions(messageRecord);
     setFooter(messageRecord, nextMessageRecord, locale, groupThread, hasWallpaper);
@@ -1538,7 +1538,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     }
   }
 
-  private void setQuote(@NonNull MessageRecord current, @NonNull Optional<MessageRecord> previous, @NonNull Optional<MessageRecord> next, boolean isGroupThread, ChatColors chatColors) {
+  private void setQuote(@NonNull MessageRecord current, @NonNull Optional<MessageRecord> previous, @NonNull Optional<MessageRecord> next, boolean isGroupThread) {
     boolean startOfCluster = isStartOfMessageCluster(current, previous, isGroupThread);
     if (hasQuote(messageRecord)) {
       if (quoteView == null) {
@@ -1561,7 +1561,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
                          quote.getAttachment(),
                          isStoryReaction(current) ? current.getBody() : null,
                          quote.getQuoteType(),
-                         chatColors);
+                         (current.isOutgoing() ? current.getToRecipient() : current.getFromRecipient()).getChatColors());
 
       quoteView.setWallpaperEnabled(hasWallpaper);
       quoteView.setVisibility(View.VISIBLE);

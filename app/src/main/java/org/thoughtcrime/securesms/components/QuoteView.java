@@ -541,7 +541,7 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
       this.setBackgroundColor(0xffffffff);
       if (getAuthor().isSelf()) {
         if (chatColors.isGradient()) {
-          this.getBackground().setColorFilter(getAuthor().getChatColors().getChatBubbleColorFilter());
+          this.getBackground().setColorFilter(chatColors.getChatBubbleColorFilter());
         } else {
           this.setBackgroundColor(chatColors.asSingleColor());
         }
