@@ -171,7 +171,6 @@ public class QuoteView extends FrameLayout implements RecipientForeverObserver {
 
     setMessageType(messageType);
 
-    bodyView.enableSpoilerFiltering();
     dismissView.setOnClickListener(view -> setVisibility(GONE));
   }
 
