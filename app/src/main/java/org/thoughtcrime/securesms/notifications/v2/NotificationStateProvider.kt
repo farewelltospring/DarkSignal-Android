@@ -3,11 +3,11 @@ package org.thoughtcrime.securesms.notifications.v2
 import androidx.annotation.WorkerThread
 import org.signal.core.util.CursorUtil
 import org.signal.core.util.logging.Log
-import org.thoughtcrime.securesms.database.MmsSmsColumns
-import org.thoughtcrime.securesms.database.MmsSmsTable
+import org.thoughtcrime.securesms.database.MessageTable
 import org.thoughtcrime.securesms.database.NoSuchMessageException
 import org.thoughtcrime.securesms.database.RecipientTable
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord
 import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.MessageRecord
 import org.thoughtcrime.securesms.database.model.ReactionRecord
@@ -26,46 +26,53 @@ object NotificationStateProvider {
   fun constructNotificationState(stickyThreads: Map<ConversationId, DefaultMessageNotifier.StickyThread>, notificationProfile: NotificationProfile?): NotificationState {
     val messages: MutableList<NotificationMessage> = mutableListOf()
 
-    SignalDatabase.mmsSms.getMessagesForNotificationState(stickyThreads.values).use { unreadMessages ->
+    SignalDatabase.messages.getMessagesForNotificationState(stickyThreads.values).use { unreadMessages ->
       if (unreadMessages.count == 0) {
         return NotificationState.EMPTY
       }
 
-      MmsSmsTable.readerFor(unreadMessages).use { reader ->
-        var record: MessageRecord? = reader.next
+      MessageTable.mmsReaderFor(unreadMessages).use { reader ->
+        var record: MessageRecord? = reader.getNext()
         while (record != null) {
           val threadRecipient: Recipient? = SignalDatabase.threads.getRecipientForThreadId(record.threadId)
           if (threadRecipient != null) {
-            val hasUnreadReactions = CursorUtil.requireInt(unreadMessages, MmsSmsColumns.REACTIONS_UNREAD) == 1
+            val hasUnreadReactions = CursorUtil.requireInt(unreadMessages, MessageTable.REACTIONS_UNREAD) == 1
             val conversationId = ConversationId.fromMessageRecord(record)
 
             val parentRecord = conversationId.groupStoryId?.let {
               try {
-                SignalDatabase.mms.getMessageRecord(it)
+                SignalDatabase.messages.getMessageRecord(it)
               } catch (e: NoSuchMessageException) {
                 null
               }
             }
 
             val hasSelfRepliedToGroupStory = conversationId.groupStoryId?.let {
-              SignalDatabase.mms.hasGroupReplyOrReactionInStory(it)
+              SignalDatabase.messages.hasGroupReplyOrReactionInStory(it)
+            }
+
+            if (record is MediaMmsMessageRecord) {
+              val attachments = SignalDatabase.attachments.getAttachmentsForMessage(record.id)
+              if (attachments.isNotEmpty()) {
+                record = record.withAttachments(attachments)
+              }
             }
 
             messages += NotificationMessage(
               messageRecord = record,
-              reactions = if (hasUnreadReactions) SignalDatabase.reactions.getReactions(MessageId(record.id, record.isMms)) else emptyList(),
+              reactions = if (hasUnreadReactions) SignalDatabase.reactions.getReactions(MessageId(record.id)) else emptyList(),
               threadRecipient = threadRecipient,
               thread = conversationId,
               stickyThread = stickyThreads.containsKey(conversationId),
-              isUnreadMessage = CursorUtil.requireInt(unreadMessages, MmsSmsColumns.READ) == 0,
+              isUnreadMessage = CursorUtil.requireInt(unreadMessages, MessageTable.READ) == 0,
               hasUnreadReactions = hasUnreadReactions,
-              lastReactionRead = CursorUtil.requireLong(unreadMessages, MmsSmsColumns.REACTIONS_LAST_SEEN),
+              lastReactionRead = CursorUtil.requireLong(unreadMessages, MessageTable.REACTIONS_LAST_SEEN),
               isParentStorySentBySelf = parentRecord?.isOutgoing ?: false,
               hasSelfRepliedToStory = hasSelfRepliedToGroupStory ?: false
             )
           }
           try {
-            record = reader.next
+            record = reader.getNext()
           } catch (e: IllegalStateException) {
             // XXX Weird SQLCipher bug that's being investigated
             record = null
@@ -104,8 +111,8 @@ object NotificationStateProvider {
         }
 
         notificationItems.sort()
-        if (notificationItems.isNotEmpty() && stickyThreads.containsKey(thread) && !notificationItems.last().individualRecipient.isSelf) {
-          val indexOfOldestNonSelfMessage: Int = notificationItems.indexOfLast { it.individualRecipient.isSelf } + 1
+        if (notificationItems.isNotEmpty() && stickyThreads.containsKey(thread) && !notificationItems.last().authorRecipient.isSelf) {
+          val indexOfOldestNonSelfMessage: Int = notificationItems.indexOfLast { it.authorRecipient.isSelf } + 1
           notificationItems = notificationItems.slice(indexOfOldestNonSelfMessage..notificationItems.lastIndex).toMutableList()
         }
 

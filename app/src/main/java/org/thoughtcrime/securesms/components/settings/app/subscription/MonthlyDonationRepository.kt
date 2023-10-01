@@ -11,6 +11,7 @@ import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
 import org.thoughtcrime.securesms.jobmanager.JobTracker
 import org.thoughtcrime.securesms.jobs.MultiDeviceSubscriptionSyncRequestJob
+import org.thoughtcrime.securesms.jobs.SubscriptionKeepAliveJob
 import org.thoughtcrime.securesms.jobs.SubscriptionReceiptRequestResponseJob
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.Recipient
@@ -43,6 +44,11 @@ class MonthlyDonationRepository(private val donationsService: DonationsService) 
       Single.fromCallable { donationsService.getSubscription(localSubscription.subscriberId) }
         .subscribeOn(Schedulers.io())
         .flatMap(ServiceResponse<ActiveSubscription>::flattenResult)
+        .doOnSuccess { activeSubscription ->
+          if (activeSubscription.isActive && activeSubscription.activeSubscription.endOfCurrentPeriod > SignalStore.donationsValues().getLastEndOfPeriod()) {
+            SubscriptionKeepAliveJob.enqueueAndTrackTime(System.currentTimeMillis())
+          }
+        }
     } else {
       Single.just(ActiveSubscription.EMPTY)
     }
@@ -73,9 +79,29 @@ class MonthlyDonationRepository(private val donationsService: DonationsService) 
     }.subscribeOn(Schedulers.io())
   }
 
-  fun ensureSubscriberId(): Completable {
-    Log.d(TAG, "Ensuring SubscriberId exists on Signal service...", true)
-    val subscriberId = SignalStore.donationsValues().getSubscriber()?.subscriberId ?: SubscriberId.generate()
+  /**
+   * Since PayPal and Stripe can't interoperate, we need to be able to rotate the subscriber ID
+   * in case of failures.
+   */
+  fun rotateSubscriberId(): Completable {
+    Log.d(TAG, "Rotating SubscriberId due to alternate payment processor...", true)
+    val cancelCompletable: Completable = if (SignalStore.donationsValues().getSubscriber() != null) {
+      cancelActiveSubscription().andThen(updateLocalSubscriptionStateAndScheduleDataSync())
+    } else {
+      Completable.complete()
+    }
+
+    return cancelCompletable.andThen(ensureSubscriberId(isRotation = true))
+  }
+
+  fun ensureSubscriberId(isRotation: Boolean = false): Completable {
+    Log.d(TAG, "Ensuring SubscriberId exists on Signal service {isRotation?$isRotation}...", true)
+    val subscriberId: SubscriberId = if (isRotation) {
+      SubscriberId.generate()
+    } else {
+      SignalStore.donationsValues().getSubscriber()?.subscriberId ?: SubscriberId.generate()
+    }
+
     return Single
       .fromCallable {
         donationsService.putSubscription(subscriberId)
@@ -214,6 +240,20 @@ class MonthlyDonationRepository(private val donationsService: DonationsService) 
       LevelUpdate.updateProcessingState(true)
       Log.d(TAG, "Reusing operation for $subscriptionLevel")
       levelUpdateOperation
+    }
+  }
+
+  /**
+   * Update local state information and schedule a storage sync for the change. This method
+   * assumes you've already properly called the DELETE method for the stored ID on the server.
+   */
+  private fun updateLocalSubscriptionStateAndScheduleDataSync(): Completable {
+    return Completable.fromAction {
+      Log.d(TAG, "Marking subscription cancelled...", true)
+      SignalStore.donationsValues().updateLocalStateForManualCancellation()
+      MultiDeviceSubscriptionSyncRequestJob.enqueue()
+      SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
+      StorageSyncHelper.scheduleSyncForDataChange()
     }
   }
 }

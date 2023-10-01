@@ -17,7 +17,7 @@ import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.groups.GroupId;
-import org.thoughtcrime.securesms.jobmanager.Data;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
 import org.thoughtcrime.securesms.messages.GroupSendUtil;
@@ -27,7 +27,6 @@ import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.recipients.RecipientUtil;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
 import org.thoughtcrime.securesms.util.GroupUtil;
-import org.thoughtcrime.securesms.util.MessageRecordUtil;
 import org.thoughtcrime.securesms.util.Util;
 import org.whispersystems.signalservice.api.crypto.ContentHint;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
@@ -38,6 +37,7 @@ import org.whispersystems.signalservice.api.push.exceptions.ServerRejectedExcept
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class RemoteDeleteSendJob extends BaseJob {
 
@@ -46,22 +46,19 @@ public class RemoteDeleteSendJob extends BaseJob {
   private static final String TAG = Log.tag(RemoteDeleteSendJob.class);
 
   private static final String KEY_MESSAGE_ID              = "message_id";
-  private static final String KEY_IS_MMS                  = "is_mms";
   private static final String KEY_RECIPIENTS              = "recipients";
   private static final String KEY_INITIAL_RECIPIENT_COUNT = "initial_recipient_count";
 
   private final long              messageId;
-  private final boolean           isMms;
   private final List<RecipientId> recipients;
   private final int               initialRecipientCount;
 
 
   @WorkerThread
-  public static @NonNull JobManager.Chain create(long messageId, boolean isMms)
+  public static @NonNull JobManager.Chain create(long messageId)
       throws NoSuchMessageException
   {
-    MessageRecord message = isMms ? SignalDatabase.mms().getMessageRecord(messageId)
-                                  : SignalDatabase.sms().getSmsMessage(messageId);
+    MessageRecord message = SignalDatabase.messages().getMessageRecord(messageId);
 
     Recipient conversationRecipient = SignalDatabase.threads().getRecipientForThreadId(message.getThreadId());
 
@@ -83,7 +80,6 @@ public class RemoteDeleteSendJob extends BaseJob {
     recipients.remove(Recipient.self().getId());
 
     RemoteDeleteSendJob sendJob = new RemoteDeleteSendJob(messageId,
-                                                          isMms,
                                                           recipients,
                                                           recipients.size(),
                                                           new Parameters.Builder()
@@ -102,7 +98,6 @@ public class RemoteDeleteSendJob extends BaseJob {
   }
 
   private RemoteDeleteSendJob(long messageId,
-                              boolean isMms,
                               @NonNull List<RecipientId> recipients,
                               int initialRecipientCount,
                               @NonNull Parameters parameters)
@@ -110,18 +105,16 @@ public class RemoteDeleteSendJob extends BaseJob {
     super(parameters);
 
     this.messageId             = messageId;
-    this.isMms                 = isMms;
     this.recipients            = recipients;
     this.initialRecipientCount = initialRecipientCount;
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder().putLong(KEY_MESSAGE_ID, messageId)
-                             .putBoolean(KEY_IS_MMS, isMms)
-                             .putString(KEY_RECIPIENTS, RecipientId.toSerializedList(recipients))
-                             .putInt(KEY_INITIAL_RECIPIENT_COUNT, initialRecipientCount)
-                             .build();
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder().putLong(KEY_MESSAGE_ID, messageId)
+                                    .putString(KEY_RECIPIENTS, RecipientId.toSerializedList(recipients))
+                                    .putInt(KEY_INITIAL_RECIPIENT_COUNT, initialRecipientCount)
+                                    .serialize();
   }
 
   @Override
@@ -135,18 +128,10 @@ public class RemoteDeleteSendJob extends BaseJob {
       throw new NotPushRegisteredException();
     }
 
-    MessageTable  db;
-    MessageRecord message;
+    MessageTable  db      = SignalDatabase.messages();
+    MessageRecord message = SignalDatabase.messages().getMessageRecord(messageId);
 
-    if (isMms) {
-      db      = SignalDatabase.mms();
-      message = SignalDatabase.mms().getMessageRecord(messageId);
-    } else {
-      db      = SignalDatabase.sms();
-      message = SignalDatabase.sms().getSmsMessage(messageId);
-    }
-
-    long       targetSentTimestamp  = message.getDateSent();
+    long      targetSentTimestamp   = message.getDateSent();
     Recipient conversationRecipient = SignalDatabase.threads().getRecipientForThreadId(message.getThreadId());
 
     if (conversationRecipient == null) {
@@ -167,12 +152,16 @@ public class RemoteDeleteSendJob extends BaseJob {
     List<RecipientId> skipped  = Stream.of(SetUtil.difference(possible, eligible)).map(Recipient::getId).toList();
 
     boolean            isForStory         = message.isMms() && (((MmsMessageRecord) message).getStoryType().isStory() || ((MmsMessageRecord) message).getParentStoryId() != null);
-    DistributionListId distributionListId = isForStory ? message.getRecipient().getDistributionListId().orElse(null) : null;
+    DistributionListId distributionListId = isForStory ? message.getToRecipient().getDistributionListId().orElse(null) : null;
 
     GroupSendJobHelper.SendResult sendResult = deliver(conversationRecipient, eligible, targetSentTimestamp, isForStory, distributionListId);
 
     for (Recipient completion : sendResult.completed) {
       recipients.remove(completion.getId());
+    }
+
+    for (RecipientId unregistered : sendResult.unregistered) {
+      SignalDatabase.recipients().markUnregistered(unregistered);
     }
 
     for (RecipientId skip : skipped) {
@@ -183,7 +172,7 @@ public class RemoteDeleteSendJob extends BaseJob {
 
     Log.i(TAG, "Completed now: " + sendResult.completed.size() + ", Skipped: " + totalSkips.size() + ", Remaining: " + recipients.size());
 
-    if (totalSkips.size() > 0 && isMms && message.getRecipient().isGroup()) {
+    if (totalSkips.size() > 0 && message.getToRecipient().isGroup()) {
       SignalDatabase.groupReceipts().setSkipped(totalSkips, messageId);
     }
 
@@ -230,10 +219,15 @@ public class RemoteDeleteSendJob extends BaseJob {
                                                                                    destinations,
                                                                                    false,
                                                                                    ContentHint.RESENDABLE,
-                                                                                   new MessageId(messageId, isMms),
+                                                                                   new MessageId(messageId),
                                                                                    dataMessage,
                                                                                    true,
-                                                                                   isForStory);
+                                                                                   isForStory,
+                                                                                   null);
+
+    if (conversationRecipient.isSelf()) {
+      ApplicationDependencies.getSignalServiceMessageSender().sendSyncMessage(dataMessage);
+    }
 
     return GroupSendJobHelper.getCompletedSends(destinations, results);
   }
@@ -241,13 +235,14 @@ public class RemoteDeleteSendJob extends BaseJob {
   public static class Factory implements Job.Factory<RemoteDeleteSendJob> {
 
     @Override
-    public @NonNull RemoteDeleteSendJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull RemoteDeleteSendJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       long              messageId             = data.getLong(KEY_MESSAGE_ID);
-      boolean           isMms                 = data.getBoolean(KEY_IS_MMS);
       List<RecipientId> recipients            = RecipientId.fromSerializedList(data.getString(KEY_RECIPIENTS));
       int               initialRecipientCount = data.getInt(KEY_INITIAL_RECIPIENT_COUNT);
 
-      return new RemoteDeleteSendJob(messageId, isMms, recipients, initialRecipientCount, parameters);
+      return new RemoteDeleteSendJob(messageId,  recipients, initialRecipientCount, parameters);
     }
   }
 }

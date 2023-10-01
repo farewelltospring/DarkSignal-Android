@@ -12,6 +12,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.MainActivity
 import org.thoughtcrime.securesms.R
@@ -36,7 +37,6 @@ import org.thoughtcrime.securesms.keyboard.emoji.EmojiKeyboardPageFragment
 import org.thoughtcrime.securesms.keyboard.emoji.search.EmojiSearchFragment
 import org.thoughtcrime.securesms.payments.FiatMoneyUtil
 import org.thoughtcrime.securesms.util.Debouncer
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingAdapter
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
 
@@ -45,7 +45,7 @@ import org.thoughtcrime.securesms.util.navigation.safeNavigate
  */
 class GiftFlowConfirmationFragment :
   DSLSettingsFragment(
-    titleId = R.string.GiftFlowConfirmationFragment__confirm_gift,
+    titleId = R.string.GiftFlowConfirmationFragment__confirm_donation,
     layoutId = R.layout.gift_flow_confirmation_fragment
   ),
   EmojiKeyboardPageFragment.Callback,
@@ -221,7 +221,7 @@ class GiftFlowConfirmationFragment :
       )
 
       textPref(
-        summary = DSLSettingsText.from(R.string.GiftFlowConfirmationFragment__your_gift_will_be_sent_in)
+        summary = DSLSettingsText.from(R.string.GiftFlowConfirmationFragment__the_recipient_will_be_notified)
       )
     }
   }
@@ -264,12 +264,14 @@ class GiftFlowConfirmationFragment :
 
   override fun onPaymentComplete(gatewayRequest: GatewayRequest) {
     val mainActivityIntent = MainActivity.clearTop(requireContext())
-    val conversationIntent = ConversationIntents
-      .createBuilder(requireContext(), viewModel.snapshot.recipient!!.id, -1L)
-      .withGiftBadge(viewModel.snapshot.giftBadge!!)
-      .build()
 
-    requireActivity().startActivities(arrayOf(mainActivityIntent, conversationIntent))
+    lifecycleDisposable += ConversationIntents
+      .createBuilder(requireContext(), viewModel.snapshot.recipient!!.id, -1L)
+      .subscribe { conversationIntent ->
+        requireActivity().startActivities(
+          arrayOf(mainActivityIntent, conversationIntent.withGiftBadge(viewModel.snapshot.giftBadge!!).build())
+        )
+      }
   }
 
   override fun onProcessorActionProcessed() = Unit

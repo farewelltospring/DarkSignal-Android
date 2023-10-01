@@ -4,10 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.FragmentManager
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.Player
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.signal.core.util.ThreadUtil
@@ -25,7 +25,7 @@ import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.mediasend.Media
 import org.thoughtcrime.securesms.mediasend.v2.stories.ChooseStoryTypeBottomSheet
 import org.thoughtcrime.securesms.mms.MediaConstraints
-import org.thoughtcrime.securesms.mms.OutgoingMediaMessage
+import org.thoughtcrime.securesms.mms.OutgoingMessage
 import org.thoughtcrime.securesms.mms.SentMediaQuality
 import org.thoughtcrime.securesms.mms.VideoSlide
 import org.thoughtcrime.securesms.recipients.Recipient
@@ -81,7 +81,7 @@ object Stories {
     }
   }
 
-  fun sendTextStories(messages: List<OutgoingMediaMessage>): Completable {
+  fun sendTextStories(messages: List<OutgoingMessage>): Completable {
     return Completable.create { emitter ->
       MessageSender.sendStories(ApplicationDependencies.getApplication(), messages, null, null)
       emitter.onComplete()
@@ -89,10 +89,12 @@ object Stories {
   }
 
   @JvmStatic
-  fun getRecipientsToSendTo(messageId: Long, sentTimestamp: Long, allowsReplies: Boolean): List<Recipient> {
+  fun getRecipientsToSendTo(messageId: Long, sentTimestamp: Long, allowsReplies: Boolean): SendData {
     val recipientIds: List<RecipientId> = SignalDatabase.storySends.getRecipientsToSendTo(messageId, sentTimestamp, allowsReplies)
+    val targets: List<Recipient> = RecipientUtil.getEligibleForSending(recipientIds.map(Recipient::resolved)).distinctBy { it.id }
+    val skipped: List<RecipientId> = (recipientIds.toSet() - targets.map { it.id }.toSet()).toList()
 
-    return RecipientUtil.getEligibleForSending(recipientIds.map(Recipient::resolved))
+    return SendData(targets, skipped)
   }
 
   @WorkerThread
@@ -116,7 +118,7 @@ object Stories {
     }
 
     Log.d(TAG, "Enqueuing downloads for up to $limit stories for $recipientId (force: $force)")
-    SignalDatabase.mms.getUnreadStories(recipientId, limit).use { reader ->
+    SignalDatabase.messages.getUnreadStories(recipientId, limit).use { reader ->
       reader.forEach {
         enqueueAttachmentsFromStoryForDownloadSync(it as MmsMessageRecord, false)
       }
@@ -398,4 +400,9 @@ object Stories {
       )
     }
   }
+
+  data class SendData(
+    val targets: List<Recipient>,
+    val skipped: List<RecipientId>
+  )
 }

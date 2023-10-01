@@ -8,6 +8,9 @@
 
     <color name="signal_inverse_primary">@color/core_black</color>
 
+    <color name="pulse_incoming_message">@color/transparent_black_10</color>
+    <color name="pulse_outgoing_message">@color/transparent_black_25</color>
+
     <color name="signal_background_primary">@color/signal_colorBackground</color>
     <color name="signal_background_secondary">@color/signal_colorSurface1</color>
     <color name="signal_background_tertiary">@color/core_grey_02</color>
@@ -47,6 +50,7 @@
     <color name="signal_divider_major">@color/core_grey_25</color>
 
     <color name="signal_alert_primary">@color/core_red_highlight</color>
+    <color name="signal_alert_primary_50">@color/core_red_highlight_50</color>
 
     <color name="signal_transparent">@color/transparent</color>
     <color name="signal_transparent_40">@color/transparent_white_40</color>
@@ -198,4 +202,5 @@
     <color name="message_request_bar_background_wallpaper">@color/signal_colorNeutralVariant</color>
     <color name="message_request_bar_denyForeground_wallpaper">@color/signal_colorError</color>
     <color name="message_request_bar_acceptForeground_wallpaper">@color/signal_colorNeutralInverse</color>
+
 </resources>

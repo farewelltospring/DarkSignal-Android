@@ -13,7 +13,6 @@ import org.thoughtcrime.securesms.conversation.ConversationMessage.ConversationM
 import org.thoughtcrime.securesms.database.DatabaseObserver;
 import org.thoughtcrime.securesms.database.GroupTable;
 import org.thoughtcrime.securesms.database.GroupReceiptTable;
-import org.thoughtcrime.securesms.database.MmsSmsTable;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.documents.IdentityKeyMismatch;
@@ -37,8 +36,8 @@ public final class MessageDetailsRepository {
 
   private final Context context = ApplicationDependencies.getApplication();
 
-  @NonNull LiveData<MessageRecord> getMessageRecord(String type, Long messageId) {
-    return new MessageRecordLiveData(new MessageId(messageId, type.equals(MmsSmsTable.MMS_TRANSPORT)));
+  @NonNull LiveData<MessageRecord> getMessageRecord(Long messageId) {
+    return new MessageRecordLiveData(new MessageId(messageId));
   }
 
   @NonNull LiveData<MessageDetails> getMessageDetails(@Nullable MessageRecord messageRecord) {
@@ -57,9 +56,7 @@ public final class MessageDetailsRepository {
     return Observable.<MessageDetails>create(emitter -> {
       DatabaseObserver.MessageObserver messageObserver = mId -> {
         try {
-          MessageRecord messageRecord = messageId.isMms() ? SignalDatabase.mms().getMessageRecord(messageId.getId())
-                                                          : SignalDatabase.sms().getMessageRecord(messageId.getId());
-
+          MessageRecord  messageRecord  = SignalDatabase.messages().getMessageRecord(messageId.getId());
           MessageDetails messageDetails = getRecipientDeliveryStatusesInternal(messageRecord);
 
           emitter.onNext(messageDetails);
@@ -79,19 +76,19 @@ public final class MessageDetailsRepository {
   private @NonNull MessageDetails getRecipientDeliveryStatusesInternal(@NonNull MessageRecord messageRecord) {
     List<RecipientDeliveryStatus> recipients = new LinkedList<>();
 
-    if (!messageRecord.getRecipient().isGroup() && !messageRecord.getRecipient().isDistributionList()) {
+    if (!messageRecord.getToRecipient().isGroup() && !messageRecord.getToRecipient().isDistributionList()) {
       recipients.add(new RecipientDeliveryStatus(messageRecord,
-                                                 messageRecord.getRecipient(),
+                                                 messageRecord.isOutgoing() ? messageRecord.getToRecipient() : messageRecord.getFromRecipient(),
                                                  getStatusFor(messageRecord),
                                                  messageRecord.isUnidentified(),
                                                  messageRecord.getReceiptTimestamp(),
-                                                 getNetworkFailure(messageRecord, messageRecord.getRecipient()),
-                                                 getKeyMismatchFailure(messageRecord, messageRecord.getRecipient())));
+                                                 getNetworkFailure(messageRecord, messageRecord.getToRecipient()),
+                                                 getKeyMismatchFailure(messageRecord, messageRecord.getToRecipient())));
     } else {
       List<GroupReceiptTable.GroupReceiptInfo> receiptInfoList = SignalDatabase.groupReceipts().getGroupReceiptInfo(messageRecord.getId());
 
-      if (receiptInfoList.isEmpty() && messageRecord.getRecipient().isGroup()) {
-        List<Recipient> group = SignalDatabase.groups().getGroupMembers(messageRecord.getRecipient().requireGroupId(), GroupTable.MemberSet.FULL_MEMBERS_EXCLUDING_SELF);
+      if (receiptInfoList.isEmpty() && messageRecord.getToRecipient().isGroup()) {
+        List<Recipient> group = SignalDatabase.groups().getGroupMembers(messageRecord.getToRecipient().requireGroupId(), GroupTable.MemberSet.FULL_MEMBERS_EXCLUDING_SELF);
 
         for (Recipient recipient : group) {
           recipients.add(new RecipientDeliveryStatus(messageRecord,
@@ -102,8 +99,8 @@ public final class MessageDetailsRepository {
                                                      getNetworkFailure(messageRecord, recipient),
                                                      getKeyMismatchFailure(messageRecord, recipient)));
         }
-      } else if (receiptInfoList.isEmpty() && messageRecord.getRecipient().isDistributionList()) {
-        DistributionId   distributionId = SignalDatabase.distributionLists().getDistributionId(messageRecord.getRecipient().requireDistributionListId());
+      } else if (receiptInfoList.isEmpty() && messageRecord.getToRecipient().isDistributionList()) {
+        DistributionId   distributionId = SignalDatabase.distributionLists().getDistributionId(messageRecord.getToRecipient().requireDistributionListId());
         Set<RecipientId> recipientIds   = SignalDatabase.storySends().getRecipientsForDistributionId(messageRecord.getId(), Objects.requireNonNull(distributionId));
         List<Recipient>  resolved       = Recipient.resolvedList(recipientIds);
 
@@ -134,7 +131,8 @@ public final class MessageDetailsRepository {
       }
     }
 
-    return new MessageDetails(ConversationMessageFactory.createWithUnresolvedData(context, messageRecord), recipients);
+    Recipient threadRecipient = Objects.requireNonNull(SignalDatabase.threads().getRecipientForThreadId(messageRecord.getThreadId()));
+    return new MessageDetails(ConversationMessageFactory.createWithUnresolvedData(context, messageRecord, threadRecipient), recipients);
   }
 
   private @Nullable NetworkFailure getNetworkFailure(MessageRecord messageRecord, Recipient recipient) {

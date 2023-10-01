@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.ViewBinderDelegate
 import org.thoughtcrime.securesms.components.voice.VoiceNoteMediaControllerOwner
@@ -12,7 +14,6 @@ import org.thoughtcrime.securesms.databinding.StoriesPostFragmentBinding
 import org.thoughtcrime.securesms.mediapreview.VideoControlsDelegate
 import org.thoughtcrime.securesms.stories.viewer.page.StoryDisplay
 import org.thoughtcrime.securesms.stories.viewer.page.StoryViewerPageViewModel
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 import org.thoughtcrime.securesms.util.fragments.requireListener
 import org.thoughtcrime.securesms.util.visible
 import org.thoughtcrime.securesms.video.VideoPlayer.PlayerCallback
@@ -21,6 +22,10 @@ import org.thoughtcrime.securesms.video.VideoPlayer.PlayerCallback
  * Renders a given StoryPost object as a viewable story.
  */
 class StoryPostFragment : Fragment(R.layout.stories_post_fragment) {
+
+  companion object {
+    private val TAG = Log.tag(StoryPostFragment::class.java)
+  }
 
   private val postViewModel: StoryPostViewModel by viewModels(factoryProducer = {
     StoryPostViewModel.Factory(StoryTextPostRepository())
@@ -57,6 +62,11 @@ class StoryPostFragment : Fragment(R.layout.stories_post_fragment) {
       }
 
     disposables += postViewModel.state.distinctUntilChanged().subscribe { state ->
+      if (context == null) {
+        Log.w(TAG, "Attempted state change while not attached to a context. Dropping.")
+        return@subscribe
+      }
+
       when (state) {
         is StoryPostState.None -> presentNone()
         is StoryPostState.TextPost -> presentTextPost(state)

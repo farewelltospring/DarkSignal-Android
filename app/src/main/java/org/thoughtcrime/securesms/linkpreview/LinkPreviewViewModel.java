@@ -50,14 +50,6 @@ public class LinkPreviewViewModel extends ViewModel {
     return linkPreviewSafeState;
   }
 
-  public boolean hasLinkPreview() {
-    return linkPreviewSafeState.getValue() != null && linkPreviewSafeState.getValue().getLinkPreview().isPresent();
-  }
-
-  public boolean hasLinkPreviewUi() {
-    return linkPreviewSafeState.getValue() != null && linkPreviewSafeState.getValue().hasContent();
-  }
-
   /**
    * Gets the current state for use in the UI, then resets local state to prepare for the next message send.
    */
@@ -75,10 +67,10 @@ public class LinkPreviewViewModel extends ViewModel {
     debouncer.clear();
     linkPreviewState.setValue(LinkPreviewState.forNoLinks());
 
-    if (currentState == null || !currentState.getLinkPreview().isPresent()) {
+    if (currentState == null || !currentState.linkPreview.isPresent()) {
       return Collections.emptyList();
     } else {
-      return Collections.singletonList(currentState.getLinkPreview().get());
+      return Collections.singletonList(currentState.linkPreview.get());
     }
   }
 
@@ -101,14 +93,14 @@ public class LinkPreviewViewModel extends ViewModel {
 
     if (currentState == null) {
       return Collections.emptyList();
-    } else if (currentState.getLinkPreview().isPresent()) {
-      return Collections.singletonList(currentState.getLinkPreview().get());
-    } else if (currentState.getActiveUrlForError() != null) {
-      String       topLevelDomain = LinkPreviewUtil.getTopLevelDomain(currentState.getActiveUrlForError());
+    } else if (currentState.linkPreview.isPresent()) {
+      return Collections.singletonList(currentState.linkPreview.get());
+    } else if (currentState.activeUrlForError != null) {
+      String       topLevelDomain = LinkPreviewUtil.getTopLevelDomain(currentState.activeUrlForError);
       AttachmentId attachmentId   = null;
 
-      return Collections.singletonList(new LinkPreview(currentState.getActiveUrlForError(),
-                                                       topLevelDomain != null ? topLevelDomain : currentState.getActiveUrlForError(),
+      return Collections.singletonList(new LinkPreview(currentState.activeUrlForError,
+                                                       topLevelDomain != null ? topLevelDomain : currentState.activeUrlForError,
                                                        null,
                                                        -1L,
                                                        attachmentId));
@@ -261,67 +253,6 @@ public class LinkPreviewViewModel extends ViewModel {
     }
 
     return LinkPreviewState.forNoLinks();
-  }
-
-  public static class LinkPreviewState {
-    private final String                      activeUrlForError;
-    private final boolean                     isLoading;
-    private final boolean                     hasLinks;
-    private final Optional<LinkPreview>       linkPreview;
-    private final LinkPreviewRepository.Error error;
-
-    private LinkPreviewState(@Nullable String activeUrlForError,
-                             boolean isLoading,
-                             boolean hasLinks,
-                             Optional<LinkPreview> linkPreview,
-                             @Nullable LinkPreviewRepository.Error error)
-    {
-      this.activeUrlForError = activeUrlForError;
-      this.isLoading         = isLoading;
-      this.hasLinks          = hasLinks;
-      this.linkPreview       = linkPreview;
-      this.error             = error;
-    }
-
-    private static LinkPreviewState forLoading() {
-      return new LinkPreviewState(null, true, false, Optional.empty(), null);
-    }
-
-    private static LinkPreviewState forPreview(@NonNull LinkPreview linkPreview) {
-      return new LinkPreviewState(null, false, true, Optional.of(linkPreview), null);
-    }
-
-    private static LinkPreviewState forLinksWithNoPreview(@Nullable String activeUrlForError, @NonNull LinkPreviewRepository.Error error) {
-      return new LinkPreviewState(activeUrlForError, false, true, Optional.empty(), error);
-    }
-
-    private static LinkPreviewState forNoLinks() {
-      return new LinkPreviewState(null, false, false, Optional.empty(), null);
-    }
-
-    public @Nullable String getActiveUrlForError() {
-      return activeUrlForError;
-    }
-
-    public boolean isLoading() {
-      return isLoading;
-    }
-
-    public boolean hasLinks() {
-      return hasLinks;
-    }
-
-    public Optional<LinkPreview> getLinkPreview() {
-      return linkPreview;
-    }
-
-    public @Nullable LinkPreviewRepository.Error getError() {
-      return error;
-    }
-
-    boolean hasContent() {
-      return isLoading || hasLinks;
-    }
   }
 
   public static class Factory extends ViewModelProvider.NewInstanceFactory {

@@ -8,6 +8,7 @@ import org.signal.core.util.concurrent.SignalExecutors
 import org.thoughtcrime.securesms.conversation.ConversationMessage
 import org.thoughtcrime.securesms.database.DatabaseObserver
 import org.thoughtcrime.securesms.database.MessageTable
+import org.thoughtcrime.securesms.database.RxDatabaseObserver
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.DistributionListId
 import org.thoughtcrime.securesms.database.model.MessageRecord
@@ -34,12 +35,14 @@ class StoriesLandingRepository(context: Context) {
 
   @Suppress("UsePropertyAccessSyntax")
   fun getStories(): Observable<List<StoriesLandingItemData>> {
-    val storyRecipients: Observable<Map<Recipient, List<StoryResult>>> = Observable.create { emitter ->
-      fun refresh() {
+    val storyRecipients: Observable<Map<Recipient, List<StoryResult>>> = RxDatabaseObserver
+      .conversationList
+      .toObservable()
+      .map {
         val myStoriesId = SignalDatabase.recipients.getOrInsertFromDistributionListId(DistributionListId.MY_STORY)
         val myStories = Recipient.resolved(myStoriesId)
 
-        val stories = SignalDatabase.mms.getOrderedStoryRecipientsAndIds(false)
+        val stories = SignalDatabase.messages.getOrderedStoryRecipientsAndIds(false)
         val mapping: MutableMap<Recipient, List<StoryResult>> = mutableMapOf()
 
         stories.forEach {
@@ -55,20 +58,8 @@ class StoriesLandingRepository(context: Context) {
           }
         }
 
-        emitter.onNext(mapping)
+        mapping
       }
-
-      val observer = DatabaseObserver.Observer {
-        refresh()
-      }
-
-      ApplicationDependencies.getDatabaseObserver().registerConversationListObserver(observer)
-      emitter.setCancellable {
-        ApplicationDependencies.getDatabaseObserver().unregisterObserver(observer)
-      }
-
-      refresh()
-    }
 
     return storyRecipients.switchMap { map ->
       val observables = map.map { (recipient, results) ->
@@ -77,14 +68,14 @@ class StoriesLandingRepository(context: Context) {
           .reversed()
           .take(if (recipient.isMyStory) 2 else 1)
           .map {
-            SignalDatabase.mms.getMessageRecord(it.messageId)
+            SignalDatabase.messages.getMessageRecord(it.messageId)
           }
 
         var sendingCount: Long = 0
         var failureCount: Long = 0
 
         if (recipient.isMyStory) {
-          SignalDatabase.mms.getMessages(results.map { it.messageId }).use { reader ->
+          SignalDatabase.messages.getMessages(results.map { it.messageId }).use { reader ->
             var messageRecord: MessageRecord? = reader.getNext()
             while (messageRecord != null) {
               if (messageRecord.isOutgoing && (messageRecord.isPending || messageRecord.isMediaPending)) {
@@ -118,13 +109,17 @@ class StoriesLandingRepository(context: Context) {
         val itemData = StoriesLandingItemData(
           storyRecipient = sender,
           storyViewState = StoryViewState.NONE,
-          hasReplies = messageRecords.any { SignalDatabase.mms.getNumberOfStoryReplies(it.id) > 0 },
-          hasRepliesFromSelf = messageRecords.any { SignalDatabase.mms.hasSelfReplyInStory(it.id) },
+          hasReplies = messageRecords.any { SignalDatabase.messages.getNumberOfStoryReplies(it.id) > 0 },
+          hasRepliesFromSelf = messageRecords.any { SignalDatabase.messages.hasSelfReplyInStory(it.id) },
           isHidden = sender.shouldHideStory(),
-          primaryStory = ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, messageRecords[primaryIndex]),
-          secondaryStory = if (sender.isMyStory) messageRecords.drop(1).firstOrNull()?.let {
-            ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, it)
-          } else null,
+          primaryStory = ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, messageRecords[primaryIndex], sender),
+          secondaryStory = if (sender.isMyStory) {
+            messageRecords.drop(1).firstOrNull()?.let {
+              ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, it, sender)
+            }
+          } else {
+            null
+          },
           sendingCount = sendingCount,
           failureCount = failureCount
         )
@@ -170,7 +165,7 @@ class StoriesLandingRepository(context: Context) {
    */
   fun markStoriesRead() {
     SignalExecutors.BOUNDED_IO.execute {
-      val messageInfos: List<MessageTable.MarkedMessageInfo> = SignalDatabase.mms.markAllIncomingStoriesRead()
+      val messageInfos: List<MessageTable.MarkedMessageInfo> = SignalDatabase.messages.markAllIncomingStoriesRead()
       val releaseThread: Long? = SignalStore.releaseChannelValues().releaseChannelRecipientId?.let { SignalDatabase.threads.getThreadIdIfExistsFor(it) }
 
       MultiDeviceReadUpdateJob.enqueue(messageInfos.filter { it.threadId == releaseThread }.map { it.syncMessageId })
@@ -179,6 +174,15 @@ class StoriesLandingRepository(context: Context) {
         SignalStore.storyValues().userHasReadOnboardingStory = true
         Stories.onStorySettingsChanged(Recipient.self().id)
       }
+    }
+  }
+
+  /**
+   * Marks all failed stories as "notified" by the user (marking them as notified in the database)
+   */
+  fun markFailedStoriesNotified() {
+    SignalExecutors.BOUNDED_IO.execute {
+      SignalDatabase.messages.markAllFailedStoriesNotified()
     }
   }
 }

@@ -7,8 +7,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import com.google.protobuf.ByteString;
-
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.attachments.Attachment;
 import org.thoughtcrime.securesms.attachments.UriAttachment;
@@ -19,14 +17,14 @@ import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.ThreadTable;
 import org.thoughtcrime.securesms.groups.GroupManager.GroupActionResult;
 import org.thoughtcrime.securesms.mms.MessageGroupContext;
-import org.thoughtcrime.securesms.mms.OutgoingMediaMessage;
+import org.thoughtcrime.securesms.mms.OutgoingMessage;
 import org.thoughtcrime.securesms.profiles.AvatarHelper;
 import org.thoughtcrime.securesms.providers.BlobProvider;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.sms.MessageSender;
 import org.thoughtcrime.securesms.util.MediaUtil;
-import org.whispersystems.signalservice.internal.push.SignalServiceProtos.GroupContext;
+import org.whispersystems.signalservice.internal.push.GroupContext;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,6 +35,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import okio.ByteString;
 
 final class GroupManagerV1 {
 
@@ -59,7 +59,7 @@ final class GroupManagerV1 {
     if (groupId.isV1()) {
       GroupId.V1 groupIdV1 = groupId.requireV1();
 
-      groupDatabase.create(groupIdV1, name, memberIds, null, null);
+      groupDatabase.create(groupIdV1, name, memberIds, null);
 
       try {
         AvatarHelper.setAvatar(context, groupRecipientId, avatarBytes != null ? new ByteArrayInputStream(avatarBytes) : null);
@@ -159,13 +159,13 @@ final class GroupManagerV1 {
       }
     }
 
-    GroupContext.Builder groupContextBuilder = GroupContext.newBuilder()
-                                                           .setId(ByteString.copyFrom(groupId.getDecodedId()))
-                                                           .setType(GroupContext.Type.UPDATE)
-                                                           .addAllMembersE164(e164Members)
-                                                           .addAllMembers(uuidMembers);
+    GroupContext.Builder groupContextBuilder = new GroupContext.Builder()
+                                                               .id(ByteString.of(groupId.getDecodedId()))
+                                                               .type(GroupContext.Type.UPDATE)
+                                                               .membersE164(e164Members)
+                                                               .members(uuidMembers);
 
-    if (groupName != null) groupContextBuilder.setName(groupName);
+    if (groupName != null) groupContextBuilder.name(groupName);
 
     GroupContext groupContext = groupContextBuilder.build();
 
@@ -174,18 +174,18 @@ final class GroupManagerV1 {
       avatarAttachment = new UriAttachment(avatarUri, MediaUtil.IMAGE_PNG, AttachmentTable.TRANSFER_PROGRESS_DONE, avatar.length, null, false, false, false, false, null, null, null, null, null);
     }
 
-    OutgoingMediaMessage outgoingMessage = OutgoingMediaMessage.groupUpdateMessage(groupRecipient,
-                                                                                   new MessageGroupContext(groupContext),
-                                                                                   Collections.singletonList(avatarAttachment),
-                                                                                   System.currentTimeMillis(),
-                                                                                   0,
-                                                                                   false,
-                                                                                   null,
-                                                                                   Collections.emptyList(),
-                                                                                   Collections.emptyList(),
-                                                                                   Collections.emptyList());
+    OutgoingMessage outgoingMessage = OutgoingMessage.groupUpdateMessage(groupRecipient,
+                                                                         new MessageGroupContext(groupContext),
+                                                                         avatarAttachment != null ? Collections.singletonList(avatarAttachment) : Collections.emptyList(),
+                                                                         System.currentTimeMillis(),
+                                                                         0,
+                                                                         false,
+                                                                         null,
+                                                                         Collections.emptyList(),
+                                                                         Collections.emptyList(),
+                                                                         Collections.emptyList());
 
-    long                      threadId        = MessageSender.send(context, outgoingMessage, -1, false, null, null);
+    long                      threadId        = MessageSender.send(context, outgoingMessage, -1, MessageSender.SendType.SIGNAL, null, null);
 
     return new GroupActionResult(groupRecipient, threadId, newMemberCount, Collections.emptyList());
   }
@@ -208,14 +208,14 @@ final class GroupManagerV1 {
     long           threadId       = threadTable.getOrCreateThreadIdFor(recipient);
 
     recipientTable.setExpireMessages(recipient.getId(), expirationTime);
-    OutgoingMediaMessage outgoingMessage = OutgoingMediaMessage.expirationUpdateMessage(recipient, System.currentTimeMillis(), expirationTime * 1000L);
-    MessageSender.send(context, outgoingMessage, threadId, false, null, null);
+    OutgoingMessage outgoingMessage = OutgoingMessage.expirationUpdateMessage(recipient, System.currentTimeMillis(), expirationTime * 1000L);
+    MessageSender.send(context, outgoingMessage, threadId, MessageSender.SendType.SIGNAL, null, null);
   }
 
   @WorkerThread
-  private static Optional<OutgoingMediaMessage> createGroupLeaveMessage(@NonNull Context context,
-                                                                        @NonNull GroupId.V1 groupId,
-                                                                        @NonNull Recipient groupRecipient)
+  private static Optional<OutgoingMessage> createGroupLeaveMessage(@NonNull Context context,
+                                                                   @NonNull GroupId.V1 groupId,
+                                                                   @NonNull Recipient groupRecipient)
   {
     GroupTable groupDatabase = SignalDatabase.groups();
 

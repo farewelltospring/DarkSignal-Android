@@ -17,19 +17,19 @@ open class StoryViewerRepository {
   fun getFirstStory(recipientId: RecipientId, storyId: Long): Single<MmsMessageRecord> {
     return if (storyId > 0) {
       Single.fromCallable {
-        SignalDatabase.mms.getMessageRecord(storyId) as MmsMessageRecord
+        SignalDatabase.messages.getMessageRecord(storyId) as MmsMessageRecord
       }
     } else {
       Single.fromCallable {
         val recipient = Recipient.resolved(recipientId)
         val reader: MessageTable.Reader = if (recipient.isMyStory || recipient.isSelf) {
-          SignalDatabase.mms.getAllOutgoingStories(false, 1)
+          SignalDatabase.messages.getAllOutgoingStories(false, 1)
         } else {
-          val unread = SignalDatabase.mms.getUnreadStories(recipientId, 1)
+          val unread = SignalDatabase.messages.getUnreadStories(recipientId, 1)
           if (unread.iterator().hasNext()) {
             unread
           } else {
-            SignalDatabase.mms.getAllStoriesFor(recipientId, 1)
+            SignalDatabase.messages.getAllStoriesFor(recipientId, 1)
           }
         }
         reader.use { it.iterator().next() } as MmsMessageRecord
@@ -38,11 +38,11 @@ open class StoryViewerRepository {
   }
 
   fun getStories(hiddenStories: Boolean, isOutgoingOnly: Boolean): Single<List<RecipientId>> {
-    return Single.create<List<RecipientId>> { emitter ->
+    return Single.create { emitter ->
       val myStoriesId = SignalDatabase.recipients.getOrInsertFromDistributionListId(DistributionListId.MY_STORY)
       val myStories = Recipient.resolved(myStoriesId)
       val releaseChannelId = SignalStore.releaseChannelValues().releaseChannelRecipientId
-      val recipientIds = SignalDatabase.mms.getOrderedStoryRecipientsAndIds(isOutgoingOnly).groupBy {
+      val recipientIds = SignalDatabase.messages.getOrderedStoryRecipientsAndIds(isOutgoingOnly).groupBy {
         val recipient = Recipient.resolved(it.recipientId)
         if (recipient.isDistributionList) {
           myStories

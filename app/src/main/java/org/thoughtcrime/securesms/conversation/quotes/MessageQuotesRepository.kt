@@ -4,9 +4,10 @@ import android.app.Application
 import androidx.annotation.WorkerThread
 import io.reactivex.rxjava3.core.Observable
 import org.signal.core.util.logging.Log
-import org.thoughtcrime.securesms.conversation.ConversationDataSource
 import org.thoughtcrime.securesms.conversation.ConversationMessage
 import org.thoughtcrime.securesms.conversation.ConversationMessage.ConversationMessageFactory
+import org.thoughtcrime.securesms.conversation.v2.data.AttachmentHelper
+import org.thoughtcrime.securesms.conversation.v2.data.ReactionHelper
 import org.thoughtcrime.securesms.database.DatabaseObserver
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord
@@ -27,7 +28,7 @@ class MessageQuotesRepository {
    */
   fun getMessagesInQuoteChain(application: Application, messageId: MessageId): Observable<List<ConversationMessage>> {
     return Observable.create { emitter ->
-      val threadId: Long = SignalDatabase.mmsSms.getThreadId(messageId)
+      val threadId: Long = SignalDatabase.messages.getThreadIdForMessage(messageId.id)
       if (threadId < 0) {
         Log.w(TAG, "Could not find a threadId for $messageId!")
         emitter.onNext(emptyList())
@@ -46,26 +47,30 @@ class MessageQuotesRepository {
 
   @WorkerThread
   private fun getMessagesInQuoteChainSync(application: Application, messageId: MessageId): List<ConversationMessage> {
-    val rootMessageId: MessageId = SignalDatabase.mmsSms.getRootOfQuoteChain(messageId)
+    val rootMessageId: MessageId = SignalDatabase.messages.getRootOfQuoteChain(messageId)
 
-    var originalRecord: MessageRecord? = if (rootMessageId.mms) {
-      SignalDatabase.mms.getMessageRecordOrNull(rootMessageId.id)
-    } else {
-      SignalDatabase.sms.getMessageRecordOrNull(rootMessageId.id)
-    }
+    var originalRecord: MessageRecord? = SignalDatabase.messages.getMessageRecordOrNull(rootMessageId.id)
 
     if (originalRecord == null) {
       return emptyList()
     }
 
-    val replyRecords: List<MessageRecord> = SignalDatabase.mmsSms.getAllMessagesThatQuote(rootMessageId)
+    var replyRecords: List<MessageRecord> = SignalDatabase.messages.getAllMessagesThatQuote(rootMessageId)
 
-    val replies: List<ConversationMessage> = ConversationDataSource.ReactionHelper()
-      .apply {
-        addAll(replyRecords)
-        fetchReactions()
-      }
-      .buildUpdatedModels(replyRecords)
+    val reactionHelper = ReactionHelper()
+    val attachmentHelper = AttachmentHelper()
+    val threadRecipient = requireNotNull(SignalDatabase.threads.getRecipientForThreadId(originalRecord.threadId))
+
+    reactionHelper.addAll(replyRecords)
+    attachmentHelper.addAll(replyRecords)
+
+    reactionHelper.fetchReactions()
+    attachmentHelper.fetchAttachments()
+
+    replyRecords = reactionHelper.buildUpdatedModels(replyRecords)
+    replyRecords = attachmentHelper.buildUpdatedModels(ApplicationDependencies.getApplication(), replyRecords)
+
+    val replies: List<ConversationMessage> = replyRecords
       .map { replyRecord ->
         val replyQuote: Quote? = replyRecord.getQuote()
         if (replyQuote != null && replyQuote.id == originalRecord!!.dateSent) {
@@ -74,19 +79,29 @@ class MessageQuotesRepository {
           replyRecord
         }
       }
-      .map { ConversationMessageFactory.createWithUnresolvedData(application, it) }
+      .map { ConversationMessageFactory.createWithUnresolvedData(application, it, threadRecipient) }
 
     if (originalRecord.isPaymentNotification) {
       originalRecord = SignalDatabase.payments.updateMessageWithPayment(originalRecord)
     }
 
-    val originalMessage: List<ConversationMessage> = ConversationDataSource.ReactionHelper()
+    originalRecord = ReactionHelper()
       .apply {
         add(originalRecord)
         fetchReactions()
       }
       .buildUpdatedModels(listOf(originalRecord))
-      .map { ConversationMessageFactory.createWithUnresolvedData(application, it, it.getDisplayBody(application), false) }
+      .get(0)
+
+    originalRecord = AttachmentHelper()
+      .apply {
+        add(originalRecord)
+        fetchAttachments()
+      }
+      .buildUpdatedModels(ApplicationDependencies.getApplication(), listOf(originalRecord))
+      .get(0)
+
+    val originalMessage: ConversationMessage = ConversationMessageFactory.createWithUnresolvedData(application, originalRecord, false, threadRecipient)
 
     return replies + originalMessage
   }

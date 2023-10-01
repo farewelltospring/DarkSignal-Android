@@ -38,6 +38,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.core.view.ViewCompat;
@@ -52,6 +53,12 @@ import org.thoughtcrime.securesms.util.views.Stub;
 public final class ViewUtil {
 
   private ViewUtil() {
+  }
+
+  public static void setMinimumHeight(@NonNull View view, @Px int minimumHeight) {
+    if (view.getMinimumHeight() != minimumHeight) {
+      view.setMinimumHeight(minimumHeight);
+    }
   }
 
   public static void focusAndMoveCursorToEndAndOpenKeyboard(@NonNull EditText input) {
@@ -254,6 +261,10 @@ public final class ViewUtil {
     return ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).topMargin;
   }
 
+  public static int getBottomMargin(@NonNull View view) {
+    return ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).bottomMargin;
+  }
+
   public static void setLeftMargin(@NonNull View view, int margin) {
     if (isLtr(view)) {
       ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).leftMargin = margin;
@@ -274,14 +285,41 @@ public final class ViewUtil {
     view.requestLayout();
   }
 
-  public static void setTopMargin(@NonNull View view, int margin) {
-    ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).topMargin = margin;
-    view.requestLayout();
+  public static void setTopMargin(@NonNull View view, @Px int margin) {
+    setTopMargin(view, margin, true);
   }
 
-  public static void setBottomMargin(@NonNull View view, int margin) {
+  /**
+   * Sets the top margin of the view and optionally requests a new layout pass.
+   *
+   * @param view            The view to set the margin on
+   * @param margin          The margin to set
+   * @param requestLayout   Whether requestLayout should be invoked on the view
+   */
+  public static void setTopMargin(@NonNull View view, @Px int margin, boolean requestLayout) {
+    ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).topMargin = margin;
+
+    if (requestLayout) {
+      view.requestLayout();
+    }
+  }
+
+  public static void setBottomMargin(@NonNull View view, @Px int margin) {
+    setBottomMargin(view, margin, true);
+  }
+
+  /**
+   * Sets the bottom margin of the view and optionally requests a new layout pass.
+   *
+   * @param view            The view to set the margin on
+   * @param margin          The margin to set
+   * @param requestLayout   Whether requestLayout should be invoked on the view
+   */
+  public static void setBottomMargin(@NonNull View view, @Px int margin, boolean requestLayout) {
     ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).bottomMargin = margin;
-    view.requestLayout();
+    if (requestLayout) {
+      view.requestLayout();
+    }
   }
 
   public static int getWidth(@NonNull View view) {

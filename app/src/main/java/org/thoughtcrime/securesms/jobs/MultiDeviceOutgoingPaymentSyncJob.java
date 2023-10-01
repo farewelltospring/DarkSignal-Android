@@ -1,16 +1,15 @@
 package org.thoughtcrime.securesms.jobs;
 
 import androidx.annotation.NonNull;
-
-import com.google.protobuf.ByteString;
+import androidx.annotation.Nullable;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.crypto.UnidentifiedAccessUtil;
 import org.thoughtcrime.securesms.database.PaymentTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.net.NotPushRegisteredException;
 import org.thoughtcrime.securesms.payments.proto.PaymentMetaData;
@@ -26,6 +25,8 @@ import org.whispersystems.signalservice.api.push.exceptions.ServerRejectedExcept
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import okio.ByteString;
 
 /**
  * Tells a linked device about sent payments.
@@ -57,10 +58,10 @@ public final class MultiDeviceOutgoingPaymentSyncJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder()
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder()
                    .putString(KEY_UUID, uuid.toString())
-                   .build();
+                   .serialize();
   }
 
   @Override
@@ -86,7 +87,7 @@ public final class MultiDeviceOutgoingPaymentSyncJob extends BaseJob {
       return;
     }
 
-    PaymentMetaData.MobileCoinTxoIdentification txoIdentification = payment.getPaymentMetaData().getMobileCoinTxoIdentification();
+    PaymentMetaData.MobileCoinTxoIdentification txoIdentification = payment.getPaymentMetaData().mobileCoinTxoIdentification;
 
     boolean defrag = payment.isDefrag();
 
@@ -106,13 +107,13 @@ public final class MultiDeviceOutgoingPaymentSyncJob extends BaseJob {
     OutgoingPaymentMessage outgoingPaymentMessage = new OutgoingPaymentMessage(uuid,
                                                                                payment.getAmount().requireMobileCoin(),
                                                                                payment.getFee().requireMobileCoin(),
-                                                                               ByteString.copyFrom(receipt),
+                                                                               ByteString.of(receipt),
                                                                                payment.getBlockIndex(),
                                                                                payment.getTimestamp(),
                                                                                defrag ? Optional.empty() : Optional.of(payment.getPayee().requirePublicAddress().serialize()),
                                                                                defrag ? Optional.empty() : Optional.of(payment.getNote()),
-                                                                               txoIdentification.getPublicKeyList(),
-                                                                               txoIdentification.getKeyImagesList());
+                                                                               txoIdentification.publicKey,
+                                                                               txoIdentification.keyImages);
 
 
     ApplicationDependencies.getSignalServiceMessageSender()
@@ -134,7 +135,9 @@ public final class MultiDeviceOutgoingPaymentSyncJob extends BaseJob {
   public static class Factory implements Job.Factory<MultiDeviceOutgoingPaymentSyncJob> {
 
     @Override
-    public @NonNull MultiDeviceOutgoingPaymentSyncJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull MultiDeviceOutgoingPaymentSyncJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       return new MultiDeviceOutgoingPaymentSyncJob(parameters,
                                                    UUID.fromString(data.getString(KEY_UUID)));
     }

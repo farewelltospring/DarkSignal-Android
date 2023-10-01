@@ -2,13 +2,14 @@ package org.thoughtcrime.securesms.video.exo
 
 import android.content.Context
 import androidx.annotation.MainThread
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.mediacodec.MediaCodecUtil
-import com.google.android.exoplayer2.mediacodec.MediaCodecUtil.DecoderQueryException
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.util.MimeTypes
+import androidx.annotation.OptIn
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.mediacodec.MediaCodecUtil
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
 import org.thoughtcrime.securesms.net.ContentProxySelector
@@ -17,8 +18,9 @@ import org.thoughtcrime.securesms.util.DeviceProperties
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * ExoPlayerPool concrete instance which helps to manage a pool of SimpleExoPlayer objects
+ * ExoPlayerPool concrete instance which helps to manage a pool of ExoPlayer objects
  */
+@OptIn(markerClass = [UnstableApi::class])
 class SimpleExoPlayerPool(context: Context) : ExoPlayerPool<ExoPlayer>(MAXIMUM_RESERVED_PLAYERS) {
   private val context: Context = context.applicationContext
   private val okHttpClient = ApplicationDependencies.getOkHttpClient().newBuilder().proxySelector(ContentProxySelector()).build()
@@ -41,7 +43,7 @@ class SimpleExoPlayerPool(context: Context) : ExoPlayerPool<ExoPlayer>(MAXIMUM_R
       } else {
         0
       }
-    } catch (ignored: DecoderQueryException) {
+    } catch (ignored: MediaCodecUtil.DecoderQueryException) {
       0
     }
 
@@ -82,7 +84,7 @@ class SimpleExoPlayerPool(context: Context) : ExoPlayerPool<ExoPlayer>(MAXIMUM_R
  * players will be returned first when a player is requested via require.
  */
 abstract class ExoPlayerPool<T : ExoPlayer>(
-  private val maximumReservedPlayers: Int,
+  private val maximumReservedPlayers: Int
 ) : AppForegroundObserver.Listener {
 
   companion object {
@@ -130,7 +132,7 @@ abstract class ExoPlayerPool<T : ExoPlayer>(
   @MainThread
   private fun get(allowReserved: Boolean, tag: String): T? {
     val player = findAvailablePlayer(allowReserved)
-    return if (player == null && pool.size < getMaximumAllowed(allowReserved)) {
+    val toReturn = if (player == null && pool.size < getMaximumAllowed(allowReserved)) {
       val newPlayer = createPlayer()
       val poolState = createPoolStateForNewEntry(allowReserved, tag)
       pool[newPlayer] = poolState
@@ -142,7 +144,9 @@ abstract class ExoPlayerPool<T : ExoPlayer>(
     } else {
       Log.d(TAG, "Failed to get an ExoPlayer instance for tag: $tag :: ${poolStats()}")
       null
-    }?.apply {
+    }
+
+    return toReturn?.apply {
       configureForVideoPlayback()
     }
   }

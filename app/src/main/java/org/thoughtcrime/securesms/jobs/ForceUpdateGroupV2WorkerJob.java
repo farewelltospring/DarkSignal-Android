@@ -1,15 +1,16 @@
 package org.thoughtcrime.securesms.jobs;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.signal.core.util.logging.Log;
-import org.thoughtcrime.securesms.database.GroupTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.database.model.GroupRecord;
 import org.thoughtcrime.securesms.groups.GroupChangeBusyException;
 import org.thoughtcrime.securesms.groups.GroupId;
 import org.thoughtcrime.securesms.groups.GroupManager;
 import org.thoughtcrime.securesms.groups.GroupNotAMemberException;
-import org.thoughtcrime.securesms.jobmanager.Data;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.recipients.Recipient;
@@ -49,9 +50,9 @@ final class ForceUpdateGroupV2WorkerJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder().putString(KEY_GROUP_ID, groupId.toString())
-                             .build();
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder().putString(KEY_GROUP_ID, groupId.toString())
+                                    .serialize();
   }
 
   @Override
@@ -61,7 +62,7 @@ final class ForceUpdateGroupV2WorkerJob extends BaseJob {
 
   @Override
   public void onRun() throws IOException, GroupNotAMemberException, GroupChangeBusyException {
-    Optional<GroupTable.GroupRecord> group = SignalDatabase.groups().getGroup(groupId);
+    Optional<GroupRecord> group = SignalDatabase.groups().getGroup(groupId);
 
     if (!group.isPresent()) {
       Log.w(TAG, "Group not found");
@@ -92,7 +93,9 @@ final class ForceUpdateGroupV2WorkerJob extends BaseJob {
   public static final class Factory implements Job.Factory<ForceUpdateGroupV2WorkerJob> {
 
     @Override
-    public @NonNull ForceUpdateGroupV2WorkerJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull ForceUpdateGroupV2WorkerJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       return new ForceUpdateGroupV2WorkerJob(parameters,
                                              GroupId.parseOrThrow(data.getString(KEY_GROUP_ID)).requireV2());
     }

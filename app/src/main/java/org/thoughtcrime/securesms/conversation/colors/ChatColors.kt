@@ -7,9 +7,6 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.ShapeDrawable
-import android.graphics.drawable.shapes.OvalShape
-import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.annotation.ColorInt
@@ -35,7 +32,7 @@ class ChatColors(
   private val singleColor: Int?
 ) : Parcelable {
 
-  fun isGradient(): Boolean = Build.VERSION.SDK_INT >= 21 && linearGradient != null
+  fun isGradient(): Boolean = linearGradient != null
 
   /**
    * Returns the Drawable to render the linear gradient, or null if this ChatColors is a single color.
@@ -43,9 +40,6 @@ class ChatColors(
   val chatBubbleMask: Drawable
     get() {
       return when {
-        Build.VERSION.SDK_INT < 21 -> {
-          ColorDrawable(Color.TRANSPARENT)
-        }
         linearGradient != null -> {
           RotatableGradientDrawable(
             linearGradient.degrees,
@@ -63,11 +57,7 @@ class ChatColors(
    * Returns the ColorFilter to apply to a conversation bubble or other relevant piece of UI.
    */
   @IgnoredOnParcel
-  val chatBubbleColorFilter: ColorFilter = if (Build.VERSION.SDK_INT >= 21) {
-    PorterDuffColorFilter(Color.TRANSPARENT, PorterDuff.Mode.SRC_IN)
-  } else {
-    PorterDuffColorFilter(asSingleColor(), PorterDuff.Mode.SRC_IN)
-  }
+  val chatBubbleColorFilter: ColorFilter = PorterDuffColorFilter(Color.TRANSPARENT, PorterDuff.Mode.SRC_IN)
 
   @ColorInt
   fun asSingleColor(): Int {
@@ -83,20 +73,20 @@ class ChatColors(
   }
 
   fun serialize(): ChatColor {
-    val builder: ChatColor.Builder = ChatColor.newBuilder()
+    val builder: ChatColor.Builder = ChatColor.Builder()
 
     if (linearGradient != null) {
-      val gradientBuilder = ChatColor.LinearGradient.newBuilder()
+      val gradientBuilder = ChatColor.LinearGradient.Builder()
 
       gradientBuilder.rotation = linearGradient.degrees
-      linearGradient.colors.forEach { gradientBuilder.addColors(it) }
-      linearGradient.positions.forEach { gradientBuilder.addPositions(it) }
+      gradientBuilder.colors = linearGradient.colors.toList()
+      gradientBuilder.positions = linearGradient.positions.toList()
 
-      builder.setLinearGradient(gradientBuilder)
+      builder.linearGradient(gradientBuilder.build())
     }
 
     if (singleColor != null) {
-      builder.setSingleColor(ChatColor.SingleColor.newBuilder().setColor(singleColor))
+      builder.singleColor(ChatColor.SingleColor.Builder().color(singleColor).build())
     }
 
     return builder.build()
@@ -115,12 +105,6 @@ class ChatColors(
   }
 
   fun asCircle(): Drawable {
-    if (Build.VERSION.SDK_INT < 21) {
-      return ShapeDrawable(OvalShape()).apply {
-        paint.color = asSingleColor()
-      }
-    }
-
     val toWrap: Drawable = chatBubbleMask
     val path = Path()
 
@@ -158,18 +142,18 @@ class ChatColors(
   companion object {
     @JvmStatic
     fun forChatColor(id: Id, chatColor: ChatColor): ChatColors {
-      assert(chatColor.hasSingleColor() xor chatColor.hasLinearGradient())
+      assert((chatColor.singleColor != null) xor (chatColor.linearGradient != null))
 
-      return if (chatColor.hasLinearGradient()) {
+      return if (chatColor.linearGradient != null) {
         val linearGradient = LinearGradient(
           chatColor.linearGradient.rotation,
-          chatColor.linearGradient.colorsList.toIntArray(),
-          chatColor.linearGradient.positionsList.toFloatArray()
+          chatColor.linearGradient.colors.toIntArray(),
+          chatColor.linearGradient.positions.toFloatArray()
         )
 
         forGradient(id, linearGradient)
       } else {
-        val singleColor = chatColor.singleColor.color
+        val singleColor = chatColor.singleColor!!.color
 
         forColor(id, singleColor)
       }

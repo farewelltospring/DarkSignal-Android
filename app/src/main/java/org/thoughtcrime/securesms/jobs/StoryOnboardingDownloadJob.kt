@@ -9,7 +9,6 @@ import org.thoughtcrime.securesms.database.MessageTable
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.StoryType
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
-import org.thoughtcrime.securesms.jobmanager.Data
 import org.thoughtcrime.securesms.jobmanager.Job
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint
 import org.thoughtcrime.securesms.keyvalue.SignalStore
@@ -62,7 +61,7 @@ class StoryOnboardingDownloadJob private constructor(parameters: Parameters) : B
     }
   }
 
-  override fun serialize(): Data = Data.EMPTY
+  override fun serialize(): ByteArray? = null
   override fun getFactoryKey(): String = KEY
   override fun onFailure() = Unit
 
@@ -78,9 +77,9 @@ class StoryOnboardingDownloadJob private constructor(parameters: Parameters) : B
       throw Exception("No release channel recipient.")
     }
 
-    SignalDatabase.mms.getAllStoriesFor(releaseChannelRecipientId, -1).use { reader ->
+    SignalDatabase.messages.getAllStoriesFor(releaseChannelRecipientId, -1).use { reader ->
       reader.forEach { messageRecord ->
-        SignalDatabase.mms.deleteMessage(messageRecord.id)
+        SignalDatabase.messages.deleteMessage(messageRecord.id)
       }
     }
 
@@ -144,7 +143,7 @@ class StoryOnboardingDownloadJob private constructor(parameters: Parameters) : B
     if (insertResults.size != ONBOARDING_IMAGE_COUNT) {
       Log.w(TAG, "Failed to insert some search results. Deleting the ones we added and trying again later.")
       insertResults.forEach {
-        SignalDatabase.mms.deleteMessage(it.messageId)
+        SignalDatabase.messages.deleteMessage(it.messageId)
       }
 
       throw RetryLaterException()
@@ -188,7 +187,7 @@ class StoryOnboardingDownloadJob private constructor(parameters: Parameters) : B
   }
 
   class Factory : Job.Factory<StoryOnboardingDownloadJob> {
-    override fun create(parameters: Parameters, data: Data): StoryOnboardingDownloadJob {
+    override fun create(parameters: Parameters, serializedData: ByteArray?): StoryOnboardingDownloadJob {
       return StoryOnboardingDownloadJob(parameters)
     }
   }

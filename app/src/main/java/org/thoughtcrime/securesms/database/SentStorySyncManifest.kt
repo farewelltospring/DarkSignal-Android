@@ -5,7 +5,9 @@ import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.whispersystems.signalservice.api.messages.SignalServiceStoryMessageRecipient
 import org.whispersystems.signalservice.api.push.DistributionId
+import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
+import org.whispersystems.signalservice.internal.push.SyncMessage
 
 /**
  * Represents a list of, or update to a list of, who can access a story through what
@@ -75,6 +77,18 @@ data class SentStorySyncManifest(
         Entry(
           recipientId = RecipientId.from(recipient.signalServiceAddress),
           allowedToReply = recipient.isAllowedToReply,
+          distributionLists = recipient.distributionListIds.map { DistributionId.from(it) }
+        )
+      }
+
+      return SentStorySyncManifest(entries)
+    }
+
+    fun fromRecipientsSet(recipients: List<SyncMessage.Sent.StoryMessageRecipient>): SentStorySyncManifest {
+      val entries = recipients.toSet().map { recipient ->
+        Entry(
+          recipientId = RecipientId.from(ServiceId.parseOrThrow(recipient.destinationServiceId!!)),
+          allowedToReply = recipient.isAllowedToReply!!,
           distributionLists = recipient.distributionListIds.map { DistributionId.from(it) }
         )
       }

@@ -15,13 +15,13 @@ import org.thoughtcrime.securesms.util.Base64
 class StoryTextPostRepository {
   fun getRecord(recordId: Long): Single<MmsMessageRecord> {
     return Single.fromCallable {
-      SignalDatabase.mms.getMessageRecord(recordId) as MmsMessageRecord
+      SignalDatabase.messages.getMessageRecord(recordId) as MmsMessageRecord
     }.subscribeOn(Schedulers.io())
   }
 
   fun getTypeface(recordId: Long): Single<Typeface> {
     return getRecord(recordId).flatMap {
-      val model = StoryTextPost.parseFrom(Base64.decode(it.body))
+      val model = StoryTextPost.ADAPTER.decode(Base64.decode(it.body))
       val textFont = TextFont.fromStyle(model.style)
       val script = TextToScript.guessScript(model.body)
 

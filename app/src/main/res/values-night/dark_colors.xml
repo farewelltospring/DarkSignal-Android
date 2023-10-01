@@ -9,6 +9,9 @@
     <color name="signal_accent_primary">@color/core_ultramarine_light</color>
     <color name="signal_inverse_primary">@color/core_white</color>
 
+    <color name="pulse_incoming_message">@color/transparent_white_15</color>
+    <color name="pulse_outgoing_message">@color/transparent_white_25</color>
+
     <color name="signal_background_primary">@color/signal_colorBackground</color>
     <color name="signal_background_secondary">@color/signal_colorSurface1</color>
     <color name="signal_background_tertiary">@color/core_grey_90</color>
@@ -48,6 +51,7 @@
     <color name="signal_divider_major">@color/core_grey_60</color>
 
     <color name="signal_alert_primary">@color/core_red</color>
+    <color name="signal_alert_primary_50">@color/core_red_50</color>
 
     <color name="signal_transparent">@color/transparent_black</color>
     <color name="signal_transparent_40">@color/transparent_black_40</color>

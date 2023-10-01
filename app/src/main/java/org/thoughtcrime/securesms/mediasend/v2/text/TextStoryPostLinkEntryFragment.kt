@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.EditText
 import androidx.constraintlayout.widget.Group
 import androidx.core.widget.addTextChangedListener
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
 import org.thoughtcrime.securesms.R
@@ -30,11 +31,7 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
     factoryProducer = { LinkPreviewViewModel.Factory(LinkPreviewRepository(), true) }
   )
 
-  private val viewModel: TextStoryPostCreationViewModel by viewModels(
-    ownerProducer = {
-      requireActivity()
-    }
-  )
+  private val viewModel: TextStoryPostCreationViewModel by activityViewModels()
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     input = view.findViewById(R.id.input)
@@ -63,7 +60,7 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
       if (linkPreviewState != null) {
         val url = linkPreviewState.linkPreview.map { it.url }.orElseGet { linkPreviewState.activeUrlForError }
 
-        if (LinkUtil.isLegalUrl(url, false, true)) {
+        if (LinkUtil.isValidTextStoryPostPreview(url)) {
           viewModel.setLinkPreview(url)
           dismissAllowingStateLoss()
         } else {

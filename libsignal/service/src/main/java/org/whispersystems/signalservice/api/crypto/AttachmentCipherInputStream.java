@@ -8,6 +8,8 @@ package org.whispersystems.signalservice.api.crypto;
 
 import org.signal.libsignal.protocol.InvalidMacException;
 import org.signal.libsignal.protocol.InvalidMessageException;
+import org.signal.libsignal.protocol.incrementalmac.ChunkSizeChoice;
+import org.signal.libsignal.protocol.incrementalmac.IncrementalMacInputStream;
 import org.signal.libsignal.protocol.kdf.HKDFv3;
 import org.whispersystems.signalservice.internal.util.ContentLengthInputStream;
 import org.whispersystems.signalservice.internal.util.Util;
@@ -51,7 +53,7 @@ public class AttachmentCipherInputStream extends FilterInputStream {
   private long    totalRead;
   private byte[]  overflowBuffer;
 
-  public static InputStream createForAttachment(File file, long plaintextLength, byte[] combinedKeyMaterial, byte[] digest)
+  public static InputStream createForAttachment(File file, long plaintextLength, byte[] combinedKeyMaterial, byte[] digest, byte[] incrementalDigest, int incrementalMacChunkSize)
       throws InvalidMessageException, IOException
   {
     try {
@@ -67,11 +69,23 @@ public class AttachmentCipherInputStream extends FilterInputStream {
         throw new InvalidMacException("Missing digest!");
       }
 
-      try (FileInputStream fin = new FileInputStream(file)) {
-        verifyMac(fin, file.length(), mac, digest);
-      }
 
-      InputStream inputStream = new AttachmentCipherInputStream(new FileInputStream(file), parts[0], file.length() - BLOCK_SIZE - mac.getMacLength());
+      final InputStream wrappedStream;
+      final boolean     hasIncrementalMac = incrementalDigest != null && incrementalDigest.length > 0 && incrementalMacChunkSize > 0;
+
+      if (!hasIncrementalMac) {
+        try (FileInputStream macVerificationStream = new FileInputStream(file)) {
+          verifyMac(macVerificationStream, file.length(), mac, digest);
+        }
+        wrappedStream = new FileInputStream(file);
+      } else {
+        wrappedStream = new IncrementalMacInputStream(
+            new FileInputStream(file),
+            parts[1],
+            ChunkSizeChoice.everyNthByte(incrementalMacChunkSize),
+            incrementalDigest);
+      }
+      InputStream inputStream = new AttachmentCipherInputStream(wrappedStream, parts[0], file.length() - BLOCK_SIZE - mac.getMacLength());
 
       if (plaintextLength != 0) {
         inputStream = new ContentLengthInputStream(inputStream, plaintextLength);
@@ -136,7 +150,7 @@ public class AttachmentCipherInputStream extends FilterInputStream {
     int    read;
 
     //noinspection StatementWithEmptyBody
-    while ((read = read(buffer)) == 0);
+    while ((read = read(buffer)) == 0) ;
 
     return (read == -1) ? -1 : ((int) buffer[0]) & 0xFF;
   }
@@ -148,9 +162,13 @@ public class AttachmentCipherInputStream extends FilterInputStream {
 
   @Override
   public int read(byte[] buffer, int offset, int length) throws IOException {
-    if      (totalRead != totalDataSize) return readIncremental(buffer, offset, length);
-    else if (!done)                      return readFinal(buffer, offset, length);
-    else                                 return -1;
+    if (totalRead != totalDataSize) {
+      return readIncremental(buffer, offset, length);
+    } else if (!done) {
+      return readFinal(buffer, offset, length);
+    } else {
+      return -1;
+    }
   }
 
   @Override
@@ -162,7 +180,7 @@ public class AttachmentCipherInputStream extends FilterInputStream {
   public long skip(long byteCount) throws IOException {
     long skipped = 0L;
     while (skipped < byteCount) {
-      byte[] buf  = new byte[Math.min(4096, (int)(byteCount-skipped))];
+      byte[] buf  = new byte[Math.min(4096, (int) (byteCount - skipped))];
       int    read = read(buf);
 
       skipped += read;
@@ -173,8 +191,8 @@ public class AttachmentCipherInputStream extends FilterInputStream {
 
   private int readFinal(byte[] buffer, int offset, int length) throws IOException {
     try {
-      byte[] internal = new byte[buffer.length];
-      int actualLength = Math.min(length, cipher.doFinal(internal, 0));
+      byte[] internal     = new byte[buffer.length];
+      int    actualLength = Math.min(length, cipher.doFinal(internal, 0));
       System.arraycopy(internal, 0, buffer, offset, actualLength);
 
       done = true;
@@ -205,11 +223,11 @@ public class AttachmentCipherInputStream extends FilterInputStream {
     }
 
     if (length + totalRead > totalDataSize)
-      length = (int)(totalDataSize - totalRead);
+      length = (int) (totalDataSize - totalRead);
 
     byte[] internalBuffer = new byte[length];
-    int read              = super.read(internalBuffer, 0, internalBuffer.length <= cipher.getBlockSize() ? internalBuffer.length : internalBuffer.length - cipher.getBlockSize());
-    totalRead            += read;
+    int    read           = super.read(internalBuffer, 0, internalBuffer.length <= cipher.getBlockSize() ? internalBuffer.length : internalBuffer.length - cipher.getBlockSize());
+    totalRead += read;
 
     try {
       int outputLen = cipher.getOutputSize(read);
@@ -239,9 +257,9 @@ public class AttachmentCipherInputStream extends FilterInputStream {
       throws InvalidMacException
   {
     try {
-      MessageDigest   digest        = MessageDigest.getInstance("SHA256");
-      int             remainingData = Util.toIntExact(length) - mac.getMacLength();
-      byte[]          buffer        = new byte[4096];
+      MessageDigest digest        = MessageDigest.getInstance("SHA256");
+      int           remainingData = Util.toIntExact(length) - mac.getMacLength();
+      byte[]        buffer        = new byte[4096];
 
       while (remainingData > 0) {
         int read = inputStream.read(buffer, 0, Math.min(buffer.length, remainingData));
@@ -274,11 +292,14 @@ public class AttachmentCipherInputStream extends FilterInputStream {
   private void readFully(byte[] buffer) throws IOException {
     int offset = 0;
 
-    for (;;) {
+    for (; ; ) {
       int read = super.read(buffer, offset, buffer.length - offset);
 
-      if (read + offset < buffer.length) offset += read;
-      else                		           return;
+      if (read + offset < buffer.length) {
+        offset += read;
+      } else {
+        return;
+      }
     }
   }
 }

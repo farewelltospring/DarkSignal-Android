@@ -11,6 +11,7 @@ import org.signal.core.util.concurrent.SignalExecutors
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.conversation.ConversationMessage
 import org.thoughtcrime.securesms.database.DatabaseObserver
+import org.thoughtcrime.securesms.database.GroupReceiptTable
 import org.thoughtcrime.securesms.database.NoSuchMessageException
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.MessageId
@@ -46,15 +47,15 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
 
       fun refresh() {
         val stories = if (recipient.isMyStory) {
-          SignalDatabase.mms.getAllOutgoingStories(false, 100)
+          SignalDatabase.messages.getAllOutgoingStories(false, 100)
         } else if (isOutgoingOnly) {
-          SignalDatabase.mms.getOutgoingStoriesTo(recipientId)
+          SignalDatabase.messages.getOutgoingStoriesTo(recipientId)
         } else {
-          SignalDatabase.mms.getAllStoriesFor(recipientId, 100)
+          SignalDatabase.messages.getAllStoriesFor(recipientId, 100)
         }
 
         val results = stories.filterNot {
-          recipient.isMyStory && it.recipient.isGroup
+          recipient.isMyStory && it.toRecipient.isGroup
         }
 
         emitter.onNext(results)
@@ -77,18 +78,19 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
     return Observable.create { emitter ->
       fun refresh(record: MessageRecord) {
         val recipient = Recipient.resolved(recipientId)
+        val viewedCount = SignalDatabase.groupReceipts.getGroupReceiptInfo(record.id).filter { it.status == GroupReceiptTable.STATUS_VIEWED }.size
         val story = StoryPost(
           id = record.id,
-          sender = if (record.isOutgoing) Recipient.self() else record.individualRecipient,
+          sender = record.fromRecipient,
           group = if (recipient.isGroup) recipient else null,
-          distributionList = if (record.recipient.isDistributionList) record.recipient else null,
-          viewCount = record.viewedReceiptCount,
-          replyCount = SignalDatabase.mms.getNumberOfStoryReplies(record.id),
+          distributionList = if (record.toRecipient.isDistributionList) record.toRecipient else null,
+          viewCount = viewedCount,
+          replyCount = SignalDatabase.messages.getNumberOfStoryReplies(record.id),
           dateInMilliseconds = record.dateSent,
           content = getContent(record as MmsMessageRecord),
-          conversationMessage = ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, record),
+          conversationMessage = ConversationMessage.ConversationMessageFactory.createWithUnresolvedData(context, record, recipient),
           allowsReplies = record.storyType.isStoryWithReplies,
-          hasSelfViewed = storyViewStateCache.getOrPut(record.id, if (record.isOutgoing) true else record.viewedReceiptCount > 0)
+          hasSelfViewed = storyViewStateCache.getOrPut(record.id, if (record.isOutgoing) true else viewedCount > 0)
         )
 
         emitter.onNext(story)
@@ -99,9 +101,9 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
       val recipient = Recipient.resolved(recipientId)
 
       val messageUpdateObserver = DatabaseObserver.MessageObserver {
-        if (it.mms && it.id == recordId) {
+        if (it.id == recordId) {
           try {
-            val messageRecord = SignalDatabase.mms.getMessageRecord(recordId)
+            val messageRecord = SignalDatabase.messages.getMessageRecord(recordId)
             if (messageRecord.isRemoteDelete) {
               emitter.onComplete()
             } else {
@@ -115,7 +117,7 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
 
       val conversationObserver = DatabaseObserver.Observer {
         try {
-          refresh(SignalDatabase.mms.getMessageRecord(recordId))
+          refresh(SignalDatabase.messages.getMessageRecord(recordId))
         } catch (e: NoSuchMessageException) {
           Log.w(TAG, "Message deleted during content refresh.", e)
         }
@@ -125,7 +127,7 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
       ApplicationDependencies.getDatabaseObserver().registerMessageUpdateObserver(messageUpdateObserver)
 
       val messageInsertObserver = DatabaseObserver.MessageObserver {
-        refresh(SignalDatabase.mms.getMessageRecord(recordId))
+        refresh(SignalDatabase.messages.getMessageRecord(recordId))
       }
 
       if (recipient.isGroup) {
@@ -171,8 +173,8 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
 
   fun markViewed(storyPost: StoryPost) {
     if (!storyPost.conversationMessage.messageRecord.isOutgoing) {
-      SignalExecutors.BOUNDED.execute {
-        val markedMessageInfo = SignalDatabase.mms.setIncomingMessageViewed(storyPost.id)
+      SignalExecutors.SERIAL.execute {
+        val markedMessageInfo = SignalDatabase.messages.setIncomingMessageViewed(storyPost.id)
         if (markedMessageInfo != null) {
           ApplicationDependencies.getDatabaseObserver().notifyConversationListListeners()
 
@@ -185,7 +187,7 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
                 markedMessageInfo.threadId,
                 storyPost.sender.id,
                 markedMessageInfo.syncMessageId.timetamp,
-                MessageId(storyPost.id, true)
+                MessageId(storyPost.id)
               )
             )
             MultiDeviceViewedUpdateJob.enqueue(listOf(markedMessageInfo.syncMessageId))
@@ -224,7 +226,7 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
   private fun getTextStoryLength(body: String): Int {
     return if (canParseToTextStory(body)) {
       val breakIteratorCompat = BreakIteratorCompat.getInstance()
-      breakIteratorCompat.setText(StoryTextPost.parseFrom(Base64.decode(body)).body)
+      breakIteratorCompat.setText(StoryTextPost.ADAPTER.decode(Base64.decode(body)).body)
       breakIteratorCompat.countBreaks()
     } else {
       0
@@ -234,7 +236,7 @@ open class StoryViewerPageRepository(context: Context, private val storyViewStat
   private fun canParseToTextStory(body: String): Boolean {
     return if (body.isNotEmpty()) {
       try {
-        StoryTextPost.parseFrom(Base64.decode(body))
+        StoryTextPost.ADAPTER.decode(Base64.decode(body))
         return true
       } catch (e: Exception) {
         false

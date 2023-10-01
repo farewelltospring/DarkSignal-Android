@@ -2,9 +2,7 @@ package org.thoughtcrime.securesms.mediasend.camerax
 
 import android.content.Context
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.camera.view.CameraController
-import androidx.camera.view.video.ExperimentalVideo
 import org.signal.core.util.asListContains
 import org.thoughtcrime.securesms.mms.MediaConstraints
 import org.thoughtcrime.securesms.util.FeatureFlags
@@ -13,8 +11,6 @@ import org.thoughtcrime.securesms.video.VideoUtil
 /**
  * Describes device capabilities
  */
-@RequiresApi(21)
-@ExperimentalVideo
 sealed class CameraXModePolicy {
 
   abstract val isVideoSupported: Boolean

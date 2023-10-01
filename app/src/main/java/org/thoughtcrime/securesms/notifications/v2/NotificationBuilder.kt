@@ -18,9 +18,9 @@ import androidx.core.graphics.drawable.IconCompat
 import org.signal.core.util.PendingIntentFlags.mutable
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.conversation.ConversationIntents
-import org.thoughtcrime.securesms.database.GroupTable
 import org.thoughtcrime.securesms.database.RecipientTable
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.database.model.GroupRecord
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.ReplyMethod
@@ -117,13 +117,13 @@ sealed class NotificationBuilder(protected val context: Context) {
   fun addReplyActions(conversation: NotificationConversation) {
     if (privacy.isDisplayMessage && isNotLocked && !conversation.recipient.isPushV1Group && RecipientUtil.isMessageRequestAccepted(context, conversation.recipient)) {
       if (conversation.recipient.isPushV2Group) {
-        val group: Optional<GroupTable.GroupRecord> = SignalDatabase.groups.getGroup(conversation.recipient.requireGroupId())
+        val group: Optional<GroupRecord> = SignalDatabase.groups.getGroup(conversation.recipient.requireGroupId())
         if (group.isPresent && group.get().isAnnouncementGroup && !group.get().isAdmin(Recipient.self())) {
           return
         }
       }
 
-      addActions(ReplyMethod.forRecipient(context, conversation.recipient), conversation)
+      addActions(ReplyMethod.forRecipient(conversation.recipient), conversation)
     }
   }
 
@@ -210,13 +210,13 @@ sealed class NotificationBuilder(protected val context: Context) {
         val actionName: String = context.getString(R.string.MessageNotifier_reply)
         val label: String = context.getString(replyMethod.toLongDescription())
         val replyAction: NotificationCompat.Action? = if (Build.VERSION.SDK_INT >= 24 && remoteReply != null) {
-          NotificationCompat.Action.Builder(R.drawable.ic_reply_white_36dp, actionName, remoteReply)
+          NotificationCompat.Action.Builder(R.drawable.symbol_reply_36, actionName, remoteReply)
             .addRemoteInput(RemoteInput.Builder(DefaultMessageNotifier.EXTRA_REMOTE_REPLY).setLabel(label).build())
             .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
             .setShowsUserInterface(false)
             .build()
         } else if (quickReply != null) {
-          NotificationCompat.Action(R.drawable.ic_reply_white_36dp, actionName, quickReply)
+          NotificationCompat.Action(R.drawable.symbol_reply_36, actionName, quickReply)
         } else {
           null
         }
@@ -224,7 +224,7 @@ sealed class NotificationBuilder(protected val context: Context) {
         builder.addAction(replyAction)
 
         if (remoteReply != null) {
-          val wearableReplyAction = NotificationCompat.Action.Builder(R.drawable.ic_reply, actionName, remoteReply)
+          val wearableReplyAction = NotificationCompat.Action.Builder(R.drawable.symbol_reply_24, actionName, remoteReply)
             .addRemoteInput(RemoteInput.Builder(DefaultMessageNotifier.EXTRA_REMOTE_REPLY).setLabel(label).build())
             .build()
 
@@ -265,7 +265,7 @@ sealed class NotificationBuilder(protected val context: Context) {
             NotificationCompat.BigPictureStyle()
               .bigPicture(bigPictureUri.toBitmap(context, BIG_PICTURE_DIMEN))
               .setSummaryText(conversation.getContentText(context))
-              .bigLargeIcon(null)
+              .bigLargeIcon(null as Bitmap?)
           )
           return
         }
@@ -274,7 +274,7 @@ sealed class NotificationBuilder(protected val context: Context) {
       val self: PersonCompat = PersonCompat.Builder()
         .setBot(false)
         .setName(if (includeShortcut) Recipient.self().getDisplayName(context) else context.getString(R.string.SingleRecipientNotificationBuilder_you))
-        .setIcon(if (includeShortcut) Recipient.self().getContactDrawable(context).toLargeBitmap(context).toIconCompat() else null)
+        .setIcon(AvatarUtil.getIconCompat(context, Recipient.self()))
         .setKey(ConversationUtil.getShortcutId(Recipient.self().id))
         .build()
 
@@ -290,10 +290,10 @@ sealed class NotificationBuilder(protected val context: Context) {
             .setBot(false)
             .setName(notificationItem.getPersonName(context))
             .setUri(notificationItem.getPersonUri())
-            .setIcon(notificationItem.getPersonIcon(context).toIconCompat())
+            .setIcon(notificationItem.getPersonIcon(context))
 
           if (includeShortcut) {
-            personBuilder.setKey(ConversationUtil.getShortcutId(notificationItem.individualRecipient))
+            personBuilder.setKey(ConversationUtil.getShortcutId(notificationItem.authorRecipient))
           }
 
           person = personBuilder.build()
@@ -319,7 +319,7 @@ sealed class NotificationBuilder(protected val context: Context) {
         if (line != null) {
           style.addLine(line)
         }
-        addPerson(notificationItem.individualRecipient)
+        addPerson(notificationItem.authorRecipient)
       }
 
       builder.setStyle(style)
@@ -360,7 +360,7 @@ sealed class NotificationBuilder(protected val context: Context) {
       )
 
       if (intent != null) {
-        val bubbleMetadata = NotificationCompat.BubbleMetadata.Builder(intent, AvatarUtil.getIconCompatForShortcut(context, conversation.recipient))
+        val bubbleMetadata = NotificationCompat.BubbleMetadata.Builder(intent, AvatarUtil.getIconCompat(context, conversation.recipient))
           .setAutoExpandBubble(bubbleState === BubbleUtil.BubbleState.SHOWN)
           .setDesiredHeight(600)
           .setSuppressNotification(bubbleState === BubbleUtil.BubbleState.SHOWN)
@@ -469,7 +469,12 @@ sealed class NotificationBuilder(protected val context: Context) {
     }
 
     override fun addPersonActual(recipient: Recipient) {
-      builder.addPerson(recipient.contactUri.toString())
+      builder.addPerson(
+        ConversationUtil.buildPerson(
+          context,
+          recipient
+        )
+      )
     }
 
     override fun setWhen(timestamp: Long) {
@@ -504,6 +509,5 @@ private fun ReplyMethod.toLongDescription(): Int {
   return when (this) {
     ReplyMethod.GroupMessage -> R.string.MessageNotifier_reply
     ReplyMethod.SecureMessage -> R.string.MessageNotifier_signal_message
-    ReplyMethod.UnsecuredSmsMessage -> R.string.MessageNotifier_unsecured_sms
   }
 }

@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 
 import org.thoughtcrime.securesms.database.model.ServiceMessageId;
 import org.thoughtcrime.securesms.recipients.RecipientId;
-import org.whispersystems.signalservice.api.messages.SignalServiceContent;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -19,31 +18,35 @@ import java.util.Optional;
  */
 public final class EarlyMessageCache {
 
-  private final LRUCache<ServiceMessageId, List<SignalServiceContent>> cache = new LRUCache<>(100);
+  private final LRUCache<ServiceMessageId, List<EarlyMessageCacheEntry>> cache = new LRUCache<>(100);
 
   /**
    * @param targetSender        The sender of the message this message depends on.
    * @param targetSentTimestamp The sent timestamp of the message this message depends on.
    */
-  public synchronized void store(@NonNull RecipientId targetSender, long targetSentTimestamp, @NonNull SignalServiceContent content) {
-    ServiceMessageId           messageId   = new ServiceMessageId(targetSender, targetSentTimestamp);
-    List<SignalServiceContent> contentList = cache.get(messageId);
+  public synchronized void store(@NonNull RecipientId targetSender,
+                                 long targetSentTimestamp,
+                                 @NonNull EarlyMessageCacheEntry cacheEntry)
+  {
+    ServiceMessageId             messageId    = new ServiceMessageId(targetSender, targetSentTimestamp);
+    List<EarlyMessageCacheEntry> envelopeList = cache.get(messageId);
 
-    if (contentList == null) {
-      contentList = new LinkedList<>();
+    if (envelopeList == null) {
+      envelopeList = new LinkedList<>();
     }
 
-    contentList.add(content);
+    envelopeList.add(cacheEntry);
 
-    cache.put(messageId, contentList);
+    cache.put(messageId, envelopeList);
   }
 
   /**
    * Returns and removes any content that is dependent on the provided message id.
+   *
    * @param sender        The sender of the message in question.
    * @param sentTimestamp The sent timestamp of the message in question.
    */
-  public synchronized Optional<List<SignalServiceContent>> retrieve(@NonNull RecipientId sender, long sentTimestamp) {
+  public synchronized Optional<List<EarlyMessageCacheEntry>> retrieve(@NonNull RecipientId sender, long sentTimestamp) {
     return Optional.ofNullable(cache.remove(new ServiceMessageId(sender, sentTimestamp)));
   }
 

@@ -86,11 +86,7 @@ public final class Projection {
     if (corners == null) {
       path.addRect(rect, Path.Direction.CW);
     } else {
-      if (Build.VERSION.SDK_INT >= 21) {
-        path.addRoundRect(rect, corners.toRadii(), Path.Direction.CW);
-      } else {
-        path.op(path, Path.Op.UNION);
-      }
+      path.addRoundRect(rect, corners.toRadii(), Path.Direction.CW);
     }
   }
 
@@ -252,6 +248,9 @@ public final class Projection {
 
 
   public static final class Corners {
+
+    public static final Corners NONE = new Corners(0f);
+
     private final float topLeft;
     private final float topRight;
     private final float bottomRight;
@@ -289,6 +288,17 @@ public final class Projection {
 
     public float getBottomRight() {
       return bottomRight;
+    }
+
+    public float[] toRelativeRadii(boolean isLTR) {
+      float[] radii = new float[8];
+
+      radii[0] = radii[1] = isLTR ? topLeft : topRight;
+      radii[2] = radii[3] = isLTR ? topRight : topLeft;
+      radii[4] = radii[5] = isLTR ? bottomRight : bottomLeft;
+      radii[6] = radii[7] = isLTR ? bottomLeft : bottomRight;
+
+      return radii;
     }
 
     public float[] toRadii() {

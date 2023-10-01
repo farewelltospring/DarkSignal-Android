@@ -1,7 +1,5 @@
 package org.whispersystems.signalservice.api.util;
 
-import com.google.protobuf.ByteString;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,9 +8,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import okio.ByteString;
+
 public final class UuidUtil {
 
   public static final UUID UNKNOWN_UUID = new UUID(0, 0);
+  public static final String UNKNOWN_UUID_STRING = UNKNOWN_UUID.toString();
 
   private static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", Pattern.CASE_INSENSITIVE);
 
@@ -55,7 +56,7 @@ public final class UuidUtil {
   }
 
   public static ByteString toByteString(UUID uuid) {
-    return ByteString.copyFrom(toByteArray(uuid));
+    return ByteString.of(toByteArray(uuid));
   }
 
   public static UUID fromByteString(ByteString bytes) {

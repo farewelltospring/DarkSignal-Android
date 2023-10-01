@@ -22,9 +22,7 @@ import org.thoughtcrime.securesms.groups.v2.processing.GroupsV2StateProcessor;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.megaphone.MegaphoneRepository;
-import org.thoughtcrime.securesms.messages.BackgroundMessageRetriever;
 import org.thoughtcrime.securesms.messages.IncomingMessageObserver;
-import org.thoughtcrime.securesms.messages.IncomingMessageProcessor;
 import org.thoughtcrime.securesms.net.StandardUserAgentInterceptor;
 import org.thoughtcrime.securesms.notifications.MessageNotifier;
 import org.thoughtcrime.securesms.payments.Payments;
@@ -32,9 +30,11 @@ import org.thoughtcrime.securesms.push.SignalServiceNetworkAccess;
 import org.thoughtcrime.securesms.push.SignalServiceTrustStore;
 import org.thoughtcrime.securesms.recipients.LiveRecipientCache;
 import org.thoughtcrime.securesms.revealable.ViewOnceMessageManager;
+import org.thoughtcrime.securesms.service.DeletedCallEventManager;
 import org.thoughtcrime.securesms.service.ExpiringMessageManager;
 import org.thoughtcrime.securesms.service.ExpiringStoriesManager;
 import org.thoughtcrime.securesms.service.PendingRetryReceiptManager;
+import org.thoughtcrime.securesms.service.ScheduledMessageManager;
 import org.thoughtcrime.securesms.service.TrimThreadsByDateManager;
 import org.thoughtcrime.securesms.service.webrtc.SignalCallManager;
 import org.thoughtcrime.securesms.shakereport.ShakeToReport;
@@ -42,6 +42,7 @@ import org.thoughtcrime.securesms.util.AppForegroundObserver;
 import org.thoughtcrime.securesms.util.EarlyMessageCache;
 import org.thoughtcrime.securesms.util.FrameRateTracker;
 import org.thoughtcrime.securesms.util.IasKeyStore;
+import org.thoughtcrime.securesms.video.exo.ExoPlayerPool;
 import org.thoughtcrime.securesms.video.exo.GiphyMp4Cache;
 import org.thoughtcrime.securesms.video.exo.SimpleExoPlayerPool;
 import org.thoughtcrime.securesms.webrtc.audio.AudioManagerCompat;
@@ -53,6 +54,7 @@ import org.whispersystems.signalservice.api.SignalServiceMessageSender;
 import org.whispersystems.signalservice.api.SignalWebSocket;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations;
 import org.whispersystems.signalservice.api.push.TrustStore;
+import org.whispersystems.signalservice.api.services.CallLinksService;
 import org.whispersystems.signalservice.api.services.DonationsService;
 import org.whispersystems.signalservice.api.services.ProfileService;
 import org.whispersystems.signalservice.api.util.Tls12SocketFactory;
@@ -86,6 +88,7 @@ public class ApplicationDependencies {
   private static final Object LOCK                    = new Object();
   private static final Object FRAME_RATE_TRACKER_LOCK = new Object();
   private static final Object JOB_MANAGER_LOCK        = new Object();
+  private static final Object SIGNAL_HTTP_CLIENT_LOCK = new Object();
 
   private static Application           application;
   private static Provider              provider;
@@ -95,8 +98,6 @@ public class ApplicationDependencies {
   private static volatile SignalServiceMessageSender   messageSender;
   private static volatile SignalServiceMessageReceiver messageReceiver;
   private static volatile IncomingMessageObserver      incomingMessageObserver;
-  private static volatile IncomingMessageProcessor     incomingMessageProcessor;
-  private static volatile BackgroundMessageRetriever   backgroundMessageRetriever;
   private static volatile LiveRecipientCache           recipientCache;
   private static volatile JobManager                   jobManager;
   private static volatile FrameRateTracker             frameRateTracker;
@@ -112,6 +113,7 @@ public class ApplicationDependencies {
   private static volatile ViewOnceMessageManager       viewOnceMessageManager;
   private static volatile ExpiringStoriesManager       expiringStoriesManager;
   private static volatile ExpiringMessageManager       expiringMessageManager;
+  private static volatile DeletedCallEventManager      deletedCallEventManager;
   private static volatile Payments                     payments;
   private static volatile SignalCallManager            signalCallManager;
   private static volatile ShakeToReport                shakeToReport;
@@ -126,9 +128,11 @@ public class ApplicationDependencies {
   private static volatile SimpleExoPlayerPool          exoPlayerPool;
   private static volatile AudioManagerCompat           audioManagerCompat;
   private static volatile DonationsService             donationsService;
+  private static volatile CallLinksService             callLinksService;
   private static volatile ProfileService               profileService;
   private static volatile DeadlockDetector             deadlockDetector;
   private static volatile ClientZkReceiptOperations    clientZkReceiptOperations;
+  private static volatile ScheduledMessageManager      scheduledMessagesManager;
 
   @MainThread
   public static void init(@NonNull Application application, @NonNull Provider provider) {
@@ -269,30 +273,6 @@ public class ApplicationDependencies {
 
   public static @NonNull SignalServiceNetworkAccess getSignalServiceNetworkAccess() {
     return provider.provideSignalServiceNetworkAccess();
-  }
-
-  public static @NonNull IncomingMessageProcessor getIncomingMessageProcessor() {
-    if (incomingMessageProcessor == null) {
-      synchronized (LOCK) {
-        if (incomingMessageProcessor == null) {
-          incomingMessageProcessor = provider.provideIncomingMessageProcessor();
-        }
-      }
-    }
-
-    return incomingMessageProcessor;
-  }
-
-  public static @NonNull BackgroundMessageRetriever getBackgroundMessageRetriever() {
-    if (backgroundMessageRetriever == null) {
-      synchronized (LOCK) {
-        if (backgroundMessageRetriever == null) {
-          backgroundMessageRetriever = provider.provideBackgroundMessageRetriever();
-        }
-      }
-    }
-
-    return backgroundMessageRetriever;
   }
 
   public static @NonNull LiveRecipientCache getRecipientCache() {
@@ -441,6 +421,30 @@ public class ApplicationDependencies {
     return expiringMessageManager;
   }
 
+  public static @NonNull DeletedCallEventManager getDeletedCallEventManager() {
+    if (deletedCallEventManager == null) {
+      synchronized (LOCK) {
+        if (deletedCallEventManager == null) {
+          deletedCallEventManager = provider.provideDeletedCallEventManager();
+        }
+      }
+    }
+
+    return deletedCallEventManager;
+  }
+
+  public static @NonNull ScheduledMessageManager getScheduledMessageManager() {
+    if (scheduledMessagesManager == null) {
+      synchronized (LOCK) {
+        if (scheduledMessagesManager == null) {
+          scheduledMessagesManager = provider.provideScheduledMessageManager();
+        }
+      }
+    }
+
+    return scheduledMessagesManager;
+  }
+
   public static TypingStatusRepository getTypingStatusRepository() {
     if (typingStatusRepository == null) {
       synchronized (LOCK) {
@@ -530,7 +534,7 @@ public class ApplicationDependencies {
 
   public static @NonNull OkHttpClient getSignalOkHttpClient() {
     if (signalOkHttpClient == null) {
-      synchronized (LOCK) {
+      synchronized (SIGNAL_HTTP_CLIENT_LOCK) {
         if (signalOkHttpClient == null) {
           try {
             OkHttpClient   baseClient    = ApplicationDependencies.getOkHttpClient();
@@ -604,7 +608,7 @@ public class ApplicationDependencies {
     return giphyMp4Cache;
   }
 
-  public static @NonNull SimpleExoPlayerPool getExoPlayerPool() {
+  public static @NonNull ExoPlayerPool getExoPlayerPool() {
     if (exoPlayerPool == null) {
       synchronized (LOCK) {
         if (exoPlayerPool == null) {
@@ -635,6 +639,17 @@ public class ApplicationDependencies {
       }
     }
     return donationsService;
+  }
+
+  public static @NonNull CallLinksService getCallLinksService() {
+    if (callLinksService == null) {
+      synchronized (LOCK) {
+        if (callLinksService == null) {
+          callLinksService = provider.provideCallLinksService(getSignalServiceNetworkAccess().getConfiguration(), getGroupsV2Operations());
+        }
+      }
+    }
+    return callLinksService;
   }
 
   public static @NonNull ProfileService getProfileService() {
@@ -678,8 +693,6 @@ public class ApplicationDependencies {
     @NonNull SignalServiceMessageSender provideSignalServiceMessageSender(@NonNull SignalWebSocket signalWebSocket, @NonNull SignalServiceDataStore protocolStore, @NonNull SignalServiceConfiguration signalServiceConfiguration);
     @NonNull SignalServiceMessageReceiver provideSignalServiceMessageReceiver(@NonNull SignalServiceConfiguration signalServiceConfiguration);
     @NonNull SignalServiceNetworkAccess provideSignalServiceNetworkAccess();
-    @NonNull IncomingMessageProcessor provideIncomingMessageProcessor();
-    @NonNull BackgroundMessageRetriever provideBackgroundMessageRetriever();
     @NonNull LiveRecipientCache provideRecipientCache();
     @NonNull JobManager provideJobManager();
     @NonNull FrameRateTracker provideFrameRateTracker();
@@ -691,6 +704,7 @@ public class ApplicationDependencies {
     @NonNull ViewOnceMessageManager provideViewOnceMessageManager();
     @NonNull ExpiringStoriesManager provideExpiringStoriesManager();
     @NonNull ExpiringMessageManager provideExpiringMessageManager();
+    @NonNull DeletedCallEventManager provideDeletedCallEventManager();
     @NonNull TypingStatusRepository provideTypingStatusRepository();
     @NonNull TypingStatusSender provideTypingStatusSender();
     @NonNull DatabaseObserver provideDatabaseObserver();
@@ -706,9 +720,11 @@ public class ApplicationDependencies {
     @NonNull SimpleExoPlayerPool provideExoPlayerPool();
     @NonNull AudioManagerCompat provideAndroidCallAudioManager();
     @NonNull DonationsService provideDonationsService(@NonNull SignalServiceConfiguration signalServiceConfiguration, @NonNull GroupsV2Operations groupsV2Operations);
+    @NonNull CallLinksService provideCallLinksService(@NonNull SignalServiceConfiguration signalServiceConfiguration, @NonNull GroupsV2Operations groupsV2Operations);
     @NonNull ProfileService provideProfileService(@NonNull ClientZkProfileOperations profileOperations, @NonNull SignalServiceMessageReceiver signalServiceMessageReceiver, @NonNull SignalWebSocket signalWebSocket);
     @NonNull DeadlockDetector provideDeadlockDetector();
     @NonNull ClientZkReceiptOperations provideClientZkReceiptOperations(@NonNull SignalServiceConfiguration signalServiceConfiguration);
     @NonNull KeyBackupService provideKeyBackupService(@NonNull SignalServiceAccountManager signalServiceAccountManager, @NonNull KeyStore keyStore, @NonNull KbsEnclave enclave);
+    @NonNull ScheduledMessageManager provideScheduledMessageManager();
   }
 }

@@ -4,7 +4,7 @@ import org.thoughtcrime.securesms.database.model.ParentStoryId
 import org.thoughtcrime.securesms.database.model.StoryType
 import org.thoughtcrime.securesms.database.model.databaseprotos.GiftBadge
 import org.thoughtcrime.securesms.mms.IncomingMediaMessage
-import org.thoughtcrime.securesms.mms.OutgoingMediaMessage
+import org.thoughtcrime.securesms.mms.OutgoingMessage
 import org.thoughtcrime.securesms.recipients.Recipient
 import java.util.Optional
 
@@ -17,7 +17,6 @@ object MmsHelper {
     recipient: Recipient = Recipient.UNKNOWN,
     body: String = "body",
     sentTimeMillis: Long = System.currentTimeMillis(),
-    subscriptionId: Int = -1,
     expiresIn: Long = 0,
     viewOnce: Boolean = false,
     distributionType: Int = ThreadTable.DistributionTypes.DEFAULT,
@@ -28,11 +27,10 @@ object MmsHelper {
     giftBadge: GiftBadge? = null,
     secure: Boolean = true
   ): Long {
-    val message = OutgoingMediaMessage(
+    val message = OutgoingMessage(
       recipient = recipient,
       body = body,
       timestamp = sentTimeMillis,
-      subscriptionId = subscriptionId,
       expiresIn = expiresIn,
       viewOnce = viewOnce,
       distributionType = distributionType,
@@ -50,16 +48,16 @@ object MmsHelper {
   }
 
   fun insert(
-    message: OutgoingMediaMessage,
+    message: OutgoingMessage,
     threadId: Long
   ): Long {
-    return SignalDatabase.mms.insertMessageOutbox(message, threadId, false, GroupReceiptTable.STATUS_UNKNOWN, null)
+    return SignalDatabase.messages.insertMessageOutbox(message, threadId, false, GroupReceiptTable.STATUS_UNKNOWN, null)
   }
 
   fun insert(
     message: IncomingMediaMessage,
     threadId: Long
   ): Optional<MessageTable.InsertResult> {
-    return SignalDatabase.mms.insertSecureDecryptedMessageInbox(message, threadId)
+    return SignalDatabase.messages.insertSecureDecryptedMessageInbox(message, threadId)
   }
 }

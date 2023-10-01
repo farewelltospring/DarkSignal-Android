@@ -7,10 +7,14 @@ import com.github.jknack.handlebars.Handlebars
 import com.github.jknack.handlebars.Template
 import com.github.jknack.handlebars.helper.ConditionalHelpers
 import fi.iki.elonen.NanoHTTPD
+import fi.iki.elonen.NanoWSD
 import org.signal.core.util.ExceptionUtil
+import org.signal.core.util.ForeignKeyConstraint
+import org.signal.core.util.getForeignKeys
 import org.signal.core.util.logging.Log
 import org.signal.spinner.Spinner.DatabaseConfig
 import java.lang.IllegalArgumentException
+import java.security.NoSuchAlgorithmException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,7 +35,7 @@ internal class SpinnerServer(
   deviceInfo: Map<String, () -> String>,
   private val databases: Map<String, DatabaseConfig>,
   private val plugins: Map<String, Plugin>
-) : NanoHTTPD(5000) {
+) : NanoWSD(5000) {
 
   companion object {
     private val TAG = Log.tag(SpinnerServer::class.java)
@@ -59,14 +63,16 @@ internal class SpinnerServer(
 
     try {
       return when {
-        session.method == Method.GET && session.uri == "/css/main.css" -> newFileResponse("css/main.css", "text/css")
-        session.method == Method.GET && session.uri == "/js/main.js" -> newFileResponse("js/main.js", "text/javascript")
+        session.method == Method.GET && session.uri.startsWith("/css/") -> newFileResponse(session.uri.substring(1), "text/css")
+        session.method == Method.GET && session.uri.startsWith("/js/") -> newFileResponse(session.uri.substring(1), "text/javascript")
         session.method == Method.GET && session.uri == "/" -> getIndex(dbParam, dbConfig.db())
         session.method == Method.GET && session.uri == "/browse" -> getBrowse(dbParam, dbConfig.db())
         session.method == Method.POST && session.uri == "/browse" -> postBrowse(dbParam, dbConfig, session)
         session.method == Method.GET && session.uri == "/query" -> getQuery(dbParam)
         session.method == Method.POST && session.uri == "/query" -> postQuery(dbParam, dbConfig, session)
         session.method == Method.GET && session.uri == "/recent" -> getRecent(dbParam)
+        session.method == Method.GET && session.uri == "/logs" -> getLogs(dbParam)
+        isWebsocketRequested(session) && session.uri == "/logs/websocket" -> getLogWebSocket(session)
         else -> {
           val plugin = plugins[session.uri]
           if (plugin != null && session.method == Method.GET) {
@@ -82,6 +88,10 @@ internal class SpinnerServer(
     }
   }
 
+  override fun openWebSocket(handshake: IHTTPSession): WebSocket {
+    return SpinnerLogWebSocket(handshake)
+  }
+
   fun onSql(dbName: String, sql: String) {
     val commands: Queue<QueryItem> = recentSql[dbName] ?: ConcurrentLinkedQueue()
 
@@ -91,6 +101,10 @@ internal class SpinnerServer(
     }
 
     recentSql[dbName] = commands
+  }
+
+  fun onLog(item: SpinnerLogItem) {
+    SpinnerLogWebSocket.onLog(item)
   }
 
   private fun getIndex(dbName: String, db: SupportSQLiteDatabase): Response {
@@ -105,6 +119,7 @@ internal class SpinnerServer(
         tables = db.getTables().use { it.toTableInfo() },
         indices = db.getIndexes().use { it.toIndexInfo() },
         triggers = db.getTriggers().use { it.toTriggerInfo() },
+        foreignKeys = db.getForeignKeys(),
         queryResult = db.getTables().use { it.toQueryResult() }
       )
     )
@@ -141,7 +156,7 @@ internal class SpinnerServer(
     }
 
     val query = "select * from $table limit $pageSize offset ${pageSize * pageIndex}"
-    val queryResult = dbConfig.db().query(query).use { it.toQueryResult(columnTransformers = dbConfig.columnTransformers) }
+    val queryResult = dbConfig.db().query(query).use { it.toQueryResult(columnTransformers = dbConfig.columnTransformers, table = table) }
 
     return renderTemplate(
       "browse",
@@ -200,6 +215,38 @@ internal class SpinnerServer(
         recentSql = queries?.reversed()
       )
     )
+  }
+
+  private fun getLogs(dbName: String): Response {
+    return renderTemplate(
+      "logs",
+      LogsPageModel(
+        environment = environment,
+        deviceInfo = deviceInfo.resolve(),
+        database = dbName,
+        databases = databases.keys.toList(),
+        plugins = plugins.values.toList()
+      )
+    )
+  }
+
+  private fun getLogWebSocket(session: IHTTPSession): Response {
+    val headers = session.headers
+    val webSocket = openWebSocket(session)
+
+    val handshakeResponse = webSocket.handshakeResponse
+
+    try {
+      handshakeResponse.addHeader(HEADER_WEBSOCKET_ACCEPT, makeAcceptKey(headers[HEADER_WEBSOCKET_KEY]))
+    } catch (e: NoSuchAlgorithmException) {
+      return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT, "The SHA-1 Algorithm required for websockets is not available on the server.")
+    }
+
+    if (headers.containsKey(HEADER_WEBSOCKET_PROTOCOL)) {
+      handshakeResponse.addHeader(HEADER_WEBSOCKET_PROTOCOL, headers[HEADER_WEBSOCKET_PROTOCOL]!!.split(",")[0])
+    }
+
+    return webSocket.handshakeResponse
   }
 
   private fun postQuery(dbName: String, dbConfig: DatabaseConfig, session: IHTTPSession): Response {
@@ -261,14 +308,14 @@ internal class SpinnerServer(
     )
   }
 
-  private fun Cursor.toQueryResult(queryStartTimeNanos: Long = 0, columnTransformers: List<ColumnTransformer> = emptyList()): QueryResult {
+  private fun Cursor.toQueryResult(queryStartTimeNanos: Long = 0, columnTransformers: List<ColumnTransformer> = emptyList(), table: String? = null): QueryResult {
     val numColumns = this.columnCount
     val columns = mutableListOf<String>()
     val transformers = mutableListOf<ColumnTransformer>()
 
     for (i in 0 until numColumns) {
       val columnName = getColumnName(i)
-      val customTransformer: ColumnTransformer? = columnTransformers.find { it.matches(null, columnName) }
+      val customTransformer: ColumnTransformer? = columnTransformers.find { it.matches(table, columnName) }
 
       columns += if (customTransformer != null) {
         "$columnName *"
@@ -280,13 +327,13 @@ internal class SpinnerServer(
     }
 
     var timeOfFirstRowNanos = 0L
-    val rows = mutableListOf<List<String>>()
+    val rows = mutableListOf<List<String?>>()
     while (moveToNext()) {
       if (timeOfFirstRowNanos == 0L) {
         timeOfFirstRowNanos = System.nanoTime()
       }
 
-      val row = mutableListOf<String>()
+      val row = mutableListOf<String?>()
       for (i in 0 until numColumns) {
         val columnName: String = getColumnName(i)
         try {
@@ -410,6 +457,7 @@ internal class SpinnerServer(
     val tables: List<TableInfo>,
     val indices: List<IndexInfo>,
     val triggers: List<TriggerInfo>,
+    val foreignKeys: List<ForeignKeyConstraint>,
     val queryResult: QueryResult? = null
   ) : PrefixPageData
 
@@ -422,7 +470,7 @@ internal class SpinnerServer(
     val tableNames: List<String>,
     val table: String? = null,
     val queryResult: QueryResult? = null,
-    val pagingData: PagingData? = null,
+    val pagingData: PagingData? = null
   ) : PrefixPageData
 
   data class QueryPageModel(
@@ -444,6 +492,14 @@ internal class SpinnerServer(
     val recentSql: List<RecentQuery>?
   ) : PrefixPageData
 
+  data class LogsPageModel(
+    override val environment: String,
+    override val deviceInfo: Map<String, String>,
+    override val database: String,
+    override val databases: List<String>,
+    override val plugins: List<Plugin>
+  ) : PrefixPageData
+
   data class PluginPageModel(
     override val environment: String,
     override val deviceInfo: Map<String, String>,
@@ -456,10 +512,10 @@ internal class SpinnerServer(
 
   data class QueryResult(
     val columns: List<String>,
-    val rows: List<List<String>>,
+    val rows: List<List<String?>>,
     val rowCount: Int = rows.size,
     val timeToFirstRow: String,
-    val timeToReadRows: String,
+    val timeToReadRows: String
   )
 
   data class TableInfo(

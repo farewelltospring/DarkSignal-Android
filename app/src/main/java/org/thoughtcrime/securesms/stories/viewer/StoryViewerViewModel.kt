@@ -1,15 +1,17 @@
 package org.thoughtcrime.securesms.stories.viewer
 
-import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.plusAssign
+import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.recipients.RecipientId
@@ -17,11 +19,14 @@ import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.stories.StoryViewerArgs
 import org.thoughtcrime.securesms.util.FeatureFlags
 import org.thoughtcrime.securesms.util.rx.RxStore
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 class StoryViewerViewModel(
   private val storyViewerArgs: StoryViewerArgs,
-  private val repository: StoryViewerRepository,
+  private val repository: StoryViewerRepository
 ) : ViewModel() {
 
   private val store = RxStore(
@@ -31,14 +36,17 @@ class StoryViewerViewModel(
         storyViewerArgs.storyThumbUri != null -> StoryViewerState.CrossfadeSource.ImageUri(storyViewerArgs.storyThumbUri, storyViewerArgs.storyThumbBlur)
         else -> StoryViewerState.CrossfadeSource.None
       },
-      skipCrossfade = storyViewerArgs.isFromNotification || storyViewerArgs.isFromQuote || Build.VERSION.SDK_INT < 21
+      skipCrossfade = storyViewerArgs.isFromNotification || storyViewerArgs.isFromQuote
     )
   )
+
+  private val loadStore = RxStore(StoryLoadState())
 
   private val disposables = CompositeDisposable()
 
   val stateSnapshot: StoryViewerState get() = store.state
   val state: Flowable<StoryViewerState> = store.stateFlowable
+  val loadState: Flowable<StoryLoadState> = loadStore.stateFlowable.distinctUntilChanged().observeOn(AndroidSchedulers.mainThread())
 
   private val hidden = mutableSetOf<RecipientId>()
 
@@ -48,7 +56,7 @@ class StoryViewerViewModel(
   private val childScrollStatePublisher: BehaviorSubject<Boolean> = BehaviorSubject.createDefault(false)
   val allowParentScrolling: Observable<Boolean> = Observable.combineLatest(
     childScrollStatePublisher.distinctUntilChanged(),
-    state.toObservable().map { it.loadState.isReady() }.distinctUntilChanged()
+    loadState.toObservable().map { it.isReady() }.distinctUntilChanged()
   ) { a, b -> !a && b }
 
   var hasConsumedInitialState = false
@@ -58,6 +66,25 @@ class StoryViewerViewModel(
 
   val isChildScrolling: Observable<Boolean> = childScrollStatePublisher.distinctUntilChanged()
   val isFirstTimeNavigationShowing: Observable<Boolean> = firstTimeNavigationPublisher.distinctUntilChanged()
+
+  /**
+   * Post an action *after* the story load state is ready.
+   * A slight delay is applied here to ensure that animations settle
+   * before the action takes place. Otherwise, some strange windowing
+   * problems can occur.
+   */
+  fun postAfterLoadStateReady(
+    delay: Duration = 100.milliseconds,
+    action: () -> Unit
+  ): Disposable {
+    return loadState
+      .filter { it.isReady() }
+      .delay(delay.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+      .firstOrError()
+      .ignoreElement()
+      .observeOn(AndroidSchedulers.mainThread())
+      .subscribeBy { action() }
+  }
 
   fun addHiddenAndRefresh(hidden: Set<RecipientId>) {
     this.hidden.addAll(hidden)
@@ -81,14 +108,14 @@ class StoryViewerViewModel(
   }
 
   fun setContentIsReady() {
-    store.update {
-      it.copy(loadState = it.loadState.copy(isContentReady = true))
+    loadStore.update {
+      it.copy(isContentReady = true)
     }
   }
 
   fun setCrossfaderIsReady(isReady: Boolean) {
-    store.update {
-      it.copy(loadState = it.loadState.copy(isCrossfaderReady = isReady))
+    loadStore.update {
+      it.copy(isCrossfaderReady = isReady)
     }
   }
 
@@ -152,6 +179,7 @@ class StoryViewerViewModel(
   override fun onCleared() {
     disposables.clear()
     store.dispose()
+    loadStore.dispose()
   }
 
   fun setSelectedPage(page: Int) {

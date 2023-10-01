@@ -9,6 +9,7 @@ import org.signal.smsexporter.ExportableMessage
 import org.signal.smsexporter.SmsExportService
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.attachments.AttachmentId
+import org.thoughtcrime.securesms.crypto.ModernDecryptingPartInputStream
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.databaseprotos.MessageExportState
@@ -19,6 +20,7 @@ import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.NotificationIds
 import org.thoughtcrime.securesms.notifications.v2.NotificationPendingIntentHelper
 import org.thoughtcrime.securesms.util.JsonUtils
+import java.io.EOFException
 import java.io.IOException
 import java.io.InputStream
 
@@ -83,13 +85,11 @@ class SignalSmsExportService : SmsExportService() {
   }
 
   override fun clearPreviousExportState() {
-    SignalDatabase.sms.clearExportState()
-    SignalDatabase.mms.clearExportState()
+    SignalDatabase.messages.clearExportState()
   }
 
   override fun prepareForExport() {
-    SignalDatabase.sms.clearInsecureMessageExportedErrorStatus()
-    SignalDatabase.mms.clearInsecureMessageExportedErrorStatus()
+    SignalDatabase.messages.clearInsecureMessageExportedErrorStatus()
   }
 
   override fun getUnexportedMessageCount(): Int {
@@ -103,74 +103,82 @@ class SignalSmsExportService : SmsExportService() {
   }
 
   override fun onMessageExportStarted(exportableMessage: ExportableMessage) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().setProgress(MessageExportState.Progress.STARTED).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().progress(MessageExportState.Progress.STARTED).build()
     }
   }
 
   override fun onMessageExportSucceeded(exportableMessage: ExportableMessage) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().setProgress(MessageExportState.Progress.COMPLETED).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().progress(MessageExportState.Progress.COMPLETED).build()
     }
 
-    SignalDatabase.mmsSms.markMessageExported(exportableMessage.getMessageId())
+    SignalDatabase.messages.markMessageExported(exportableMessage.getMessageId())
   }
 
   override fun onMessageExportFailed(exportableMessage: ExportableMessage) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().setProgress(MessageExportState.Progress.INIT).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().progress(MessageExportState.Progress.INIT).build()
     }
 
-    SignalDatabase.mmsSms.markMessageExportFailed(exportableMessage.getMessageId())
+    SignalDatabase.messages.markMessageExportFailed(exportableMessage.getMessageId())
   }
 
   override fun onMessageIdCreated(exportableMessage: ExportableMessage, messageId: Long) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().setMessageId(messageId).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().messageId(messageId).build()
     }
   }
 
   override fun onAttachmentPartExportStarted(exportableMessage: ExportableMessage, part: ExportableMessage.Mms.Part) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().addStartedAttachments(part.contentId).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().apply { startedAttachments += part.contentId }.build()
     }
   }
 
   override fun onAttachmentPartExportSucceeded(exportableMessage: ExportableMessage, part: ExportableMessage.Mms.Part) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().addCompletedAttachments(part.contentId).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().apply { completedAttachments += part.contentId }.build()
     }
   }
 
   override fun onAttachmentPartExportFailed(exportableMessage: ExportableMessage, part: ExportableMessage.Mms.Part) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      val startedAttachments = it.startedAttachmentsList - part.contentId
-      it.toBuilder().clearStartedAttachments().addAllStartedAttachments(startedAttachments).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      val startedAttachments = it.startedAttachments - part.contentId
+      it.newBuilder().startedAttachments(startedAttachments).build()
     }
   }
 
   override fun onRecipientExportStarted(exportableMessage: ExportableMessage, recipient: String) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().addStartedRecipients(recipient).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().apply { startedRecipients += recipient }.build()
     }
   }
 
   override fun onRecipientExportSucceeded(exportableMessage: ExportableMessage, recipient: String) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      it.toBuilder().addCompletedRecipients(recipient).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      it.newBuilder().apply { completedRecipients += recipient }.build()
     }
   }
 
   override fun onRecipientExportFailed(exportableMessage: ExportableMessage, recipient: String) {
-    SignalDatabase.mmsSms.updateMessageExportState(exportableMessage.getMessageId()) {
-      val startedAttachments = it.startedRecipientsList - recipient
-      it.toBuilder().clearStartedRecipients().addAllStartedRecipients(startedAttachments).build()
+    SignalDatabase.messages.updateMessageExportState(exportableMessage.getMessageId()) {
+      val startedAttachments = it.startedRecipients - recipient
+      it.newBuilder().startedRecipients(startedAttachments).build()
     }
   }
 
   @Throws(IOException::class)
   override fun getInputStream(part: ExportableMessage.Mms.Part): InputStream {
-    return SignalDatabase.attachments.getAttachmentStream(JsonUtils.fromJson(part.contentId, AttachmentId::class.java), 0)
+    try {
+      return SignalDatabase.attachments.getAttachmentStream(JsonUtils.fromJson(part.contentId, AttachmentId::class.java), 0)
+    } catch (e: IOException) {
+      if (e.message == ModernDecryptingPartInputStream.PREMATURE_END_ERROR_MESSAGE) {
+        throw EOFException(e.message)
+      } else {
+        throw e
+      }
+    }
   }
 
   override fun onExportPassCompleted() {
@@ -182,6 +190,7 @@ class SignalSmsExportService : SmsExportService() {
     val messageId: Any = when (this) {
       is ExportableMessage.Mms<*> -> id
       is ExportableMessage.Sms<*> -> id
+      is ExportableMessage.Skip<*> -> id
     }
 
     if (messageId is MessageId) {

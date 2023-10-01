@@ -62,6 +62,16 @@ sealed class DonationError(val source: DonationErrorSource, cause: Throwable) : 
      * Payment failed by the credit card processor, with a specific reason told to us by Stripe.
      */
     class StripeDeclinedError(source: DonationErrorSource, cause: Throwable, val declineCode: StripeDeclineCode, val method: PaymentSourceType.Stripe) : PaymentSetupError(source, cause)
+
+    /**
+     * Payment setup failed in some way, which we are told about by PayPal.
+     */
+    class PayPalCodedError(source: DonationErrorSource, cause: Throwable, val errorCode: Int) : PaymentSetupError(source, cause)
+
+    /**
+     * Payment failed by the credit card processor, with a specific reason told to us by PayPal.
+     */
+    class PayPalDeclinedError(source: DonationErrorSource, cause: Throwable, val code: PayPalDeclineCode.KnownCode) : PaymentSetupError(source, cause)
   }
 
   /**
@@ -139,17 +149,25 @@ sealed class DonationError(val source: DonationErrorSource, cause: Throwable) : 
      */
     @JvmStatic
     fun getPaymentSetupError(source: DonationErrorSource, throwable: Throwable, method: PaymentSourceType): DonationError {
-      return if (throwable is StripeError.PostError) {
-        val declineCode: StripeDeclineCode? = throwable.declineCode
-        val errorCode: String? = throwable.errorCode
+      return when (throwable) {
+        is StripeError.PostError -> {
+          val declineCode: StripeDeclineCode? = throwable.declineCode
+          val errorCode: String? = throwable.errorCode
 
-        when {
-          declineCode != null && method is PaymentSourceType.Stripe -> PaymentSetupError.StripeDeclinedError(source, throwable, declineCode, method)
-          errorCode != null && method is PaymentSourceType.Stripe -> PaymentSetupError.StripeCodedError(source, throwable, errorCode)
-          else -> PaymentSetupError.GenericError(source, throwable)
+          when {
+            declineCode != null && method is PaymentSourceType.Stripe -> PaymentSetupError.StripeDeclinedError(source, throwable, declineCode, method)
+            errorCode != null && method is PaymentSourceType.Stripe -> PaymentSetupError.StripeCodedError(source, throwable, errorCode)
+            else -> PaymentSetupError.GenericError(source, throwable)
+          }
         }
-      } else {
-        PaymentSetupError.GenericError(source, throwable)
+
+        is UserCancelledPaymentError -> {
+          return throwable
+        }
+
+        else -> {
+          PaymentSetupError.GenericError(source, throwable)
+        }
       }
     }
 

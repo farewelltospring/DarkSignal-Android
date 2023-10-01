@@ -1,14 +1,12 @@
 package org.thoughtcrime.securesms.migrations;
 
 import androidx.annotation.NonNull;
-
-import com.google.protobuf.InvalidProtocolBufferException;
+import androidx.annotation.Nullable;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.RecipientRecord;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
@@ -16,6 +14,8 @@ import org.thoughtcrime.securesms.storage.StorageSyncHelper;
 import org.whispersystems.signalservice.api.storage.SignalAccountRecord;
 import org.whispersystems.signalservice.api.storage.StorageId;
 import org.whispersystems.signalservice.internal.storage.protos.AccountRecord;
+
+import java.io.IOException;
 
 /**
  * Check for unknown fields stored on self and attempt to apply them.
@@ -69,12 +69,12 @@ public class ApplyUnknownFieldsToSelfMigrationJob extends MigrationJob {
 
     try {
       StorageId           storageId           = StorageId.forAccount(self.getStorageServiceId());
-      AccountRecord       accountRecord       = AccountRecord.parseFrom(settings.getSyncExtras().getStorageProto());
+      AccountRecord       accountRecord       = AccountRecord.ADAPTER.decode(settings.getSyncExtras().getStorageProto());
       SignalAccountRecord signalAccountRecord = new SignalAccountRecord(storageId, accountRecord);
 
       Log.d(TAG, "Applying potentially now known unknowns");
       StorageSyncHelper.applyAccountStorageSyncUpdates(context, self, signalAccountRecord, false);
-    } catch (InvalidProtocolBufferException e) {
+    } catch (IOException e) {
       Log.w(TAG, e);
     }
   }
@@ -86,7 +86,7 @@ public class ApplyUnknownFieldsToSelfMigrationJob extends MigrationJob {
 
   public static class Factory implements Job.Factory<ApplyUnknownFieldsToSelfMigrationJob> {
     @Override
-    public @NonNull ApplyUnknownFieldsToSelfMigrationJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull ApplyUnknownFieldsToSelfMigrationJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
       return new ApplyUnknownFieldsToSelfMigrationJob(parameters);
     }
   }

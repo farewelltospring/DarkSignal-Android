@@ -26,22 +26,23 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.ImageProxy;
+import androidx.camera.video.FallbackStrategy;
+import androidx.camera.video.Quality;
+import androidx.camera.video.QualitySelector;
 import androidx.camera.view.CameraController;
 import androidx.camera.view.LifecycleCameraController;
 import androidx.camera.view.PreviewView;
-import androidx.camera.view.video.ExperimentalVideo;
-import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.util.Executors;
+import com.google.android.material.card.MaterialCardView;
 
 import org.signal.core.util.Stopwatch;
 import org.signal.core.util.concurrent.SimpleTask;
@@ -72,8 +73,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Camera captured implemented using the CameraX SDK, which uses Camera2 under the hood. Should be
  * preferred whenever possible.
  */
-@ExperimentalVideo
-@RequiresApi(21)
 public class CameraXFragment extends LoggingFragment implements CameraFragment {
 
   private static final String TAG              = Log.tag(CameraXFragment.class);
@@ -241,7 +240,7 @@ public class CameraXFragment extends LoggingFragment implements CameraFragment {
     CameraController.OutputSize outputSize = new CameraController.OutputSize(size);
 
     cameraController.setImageCaptureTargetSize(outputSize);
-    cameraController.setVideoCaptureTargetSize(new CameraController.OutputSize(VideoUtil.getVideoRecordingSize()));
+    cameraController.setVideoCaptureQualitySelector(QualitySelector.from(Quality.HD, FallbackStrategy.lowerQualityThan(Quality.HD)));
 
     controlsContainer.removeAllViews();
     controlsContainer.addView(LayoutInflater.from(getContext()).inflate(layout, controlsContainer, false));
@@ -262,7 +261,7 @@ public class CameraXFragment extends LoggingFragment implements CameraFragment {
            .into(thumbnail);
     } else {
       thumbBackground.setBackgroundResource(R.drawable.media_selection_camera_switch_background);
-      thumbnail.setImageResource(R.drawable.ic_gallery_outline_24);
+      thumbnail.setImageResource(R.drawable.symbol_album_tilt_24);
       thumbnail.setColorFilter(Color.WHITE);
       thumbnail.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
     }
@@ -294,9 +293,9 @@ public class CameraXFragment extends LoggingFragment implements CameraFragment {
   }
 
   private void initializeViewFinderAndControlsPositioning() {
-    CardView      cameraCard    = requireView().findViewById(R.id.camerax_camera_parent);
-    View          controls      = requireView().findViewById(R.id.camerax_controls_container);
-    CameraDisplay cameraDisplay = CameraDisplay.getDisplay(requireActivity());
+    MaterialCardView cameraCard    = requireView().findViewById(R.id.camerax_camera_parent);
+    View             controls      = requireView().findViewById(R.id.camerax_controls_container);
+    CameraDisplay    cameraDisplay = CameraDisplay.getDisplay(requireActivity());
 
     if (!cameraDisplay.getRoundViewFinderCorners()) {
       cameraCard.setRadius(0f);
@@ -400,6 +399,11 @@ public class CameraXFragment extends LoggingFragment implements CameraFragment {
         Log.w(TAG, "Video capture is not supported on this device.", e);
       }
     } else {
+      captureButton.setOnLongClickListener(unused -> {
+        CameraFragment.toastVideoRecordingNotAvailable(requireContext());
+        return true;
+      });
+
       Log.i(TAG, "Video capture not supported. " +
                  "API: " + Build.VERSION.SDK_INT + ", " +
                  "MFD: " + MemoryFileDescriptor.supported() + ", " +

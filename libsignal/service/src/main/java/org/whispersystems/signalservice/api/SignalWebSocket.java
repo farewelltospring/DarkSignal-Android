@@ -2,17 +2,20 @@ package org.whispersystems.signalservice.api;
 
 import org.signal.libsignal.protocol.logging.Log;
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess;
-import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
+import org.whispersystems.signalservice.api.messages.EnvelopeResponse;
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState;
 import org.whispersystems.signalservice.api.websocket.WebSocketFactory;
 import org.whispersystems.signalservice.api.websocket.WebSocketUnavailableException;
+import org.whispersystems.signalservice.internal.push.Envelope;
 import org.whispersystems.signalservice.internal.websocket.WebSocketConnection;
-import org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketRequestMessage;
-import org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketResponseMessage;
+import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage;
+import org.whispersystems.signalservice.internal.websocket.WebSocketResponseMessage;
 import org.whispersystems.signalservice.internal.websocket.WebsocketResponse;
 import org.whispersystems.util.Base64;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -197,9 +200,11 @@ public final class SignalWebSocket {
 
   public Single<WebsocketResponse> request(WebSocketRequestMessage requestMessage, Optional<UnidentifiedAccess> unidentifiedAccess) {
     if (unidentifiedAccess.isPresent()) {
-      WebSocketRequestMessage message = WebSocketRequestMessage.newBuilder(requestMessage)
-                                                               .addHeaders("Unidentified-Access-Key:" + Base64.encodeBytes(unidentifiedAccess.get().getUnidentifiedAccessKey()))
-                                                               .build();
+      List<String> headers = new ArrayList<>(requestMessage.headers);
+      headers.add("Unidentified-Access-Key:" + Base64.encodeBytes(unidentifiedAccess.get().getUnidentifiedAccessKey()));
+      WebSocketRequestMessage message = requestMessage.newBuilder()
+                                                      .headers(headers)
+                                                      .build();
       try {
         return getUnidentifiedWebSocket().sendRequest(message)
                                          .flatMap(r -> {
@@ -217,87 +222,131 @@ public final class SignalWebSocket {
   }
 
   /**
-   * <p>
-   * A blocking call that reads a message off the pipe. When this call returns, the message has been
-   * acknowledged and will not be retransmitted. This will return {@link Optional#empty()} when an
-   * empty response is hit, which indicates the WebSocket is empty.
-   * <p>
-   * You can specify a {@link MessageReceivedCallback} that will be called before the received message is acknowledged.
-   * This allows you to write the received message to durable storage before acknowledging receipt of it to the
-   * server.
-   * <p>
-   * Important: The empty response will only be hit once for each connection. That means if you get
-   * an empty response and call readOrEmpty() again on the same instance, you will not get an empty
-   * response, and instead will block until you get an actual message. This will, however, reset if
-   * connection breaks (if, for instance, you lose and regain network).
+   * The reads a batch of messages off of the websocket.
    *
-   * @param timeout  The timeout to wait for.
-   * @param callback A callback that will be called before the message receipt is acknowledged to the server.
-   * @return The message read (same as the message sent through the callback).
+   * Rather than just provide you the batch as a return value, it will invoke the provided callback with the
+   * batch as an argument. If you are able to successfully process them, this method will then ack all of the
+   * messages so that they won't be re-delivered in the future.
+   *
+   * The return value of this method is a boolean indicating whether or not there are more messages in the
+   * queue to be read (true if there's still more, or false if you've drained everything).
+   *
+   * However, this return value is only really useful the first time you read from the websocket. That's because
+   * the websocket will only ever let you know if it's drained *once* for any given connection. So if this method
+   * returns false, a subsequent call while using the same websocket connection will simply block until we either
+   * get a new message or hit the timeout.
+   *
+   * Concerning the requested batch size, it's worth noting that this is simply an upper bound. This method will
+   * not wait extra time until the batch has "filled up". Instead, it will wait for a single message, and then
+   * take any extra messages that are also available up until you've hit your batch size.
    */
   @SuppressWarnings("DuplicateThrows")
-  public Optional<SignalServiceEnvelope> readOrEmpty(long timeout, MessageReceivedCallback callback)
+  public boolean readMessageBatch(long timeout, int batchSize, MessageReceivedCallback callback)
+      throws TimeoutException, WebSocketUnavailableException, IOException
+  {
+    List<EnvelopeResponse> responses     = new ArrayList<>();
+    boolean                hitEndOfQueue = false;
+
+    Optional<EnvelopeResponse> firstEnvelope = waitForSingleMessage(timeout);
+
+    if (firstEnvelope.isPresent()) {
+      responses.add(firstEnvelope.get());
+    } else {
+      hitEndOfQueue = true;
+    }
+
+    if (!hitEndOfQueue) {
+      for (int i = 1; i < batchSize; i++) {
+        Optional<WebSocketRequestMessage> request = getWebSocket().readRequestIfAvailable();
+
+        if (request.isPresent()) {
+          if (isSignalServiceEnvelope(request.get())) {
+            responses.add(requestToEnvelopeResponse(request.get()));
+          } else if (isSocketEmptyRequest(request.get())) {
+            hitEndOfQueue = true;
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (responses.size() > 0) {
+      callback.onMessageBatch(responses);
+    }
+
+    return !hitEndOfQueue;
+  }
+
+  public void sendAck(EnvelopeResponse response) throws IOException {
+    getWebSocket().sendResponse(createWebSocketResponse(response.getWebsocketRequest()));
+  }
+
+  @SuppressWarnings("DuplicateThrows")
+  private Optional<EnvelopeResponse> waitForSingleMessage(long timeout)
       throws TimeoutException, WebSocketUnavailableException, IOException
   {
     while (true) {
-      WebSocketRequestMessage  request  = getWebSocket().readRequest(timeout);
-      WebSocketResponseMessage response = createWebSocketResponse(request);
-      try {
-        if (isSignalServiceEnvelope(request)) {
-          Optional<String> timestampHeader = findHeader(request);
-          long             timestamp       = 0;
+      WebSocketRequestMessage request = getWebSocket().readRequest(timeout);
 
-          if (timestampHeader.isPresent()) {
-            try {
-              timestamp = Long.parseLong(timestampHeader.get());
-            } catch (NumberFormatException e) {
-              Log.w(TAG, "Failed to parse " + SERVER_DELIVERED_TIMESTAMP_HEADER);
-            }
-          }
-
-          SignalServiceEnvelope envelope = new SignalServiceEnvelope(request.getBody().toByteArray(), timestamp);
-
-          callback.onMessage(envelope);
-          return Optional.of(envelope);
-        } else if (isSocketEmptyRequest(request)) {
-          return Optional.empty();
-        }
-      } finally {
-        getWebSocket().sendResponse(response);
+      if (isSignalServiceEnvelope(request)) {
+        return Optional.of(requestToEnvelopeResponse(request));
+      } else if (isSocketEmptyRequest(request)) {
+        return Optional.empty();
       }
     }
   }
 
+  private static EnvelopeResponse requestToEnvelopeResponse(WebSocketRequestMessage request)
+      throws IOException
+  {
+    Optional<String> timestampHeader = findHeader(request);
+    long             timestamp       = 0;
+
+    if (timestampHeader.isPresent()) {
+      try {
+        timestamp = Long.parseLong(timestampHeader.get());
+      } catch (NumberFormatException e) {
+        Log.w(TAG, "Failed to parse " + SERVER_DELIVERED_TIMESTAMP_HEADER);
+      }
+    }
+
+    Envelope envelope = Envelope.ADAPTER.decode(request.body.toByteArray());
+
+    return new EnvelopeResponse(envelope, timestamp, request);
+  }
+
   private static boolean isSignalServiceEnvelope(WebSocketRequestMessage message) {
-    return "PUT".equals(message.getVerb()) && "/api/v1/message".equals(message.getPath());
+    return "PUT".equals(message.verb) && "/api/v1/message".equals(message.path);
   }
 
   private static boolean isSocketEmptyRequest(WebSocketRequestMessage message) {
-    return "PUT".equals(message.getVerb()) && "/api/v1/queue/empty".equals(message.getPath());
+    return "PUT".equals(message.verb) && "/api/v1/queue/empty".equals(message.path);
   }
 
   private static WebSocketResponseMessage createWebSocketResponse(WebSocketRequestMessage request) {
     if (isSignalServiceEnvelope(request)) {
-      return WebSocketResponseMessage.newBuilder()
-                                     .setId(request.getId())
-                                     .setStatus(200)
-                                     .setMessage("OK")
-                                     .build();
+      return new WebSocketResponseMessage.Builder()
+                                         .id(request.id)
+                                         .status(200)
+                                         .message("OK")
+                                         .build();
     } else {
-      return WebSocketResponseMessage.newBuilder()
-                                     .setId(request.getId())
-                                     .setStatus(400)
-                                     .setMessage("Unknown")
-                                     .build();
+      return new WebSocketResponseMessage.Builder()
+                                         .id(request.id)
+                                         .status(400)
+                                         .message("Unknown")
+                                         .build();
     }
   }
 
   private static Optional<String> findHeader(WebSocketRequestMessage message) {
-    if (message.getHeadersCount() == 0) {
+    if (message.headers.isEmpty()) {
       return Optional.empty();
     }
 
-    for (String header : message.getHeadersList()) {
+    for (String header : message.headers) {
       if (header.startsWith(SERVER_DELIVERED_TIMESTAMP_HEADER)) {
         String[] split = header.split(":");
         if (split.length == 2 && split[0].trim().toLowerCase().equals(SERVER_DELIVERED_TIMESTAMP_HEADER.toLowerCase())) {
@@ -314,6 +363,8 @@ public final class SignalWebSocket {
    * received.
    */
   public interface MessageReceivedCallback {
-    void onMessage(SignalServiceEnvelope envelope);
+
+    /** Called with the batch of envelopes. You are responsible for sending acks. **/
+    void onMessageBatch(List<EnvelopeResponse> envelopeResponses);
   }
 }

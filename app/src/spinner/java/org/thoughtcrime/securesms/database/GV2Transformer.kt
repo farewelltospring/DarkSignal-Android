@@ -1,9 +1,8 @@
 package org.thoughtcrime.securesms.database
 
 import android.database.Cursor
-import com.google.protobuf.ByteString
+import okio.ByteString
 import org.signal.core.util.requireBlob
-import org.signal.core.util.requireString
 import org.signal.spinner.ColumnTransformer
 import org.signal.storageservice.protos.groups.local.DecryptedBannedMember
 import org.signal.storageservice.protos.groups.local.DecryptedGroup
@@ -14,35 +13,34 @@ import org.whispersystems.signalservice.api.util.UuidUtil
 
 object GV2Transformer : ColumnTransformer {
   override fun matches(tableName: String?, columnName: String): Boolean {
-    return columnName == GroupTable.V2_DECRYPTED_GROUP || columnName == GroupTable.MEMBERS
+    return columnName == GroupTable.V2_DECRYPTED_GROUP
   }
 
-  override fun transform(tableName: String?, columnName: String, cursor: Cursor): String {
+  override fun transform(tableName: String?, columnName: String, cursor: Cursor): String? {
     return if (columnName == GroupTable.V2_DECRYPTED_GROUP) {
       val groupBytes = cursor.requireBlob(GroupTable.V2_DECRYPTED_GROUP)
-      val group = DecryptedGroup.parseFrom(groupBytes)
+      val group = DecryptedGroup.ADAPTER.decode(groupBytes!!)
       group.formatAsHtml()
     } else {
-      val members = cursor.requireString(GroupTable.MEMBERS)
-      members?.split(',')?.chunked(20)?.joinToString("<br>") { it.joinToString(",") } ?: ""
+      null
     }
   }
 }
 
 private fun DecryptedGroup.formatAsHtml(): String {
-  val members: String = describeList(membersList, DecryptedMember::getUuid)
-  val pending: String = describeList(pendingMembersList, DecryptedPendingMember::getUuid)
-  val requesting: String = describeList(requestingMembersList, DecryptedRequestingMember::getUuid)
-  val banned: String = describeList(bannedMembersList, DecryptedBannedMember::getUuid)
+  val members: String = describeList(members, DecryptedMember::aciBytes)
+  val pending: String = describeList(pendingMembers, DecryptedPendingMember::serviceIdBytes)
+  val requesting: String = describeList(requestingMembers, DecryptedRequestingMember::aciBytes)
+  val banned: String = describeList(bannedMembers, DecryptedBannedMember::serviceIdBytes)
 
   return """
     Revision:     $revision
     Title:        $title
     Avatar:       ${(avatar?.length ?: 0) != 0}
-    Timer:        ${disappearingMessagesTimer.duration}
+    Timer:        ${disappearingMessagesTimer!!.duration}
     Description:  "$description"
     Announcement: $isAnnouncementGroup
-    Access:       attributes(${accessControl.attributes}) members(${accessControl.members}) link(${accessControl.addFromInviteLink})
+    Access:       attributes(${accessControl!!.attributes}) members(${accessControl!!.members}) link(${accessControl!!.addFromInviteLink})
     Members:      $members
     Pending:      $pending
     Requesting:   $requesting

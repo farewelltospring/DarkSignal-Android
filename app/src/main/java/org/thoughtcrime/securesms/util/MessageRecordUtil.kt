@@ -4,7 +4,7 @@ package org.thoughtcrime.securesms.util
 
 import android.content.Context
 import org.thoughtcrime.securesms.R
-import org.thoughtcrime.securesms.database.MmsSmsColumns
+import org.thoughtcrime.securesms.database.MessageTypes
 import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord
 import org.thoughtcrime.securesms.database.model.MessageRecord
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
@@ -42,7 +42,7 @@ fun MessageRecord.hasThumbnail(): Boolean =
   isMms && (this as MmsMessageRecord).slideDeck.thumbnailSlide != null
 
 fun MessageRecord.isStoryReaction(): Boolean =
-  isMms && MmsSmsColumns.Types.isStoryReaction(type)
+  isMms && MessageTypes.isStoryReaction(type)
 
 fun MessageRecord.isStory(): Boolean =
   isMms && (this as MmsMessageRecord).storyType.isStory
@@ -54,7 +54,7 @@ fun MessageRecord.isBorderless(context: Context): Boolean {
 }
 
 fun MessageRecord.hasNoBubble(context: Context): Boolean =
-  hasSticker() || isBorderless(context) || (isTextOnly(context) && isJumbomoji(context))
+  hasSticker() || isBorderless(context) || (isTextOnly(context) && isJumbomoji(context) && (messageRanges?.ranges?.isEmpty() ?: true))
 
 fun MessageRecord.hasOnlyThumbnail(context: Context): Boolean {
   return hasThumbnail() &&
@@ -141,9 +141,24 @@ fun MessageRecord.isTextOnly(context: Context): Boolean {
       )
 }
 
+fun MessageRecord.isScheduled(): Boolean {
+  return (this as? MediaMmsMessageRecord)?.scheduledDate?.let { it != -1L } ?: false
+}
+
 /**
  * Returns the QuoteType for this record, as if it was being quoted.
  */
 fun MessageRecord.getRecordQuoteType(): QuoteModel.Type {
   return if (hasGiftBadge()) QuoteModel.Type.GIFT_BADGE else QuoteModel.Type.NORMAL
+}
+
+fun MessageRecord.isEditMessage(): Boolean {
+  return this is MediaMmsMessageRecord && isEditMessage
+}
+
+/**
+ * Returns whether or not the given message record can be reacted to.
+ */
+fun MessageRecord.isValidReactionTarget(): Boolean {
+  return isSecure && !isPending && !isFailed && !isRemoteDelete && !isUpdate
 }

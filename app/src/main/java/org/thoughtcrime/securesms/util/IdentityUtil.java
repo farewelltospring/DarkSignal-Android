@@ -7,8 +7,10 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.signal.core.util.concurrent.SignalExecutors;
+import org.signal.core.util.concurrent.SimpleTask;
 import org.signal.core.util.logging.Log;
 import org.signal.libsignal.protocol.IdentityKey;
+import org.signal.libsignal.protocol.InvalidKeyException;
 import org.signal.libsignal.protocol.SignalProtocolAddress;
 import org.signal.libsignal.protocol.state.SessionRecord;
 import org.signal.libsignal.protocol.state.SessionStore;
@@ -20,9 +22,11 @@ import org.thoughtcrime.securesms.database.IdentityTable;
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.MessageTable.InsertResult;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.database.model.GroupRecord;
 import org.thoughtcrime.securesms.database.model.IdentityRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.keyvalue.SignalStore;
+import org.thoughtcrime.securesms.mms.MmsException;
+import org.thoughtcrime.securesms.mms.OutgoingMessage;
 import org.thoughtcrime.securesms.notifications.v2.ConversationId;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
@@ -30,15 +34,13 @@ import org.thoughtcrime.securesms.sms.IncomingIdentityDefaultMessage;
 import org.thoughtcrime.securesms.sms.IncomingIdentityUpdateMessage;
 import org.thoughtcrime.securesms.sms.IncomingIdentityVerifiedMessage;
 import org.thoughtcrime.securesms.sms.IncomingTextMessage;
-import org.thoughtcrime.securesms.sms.OutgoingIdentityDefaultMessage;
-import org.thoughtcrime.securesms.sms.OutgoingIdentityVerifiedMessage;
-import org.thoughtcrime.securesms.sms.OutgoingTextMessage;
 import org.thoughtcrime.securesms.util.concurrent.ListenableFuture;
 import org.thoughtcrime.securesms.util.concurrent.SettableFuture;
-import org.signal.core.util.concurrent.SimpleTask;
 import org.whispersystems.signalservice.api.SignalSessionLock;
 import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage;
+import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
+import org.whispersystems.signalservice.internal.push.Verified;
 
 import java.util.List;
 import java.util.Optional;
@@ -63,12 +65,12 @@ public final class IdentityUtil {
   public static void markIdentityVerified(Context context, Recipient recipient, boolean verified, boolean remote)
   {
     long         time          = System.currentTimeMillis();
-    MessageTable smsDatabase   = SignalDatabase.sms();
+    MessageTable smsDatabase   = SignalDatabase.messages();
     GroupTable   groupDatabase = SignalDatabase.groups();
 
     try (GroupTable.Reader reader = groupDatabase.getGroups()) {
 
-      GroupTable.GroupRecord groupRecord;
+      GroupRecord groupRecord;
 
       while ((groupRecord = reader.getNext()) != null) {
         if (groupRecord.getMembers().contains(recipient.getId()) && groupRecord.isActive() && !groupRecord.isMms()) {
@@ -81,15 +83,22 @@ public final class IdentityUtil {
 
             smsDatabase.insertMessageInbox(incoming);
           } else {
-            RecipientId         recipientId    = SignalDatabase.recipients().getOrInsertFromGroupId(groupRecord.getId());
-            Recipient           groupRecipient = Recipient.resolved(recipientId);
-            long                threadId       = SignalDatabase.threads().getOrCreateThreadIdFor(groupRecipient);
-            OutgoingTextMessage outgoing ;
+            RecipientId recipientId    = SignalDatabase.recipients().getOrInsertFromGroupId(groupRecord.getId());
+            Recipient   groupRecipient = Recipient.resolved(recipientId);
+            long        threadId       = SignalDatabase.threads().getOrCreateThreadIdFor(groupRecipient);
 
-            if (verified) outgoing = new OutgoingIdentityVerifiedMessage(recipient);
-            else          outgoing = new OutgoingIdentityDefaultMessage(recipient);
+            OutgoingMessage outgoing;
+            if (verified) {
+              outgoing = OutgoingMessage.identityVerifiedMessage(recipient, time);
+            } else {
+              outgoing = OutgoingMessage.identityDefaultMessage(recipient, time);
+            }
 
-            SignalDatabase.sms().insertMessageOutbox(threadId, outgoing, false, time, null);
+            try {
+              SignalDatabase.messages().insertMessageOutbox(outgoing, threadId, false, null);
+            } catch (MmsException e) {
+              throw new AssertionError(e);
+            }
             SignalDatabase.threads().update(threadId, true);
           }
         }
@@ -104,17 +113,22 @@ public final class IdentityUtil {
 
       smsDatabase.insertMessageInbox(incoming);
     } else {
-      OutgoingTextMessage outgoing;
-
-      if (verified) outgoing = new OutgoingIdentityVerifiedMessage(recipient);
-      else          outgoing = new OutgoingIdentityDefaultMessage(recipient);
+      OutgoingMessage outgoing;
+      if (verified) {
+        outgoing = OutgoingMessage.identityVerifiedMessage(recipient, time);
+      } else {
+        outgoing = OutgoingMessage.identityDefaultMessage(recipient, time);
+      }
 
       long threadId = SignalDatabase.threads().getOrCreateThreadIdFor(recipient);
 
       Log.i(TAG, "Inserting verified outbox...");
-      SignalDatabase.sms().insertMessageOutbox(threadId, outgoing, false, time, null);
-      boolean keepThreadArchived = SignalStore.settings().shouldKeepMutedChatsArchived() && recipient.isMuted();
-      SignalDatabase.threads().update(threadId, !keepThreadArchived);
+      try {
+        SignalDatabase.messages().insertMessageOutbox(outgoing, threadId, false, null);
+      } catch (MmsException e) {
+        throw new AssertionError();
+      }
+      SignalDatabase.threads().update(threadId, true);
     }
   }
 
@@ -122,11 +136,11 @@ public final class IdentityUtil {
     Log.w(TAG, "Inserting safety number change event(s) for " + recipientId, new Throwable());
 
     long         time          = System.currentTimeMillis();
-    MessageTable smsDatabase   = SignalDatabase.sms();
+    MessageTable smsDatabase   = SignalDatabase.messages();
     GroupTable   groupDatabase = SignalDatabase.groups();
 
     try (GroupTable.Reader reader = groupDatabase.getGroups()) {
-      GroupTable.GroupRecord groupRecord;
+      GroupRecord groupRecord;
 
       while ((groupRecord = reader.getNext()) != null) {
         if (groupRecord.getMembers().contains(recipientId) && groupRecord.isActive()) {
@@ -161,6 +175,28 @@ public final class IdentityUtil {
         }
       }
     }
+  }
+
+  public static void processVerifiedMessage(Context context, Verified verified) throws InvalidKeyException {
+    SignalServiceAddress          destination = new SignalServiceAddress(ServiceId.parseOrThrow(verified.destinationAci));
+    IdentityKey                   identityKey = new IdentityKey(verified.identityKey.toByteArray(), 0);
+    VerifiedMessage.VerifiedState state;
+
+    switch (verified.state) {
+      case DEFAULT:
+        state = VerifiedMessage.VerifiedState.DEFAULT;
+        break;
+      case VERIFIED:
+        state = VerifiedMessage.VerifiedState.VERIFIED;
+        break;
+      case UNVERIFIED:
+        state = VerifiedMessage.VerifiedState.UNVERIFIED;
+        break;
+      default:
+        throw new IllegalArgumentException();
+    }
+
+    processVerifiedMessage(context, new VerifiedMessage(destination, identityKey, state, System.currentTimeMillis()));
   }
 
   public static void processVerifiedMessage(Context context, VerifiedMessage verifiedMessage) {

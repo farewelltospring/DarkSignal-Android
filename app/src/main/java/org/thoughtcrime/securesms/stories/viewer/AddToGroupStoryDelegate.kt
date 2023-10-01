@@ -11,6 +11,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.CompletableSubject
+import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.concurrent.SignalExecutors
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
@@ -19,13 +20,12 @@ import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
 import org.thoughtcrime.securesms.mediasend.MediaSendActivityResult
 import org.thoughtcrime.securesms.mediasend.v2.MediaSelectionActivity
-import org.thoughtcrime.securesms.mms.OutgoingMediaMessage
+import org.thoughtcrime.securesms.mms.OutgoingMessage
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.sharing.MultiShareArgs
 import org.thoughtcrime.securesms.sharing.MultiShareSender
 import org.thoughtcrime.securesms.sms.MessageSender
-import org.thoughtcrime.securesms.util.LifecycleDisposable
 
 /**
  * Delegate for dealing with sending stories directly to a group.
@@ -102,26 +102,23 @@ class AddToGroupStoryDelegate(
       Log.d(TAG, "Sending preupload media.")
 
       val recipient = Recipient.resolved(result.recipientId)
-      val secureMessage = OutgoingMediaMessage(
-        recipient = recipient,
-        timestamp = System.currentTimeMillis(),
-        storyType = result.storyType,
-        mentions = result.mentions.toList(),
-        isSecure = true
-      )
-
-      val threadId = SignalDatabase.threads.getOrCreateThreadIdFor(recipient)
-      if (result.body.isNotEmpty()) {
-        result.preUploadResults.forEach {
-          SignalDatabase.attachments.updateAttachmentCaption(it.attachmentId, result.body)
+      val secureMessages = result.preUploadResults
+        .mapNotNull { SignalDatabase.attachments.getAttachment(it.attachmentId) }
+        .map {
+          Thread.sleep(5)
+          OutgoingMessage(
+            recipient = recipient,
+            timestamp = System.currentTimeMillis(),
+            storyType = result.storyType,
+            isSecure = true,
+            attachments = listOf(it)
+          )
         }
-      }
 
-      MessageSender.sendPushWithPreUploadedMedia(
+      MessageSender.sendStories(
         ApplicationDependencies.getApplication(),
-        secureMessage,
-        result.preUploadResults,
-        threadId
+        secureMessages,
+        null
       ) {
         Log.d(TAG, "Sent.")
       }
@@ -131,10 +128,11 @@ class AddToGroupStoryDelegate(
     private fun sendNonPreUploadedMedia(result: MediaSendActivityResult) {
       Log.d(TAG, "Sending non-preupload media.")
 
-      val multiShareArgs = MultiShareArgs.Builder(setOf(ContactSearchKey.RecipientSearchKey.Story(result.recipientId)))
+      val multiShareArgs = MultiShareArgs.Builder(setOf(ContactSearchKey.RecipientSearchKey(result.recipientId, true)))
         .withMedia(result.nonUploadedMedia.toList())
         .withDraftText(result.body)
         .withMentions(result.mentions.toList())
+        .withBodyRanges(result.bodyRanges)
         .build()
 
       val results = MultiShareSender.sendSync(multiShareArgs)

@@ -2,14 +2,13 @@ package org.thoughtcrime.securesms.jobs;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
-
-import com.google.protobuf.ByteString;
+import androidx.annotation.Nullable;
 
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.signal.core.util.logging.Log;
 import org.signal.storageservice.protos.groups.local.DecryptedMember;
-import org.thoughtcrime.securesms.database.GroupTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.database.model.GroupRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.groups.GroupChangeBusyException;
 import org.thoughtcrime.securesms.groups.GroupChangeFailedException;
@@ -17,19 +16,20 @@ import org.thoughtcrime.securesms.groups.GroupId;
 import org.thoughtcrime.securesms.groups.GroupInsufficientRightsException;
 import org.thoughtcrime.securesms.groups.GroupManager;
 import org.thoughtcrime.securesms.groups.GroupNotAMemberException;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.impl.DecryptionsDrainedConstraint;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.whispersystems.signalservice.api.groupsv2.NoCredentialForRedemptionTimeException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
-import org.whispersystems.signalservice.api.util.UuidUtil;
 
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import okio.ByteString;
 
 /**
  * When your profile key changes, this job can be used to update it on a single given group.
@@ -95,7 +95,7 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
       return;
     }
 
-    ByteString selfProfileKey = ByteString.copyFrom(rawProfileKey);
+    ByteString selfProfileKey = ByteString.of(rawProfileKey);
 
     long timeSinceLastCheck = System.currentTimeMillis() - SignalStore.misc().getLastGv2ProfileCheckTime();
 
@@ -112,20 +112,20 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
       boolean foundMismatch = false;
 
       for (GroupId.V2 id : SignalDatabase.groups().getAllGroupV2Ids()) {
-        Optional<GroupTable.GroupRecord> group = SignalDatabase.groups().getGroup(id);
+        Optional<GroupRecord> group = SignalDatabase.groups().getGroup(id);
         if (!group.isPresent()) {
           Log.w(TAG, "Group " + group + " no longer exists?");
           continue;
         }
 
-        ByteString      selfUuidBytes = UuidUtil.toByteString(Recipient.self().requireServiceId().uuid());
-        DecryptedMember selfMember    = group.get().requireV2GroupProperties().getDecryptedGroup().getMembersList()
+        ByteString      selfUuidBytes = Recipient.self().requireAci().toByteString();
+        DecryptedMember selfMember    = group.get().requireV2GroupProperties().getDecryptedGroup().members
                                                                                                   .stream()
-                                                                                                  .filter(m -> m.getUuid().equals(selfUuidBytes))
+                                                                                                  .filter(m -> m.aciBytes.equals(selfUuidBytes))
                                                                                                   .findFirst()
                                                                                                   .orElse(null);
 
-        if (selfMember != null && !selfMember.getProfileKey().equals(selfProfileKey)) {
+        if (selfMember != null && !selfMember.profileKey.equals(selfProfileKey)) {
           Log.w(TAG, "Profile key mismatch for group " + id + " -- enqueueing job");
           foundMismatch = true;
           ApplicationDependencies.getJobManager().add(GroupV2UpdateSelfProfileKeyJob.withQueueLimits(id));
@@ -145,9 +145,9 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder().putString(KEY_GROUP_ID, groupId.toString())
-                             .build();
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder().putString(KEY_GROUP_ID, groupId.toString())
+                                    .serialize();
   }
 
   @Override
@@ -177,7 +177,9 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
   public static final class Factory implements Job.Factory<GroupV2UpdateSelfProfileKeyJob> {
 
     @Override
-    public @NonNull GroupV2UpdateSelfProfileKeyJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull GroupV2UpdateSelfProfileKeyJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       return new GroupV2UpdateSelfProfileKeyJob(parameters,
                                                 GroupId.parseOrThrow(data.getString(KEY_GROUP_ID)).requireV2());
     }

@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.TaskStackBuilder;
@@ -16,7 +17,6 @@ import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.conversationlist.model.ConversationFilter;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.ThreadTable;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.notifications.NotificationChannels;
@@ -85,7 +85,7 @@ public class UserNotificationMigrationJob extends MigrationJob {
       return;
     }
 
-    List<RecipientId> registered               = SignalDatabase.recipients().getRegistered();
+    Set<RecipientId>  registered               = SignalDatabase.recipients().getRegistered();
     List<RecipientId> systemContacts           = SignalDatabase.recipients().getSystemContacts();
     Set<RecipientId>  registeredSystemContacts = SetUtil.intersection(registered, systemContacts);
     Set<RecipientId>  threadRecipients         = threadTable.getAllThreadRecipients();
@@ -128,7 +128,7 @@ public class UserNotificationMigrationJob extends MigrationJob {
   public static final class Factory implements Job.Factory<UserNotificationMigrationJob> {
 
     @Override
-    public @NonNull UserNotificationMigrationJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull UserNotificationMigrationJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
       return new UserNotificationMigrationJob(parameters);
     }
   }

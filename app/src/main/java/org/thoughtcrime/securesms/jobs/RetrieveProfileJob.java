@@ -29,11 +29,12 @@ import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.RecipientTable.UnidentifiedAccessMode;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobmanager.Data;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
+import org.thoughtcrime.securesms.notifications.v2.ConversationId;
 import org.thoughtcrime.securesms.profiles.ProfileName;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
@@ -48,7 +49,6 @@ import org.whispersystems.signalservice.api.crypto.InvalidCiphertextException;
 import org.whispersystems.signalservice.api.crypto.ProfileCipher;
 import org.whispersystems.signalservice.api.profiles.ProfileAndCredential;
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile;
-import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.services.ProfileService;
 import org.whispersystems.signalservice.api.util.ExpiringProfileCredentialUtil;
 import org.whispersystems.signalservice.internal.ServiceResponse;
@@ -59,7 +59,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -219,11 +218,11 @@ public class RetrieveProfileJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder().putStringListAsArray(KEY_RECIPIENTS, Stream.of(recipientIds)
-                                                                         .map(RecipientId::serialize)
-                                                                         .toList())
-                             .build();
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder().putStringListAsArray(KEY_RECIPIENTS, Stream.of(recipientIds)
+                                                                                .map(RecipientId::serialize)
+                                                                                .toList())
+                                    .serialize();
   }
 
   @Override
@@ -285,11 +284,11 @@ public class RetrieveProfileJob extends BaseJob {
 
     Set<RecipientId> success = SetUtil.difference(recipientIds, operationState.retries);
 
-    Map<RecipientId, ServiceId> newlyRegistered = Stream.of(operationState.profiles)
-                                                        .map(Pair::first)
-                                                        .filterNot(Recipient::isRegistered)
-                                                        .collect(Collectors.toMap(Recipient::getId,
-                                                                                  r -> r.getServiceId().orElse(null)));
+    Set<RecipientId> newlyRegistered = Stream.of(operationState.profiles)
+                                             .map(Pair::first)
+                                             .filterNot(Recipient::isRegistered)
+                                             .map(Recipient::getId)
+                                             .collect(Collectors.toSet());
 
 
     //noinspection SimplifyStreamApiCallChains
@@ -302,8 +301,8 @@ public class RetrieveProfileJob extends BaseJob {
     });
 
     recipientTable.markProfilesFetched(success, System.currentTimeMillis());
-    // XXX The service hasn't implemented profiles for PNIs yet, so if using PNP CDS we don't want to mark users without profiles as unregistered.
-    if ((operationState.unregistered.size() > 0 || newlyRegistered.size() > 0) && !FeatureFlags.phoneNumberPrivacy()) {
+
+    if (operationState.unregistered.size() > 0 || newlyRegistered.size() > 0) {
       Log.i(TAG, "Marking " + newlyRegistered.size() + " users as registered and " + operationState.unregistered.size() + " users as unregistered.");
       recipientTable.bulkUpdatedRegisteredStatus(newlyRegistered, operationState.unregistered);
     }
@@ -462,17 +461,24 @@ public class RetrieveProfileJob extends BaseJob {
         String remoteDisplayName = remoteProfileName.toString();
         String localDisplayName  = localProfileName.toString();
 
-        if (!recipient.isBlocked() &&
-            !recipient.isGroup() &&
-            !recipient.isSelf() &&
-            !localDisplayName.isEmpty() &&
-            !remoteDisplayName.equals(localDisplayName))
-        {
+        boolean writeChangeEvent = !recipient.isBlocked() &&
+                                   !recipient.isGroup() &&
+                                   !recipient.isSelf() &&
+                                   !localDisplayName.isEmpty() &&
+                                   !remoteDisplayName.equals(localDisplayName);
+        if (writeChangeEvent) {
           Log.i(TAG, "Writing a profile name change event for " + recipient.getId());
-          SignalDatabase.sms().insertProfileNameChangeMessages(recipient, remoteDisplayName, localDisplayName);
+          SignalDatabase.messages().insertProfileNameChangeMessages(recipient, remoteDisplayName, localDisplayName);
         } else {
           Log.i(TAG, String.format(Locale.US, "Name changed, but wasn't relevant to write an event. blocked: %s, group: %s, self: %s, firstSet: %s, displayChange: %s",
                                    recipient.isBlocked(), recipient.isGroup(), recipient.isSelf(), localDisplayName.isEmpty(), !remoteDisplayName.equals(localDisplayName)));
+        }
+
+        if (writeChangeEvent || localDisplayName.isEmpty()) {
+          Long threadId = SignalDatabase.threads().getThreadIdFor(recipient.getId());
+          if (threadId != null) {
+            ApplicationDependencies.getMessageNotifier().updateNotification(context, ConversationId.forConversation(threadId));
+          }
         }
 
         return true;
@@ -535,7 +541,9 @@ public class RetrieveProfileJob extends BaseJob {
   public static final class Factory implements Job.Factory<RetrieveProfileJob> {
 
     @Override
-    public @NonNull RetrieveProfileJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull RetrieveProfileJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       String[]         ids          = data.getStringArray(KEY_RECIPIENTS);
       Set<RecipientId> recipientIds = Stream.of(ids).map(RecipientId::from).collect(Collectors.toSet());
 

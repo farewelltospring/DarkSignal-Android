@@ -37,7 +37,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.MediaItem;
+import androidx.media3.common.MediaItem;
 
 import org.signal.core.util.logging.Log;
 import org.signal.paging.PagingController;
@@ -46,11 +46,11 @@ import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.conversation.colors.Colorizable;
 import org.thoughtcrime.securesms.conversation.colors.Colorizer;
 import org.thoughtcrime.securesms.conversation.mutiselect.MultiselectPart;
+import org.thoughtcrime.securesms.database.model.MediaMmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.giph.mp4.GiphyMp4Playable;
 import org.thoughtcrime.securesms.giph.mp4.GiphyMp4PlaybackPolicyEnforcer;
 import org.thoughtcrime.securesms.mms.GlideRequests;
-import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.util.CachedInflater;
 import org.thoughtcrime.securesms.util.DateUtils;
@@ -77,7 +77,8 @@ import java.util.Set;
  */
 public class ConversationAdapter
     extends ListAdapter<ConversationMessage, RecyclerView.ViewHolder>
-    implements StickyHeaderDecoration.StickyHeaderAdapter<ConversationAdapter.StickyHeaderViewHolder>
+    implements StickyHeaderDecoration.StickyHeaderAdapter<ConversationAdapter.StickyHeaderViewHolder>,
+               ConversationAdapterBridge
 {
 
   private static final String TAG = Log.tag(ConversationAdapter.class);
@@ -95,38 +96,33 @@ public class ConversationAdapter
   public  static final int MESSAGE_TYPE_FOOTER              = 6;
   private static final int MESSAGE_TYPE_PLACEHOLDER         = 7;
 
-  private static final int PAYLOAD_TIMESTAMP   = 0;
-  public  static final int PAYLOAD_NAME_COLORS = 1;
-  public  static final int PAYLOAD_SELECTED    = 2;
-
   private final ItemClickListener clickListener;
   private final Context           context;
   private final LifecycleOwner    lifecycleOwner;
   private final GlideRequests     glideRequests;
   private final Locale            locale;
-  private final Recipient         recipient;
-
   private final Set<MultiselectPart>         selected;
   private final Calendar                     calendar;
 
-  private String              searchQuery;
-  private ConversationMessage recordToPulse;
-  private View                typingView;
-  private View                footerView;
-  private PagingController    pagingController;
-  private boolean             hasWallpaper;
-  private boolean             isMessageRequestAccepted;
-  private ConversationMessage inlineContent;
-  private Colorizer           colorizer;
-  private boolean             isTypingViewEnabled;
-  private boolean             condensedMode;
+  private String                      searchQuery;
+  private ConversationMessage         recordToPulse;
+  private View                        typingView;
+  private View                        footerView;
+  private PagingController            pagingController;
+  private boolean                     hasWallpaper;
+  private boolean                     isMessageRequestAccepted;
+  private ConversationMessage         inlineContent;
+  private Colorizer                   colorizer;
+  private boolean                     isTypingViewEnabled;
+  private ConversationItemDisplayMode displayMode;
+  private PulseRequest                pulseRequest;
 
   public ConversationAdapter(@NonNull Context context,
                       @NonNull LifecycleOwner lifecycleOwner,
                       @NonNull GlideRequests glideRequests,
                       @NonNull Locale locale,
                       @Nullable ItemClickListener clickListener,
-                      @NonNull Recipient recipient,
+                      boolean hasWallpaper,
                       @NonNull Colorizer colorizer)
   {
     super(new DiffUtil.ItemCallback<ConversationMessage>() {
@@ -147,10 +143,9 @@ public class ConversationAdapter
     this.glideRequests                = glideRequests;
     this.locale                       = locale;
     this.clickListener                = clickListener;
-    this.recipient                    = recipient;
     this.selected                     = new HashSet<>();
     this.calendar                     = Calendar.getInstance();
-    this.hasWallpaper                 = recipient.hasWallpaper();
+    this.hasWallpaper                 = hasWallpaper;
     this.isMessageRequestAccepted     = true;
     this.colorizer                    = colorizer;
   }
@@ -255,8 +250,8 @@ public class ConversationAdapter
     }
   }
 
-  public void setCondensedMode(boolean condensedMode) {
-    this.condensedMode = condensedMode;
+  public void setCondensedMode(ConversationItemDisplayMode condensedMode) {
+    this.displayMode = condensedMode;
     notifyDataSetChanged();
   }
 
@@ -275,7 +270,7 @@ public class ConversationAdapter
         ConversationMessage previousMessage = adapterPosition < getItemCount() - 1  && !isFooterPosition(adapterPosition + 1) ? getItem(adapterPosition + 1) : null;
         ConversationMessage nextMessage     = adapterPosition > 0                   && !isHeaderPosition(adapterPosition - 1) ? getItem(adapterPosition - 1) : null;
 
-        ConversationItemDisplayMode displayMode = condensedMode ? ConversationItemDisplayMode.CONDENSED : ConversationItemDisplayMode.STANDARD;
+        ConversationItemDisplayMode itemDisplayMode = displayMode != null ? displayMode : ConversationItemDisplayMode.Standard.INSTANCE;
 
         conversationViewHolder.getBindable().bind(lifecycleOwner,
                                                   conversationMessage,
@@ -284,14 +279,14 @@ public class ConversationAdapter
                                                   glideRequests,
                                                   locale,
                                                   selected,
-                                                  recipient,
+                                                  conversationMessage.getThreadRecipient(),
                                                   searchQuery,
                                                   conversationMessage == recordToPulse,
-                                                  hasWallpaper && !condensedMode,
+                                                  hasWallpaper && itemDisplayMode.displayWallpaper(),
                                                   isMessageRequestAccepted,
                                                   conversationMessage == inlineContent,
                                                   colorizer,
-                                                  displayMode);
+                                                  itemDisplayMode);
 
         if (conversationMessage == recordToPulse) {
           recordToPulse = null;
@@ -330,7 +325,13 @@ public class ConversationAdapter
 
     if (conversationMessage == null) return -1;
 
-    calendar.setTimeInMillis(conversationMessage.getMessageRecord().getDateSent());
+    if (displayMode.getScheduleMessageMode()) {
+      calendar.setTimeInMillis(((MediaMmsMessageRecord) conversationMessage.getMessageRecord()).getScheduledDate());
+    } else if (displayMode == ConversationItemDisplayMode.EditHistory.INSTANCE) {
+      calendar.setTimeInMillis(conversationMessage.getMessageRecord().getDateSent());
+    } else {
+      calendar.setTimeInMillis(conversationMessage.getConversationTimestamp());
+    }
     return calendar.get(Calendar.YEAR) * 1000L + calendar.get(Calendar.DAY_OF_YEAR);
   }
 
@@ -344,7 +345,13 @@ public class ConversationAdapter
     Context             context             = viewHolder.itemView.getContext();
     ConversationMessage conversationMessage = Objects.requireNonNull(getItem(position));
 
-    viewHolder.setText(DateUtils.getConversationDateHeaderString(viewHolder.itemView.getContext(), locale, conversationMessage.getMessageRecord().getDateSent()));
+    if (displayMode.getScheduleMessageMode()) {
+      viewHolder.setText(DateUtils.getScheduledMessagesDateHeaderString(viewHolder.itemView.getContext(), locale, ((MediaMmsMessageRecord) conversationMessage.getMessageRecord()).getScheduledDate()));
+    } else if (displayMode == ConversationItemDisplayMode.EditHistory.INSTANCE) {
+      viewHolder.setText(DateUtils.getConversationDateHeaderString(viewHolder.itemView.getContext(), locale, conversationMessage.getMessageRecord().getDateSent()));
+    } else {
+      viewHolder.setText(DateUtils.getConversationDateHeaderString(viewHolder.itemView.getContext(), locale, conversationMessage.getConversationTimestamp()));
+    }
 
     if (type == HEADER_TYPE_POPOVER_DATE) {
       if (hasWallpaper) {
@@ -367,6 +374,10 @@ public class ConversationAdapter
     }
   }
 
+  public @Nullable ConversationMessage getConversationMessage(int position) {
+    return getItem(position);
+  }
+
   public @Nullable ConversationMessage getItem(int position) {
     position = isTypingViewEnabled() ? position - 1 : position;
 
@@ -386,12 +397,46 @@ public class ConversationAdapter
     }
   }
 
+  /**
+   * Checks a range around the given position for nulls.
+   *
+   * @param position The position we wish to jump to.
+   * @return true if we seem like we've paged in the right data, false if not so.
+   */
+  public boolean canJumpToPosition(int position) {
+    position = isTypingViewEnabled() ? position - 1 : position;
+    if (position < 0) {
+      return false;
+    }
+
+    if (position > super.getItemCount()) {
+      Log.d(TAG, "Could not access corrected position " + position + " as it is out of bounds.");
+      return false;
+    }
+
+    int start = Math.max(position - 10, 0);
+    int end = Math.min(position + 5, super.getItemCount());
+
+    for (int i = start; i < end; i++) {
+      if (super.getItem(i) == null) {
+        if (pagingController != null) {
+          pagingController.onDataNeededAroundIndex(position);
+        }
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   public void setPagingController(@Nullable PagingController pagingController) {
     this.pagingController = pagingController;
   }
 
   public boolean isForRecipientId(@NonNull RecipientId recipientId) {
-    return recipient.getId().equals(recipientId);
+    // TODO [alex] -- This should be fine, since we now have a 1:1 relationship between fragment and recipient.
+    return true;
   }
 
   void onBindLastSeenViewHolder(StickyHeaderViewHolder viewHolder, long unreadCount) {
@@ -406,7 +451,7 @@ public class ConversationAdapter
     }
   }
 
-  boolean hasNoConversationMessages() {
+  public boolean hasNoConversationMessages() {
     return super.getItemCount() == 0;
   }
 
@@ -415,7 +460,7 @@ public class ConversationAdapter
    * an adjusted message position based on adapter state.
    */
   @MainThread
-  int getAdapterPositionForMessagePosition(int messagePosition) {
+  public int getAdapterPositionForMessagePosition(int messagePosition) {
     return isTypingViewEnabled() ? messagePosition + 1 : messagePosition;
   }
 
@@ -487,8 +532,16 @@ public class ConversationAdapter
       int correctedPosition = isHeaderPosition(position) ? position + 1 : position;
 
       recordToPulse = getItem(correctedPosition);
+      pulseRequest = new PulseRequest(position, recordToPulse.getMessageRecord().isOutgoing());
       notifyItemChanged(correctedPosition);
     }
+  }
+
+  @Nullable
+  public PulseRequest consumePulseRequest() {
+    PulseRequest request = pulseRequest;
+    pulseRequest = null;
+    return request;
   }
 
   /**
@@ -505,7 +558,7 @@ public class ConversationAdapter
    * Lets the adapter know that the wallpaper state has changed.
    * @return True if the internal wallpaper state changed, otherwise false.
    */
-  boolean onHasWallpaperChanged(boolean hasWallpaper) {
+  public boolean onHasWallpaperChanged(boolean hasWallpaper) {
     if (this.hasWallpaper != hasWallpaper) {
       Log.d(TAG, "Resetting adapter due to wallpaper change.");
       this.hasWallpaper = hasWallpaper;
@@ -556,7 +609,7 @@ public class ConversationAdapter
    * Provided a pool, this will initialize it with view counts that make sense.
    */
   @MainThread
-  static void initializePool(@NonNull RecyclerView.RecycledViewPool pool) {
+  public static void initializePool(@NonNull RecyclerView.RecycledViewPool pool) {
     pool.setMaxRecycledViews(MESSAGE_TYPE_INCOMING_TEXT, 25);
     pool.setMaxRecycledViews(MESSAGE_TYPE_INCOMING_MULTIMEDIA, 15);
     pool.setMaxRecycledViews(MESSAGE_TYPE_OUTGOING_TEXT, 25);

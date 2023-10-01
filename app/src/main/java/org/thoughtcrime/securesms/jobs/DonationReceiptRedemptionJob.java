@@ -14,9 +14,9 @@ import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.database.model.databaseprotos.GiftBadge;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobmanager.Data;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.util.MessageRecordUtil;
@@ -118,12 +118,12 @@ public class DonationReceiptRedemptionJob extends BaseJob {
   }
 
   @Override
-  public @NonNull Data serialize() {
-    return new Data.Builder()
+  public @Nullable byte[] serialize() {
+    return new JsonJobData.Builder()
                    .putString(DATA_ERROR_SOURCE, errorSource.serialize())
                    .putLong(DATA_GIFT_MESSAGE_ID, giftMessageId)
                    .putBoolean(DATA_PRIMARY, makePrimary)
-                   .build();
+                   .serialize();
   }
 
   @Override
@@ -138,14 +138,14 @@ public class DonationReceiptRedemptionJob extends BaseJob {
       SignalStore.donationsValues().markSubscriptionRedemptionFailed();
       MultiDeviceSubscriptionSyncRequestJob.enqueue();
     } else if (giftMessageId != NO_ID) {
-      SignalDatabase.mms().markGiftRedemptionFailed(giftMessageId);
+      SignalDatabase.messages().markGiftRedemptionFailed(giftMessageId);
     }
   }
 
   @Override
   public void onAdded() {
     if (giftMessageId != NO_ID) {
-      SignalDatabase.mms().markGiftRedemptionStarted(giftMessageId);
+      SignalDatabase.messages().markGiftRedemptionStarted(giftMessageId);
     }
   }
 
@@ -161,7 +161,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
   }
 
   private void doRun() throws Exception {
-    boolean isKeepAlive409 = getInputData() != null && getInputData().getBooleanOrDefault(INPUT_KEEP_ALIVE_409, false);
+    boolean isKeepAlive409 = getInputData() != null && JsonJobData.deserialize(getInputData()).getBooleanOrDefault(INPUT_KEEP_ALIVE_409, false);
     if (isKeepAlive409) {
       Log.d(TAG, "Keep-Alive redemption job hit a 409. Exiting.", true);
       return;
@@ -205,8 +205,8 @@ public class DonationReceiptRedemptionJob extends BaseJob {
       SignalStore.donationsValues().clearSubscriptionReceiptCredential();
     } else if (giftMessageId != NO_ID) {
       Log.d(TAG, "Marking gift redemption completed for " + giftMessageId);
-      SignalDatabase.mms().markGiftRedemptionCompleted(giftMessageId);
-      MessageTable.MarkedMessageInfo markedMessageInfo = SignalDatabase.mms().setIncomingMessageViewed(giftMessageId);
+      SignalDatabase.messages().markGiftRedemptionCompleted(giftMessageId);
+      MessageTable.MarkedMessageInfo markedMessageInfo = SignalDatabase.messages().setIncomingMessageViewed(giftMessageId);
       if (markedMessageInfo != null) {
         Log.d(TAG, "Marked gift message viewed for " + giftMessageId);
         MultiDeviceViewedUpdateJob.enqueue(Collections.singletonList(markedMessageInfo.getSyncMessageId()));
@@ -233,9 +233,9 @@ public class DonationReceiptRedemptionJob extends BaseJob {
   }
 
   private @Nullable ReceiptCredentialPresentation getPresentationFromInputData() throws InvalidInputException {
-    Data inputData = getInputData();
+    JsonJobData inputData = JsonJobData.deserialize(getInputData());
 
-    if (inputData == null) {
+    if (inputData.isEmpty()) {
       Log.w(TAG, "No input data. Exiting.", true);
       return null;
     }
@@ -250,16 +250,16 @@ public class DonationReceiptRedemptionJob extends BaseJob {
   }
 
   private @Nullable ReceiptCredentialPresentation getPresentationFromGiftMessage() throws InvalidInputException, NoSuchMessageException {
-    MessageRecord messageRecord = SignalDatabase.mms().getMessageRecord(giftMessageId);
+    MessageRecord messageRecord = SignalDatabase.messages().getMessageRecord(giftMessageId);
 
     if (MessageRecordUtil.hasGiftBadge(messageRecord)) {
       GiftBadge giftBadge = MessageRecordUtil.requireGiftBadge(messageRecord);
-      if (giftBadge.getRedemptionState() == GiftBadge.RedemptionState.REDEEMED) {
+      if (giftBadge.redemptionState == GiftBadge.RedemptionState.REDEEMED) {
         Log.d(TAG, "Already redeemed this gift badge. Exiting.", true);
         return null;
       } else {
-        Log.d(TAG, "Attempting redemption  of badge in state " + giftBadge.getRedemptionState().name());
-        return new ReceiptCredentialPresentation(giftBadge.getRedemptionToken().toByteArray());
+        Log.d(TAG, "Attempting redemption  of badge in state " + giftBadge.redemptionState.name());
+        return new ReceiptCredentialPresentation(giftBadge.redemptionToken.toByteArray());
       }
     } else {
       Log.d(TAG, "No gift badge on message record. Exiting.", true);
@@ -281,7 +281,9 @@ public class DonationReceiptRedemptionJob extends BaseJob {
 
   public static class Factory implements Job.Factory<DonationReceiptRedemptionJob> {
     @Override
-    public @NonNull DonationReceiptRedemptionJob create(@NonNull Parameters parameters, @NonNull Data data) {
+    public @NonNull DonationReceiptRedemptionJob create(@NonNull Parameters parameters, @Nullable byte[] serializedData) {
+      JsonJobData data = JsonJobData.deserialize(serializedData);
+
       String              serializedErrorSource = data.getStringOrDefault(DATA_ERROR_SOURCE, DonationErrorSource.UNKNOWN.serialize());
       long                messageId             = data.getLongOrDefault(DATA_GIFT_MESSAGE_ID, NO_ID);
       boolean             primary               = data.getBooleanOrDefault(DATA_PRIMARY, false);

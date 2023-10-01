@@ -32,7 +32,7 @@ class InternalSettingsRepository(context: Context) {
       val title = "Release Note Title"
       val bodyText = "Release note body. Aren't I awesome?"
       val body = "$title\n\n$bodyText"
-      val bodyRangeList = BodyRangeList.newBuilder()
+      val bodyRangeList = BodyRangeList.Builder()
         .addStyle(BodyRangeList.BodyRange.Style.BOLD, 0, title.length)
 
       val recipientId = SignalStore.releaseChannelValues().releaseChannelRecipientId!!
@@ -43,12 +43,12 @@ class InternalSettingsRepository(context: Context) {
         body = body,
         threadId = threadId,
         messageRanges = bodyRangeList.build(),
-        image = "/static/release-notes/signal.png",
-        imageWidth = 1800,
-        imageHeight = 720
+        media = "/static/release-notes/signal.png",
+        mediaWidth = 1800,
+        mediaHeight = 720
       )
 
-      SignalDatabase.sms.insertBoostRequestMessage(recipientId, threadId)
+      SignalDatabase.messages.insertBoostRequestMessage(recipientId, threadId)
 
       if (insertResult != null) {
         SignalDatabase.attachments.getAttachmentsForMessage(insertResult.messageId)

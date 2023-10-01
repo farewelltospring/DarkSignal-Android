@@ -17,8 +17,9 @@ import org.mockito.stubbing.Answer;
 import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.model.MessageId;
+import org.thoughtcrime.securesms.database.model.StoryType;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobmanager.Data;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
 import org.thoughtcrime.securesms.jobs.MultiDeviceReadUpdateJob;
@@ -80,7 +81,7 @@ public class MarkReadReceiverTest {
     List<MessageTable.MarkedMessageInfo> duplicatedList = Util.concatenatedList(infoList, infoList);
 
     // WHEN
-    MarkReadReceiver.process(mockContext, duplicatedList);
+    MarkReadReceiver.process(duplicatedList);
 
     // THEN
     assertEquals("Should have 10 total jobs, including MultiDeviceReadUpdateJob", expected, jobs.size());
@@ -91,7 +92,7 @@ public class MarkReadReceiverTest {
         return;
       }
 
-      Data data = job.serialize();
+      JsonJobData data = JsonJobData.deserialize(job.serialize());
 
       long   threadId    = data.getLong("thread");
       String recipientId = data.getString("recipient");
@@ -107,7 +108,8 @@ public class MarkReadReceiverTest {
   private MessageTable.MarkedMessageInfo createMarkedMessageInfo(long threadId, @NonNull RecipientId recipientId) {
     return new MessageTable.MarkedMessageInfo(threadId,
                                               new MessageTable.SyncMessageId(recipientId, 0),
-                                              new MessageId(1, true),
-                                              new MessageTable.ExpirationInfo(0, 0, 0, false));
+                                              new MessageId(1),
+                                              new MessageTable.ExpirationInfo(0, 0, 0, false),
+                                              StoryType.NONE);
   }
 }
