@@ -4,14 +4,10 @@ package org.thoughtcrime.securesms.components;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
-import android.graphics.PorterDuff;
-import android.os.Build;
-import android.text.Spannable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -35,7 +31,6 @@ import org.thoughtcrime.securesms.components.emoji.EmojiTextView;
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation;
 import org.thoughtcrime.securesms.components.quotes.QuoteViewColorTheme;
 import org.thoughtcrime.securesms.conversation.colors.ChatColors;
-import org.thoughtcrime.securesms.components.spoiler.SpoilerAnnotation;
 import org.thoughtcrime.securesms.conversation.MessageStyler;
 import org.thoughtcrime.securesms.database.model.Mention;
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList;
@@ -542,24 +537,61 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
     }
 
     if (author != null && chatColors != null) {
-      this.setBackgroundColor(0xffffffff);
-      if (getAuthor().isSelf()) {
-        if (chatColors.isGradient()) {
-          this.getBackground().setColorFilter(chatColors.getChatBubbleColorFilter());
-        } else {
-          this.setBackgroundColor(chatColors.asSingleColor());
-        }
+      @ColorInt int preBackground;
+      if (getAuthor().isSelf() && chatColors.isGradient()) {
+        // Quote author is me and my chat bubble is a gradient color.
+        // Make it transparent. The hole-punch method will take care of the rest.
+        //this.getBackground().setColorFilter(chatColors.getChatBubbleColorFilter());
+        preBackground = 0x0;
+      } else if (getAuthor().isSelf() && !chatColors.isGradient()) {
+        // Quote author is me and my chat bubble is a solid color.
+        preBackground = chatColors.asSingleColor();
       } else {
-        this.getBackground().setColorFilter(getDefaultBubbleColor(isWallpaperEnabled), PorterDuff.Mode.SRC_IN);
+        // Quote author is the other person.
+        preBackground = getDefaultBubbleColor(isWallpaperEnabled);
       }
-      //this.setBackgroundColor(getAuthor().isSelf() ? chatColors.asSingleColor() : getDefaultBubbleColor(isWallpaperEnabled));
+
+      @ColorInt int canonicalBackground = quoteViewColorTheme.getBackgroundColor(getContext());
+      @ColorInt int realBackground;
+      if ((preBackground >> 24 & 0xff) == 0) {
+        // If we're hole-punching then we need the partial opacity
+        realBackground = canonicalBackground;
+      } else {
+        // V2 QuoteView layout only has one background so we can't do the semi-transparent layers hack.
+        // We will have to compose the final color ourselves.
+        realBackground = mergeLayers(preBackground, canonicalBackground);
+      }
+      setBackgroundColor(realBackground);
     }
   }
 
+  /** Returns the color of the bubble of the person I'm talking to. */
   private @ColorInt int getDefaultBubbleColor(boolean hasWallpaper) {
     int defaultBubbleColor             = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_normal);
     int defaultBubbleColorForWallpaper = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_wallpaper);
     return hasWallpaper ? defaultBubbleColorForWallpaper : defaultBubbleColor;
   }
-}
 
+  /** Returns the resulting color you get when you put a translucent layer over a solid one and merge them.
+   *
+   * @param bottom Opaque layer. This function assumes that the opacity here is 100%.
+   * @param top Translucent layer
+   */
+  private static int mergeLayers(@ColorInt int bottom, @ColorInt int top) {
+    int bottomA = (bottom >> 24) & 0xff;
+    int bottomR = (bottom >> 16) & 0xff;
+    int bottomG = (bottom >> 8) & 0xff;
+    int bottomB = (bottom) & 0xff;
+
+    float topA = ((top >> 24) & 0xff) / 255.0f;
+    int   topR = (top >> 16) & 0xff;
+    int   topG = (top >> 8) & 0xff;
+    int   topB = (top) & 0xff;
+
+    int newR = (int) (bottomR * (1 - topA) + (topR * topA));
+    int newG = (int) (bottomG * (1 - topA) + (topG * topA));
+    int newB = (int) (bottomB * (1 - topA) + (topB * topA));
+
+    return (bottomA << 24) | (newR << 16) | (newG << 8) | newB;
+  }
+}
