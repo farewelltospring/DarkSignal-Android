@@ -110,7 +110,6 @@
         android:id="@+id/message_request_info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="@dimen/core_ui__gutter"
         android:padding="20dp"
         app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -125,12 +124,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:textAppearance="@style/Signal.Text.MessageRequest.Subtitle"
+            android:textAppearance="@style/Signal.Text.BodyMedium"
             app:layout_constrainedWidth="true"
             app:layout_constraintBottom_toTopOf="@id/message_request_description"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            tools:drawableStartCompat="@drawable/symbol_person_24"
             tools:text="\@caycepollard" />
 
         <org.thoughtcrime.securesms.components.emoji.EmojiTextView
@@ -139,7 +139,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="15dp"
             android:gravity="center"
-            android:textAppearance="@style/Signal.Text.MessageRequest.Description"
+            android:textAppearance="@style/Signal.Text.BodyMedium"
             android:visibility="gone"
             app:layout_constrainedWidth="true"
             app:layout_constraintBottom_toBottomOf="parent"

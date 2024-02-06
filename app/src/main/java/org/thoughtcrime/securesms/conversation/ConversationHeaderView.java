@@ -13,6 +13,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewKt;
+
+import com.bumptech.glide.RequestManager;
 
 import org.signal.core.util.DimensionUnit;
 import org.signal.core.util.concurrent.SignalExecutors;
@@ -22,7 +25,6 @@ import org.thoughtcrime.securesms.contacts.avatars.FallbackContactPhoto;
 import org.thoughtcrime.securesms.contacts.avatars.ResourceContactPhoto;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.databinding.ConversationHeaderViewBinding;
-import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.util.ContextUtil;
 import org.thoughtcrime.securesms.util.LongClickMovementMethod;
@@ -59,8 +61,8 @@ public class ConversationHeaderView extends ConstraintLayout {
     }
   }
 
-  public void setAvatar(@NonNull GlideRequests requests, @Nullable Recipient recipient) {
-    binding.messageRequestAvatar.setAvatar(requests, recipient, false);
+  public void setAvatar(@NonNull RequestManager requestManager, @Nullable Recipient recipient) {
+    binding.messageRequestAvatar.setAvatar(requestManager, recipient, false);
 
     if (recipient != null && recipient.shouldBlurAvatar() && recipient.getContactPhoto() != null) {
       binding.messageRequestAvatarTapToView.setVisibility(VISIBLE);
@@ -128,6 +130,8 @@ public class ConversationHeaderView extends ConstraintLayout {
       binding.messageRequestInfoOutline.setVisibility(View.VISIBLE);
       binding.messageRequestDivider.setVisibility(View.INVISIBLE);
     }
+
+    hideDecoratorsIfContentIsNotPresent();
   }
 
   public void hideSubtitle() {
@@ -146,7 +150,11 @@ public class ConversationHeaderView extends ConstraintLayout {
     binding.messageRequestDescription.setMovementMethod(enable ? LongClickMovementMethod.getInstance(getContext()) : null);
   }
 
-  public void hideDecorations() {
+  private void hideDecoratorsIfContentIsNotPresent() {
+    if (ViewKt.isVisible(binding.messageRequestSubtitle) || ViewKt.isVisible(binding.messageRequestDescription)) {
+      return;
+    }
+
     binding.messageRequestInfoOutline.setVisibility(View.GONE);
     binding.messageRequestDivider.setVisibility(View.GONE);
   }

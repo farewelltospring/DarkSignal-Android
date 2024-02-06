@@ -24,6 +24,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.multidex.MultiDexApplication;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.security.ProviderInstaller;
 
 import org.conscrypt.ConscryptSignal;
@@ -57,6 +58,7 @@ import org.thoughtcrime.securesms.jobs.EmojiSearchIndexDownloadJob;
 import org.thoughtcrime.securesms.jobs.ExternalLaunchDonationJob;
 import org.thoughtcrime.securesms.jobs.FcmRefreshJob;
 import org.thoughtcrime.securesms.jobs.FontDownloaderJob;
+import org.thoughtcrime.securesms.jobs.GroupRingCleanupJob;
 import org.thoughtcrime.securesms.jobs.GroupV2UpdateSelfProfileKeyJob;
 import org.thoughtcrime.securesms.jobs.MultiDeviceContactUpdateJob;
 import org.thoughtcrime.securesms.jobs.PnpInitializeDevicesJob;
@@ -73,7 +75,6 @@ import org.thoughtcrime.securesms.logging.CustomSignalProtocolLogger;
 import org.thoughtcrime.securesms.logging.PersistentLogger;
 import org.thoughtcrime.securesms.messageprocessingalarm.RoutineMessageFetchReceiver;
 import org.thoughtcrime.securesms.migrations.ApplicationMigrations;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.mms.SignalGlideComponents;
 import org.thoughtcrime.securesms.mms.SignalGlideModule;
 import org.thoughtcrime.securesms.providers.BlobProvider;
@@ -177,7 +178,7 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
                             .addBlocking("ring-rtc", this::initializeRingRtc)
                             .addBlocking("glide", () -> SignalGlideModule.setRegisterGlideComponents(new SignalGlideComponents()))
                             .addNonBlocking(() -> RegistrationUtil.maybeMarkRegistrationComplete())
-                            .addNonBlocking(() -> GlideApp.get(this))
+                            .addNonBlocking(() -> Glide.get(this))
                             .addNonBlocking(this::cleanAvatarStorage)
                             .addNonBlocking(this::initializeRevealableMessageManager)
                             .addNonBlocking(this::initializePendingRetryReceiptManager)
@@ -214,6 +215,7 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
                             .addPostRender(() -> ApplicationDependencies.getExoPlayerPool().getPoolStats().getMaxUnreserved())
                             .addPostRender(() -> ApplicationDependencies.getRecipientCache().warmUp())
                             .addPostRender(AccountConsistencyWorkerJob::enqueueIfNecessary)
+                            .addPostRender(GroupRingCleanupJob::enqueue)
                             .execute();
 
     Log.d(TAG, "onCreate() took " + (System.currentTimeMillis() - startTime) + " ms");

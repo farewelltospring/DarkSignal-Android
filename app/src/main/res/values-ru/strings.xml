@@ -594,6 +594,8 @@
     <string name="ConversationListFragment__turn_your_notification_profile_on_or_off_here">Включайте или отключайте свой профиль уведомлений здесь.</string>
     <!-- Message shown in top toast to indicate the named profile is on -->
     <string name="ConversationListFragment__s_on">«%1$s» включён</string>
+    <!-- -->
+    <string name="ConversationListFragment_username_recovered_toast">Ваш QR-код и ссылка были сброшены, а ваше имя пользователя — %1$s</string>
 
     <!-- ConversationListItem -->
     <string name="ConversationListItem_key_exchange_message">Сообщение обмена ключами</string>
@@ -638,9 +640,9 @@
     <!-- Toolbar title for this screen -->
     <string name="WhoCanSeeMyPhoneNumberFragment__who_can_find_me_by_number">Кто может найти меня по номеру?</string>
     <!-- Description for radio item stating anyone can see your phone number -->
-    <string name="WhoCanSeeMyPhoneNumberFragment__anyone_who_has">Любой, у кого есть в контактах ваш номер телефона, будет видеть вас в качестве контакта в Signal. Другие смогут найти вас по вашему номеру в поиске.</string>
+    <string name="WhoCanSeeMyPhoneNumberFragment__anyone_who_has_your">Любой, у кого есть ваш номер телефона, будет видеть, что вы в Signal, и сможет начать с вами чат.</string>
     <!-- Description for radio item stating no one will be able to see your phone number -->
-    <string name="WhoCanSeeMyPhoneNumberFragment__nobody_on_signal">Никто не сможет найти вас в Signal по вашему номеру телефона.</string>
+    <string name="WhoCanSeeMyPhoneNumberFragment__nobody_will_be_able">Никто не сможет увидеть, что вы в Signal, если только вы не отправите этому человеку сообщение или не продолжите с ним чат.</string>
 
     <!-- ChooseBackupFragment -->
     <string name="ChooseBackupFragment__restore_from_backup">Восстановить из резервной копии?</string>
@@ -1064,6 +1066,8 @@
     <string name="GroupMentionSettingDialog_dont_notify_me">Не уведомлять меня</string>
 
     <!-- ManageProfileFragment -->
+    <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc -->
+    <string name="ManageProfileFragment__your_username">Ваше имя пользователя, QR-код и ссылка не видны в вашем профиле. Делитесь вашим именем пользователя только с теми, кому доверяете.</string>
     <string name="ManageProfileFragment_profile_name">Имя профиля</string>
     <string name="ManageProfileFragment_username">Имя пользователя</string>
     <string name="ManageProfileFragment_about">Обо мне</string>
@@ -1371,6 +1375,10 @@
     <string name="MessageRecord_missed_voice_call">Пропущенный голосовой звонок</string>
     <!-- Update message shown when receiving an incoming 1:1 video call and not answered -->
     <string name="MessageRecord_missed_video_call">Пропущенный видеозвонок</string>
+    <!-- Update message shown when receiving an incoming voice call and declined due to notification profile -->
+    <string name="MessageRecord_missed_voice_call_notification_profile">Пропущенный аудиозвонок при включённом профиле уведомлений</string>
+    <!-- Update message shown when receiving an incoming video call and declined due to notification profile -->
+    <string name="MessageRecord_missed_video_call_notification_profile">Пропущенный видеозвонок при включённом профиле уведомлений</string>
     <!-- Update message shown when receiving an incoming 1:1 voice/audio call and explicitly declined -->
     <string name="MessageRecord_you_declined_a_voice_call">Вы отклонили голосовой звонок</string>
     <!-- Update message shown when receiving an incoming 1:1 video call and explicitly declined -->
@@ -1695,7 +1703,7 @@
 
     <!-- DeviceProvisioningActivity -->
     <string name="DeviceProvisioningActivity_link_this_device">Привязать это устройство?</string>
-    <string name="DeviceProvisioningActivity_continue">ПРОДОЛЖИТЬ</string>
+    <string name="DeviceProvisioningActivity_continue">Продолжить</string>
 
     <string name="DeviceProvisioningActivity_content_intro">Оно сможет</string>
     <string name="DeviceProvisioningActivity_content_bullets">
@@ -2038,7 +2046,12 @@
     <!-- Notice when a user is not a connection to review requests carefully -->
     <string name="AboutSheet__review_requests_carefully">Внимательно проверяйте запросы</string>
     <!-- Text used when user has groups in common. Placeholder is the count -->
-    <string name="AboutSheet__d_groups_in_common">%1$d общие группы</string>
+    <plurals name="AboutSheet__d_groups_in">
+        <item quantity="one">%1$d общая группа</item>
+        <item quantity="few">%1$d общие группы</item>
+        <item quantity="many">%1$d общих групп</item>
+        <item quantity="other">%1$d общих групп</item>
+    </plurals>
     <!-- Text displayed in title for external recipients -->
     <string name="AboutSheet__about">Обо мне</string>
     <!-- Text displayed in title for you -->
@@ -2355,6 +2368,8 @@
     <string name="UnverifiedSendDialog_send">Отправить</string>
 
     <!-- UsernameEditFragment -->
+    <!-- Placeholder text for custom discriminator -->
+    <string name="UsernameEditFragment__00">00</string>
     <!-- Toolbar title when entering from registration -->
     <string name="UsernameEditFragment__add_a_username">Добавить имя пользователя</string>
     <!-- Instructional text at the top of the username edit screen -->
@@ -2377,6 +2392,18 @@
     <string name="UsernameEditFragment__skip">Пропустить</string>
     <!-- Content description for done button -->
     <string name="UsernameEditFragment__done">Готово</string>
+    <!-- Displayed when the chosen discriminator is not available for the given nickname -->
+    <string name="UsernameEditFragment__this_username_is_not_available_try_another_number">Это имя пользователя недоступно, попробуйте другой номер.</string>
+    <!-- Displayed when the chosen discriminator is too short -->
+    <string name="UsernameEditFragment__invalid_username_enter_a_minimum_of_d_digits">Неверное имя пользователя, введите минимум %1$d цифры.</string>
+    <!-- Displayed when the chosen discriminator is too long -->
+    <string name="UsernameEditFragment__invalid_username_enter_a_maximum_of_d_digits">Неверное имя пользователя, введите максимум %1$d цифр.</string>
+    <!-- Displayed when the chosen discriminator is 00 -->
+    <string name="UsernameEditFragment__this_number_cant_be_00">Этот номер не может быть 00. Введите цифру от 1 до 9</string>
+    <!-- Displayed when the chosen discriminator starts with 00 -->
+    <string name="UsernameEditFragment__this_number_cant_start_with_00">Этот номер не может начинаться с 00. Введите цифру от 1 до 9</string>
+    <!-- The body of an alert dialog asking the user to confirm that they want to recover their username -->
+    <string name="UsernameEditFragment_recovery_dialog_confirmation">При восстановлении имени пользователя ваши существующие QR-код и ссылка будут сброшены. Вы уверены?</string>
 
     <plurals name="UserNotificationMigrationJob_d_contacts_are_on_signal">
         <item quantity="one">%1$d ваш контакт уже в Signal!</item>
@@ -2569,6 +2596,26 @@
     <!-- Notification subtext for group stories -->
     <string name="SingleRecipientNotificationBuilder__s_dot_story">%1$s • История</string>
 
+    <!-- NewWaysToConnectDialogFragment -->
+    <!-- Fragment title, displayed at the top of the content -->
+    <string name="NewWaysToConnectDialogFragment__new_ways_to_connect">Новые способы связи</string>
+    <!-- Row item title for phone number privacy explainer -->
+    <string name="NewWaysToConnectDialogFragment__phone_number_privacy">Конфиденциальность номера телефона</string>
+    <!-- Row item description for phone number privacy explainer -->
+    <string name="NewWaysToConnectDialogFragment__your_phone_number_is_no_longer_shared">Ваш номер телефона больше не будет виден в чатах. Если ваш номер сохранён в контактах друга, он всё равно его увидит.</string>
+    <!-- Row item title for usernames explainer -->
+    <string name="NewWaysToConnectDialogFragment__usernames">Имена пользователей</string>
+    <!-- Row item description for usernames explainer -->
+    <string name="NewWaysToConnectDialogFragment__people_can_now_message_you_using_your_optional_username">Теперь люди могут писать вам сообщения, используя выбранное вами имя пользователя, поэтому вам не нужно делиться вашим номером телефона. Имена пользователей не видны в вашем профиле.</string>
+    <!-- Row item title for qr code and links explainer -->
+    <string name="NewWaysToConnectDialogFragment__qr_codes_and_links">QR-коды и ссылки</string>
+    <!-- Row item description for qr code and links explainer -->
+    <string name="NewWaysToConnectDialogFragment__usernames_have_a_unique_qr_code">Именам пользователей присваивается уникальная ссылка, которой вы можете поделиться с друзьями, чтобы они могли начать чат с вами.</string>
+    <!-- Button label for not right now -->
+    <string name="NewWaysToConnectDialogFragment__not_now">Не сейчас</string>
+    <!-- Button label for continue -->
+    <string name="NewWaysToConnectDialogFragment__set_up_your_username">Настройте своё имя пользователя</string>
+
     <!-- ThumbnailView -->
     <string name="ThumbnailView_Play_video_description">Воспроизвести видео</string>
     <string name="ThumbnailView_Has_a_caption_description">Есть подпись</string>
@@ -2584,6 +2631,8 @@
     <string name="TransferControlView__processing">Обработка…</string>
     <!-- Status update label used while the device is transmitting data over the network. Will take the form of "1.0 MB/2.0 MB" -->
     <string name="TransferControlView__download_progress">%1$1.1f MB/%2$2.1f MB</string>
+    <!-- Attachment file size label for not-yet-downloaded images and video. Will take the form of "1.0 MB" -->
+    <string name="TransferControlView__filesize">%1$1.1f MB</string>
 
 
     <!-- UnauthorizedReminder -->
@@ -3955,11 +4004,17 @@
     <!-- Section title above two radio buttons for enabling and disabling phone number display -->
     <string name="PhoneNumberPrivacySettingsFragment__who_can_see_my_number">Кто может видеть мой номер</string>
     <!-- Subtext below radio buttons when who can see my number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see">Никто не будет видеть ваш номер телефона в Signal</string>
+    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see_your">Никто не будет видеть ваш номер телефона в Signal, даже если вы обмениваетесь с этим человеком сообщениями.</string>
     <!-- Section title above two radio buttons for enabling and disabling whether users can find me by my phone number  -->
     <string name="PhoneNumberPrivacySettingsFragment__who_can_find_me_by_number">Кто может найти меня по номеру?</string>
     <!-- Subtext below radio buttons when who can see my number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number">Ваш номер телефона будет виден людям и группам, которым вы отправляете сообщения. Люди, у которых есть ваш номер в телефонных контактах, также увидят его в Signal.</string>
+    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number_will_be">Ваш номер телефона будет виден людям и группам, которым вы отправляете сообщения.</string>
+    <!-- Subtext below radio buttons when who can find me by number is set to everyone -->
+    <string name="PhoneNumberPrivacySettingsFragment__anyone_who_has">Любой, у кого есть ваш номер телефона, будет видеть, что вы в Signal, и сможет начать с вами чат.</string>
+    <!-- Subtext below radio buttons when who can find me by number is set to nobody -->
+    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_be_able_to_see">Никто не сможет увидеть, что вы в Signal, если только вы не отправите этому человеку сообщение или не продолжите с ним чат.</string>
+    <!-- Snackbar text when pressing invalid radio item -->
+    <string name="PhoneNumberPrivacySettingsFragment__to_change_this_setting">"Чтобы изменить эту настройку, установите для параметра «Кто может видеть мой номер» значение «Никто»."</string>
     <string name="PhoneNumberPrivacy_everyone">Все</string>
     <string name="PhoneNumberPrivacy_nobody">Никто</string>
     <string name="preferences_app_protection__screen_lock">Блокировка экрана</string>
@@ -4580,27 +4635,6 @@
     <!-- ChatsSettingsFragment -->
     <string name="ChatsSettingsFragment__keyboard">Клавиатура</string>
     <string name="ChatsSettingsFragment__enter_key_sends">Отправка клавишей «Ввод»</string>
-
-    <!--SmsSettingsFragment -->
-    <string name="SmsSettingsFragment__use_as_default_sms_app">Использовать для всех SMS</string>
-    <!-- Preference title to export sms -->
-    <string name="SmsSettingsFragment__export_sms_messages">Экспортировать SMS-сообщения</string>
-    <!-- Preference title to re-export sms -->
-    <string name="SmsSettingsFragment__export_sms_messages_again">Экспортировать SMS-сообщения повторно</string>
-    <!-- Preference title to delete sms -->
-    <string name="SmsSettingsFragment__remove_sms_messages">Удалить SMS-сообщения</string>
-    <!-- Snackbar text to confirm deletion -->
-    <string name="SmsSettingsFragment__removing_sms_messages_from_signal">Удаляем SMS-сообщения из Signal…</string>
-    <!-- Snackbar text to indicate can delete later -->
-    <string name="SmsSettingsFragment__you_can_remove_sms_messages_from_signal_in_settings">Вы можете в любое время удалить SMS-сообщения из Signal в настройках.</string>
-    <!-- Description for export sms preference -->
-    <string name="SmsSettingsFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">Вы можете экспортировать свои SMS-сообщения в базу данных SMS вашего телефона.</string>
-    <!-- Description for re-export sms preference -->
-    <string name="SmsSettingsFragment__exporting_again_can_result_in_duplicate_messages">Повторный экспорт может привести к дублированию сообщений.</string>
-    <!-- Description for remove sms preference -->
-    <string name="SmsSettingsFragment__remove_sms_messages_from_signal_to_clear_up_storage_space">Удалите SMS-сообщения из Signal, чтобы освободить место для хранения.</string>
-    <!-- Information message shown at the top of sms settings to indicate it is being removed soon. -->
-    <string name="SmsSettingsFragment__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Поддержка SMS будет скоро удалена в пользу обмена зашифрованными сообщениями.</string>
 
     <!-- NotificationsSettingsFragment -->
     <string name="NotificationsSettingsFragment__messages">Сообщения</string>
@@ -5296,6 +5330,12 @@
     <string name="AddAllowedMembers__add_people_and_groups_you_want_notifications_and_calls_from_when_this_profile_is_on">Добавьте людей и групп, от которых вы хотите получать уведомления и звонки, когда включён этот профиль</string>
     <!-- Button text that launches the contact picker to select from -->
     <string name="AddAllowedMembers__add_people_or_groups">Добавить людей или групп</string>
+    <!-- Title for exceptions section of add people to notification profile screen in create flow -->
+    <string name="AddAllowedMembers__exceptions">Исключения</string>
+    <!-- List preference to toggle that allows calls through the notification profile during create flow -->
+    <string name="AddAllowedMembers__allow_all_calls">Разрешить все звонки</string>
+    <!-- List preference to toggle that allows mentions through the notification profile during create flow -->
+    <string name="AddAllowedMembers__notify_for_all_mentions">Уведомлять обо всех упоминаниях</string>
 
     <!-- Call to action button on contact picker for adding to profile -->
     <string name="SelectRecipientsFragment__add">Добавить</string>
@@ -5944,10 +5984,10 @@
     <string name="SafetyNumberBottomSheetFragment__all_connections_have_been_reviewed">Все контакты были проверены, нажмите «отправить», чтобы продолжить.</string>
     <!-- Message of safety number changes bottom sheet when not showing individual records -->
     <plurals name="SafetyNumberBottomSheetFragment__you_have_d_connections_plural">
-        <item quantity="one">У вас есть контакты (%1$d), которые, возможно, переустановили Signal или сменили устройства. Прежде чем поделиться с ними своей историей, просмотрите их коды безопасности или подумайте о том, чтобы удалить их из своей истории.</item>
-        <item quantity="few">У вас есть контакты (%1$d), которые, возможно, переустановили Signal или сменили устройства. Прежде чем поделиться с ними своей историей, просмотрите их коды безопасности или подумайте о том, чтобы удалить их из своей истории.</item>
-        <item quantity="many">У вас есть контакты (%1$d), которые, возможно, переустановили Signal или сменили устройства. Прежде чем поделиться с ними своей историей, просмотрите их коды безопасности или подумайте о том, чтобы удалить их из своей истории.</item>
-        <item quantity="other">У вас есть контакты (%1$d), которые, возможно, переустановили Signal или сменили устройства. Прежде чем поделиться с ними своей историей, просмотрите их коды безопасности или подумайте о том, чтобы удалить их из своей истории.</item>
+        <item quantity="one">%1$d контакт, который, возможно, переустановил Signal или сменил устройство. Вы можете просмотреть его код безопасности или продолжить отправку.</item>
+        <item quantity="few">%1$d контакта, которые, возможно, переустановили Signal или сменили устройство. Вы можете просмотреть их коды безопасности или продолжить отправку.</item>
+        <item quantity="many">%1$d контактов, которые, возможно, переустановили Signal или сменили устройство. Вы можете просмотреть их коды безопасности или продолжить отправку.</item>
+        <item quantity="other">%1$d контакта, которые, возможно, переустановили Signal или сменили устройство. Вы можете просмотреть их коды безопасности или продолжить отправку.</item>
     </plurals>
     <!-- Menu action to launch safety number verification screen -->
     <string name="SafetyNumberBottomSheetFragment__verify_safety_number">Подтвердить код безопасности</string>
@@ -6038,50 +6078,6 @@
     <!-- Generic title for overflow menus -->
     <string name="OverflowMenu__overflow_menu">Меню переполнения</string>
 
-    <!-- SMS Export Service -->
-    <!-- Displayed in the notification while export is running -->
-    <string name="SignalSmsExportService__exporting_messages">Экспортируем сообщения…</string>
-    <!-- Displayed in the notification title when export completes -->
-    <string name="SignalSmsExportService__signal_sms_export_complete">Экспорт SMS из Signal завершен</string>
-    <!-- Displayed in the notification message when export completes -->
-    <string name="SignalSmsExportService__tap_to_return_to_signal">Нажмите, чтобы вернуться в Signal</string>
-
-    <!-- ExportYourSmsMessagesFragment -->
-    <!-- Title of the screen -->
-    <string name="ExportYourSmsMessagesFragment__export_your_sms_messages">Экспортировать ваши SMS-сообщения</string>
-    <!-- Message of the screen -->
-    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database_and_youll_have_the_option_to_keep_or_remove_them_from_signal">Вы можете экспортировать свои SMS-сообщения в базу данных SMS вашего телефона, и у вас будет возможность сохранить или удалить их из Signal. Это позволит другим приложениям для SMS на вашем телефоне импортировать их. При этом файл с историей ваших SMS, доступный для совместного использования, создан не будет.</string>
-    <!-- Button label to begin export -->
-    <string name="ExportYourSmsMessagesFragment__continue">Продолжить</string>
-
-    <!-- ExportingSmsMessagesFragment -->
-    <!-- Title of the screen -->
-    <string name="ExportingSmsMessagesFragment__exporting_sms_messages">Экспортируем SMS-сообщения</string>
-    <!-- Message of the screen when exporting sms messages -->
-    <string name="ExportingSmsMessagesFragment__this_may_take_awhile">Это может занять некоторое время</string>
-    <!-- Progress indicator for export -->
-    <plurals name="ExportingSmsMessagesFragment__exporting_d_of_d">
-        <item quantity="one">Экспортируем %1$d из %2$d…</item>
-        <item quantity="few">Экспортируем %1$d из %2$d…</item>
-        <item quantity="many">Экспортируем %1$d из %2$d…</item>
-        <item quantity="other">Экспортируем %1$d из %2$d…</item>
-    </plurals>
-    <!-- Alert dialog title shown when we think a user may not have enough local storage available to export sms messages -->
-    <string name="ExportingSmsMessagesFragment__you_may_not_have_enough_disk_space">Возможно, у вас недостаточно места на диске</string>
-    <!-- Alert dialog message shown when we think a user may not have enough local storage available to export sms messages, placeholder is the file size, e.g., 128kB -->
-    <string name="ExportingSmsMessagesFragment__you_need_approximately_s_to_export_your_messages_ensure_you_have_enough_space_before_continuing">Вам требуется примерно %1$s для экспорта сообщений. Убедитесь, что у вас достаточно места в хранилище, прежде чем продолжить.</string>
-    <!-- Alert dialog button to continue with exporting sms after seeing the lack of storage warning -->
-    <string name="ExportingSmsMessagesFragment__continue_anyway">Всё равно продолжить</string>
-    <!-- Dialog text shown when Signal isn\'t granted the sms permission needed to export messages, different than being selected as the sms app -->
-    <string name="ExportingSmsMessagesFragment__signal_needs_the_sms_permission_to_be_able_to_export_your_sms_messages">Для экспорта SMS-сообщений предоставьте Signal разрешение на доступ к SMS.</string>
-
-    <!-- ChooseANewDefaultSmsAppFragment -->
-    <!-- Title of the screen -->
-    <string name="ChooseANewDefaultSmsAppFragment__choose_a_new">Выбрать новое SMS-приложение по умолчанию</string>
-    <!-- Button label to launch picker -->
-    <string name="ChooseANewDefaultSmsAppFragment__continue">Продолжить</string>
-    <!-- Button label for when done with changing default SMS app -->
-    <string name="ChooseANewDefaultSmsAppFragment__done">Готово</string>
     <!-- First step number/bullet for choose new default sms app instructions -->
     <string name="ChooseANewDefaultSmsAppFragment__bullet_1">1</string>
     <!-- Second step number/bullet for choose new default sms app instructions -->
@@ -6090,47 +6086,6 @@
     <string name="ChooseANewDefaultSmsAppFragment__bullet_3">3</string>
     <!-- Fourth step number/bullet for choose new default sms app instructions -->
     <string name="ChooseANewDefaultSmsAppFragment__bullet_4">4</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__tap_continue_to_open_the_defaults_apps_screen_in_settings">Нажмите «Продолжить», чтобы открыть экран «Приложения по умолчанию» в настройках</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__select_sms_app_from_the_list">Выберите из списка «Приложение для SMS»</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__choose_another_app_to_use_for_sms_messaging">Выберите другое приложение для обмена SMS-сообщениями</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__return_to_signal">Вернуться в Signal</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__open_your_phones_settings_app">Зайдите в настройки вашего телефона</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__navigate_to_apps_default_apps_sms_app">Перейдите на страницу «Приложения» &gt; «Приложения по умолчанию» &gt; «Приложение для SMS»</string>
-
-    <!-- RemoveSmsMessagesDialogFragment -->
-    <!-- Action button to keep messages -->
-    <string name="RemoveSmsMessagesDialogFragment__keep_messages">Хранить сообщения</string>
-    <!-- Action button to remove messages -->
-    <string name="RemoveSmsMessagesDialogFragment__remove_messages">Удалить сообщения</string>
-    <!-- Title of dialog -->
-    <string name="RemoveSmsMessagesDialogFragment__remove_sms_messages">Удалить SMS-сообщения из Signal?</string>
-    <!-- Message of dialog -->
-    <string name="RemoveSmsMessagesDialogFragment__you_can_now_remove_sms_messages_from_signal">Теперь вы можете удалить SMS-сообщения из Signal, чтобы освободить место в хранилище. Они по-прежнему будут доступны другим приложениям для SMS на вашем телефоне, даже если вы их удалите.</string>
-
-    <!-- ReExportSmsMessagesDialogFragment -->
-    <!-- Action button to re-export messages -->
-    <string name="ReExportSmsMessagesDialogFragment__continue">Продолжить</string>
-    <!-- Action button to cancel re-export process -->
-    <string name="ReExportSmsMessagesDialogFragment__cancel">Отменить</string>
-    <!-- Title of dialog -->
-    <string name="ReExportSmsMessagesDialogFragment__export_sms_again">Экспортировать SMS снова?</string>
-    <!-- Message of dialog -->
-    <string name="ReExportSmsMessagesDialogFragment__you_already_exported_your_sms_messages">Вы уже экспортировали ваши SMS-сообщения.\nПРЕДУПРЕЖДЕНИЕ: Если вы продолжите, у вас могут появиться дубликаты сообщений.</string>
-
-    <!-- SetSignalAsDefaultSmsAppFragment -->
-    <!-- Title of the screen -->
-    <string name="SetSignalAsDefaultSmsAppFragment__set_signal_as_the_default_sms_app">Сделайте Signal приложением для SMS по умолчанию</string>
-    <!-- Message of the screen -->
-    <string name="SetSignalAsDefaultSmsAppFragment__to_export_your_sms_messages">Чтобы экспортировать SMS-сообщения, необходимо сделать Signal приложением для SMS по умолчанию.</string>
-    <!-- Button label to start export -->
-    <string name="SetSignalAsDefaultSmsAppFragment__next">Далее</string>
-
     <!-- BackupSchedulePermission Megaphone -->
     <!-- The title on an alert window that explains to the user that we are unable to backup their messages -->
     <string name="BackupSchedulePermissionMegaphone__cant_back_up_chats">Невозможно создать резервную копию чатов</string>
@@ -6148,47 +6103,6 @@
     <string name="BackupSchedulePermissionMegaphone__turn_on_allow_settings_alarms_and_reminders">Включите в настройках «Разрешить будильники и напоминания».</string>
     <!-- Re-enable backups permission bottom sheet call to action button to open settings -->
     <string name="BackupSchedulePermissionMegaphone__go_to_settings">Перейти в настройки</string>
-
-    <!-- SmsExportMegaphoneActivity -->
-    <!-- Phase 2 title of full screen megaphone indicating sms will no longer be supported in the near future -->
-    <string name="SmsExportMegaphoneActivity__signal_will_no_longer_support_sms">Signal больше не будет поддерживать SMS</string>
-    <!-- Phase 3 title of full screen megaphone indicating sms is longer supported  -->
-    <string name="SmsExportMegaphoneActivity__signal_no_longer_supports_sms">Сигнал больше не поддерживает SMS</string>
-    <!-- The text on a button in a popup that, when clicked, will dismiss the popup and schedule the prompt to occur at a later time. -->
-    <string name="SmsExportMegaphoneActivity__remind_me_later">Напомните мне позже</string>
-    <!-- The text on a button in a popup that, when clicked, will navigate the user to a web article on SMS removal -->
-
-    <!-- Title for screen shown after sms export has completed -->
-    <string name="ExportSmsCompleteFragment__export_complete">Экспорт завершён</string>
-    <!-- Button to continue to next screen -->
-    <string name="ExportSmsCompleteFragment__next">Далее</string>
-    <!-- Message showing summary of sms export counts -->
-    <plurals name="ExportSmsCompleteFragment__d_of_d_messages_exported">
-        <item quantity="one">%1$d из %2$d сообщения экспортировано</item>
-        <item quantity="few">%1$d из %2$d сообщений экспортировано</item>
-        <item quantity="many">%1$d из %2$d сообщений экспортировано</item>
-        <item quantity="other">%1$d из %2$d сообщения экспортировано</item>
-    </plurals>
-
-    <!-- Title of screen shown when some sms messages did not export -->
-    <string name="ExportSmsPartiallyComplete__export_partially_complete">Экспорт выполнен частично</string>
-    <!-- Debug step 1 on screen shown when some sms messages did not export -->
-    <string name="ExportSmsPartiallyComplete__ensure_you_have_an_additional_s_free_on_your_phone_to_export_your_messages">Убедитесь, что на вашем телефоне есть ещё %1$s свободного места для экспорта сообщений</string>
-    <!-- Debug step 2 on screen shown when some sms messages dit not export -->
-    <string name="ExportSmsPartiallyComplete__retry_export_which_will_only_retry_messages_that_have_not_yet_been_exported">Запустите повторный экспорт, которой коснётся только тех сообщений, которые ещё не экспортированы</string>
-    <!-- Partial sentence for Debug step 3 on screen shown when some sms messages did not export, is combined with \'contact us\' -->
-    <string name="ExportSmsPartiallyComplete__if_the_problem_persists">Если проблема сохраняется, </string>
-    <!-- Partial sentence for deubg step 3 on screen shown when some sms messages did not export, combined with \'If the problem persists\', link text to open contact support view -->
-    <string name="ExportSmsPartiallyComplete__contact_us">Связаться с нами</string>
-    <!-- Button text to retry sms export -->
-    <string name="ExportSmsPartiallyComplete__retry">Повторить попытку</string>
-    <!-- Button text to continue sms export flow and not retry failed message exports -->
-    <string name="ExportSmsPartiallyComplete__continue_anyway">Всё равно продолжить</string>
-    <!-- Title of screen shown when all sms messages failed to export -->
-    <string name="ExportSmsFullError__error_exporting_sms_messages">Ошибка экспортирования SMS-сообщений</string>
-    <!-- Helper text shown when all sms messages failed to export -->
-    <string name="ExportSmsFullError__please_try_again_if_the_problem_persists">Пожалуйста, попробуйте ещё раз. Если проблема сохраняется, </string>
-
 
     <!-- DonateToSignalFragment -->
     <!-- Title below avatar -->
@@ -6333,6 +6247,12 @@
     <string name="IdealTransferDetailsFragment__email">Email</string>
     <!-- Default label for bank selection -->
     <string name="IdealTransferDetailsFragment__choose_your_bank">Выберите свой банк</string>
+    <!-- Dialog title shown when using iDEAL payment for setting up a monthly donation -->
+    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">Confirm your donation with %1$s</string>
+    <!-- Dialog warning shown when using iDEAL payment for setting up a monthly donation -->
+    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">To setup your recurring donation tap continue to confirm a €0,01 charge with your bank. This will be automatically refunded and allows your €5/month donation to debited from your account.</string>
+    <!-- Dialog button shown when using iDEAL payment for setting up a monthly donation to continue with the donation -->
+    <string name="IdealTransferDetailsFragment__continue">Continue</string>
 
     <!-- IdealTransferDetailsBankSelectionDialogFragment -->
     <!-- Title of the screen, displayed in the toolbar -->
@@ -6438,28 +6358,15 @@
     <!-- Displayed in the "clear filter" item in the chat feed if the user opened the filter from the overflow menu -->
     <string name="ChatFilter__tip_pull_down">Совет: Проведите пальцем вниз по списку чатов, чтобы отфильтровать</string>
 
-    <!-- Title for screen describing that sms support is going to be removed soon -->
-    <string name="SmsRemoval_title_going_away">Поддержка SMS прекращается</string>
-    <!-- Bullet point message shown on describing screen as first bullet why sms is being removed, placeholder with be date of removal (e.g., March 21st) -->
-    <string name="SmsRemoval_info_bullet_1">Приложение Signal скоро перестанет поддерживать обмен SMS-сообщениями.</string>
-    <!-- Bullet point message shown on describing screen as second bullet why sms is being removed -->
-    <string name="SmsRemoval_info_bullet_2">SMS-сообщения отличаются от сообщений Signal. <b>Это не влияет на зашифрованные сообщения Signal, которые будут продолжать работать.</b></string>
-    <!-- Bullet point message shown on describing screen as third bullet why sms is being removed -->
-    <string name="SmsRemoval_info_bullet_3">Вы можете экспортировать свои SMS-сообщения и выбрать новое приложение для SMS.</string>
-    <!-- Bullet point message shown on describing screen as first bullet variant why sms is being removed when user is locked out of sms -->
-    <string name="SmsRemoval_info_bullet_1_phase_3">Signal прекратил поддержку отправки SMS-сообщений.</string>
-    <!-- Button label on sms removal info/megaphone to start the export SMS flow -->
-    <string name="SmsRemoval_export_sms">Экспорт SMS</string>
-
     <!-- Set up your username megaphone -->
     <!-- Displayed as a title on a megaphone which prompts user to set up a username -->
     <string name="SetUpYourUsername__set_up_your_signal_username">Настройте своё имя пользователя Signal</string>
     <!-- Displayed as a description on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__usernames_let_others">Имена пользователей позволяют другим пользователям отправлять вам сообщения без вашего номера телефона</string>
+    <string name="SetUpYourUsername__introducing_phone_number_privacy">Представляем конфиденциальность телефонных номеров, дополнительные имена пользователя и ссылки.</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__not_now">Не сейчас</string>
+    <string name="SetUpYourUsername__dismiss">Закрыть</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__continue">Продолжить</string>
+    <string name="SetUpYourUsername__learn_more">Узнать больше</string>
 
     <!-- Text Formatting -->
     <!-- Popup menu label for applying bold style -->
@@ -6474,18 +6381,6 @@
     <string name="TextFormatting_spoiler">Спойлер</string>
     <!-- Popup menu label for clearing applied formatting -->
     <string name="TextFormatting_clear_formatting">Очистить форматирование</string>
-
-    <!-- UsernameEducationFragment -->
-    <!-- Continue button which takes the user to the add a username screen -->
-    <string name="UsernameEducationFragment__continue">Продолжить</string>
-    <!-- Displayed as a title on the username education screen -->
-    <string name="UsernameEducationFragment__set_up_your_signal_username">Настроить своё имя пользователя Signal</string>
-    <!-- Displayed as body text in the username education screen -->
-    <string name="UsernameEducationFragment__usernames_are_paired_with_a_set_of_digits">Имя пользователя состоит из набора цифр и не показывается в профиле</string>
-    <!-- Displayed as body text in the username education screen -->
-    <string name="UsernameEducationFragment__each_username_has_a_unique_qr_code">Каждому имени пользователя присваивается уникальная ссылка, которой вы можете поделиться с друзьями, чтобы они могли начать чат с вами</string>
-    <!-- Displayed as body text in the username education screen. The string references the names of settings, so they should match our translations for those settings. -->
-    <string name="UsernameEducationFragment__turn_off_phone_number_discovery">Выключите функцию обнаружения номера телефона в разделе Настройки &gt; Конфиденциальность &gt; Номер телефона &gt; Кто может найти мой номер, чтобы использовать ваше имя пользователя в качестве основного способа связи с вами</string>
 
     <!-- Username edit dialog -->
     <!-- Option to open username editor displayed as a list item in a dialog -->
@@ -6512,6 +6407,8 @@
     <string name="CallLogAdapter__outgoing">Исходящие</string>
     <!-- Displayed for missed calls -->
     <string name="CallLogAdapter__missed">Пропущенные</string>
+    <!-- Displayed for missed calls declined by notification profile -->
+    <string name="CallLogAdapter__missed_notification_profile">Пропущенные при включённом профиле уведомлений</string>
     <!-- Displayed on Group Call button if user is not in the call -->
     <string name="CallLogAdapter__join">Войти</string>
     <!-- Displayed on Group Call button if user is in the call -->
@@ -6625,6 +6522,8 @@
     <string name="CallPreference__group_call">Групповой звонок</string>
     <!-- Missed group call in call info -->
     <string name="CallPreference__missed_group_call">Пропущенный групповой звонок</string>
+    <!-- Missed group call while notification profile on in call info -->
+    <string name="CallPreference__missed_group_call_notification_profile">Пропущенный групповой звонок при включённом профиле уведомлений</string>
     <!-- Incoming group call in call info -->
     <string name="CallPreference__incoming_group_call">Входящий групповой звонок</string>
     <!-- Outgoing group call in call info -->
@@ -6726,6 +6625,8 @@
     <!-- Displayed as body in dialog when user attempts to delete the link -->
     <string name="CallLinkDetailsFragment__this_link_will_no_longer_work">Эта ссылка больше не будет действовать для всех, кто ею пользовался.</string>
 
+    <!-- Button label for the link button in the username link settings -->
+    <string name="UsernameLinkSettings_link_button_label">Ссылка</string>
     <!-- Button label for the share button in the username link settings -->
     <string name="UsernameLinkSettings_share_button_label">Поделиться</string>
     <!-- Button label for the color selector button in the username link settings -->
@@ -6770,6 +6671,8 @@
     <string name="UsernameLinkSettings_reset_link_result_network_unavailable">У вас нет доступа к сети. Ваша ссылка не была сброшена. Попробуйте ещё раз позже.</string>
     <!-- Body of a dialog that is displayed when we failed to reset your username link because of a transient network issue. -->
     <string name="UsernameLinkSettings_reset_link_result_network_error">Произошла ошибка сети при попытке сбросить ссылку. Попробуйте ещё раз позже.</string>
+    <!-- Shown on the generated username qr code image to explain how to use it. -->
+    <string name="UsernameLinkSettings_scan_this_qr_code">Просканируйте этот QR-код с помощью вашего телефона, чтобы начать чат со мной в Signal.</string>
 
     <!-- Explanatory text at the top of a bottom sheet describing how username links work -->
     <string name="UsernameLinkShareBottomSheet_title">Любой, у кого есть эта ссылка, может видеть ваше имя пользователя и начать чат с вами. Делитесь информацией только с теми, кому доверяете.</string>
@@ -6810,6 +6713,8 @@
     <string name="GrantFullScreenIntentPermission_megaphone_body">Чтобы не пропускать звонки от ваших контактов и групп.</string>
     <!-- Button on the megaphone megaphone shown at the bottom of the chat list when a user has disable the system setting for showing full screen notifications used showing incoming calls that starts the fix process -->
     <string name="GrantFullScreenIntentPermission_megaphone_turn_on">Включить</string>
+    <!-- Button on the megaphone shown at the bottom of the chatlist when a user has disabled the system setting for showing full screen notifications used showing incoming calls that dismisses the megaphone -->
+    <string name="GrantFullScreenIntentPermission_megaphone_not_now">Не сейчас</string>
     <!-- Title of bottom sheet shown after tapping "Turn on" from the megaphone to re-enable full screen notifications for incoming call notifications -->
     <string name="GrantFullScreenIntentPermission_bottomsheet_title">Включите уведомления во весь экран</string>
     <!-- Subtitle of bottom sheet shown after tapping "Turn on" from the megaphone to re-enable full screen notifications for incoming call notifications -->
