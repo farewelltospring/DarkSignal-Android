@@ -206,12 +206,12 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
                        @Nullable String storyReaction,
                        @NonNull QuoteModel.Type quoteType)
   {
-    setQuote(glideRequests, id, author, body, originalMissing, attachments,
+    setQuote(requestManager, id, author, body, originalMissing, attachments,
              storyReaction, quoteType, null);
 
   }
 
-  public void setQuote(GlideRequests glideRequests,
+  public void setQuote(RequestManager requestManager,
                        long id,
                        @NonNull Recipient author,
                        @Nullable CharSequence body,
