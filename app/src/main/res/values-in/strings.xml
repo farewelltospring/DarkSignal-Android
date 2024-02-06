@@ -322,8 +322,12 @@
     <string name="ConversationItem_cant_download_image_you_will_need_to_send_it_again">Tidak dapat mengunduh gambar. Anda harus mengirimnya lagi.</string>
     <!-- Dialog error message shown when user can\'t download a their own video message via a linked device due to a permanent failure (e.g., unable to decrypt) -->
     <string name="ConversationItem_cant_download_video_you_will_need_to_send_it_again">Tidak dapat mengunduh video. Anda harus mengirimnya lagi.</string>
-    <!-- Display as the timestamp footer in a message bubble in a conversation when a message has been edited. The timestamp will go from \'11m\' to \'edited 11m\' -->
-    <string name="ConversationItem_edited_timestamp_footer">Diedit %1$s</string>
+    <!-- Display as the timestamp footer in a message bubble in a conversation when a message has been edited. The timestamp represents a message that has been edited within the last minute. -->
+    <string name="ConversationItem_edited_now_timestamp_footer">Baru Diedit</string>
+    <!-- Display as the timestamp footer in a message bubble in a conversation when a message has been edited. This is displayed when the edit has occurred between 1-59 minutes ago. -->
+    <string name="ConversationItem_edited_relative_timestamp_footer">Diedit %1$s</string>
+    <!-- Display as the timestamp footer in a message bubble in a conversation when a message has been edited. This is displayed when the edit occurred at least 1 hour ago. -->
+    <string name="ConversationItem_edited_absolute_timestamp_footer">Diedit %1$s</string>
     <!-- Displayed if the link preview in the conversation item is for a call link call -->
     <string name="ConversationItem__join_call">Gabung ke panggilan</string>
 
@@ -355,6 +359,8 @@
     <string name="ConversationActivity_transport_insecure_mms">MMS tidak terenkripsi</string>
     <!-- A title for the option to send an SMS with a placeholder to put the name of their SIM card -->
     <string name="ConversationActivity_transport_signal">Pesan Signal</string>
+    <!-- The content description for button to send a message in a conversation -->
+    <string name="ConversationActivity_send_message_content_description">Kirim pesan</string>
     <string name="ConversationActivity_lets_switch_to_signal">Ayo pindah ke Signal %1$s</string>
     <string name="ConversationActivity_specify_recipient">Silahkan pilih kontak</string>
     <string name="ConversationActivity_attachment_exceeds_size_limits">Lampiran melebihi batas ukuran untuk tipe pesan yang Anda kirimkan.</string>
@@ -465,7 +471,7 @@
     <string name="ConversationFragment_you_can_swipe_to_the_left_reply">Anda dapat geser ke kiri pada pesan manapun untuk membalasnya dengan cepat</string>
     <string name="ConversationFragment_view_once_media_is_deleted_after_sending">Media sekali-lihat dihapus setelah pengiriman</string>
     <string name="ConversationFragment_you_already_viewed_this_message">Anda telah melihat pesan ini</string>
-    <string name="ConversationFragment__you_can_add_notes_for_yourself_in_this_conversation">Anda dapat menambahkan catatan untuk diri sendiri dalam obrolan ini.\nJika akun Anda terhubung ke perangkat lain, catatan baru akan disinkronkan.</string>
+    <string name="ConversationFragment__you_can_add_notes_for_yourself_in_this_conversation">Anda dapat menambahkan catatan untuk diri sendiri dalam obrolan ini. Jika akun Anda terhubung ke perangkat lain, catatan baru akan disinkronkan.</string>
     <string name="ConversationFragment__d_group_members_have_the_same_name">%1$d anggota grup memiliki nama yang sama.</string>
     <string name="ConversationFragment__tap_to_review">Ketuk untuk meninjau</string>
     <string name="ConversationFragment__review_requests_carefully">Tinjau permintaan dengan hati-hati</string>
@@ -540,6 +546,8 @@
     <string name="ConversationListFragment__turn_your_notification_profile_on_or_off_here">Aktifkan atau nonaktifkan profil pemberitahuan Anda di sini.</string>
     <!-- Message shown in top toast to indicate the named profile is on -->
     <string name="ConversationListFragment__s_on">%1$s nyala</string>
+    <!-- -->
+    <string name="ConversationListFragment_username_recovered_toast">Kode QR dan tautan Anda telah direset dan nama pengguna Anda adalah %1$s</string>
 
     <!-- ConversationListItem -->
     <string name="ConversationListItem_key_exchange_message">Pesan pertukaran kunci</string>
@@ -584,9 +592,9 @@
     <!-- Toolbar title for this screen -->
     <string name="WhoCanSeeMyPhoneNumberFragment__who_can_find_me_by_number">Siapa yang bisa menemukan saya dengan nomor telepon?</string>
     <!-- Description for radio item stating anyone can see your phone number -->
-    <string name="WhoCanSeeMyPhoneNumberFragment__anyone_who_has">Siapa saja yang punya nomor Anda dalam daftar kontak mereka dapat melihat Anda sebagai kontak di Signal. Orang lain dapat menemukan Anda dengan nomor telepon di pencarian.</string>
+    <string name="WhoCanSeeMyPhoneNumberFragment__anyone_who_has_your">Siapa pun yang punya nomor telepon Anda akan melihat Anda ada di Signal dan dapat memulai obrolan.</string>
     <!-- Description for radio item stating no one will be able to see your phone number -->
-    <string name="WhoCanSeeMyPhoneNumberFragment__nobody_on_signal">Tidak seorang pun di Signal bisa menemukan Anda dengan nomor telepon.</string>
+    <string name="WhoCanSeeMyPhoneNumberFragment__nobody_will_be_able">Tidak seorang pun bisa melihat Anda di Signal kecuali Anda mengirimi mereka pesan atau sudah pernah mengobrol dengan mereka.</string>
 
     <!-- ChooseBackupFragment -->
     <string name="ChooseBackupFragment__restore_from_backup">Pulihkan dari cadangan?</string>
@@ -956,6 +964,8 @@
     <string name="GroupMentionSettingDialog_dont_notify_me">Jangan beritahu saya</string>
 
     <!-- ManageProfileFragment -->
+    <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc -->
+    <string name="ManageProfileFragment__your_username">Nama pengguna, kode QR, dan tautan Anda tidak terlihat di profil. Hanya bagikan nama pengguna ke orang yang Anda percayai.</string>
     <string name="ManageProfileFragment_profile_name">Nama profil</string>
     <string name="ManageProfileFragment_username">Nama Pengguna</string>
     <string name="ManageProfileFragment_about">Tentang</string>
@@ -1233,6 +1243,10 @@
     <string name="MessageRecord_missed_voice_call">Panggilan suara tidak terjawab</string>
     <!-- Update message shown when receiving an incoming 1:1 video call and not answered -->
     <string name="MessageRecord_missed_video_call">Panggilan video tidak terjawab</string>
+    <!-- Update message shown when receiving an incoming voice call and declined due to notification profile -->
+    <string name="MessageRecord_missed_voice_call_notification_profile">Panggilan suara tidak terjawab saat profil notifikasi aktif</string>
+    <!-- Update message shown when receiving an incoming video call and declined due to notification profile -->
+    <string name="MessageRecord_missed_video_call_notification_profile">Panggilan video tidak terjawab saat profil notifikasi aktif</string>
     <!-- Update message shown when receiving an incoming 1:1 voice/audio call and explicitly declined -->
     <string name="MessageRecord_you_declined_a_voice_call">Anda menolak panggilan suara</string>
     <!-- Update message shown when receiving an incoming 1:1 video call and explicitly declined -->
@@ -1481,7 +1495,7 @@
     <string name="MessageRequestBottomView_do_you_want_to_let_s_message_you_wont_receive_any_messages_until_you_unblock_them_SMS">Izinkan %1$s mengirimi Anda pesan? Anda tidak akan menerima pesan apa pun sampai Anda membuka blokir mereka.</string>
     <string name="MessageRequestBottomView_get_updates_and_news_from_s_you_wont_receive_any_updates_until_you_unblock_them">Dapatkan pembaruan dan berita dari %1$s? Anda tidak akan menerima pembaruan apa pun sampai Anda membuka blokir mereka.</string>
     <string name="MessageRequestBottomView_continue_your_conversation_with_this_group_and_share_your_name_and_photo">Lanjutkan obrolan Anda dengan grup ini dan bagikan nama dan foto Anda dengan anggotanya?</string>
-    <string name="MessageRequestBottomView_upgrade_this_group_to_activate_new_features">This Legacy Group can no longer be used. Create a new group to activate new features like @mentions and admins.</string>
+    <string name="MessageRequestBottomView_upgrade_this_group_to_activate_new_features">Grup Lama ini sudah tidak dapat digunakan. Buat grup baru untuk mengaktifkan fitur baru seperti @mention dan admin.</string>
     <string name="MessageRequestBottomView_this_legacy_group_can_no_longer_be_used">Grup Lama tidak lagi dapat digunakan karena berukuran terlalu besar. Ukuran maksimum grup adalah %1$d.</string>
     <string name="MessageRequestBottomView_continue_your_conversation_with_s_and_share_your_name_and_photo">Lanjutkan obrolan Anda dengan %1$s dan bagikan nama dan foto Anda dengannya?</string>
     <string name="MessageRequestBottomView_do_you_want_to_join_this_group_they_wont_know_youve_seen_their_messages_until_you_accept">Bergabung dengan grup ini dan bagikan nama dan foto Anda dengan anggotanya? Mereka tidak akan mengetahuinya sampai Anda menerimanya.</string>
@@ -1515,7 +1529,7 @@
 
     <!-- DeviceProvisioningActivity -->
     <string name="DeviceProvisioningActivity_link_this_device">Hubungkan perangkat ini?</string>
-    <string name="DeviceProvisioningActivity_continue">LANJUTKAN</string>
+    <string name="DeviceProvisioningActivity_continue">Lanjutkan</string>
 
     <string name="DeviceProvisioningActivity_content_intro">Perangkat yang telah terhubung akan dapat</string>
     <string name="DeviceProvisioningActivity_content_bullets">
@@ -1757,6 +1771,8 @@
     <string name="WebRtcCallView__toggle_camera">Ubah status kamera</string>
     <!-- Toggle content description for toggling mute state  -->
     <string name="WebRtcCallView__toggle_mute">Ubah status bisukan</string>
+    <!-- Content description for additional actions menu button -->
+    <string name="WebRtcCallView__additional_actions">Tindakan lain</string>
     <!-- Content description for end-call button -->
     <string name="WebRtcCallView__end_call">Akhiri panggilan</string>
 
@@ -1773,9 +1789,64 @@
     <!-- A text description of the earpiece icon, used for accessibility. -->
     <string name="WebRtcAudioOutputBottomSheet__earpiece_icon_content_description">Ikon yang merepresentasikan earpiece perangkat.</string>
 
+    <!-- A clickable button to "raise your hand" in a group call to signify you have something to say -->
+    <string name="CallOverflowPopupWindow__raise_hand">Angkat Tangan</string>
+    <!-- A description of a clickable image representing a raised hand -->
+    <string name="CallOverflowPopupWindow__raise_hand_illustration_content_description">Angkat Tangan</string>
+    <!-- A dialog prompt to confirm you want to lower your hand -->
+    <string name="CallOverflowPopupWindow__lower_your_hand">Turunkan tangan?</string>
+    <!-- A dialog button to confirm you would like to lower your hand -->
+    <string name="CallOverflowPopupWindow__lower_hand">Turunkan Tangan</string>
+    <!-- A negative button for a dialog confirming the user wants to lower their hand (withdraw a raised hand) -->
+    <string name="CallOverflowPopupWindow__cancel">Batal</string>
+    <!-- A notification to the user that they successfully raised their hand -->
+    <string name="CallOverflowPopupWindow__you_raised_your_hand">Anda angkat tangan</string>
+    <!-- A button to take you to a list of participants with raised hands -->
+    <string name="CallOverflowPopupWindow__view">Lihat</string>
+
+    <!-- A notification to the user that one or more participants in the call successfully raised their hand. In the singular case, it is a name. In the plural case, it is a name or "You" -->
+    <plurals name="CallOverflowPopupWindow__raised_a_hand">
+        <item quantity="other">%1$s + %2$d angkat tangan</item>
+    </plurals>
+
+    <!-- A badge to show how many hands are raised. The first string may be a name or "You" -->
+    <plurals name="CallRaiseHandSnackbar_raised_hands">
+        <item quantity="other">%1$s +%2$d</item>
+    </plurals>
+
+    <!-- An accessibility label for screen readers on a view that can be expanded -->
+    <string name="CallOverflowPopupWindow__expand_snackbar_accessibility_label">Perluas tampilan info angkat tangan</string>
+
+    <!-- AboutSheet -->
+    <!-- Displayed in a sheet row and allows user to open signal connection explanation on tap -->
+    <string name="AboutSheet__signal_connection">Koneksi Signal</string>
+    <!-- Explains that the given user (placeholder is short name) is in the users system contact -->
+    <string name="AboutSheet__s_is_in_your_system_contacts">%1$s ada di kontak sistem Anda</string>
+    <!-- Notice in a row when user has no groups in common -->
+    <string name="AboutSheet__you_have_no_groups_in_common">Tidak punya grup yang sama</string>
+    <!-- Notice when a user is not a connection to review requests carefully -->
+    <string name="AboutSheet__review_requests_carefully">Tinjau permintaan dengan hati-hati</string>
+    <!-- Text used when user has groups in common. Placeholder is the count -->
+    <plurals name="AboutSheet__d_groups_in">
+        <item quantity="other">%1$d grup yang sama</item>
+    </plurals>
+    <!-- Text displayed in title for external recipients -->
+    <string name="AboutSheet__about">Tentang</string>
+    <!-- Text displayed in title for you -->
+    <string name="AboutSheet__you">Anda</string>
+
     <!-- CallParticipantsListDialog -->
-    <plurals name="CallParticipantsListDialog_in_this_call_d_people">
-        <item quantity="other">Di panggilan ini · %1$d orang</item>
+    <plurals name="CallParticipantsListDialog_in_this_call">
+        <item quantity="other">Dalam panggilan ini (%1$d)</item>
+    </plurals>
+    <plurals name="CallParticipantsListDialog__signal_will_ring">
+        <item quantity="other">Signal akan Menampilkan Layar Dering untuk (%1$d)</item>
+    </plurals>
+    <plurals name="CallParticipantsListDialog__signal_will_notify">
+        <item quantity="other">Signal akan Kirim Notifikasi ke (%1$d)</item>
+    </plurals>
+    <plurals name="CallParticipantsListDialog__raised_hands">
+        <item quantity="other">Angkat tangan (%1$d)</item>
     </plurals>
 
     <!-- CallParticipantView -->
@@ -1887,6 +1958,12 @@
     <string name="RevealableMessageView_view_video">Lihat Video</string>
     <string name="RevealableMessageView_viewed">Dilihat</string>
     <string name="RevealableMessageView_media">Media</string>
+
+    <!-- ReviewBannerView -->
+    <!-- ReviewBannerView text when a name conflict has been found -->
+    <string name="ReviewBannerView__name_conflict_found">Ditemukan permasalahan nama</string>
+    <!-- Button label to view name conflicts -->
+    <string name="ReviewBannerView__view">Lihat</string>
 
     <!-- Search -->
     <string name="SearchFragment_no_results">Tidak ditemukan hasil untuk \'%1$s\'</string>
@@ -2054,6 +2131,8 @@
     <string name="UnverifiedSendDialog_send">Kirim</string>
 
     <!-- UsernameEditFragment -->
+    <!-- Placeholder text for custom discriminator -->
+    <string name="UsernameEditFragment__00">00</string>
     <!-- Toolbar title when entering from registration -->
     <string name="UsernameEditFragment__add_a_username">Tambahkan nama pengguna</string>
     <!-- Instructional text at the top of the username edit screen -->
@@ -2076,6 +2155,18 @@
     <string name="UsernameEditFragment__skip">Lewati</string>
     <!-- Content description for done button -->
     <string name="UsernameEditFragment__done">Selesai</string>
+    <!-- Displayed when the chosen discriminator is not available for the given nickname -->
+    <string name="UsernameEditFragment__this_username_is_not_available_try_another_number">Nama pengguna ini tidak tersedia, coba nomor lain.</string>
+    <!-- Displayed when the chosen discriminator is too short -->
+    <string name="UsernameEditFragment__invalid_username_enter_a_minimum_of_d_digits">Nama pengguna tidak valid, masukkan minimal %1$d digit.</string>
+    <!-- Displayed when the chosen discriminator is too long -->
+    <string name="UsernameEditFragment__invalid_username_enter_a_maximum_of_d_digits">Nama pengguna tidak valid, masukkan maksimal %1$d digit.</string>
+    <!-- Displayed when the chosen discriminator is 00 -->
+    <string name="UsernameEditFragment__this_number_cant_be_00">Nomor tidak boleh 00. Masukkan angka antara 1–9</string>
+    <!-- Displayed when the chosen discriminator starts with 00 -->
+    <string name="UsernameEditFragment__this_number_cant_start_with_00">Nomor tidak boleh dimulai dengan 00. Masukkan angka antara 1–9</string>
+    <!-- The body of an alert dialog asking the user to confirm that they want to recover their username -->
+    <string name="UsernameEditFragment_recovery_dialog_confirmation">Jika nama pengguna Anda dipulihkan, kode QR dan tautan yang ada akan direset. Anda yakin?</string>
 
     <plurals name="UserNotificationMigrationJob_d_contacts_are_on_signal">
         <item quantity="other">%1$d kontak ada di Signal!</item>
@@ -2259,6 +2350,26 @@
     <!-- Notification subtext for group stories -->
     <string name="SingleRecipientNotificationBuilder__s_dot_story">%1$s • Cerita</string>
 
+    <!-- NewWaysToConnectDialogFragment -->
+    <!-- Fragment title, displayed at the top of the content -->
+    <string name="NewWaysToConnectDialogFragment__new_ways_to_connect">Cara baru untuk terhubung</string>
+    <!-- Row item title for phone number privacy explainer -->
+    <string name="NewWaysToConnectDialogFragment__phone_number_privacy">Privasi nomor telepon</string>
+    <!-- Row item description for phone number privacy explainer -->
+    <string name="NewWaysToConnectDialogFragment__your_phone_number_is_no_longer_shared">Nomor telepon Anda tidak lagi dibagikan dalam obrolan. Jika nomor Anda sudah tersimpan di kontak teman, mereka akan tetap melihatnya.</string>
+    <!-- Row item title for usernames explainer -->
+    <string name="NewWaysToConnectDialogFragment__usernames">Nama pengguna</string>
+    <!-- Row item description for usernames explainer -->
+    <string name="NewWaysToConnectDialogFragment__people_can_now_message_you_using_your_optional_username">Orang lain kini bisa mengirimi Anda pesan lewat nama pengguna opsional, sehingga tidak perlu memberikan nomor telepon. Nama pengguna tidak terlihat di profil Anda.</string>
+    <!-- Row item title for qr code and links explainer -->
+    <string name="NewWaysToConnectDialogFragment__qr_codes_and_links">Kode QR dan tautan</string>
+    <!-- Row item description for qr code and links explainer -->
+    <string name="NewWaysToConnectDialogFragment__usernames_have_a_unique_qr_code">Nama pengguna punya kode QR dan tautan unik yang bisa dibagikan kepada teman agar bisa cepat memulai obrolan dengan Anda.</string>
+    <!-- Button label for not right now -->
+    <string name="NewWaysToConnectDialogFragment__not_now">Tidak sekarang</string>
+    <!-- Button label for continue -->
+    <string name="NewWaysToConnectDialogFragment__set_up_your_username">Siapkan nama pengguna Anda</string>
+
     <!-- ThumbnailView -->
     <string name="ThumbnailView_Play_video_description">Putar video</string>
     <string name="ThumbnailView_Has_a_caption_description">Memiliki keterangan</string>
@@ -2269,6 +2380,10 @@
     </plurals>
     <!-- Status update label used while the device is transcoding video as a prerequisite to uploading -->
     <string name="TransferControlView__processing">Memproses…</string>
+    <!-- Status update label used while the device is transmitting data over the network. Will take the form of "1.0 MB/2.0 MB" -->
+    <string name="TransferControlView__download_progress">%1$1.1f MB/%2$2.1f MB</string>
+    <!-- Attachment file size label for not-yet-downloaded images and video. Will take the form of "1.0 MB" -->
+    <string name="TransferControlView__filesize">%1$1.1f MB</string>
 
 
     <!-- UnauthorizedReminder -->
@@ -2293,6 +2408,8 @@
     <string name="WebRtcCallActivity__answered_on_a_linked_device">Dijawab dari perangkat terhubung.</string>
     <string name="WebRtcCallActivity__declined_on_a_linked_device">Ditolak dari perangkat terhubung.</string>
     <string name="WebRtcCallActivity__busy_on_a_linked_device">Sibuk di perangkat tersambung.</string>
+    <!-- Tooltip message shown first time user is in a video call after switch camera button moved -->
+    <string name="WebRtcCallActivity__flip_camera_tooltip">Fitur Balik Kamera telah dipindahkan ke sini, ketuk video untuk mencobanya</string>
 
     <string name="GroupCallSafetyNumberChangeNotification__someone_has_joined_this_call_with_a_safety_number_that_has_changed">Seseorang telah bergabung dalam panggilan ini dengan nomor keamanan yang berubah.</string>
 
@@ -3572,11 +3689,17 @@
     <!-- Section title above two radio buttons for enabling and disabling phone number display -->
     <string name="PhoneNumberPrivacySettingsFragment__who_can_see_my_number">Siapa bisa melihat nomor saya</string>
     <!-- Subtext below radio buttons when who can see my number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see">Tidak akan ada yang melihat nomor Anda di Signal</string>
+    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see_your">Tidak akan ada yang melihat nomor telepon Anda di Signal, bahkan saat Anda mengirim pesan kepada mereka sekalipun.</string>
     <!-- Section title above two radio buttons for enabling and disabling whether users can find me by my phone number  -->
     <string name="PhoneNumberPrivacySettingsFragment__who_can_find_me_by_number">Siapa bisa menemukan saya dengan nomor telepon</string>
     <!-- Subtext below radio buttons when who can see my number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number">Nomor telepon Anda akan terlihat oleh orang dan grup yang Anda kirimi pesan. Orang yang menyimpan nomor Anda di kontaknya juga akan dapat melihat nomor telepon Anda di Signal.</string>
+    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number_will_be">Nomor telepon Anda akan terlihat oleh orang dan grup yang Anda kirimi pesan.</string>
+    <!-- Subtext below radio buttons when who can find me by number is set to everyone -->
+    <string name="PhoneNumberPrivacySettingsFragment__anyone_who_has">Siapa pun yang punya nomor telepon Anda akan melihat Anda ada di Signal dan dapat memulai obrolan.</string>
+    <!-- Subtext below radio buttons when who can find me by number is set to nobody -->
+    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_be_able_to_see">Tidak seorang pun bisa melihat Anda di Signal kecuali Anda mengirimi mereka pesan atau sudah pernah mengobrol dengan mereka.</string>
+    <!-- Snackbar text when pressing invalid radio item -->
+    <string name="PhoneNumberPrivacySettingsFragment__to_change_this_setting">"Untuk mengubahnya, tetapkan pengaturan Siapa bisa melihat nomor saya ke opsi Tidak ada."</string>
     <string name="PhoneNumberPrivacy_everyone">Semua orang</string>
     <string name="PhoneNumberPrivacy_nobody">Tak seorangpun</string>
     <string name="preferences_app_protection__screen_lock">Layar terkunci</string>
@@ -3824,14 +3947,16 @@
     <string name="ReviewCardDialogFragment__failed_to_remove_group_member">Gagal menghapus anggota.</string>
 
     <!-- ReviewCard -->
-    <string name="ReviewCard__member">Anggota</string>
     <string name="ReviewCard__request">Permintaan</string>
     <string name="ReviewCard__your_contact">Kontak Anda</string>
     <string name="ReviewCard__remove_from_group">Keluarkan dari grup</string>
     <string name="ReviewCard__update_contact">Perbarui kontak</string>
     <string name="ReviewCard__block">Blokir</string>
     <string name="ReviewCard__delete">Hapus</string>
-    <string name="ReviewCard__recently_changed">Baru saja mengganti nama profilnya dari %1$s menjadi %2$s</string>
+    <!-- Displayed when a recent name change has occurred. First placeholder is new short name, second is previous name, third is new name. -->
+    <string name="ReviewCard__s_recently_changed">%1$s baru-baru ini mengubah nama profilnya dari %2$s jadi %3$s</string>
+    <!-- Displayed when a review user is in your system contacts. Placeholder is short name. -->
+    <string name="ReviewCard__s_is_in_your_system_contacts">%1$s ada di kontak sistem Anda</string>
 
     <!-- CallParticipantsListUpdatePopupWindow -->
     <string name="CallParticipantsListUpdatePopupWindow__s_joined">%1$s bergabung</string>
@@ -4184,27 +4309,6 @@
     <string name="ChatsSettingsFragment__keyboard">Papan ketik</string>
     <string name="ChatsSettingsFragment__enter_key_sends">Enter untuk mengirim</string>
 
-    <!--SmsSettingsFragment -->
-    <string name="SmsSettingsFragment__use_as_default_sms_app">Gunakan sebagai aplikasi SMS utama</string>
-    <!-- Preference title to export sms -->
-    <string name="SmsSettingsFragment__export_sms_messages">Ekspor Pesan SMS</string>
-    <!-- Preference title to re-export sms -->
-    <string name="SmsSettingsFragment__export_sms_messages_again">Ekspor pesan SMS lagi</string>
-    <!-- Preference title to delete sms -->
-    <string name="SmsSettingsFragment__remove_sms_messages">Hapus pesan SMS</string>
-    <!-- Snackbar text to confirm deletion -->
-    <string name="SmsSettingsFragment__removing_sms_messages_from_signal">Menghapus pesan SMS dari Signal…</string>
-    <!-- Snackbar text to indicate can delete later -->
-    <string name="SmsSettingsFragment__you_can_remove_sms_messages_from_signal_in_settings">Anda bisa menghapus pesan SMS dari Signal di Pengaturan kapan saja.</string>
-    <!-- Description for export sms preference -->
-    <string name="SmsSettingsFragment__you_can_export_your_sms_messages_to_your_phones_sms_database">Anda dapat mengekspor pesan SMS ke database SMS ponsel Anda</string>
-    <!-- Description for re-export sms preference -->
-    <string name="SmsSettingsFragment__exporting_again_can_result_in_duplicate_messages">Mengekspor lagi dapat menghasilkan pesan duplikat.</string>
-    <!-- Description for remove sms preference -->
-    <string name="SmsSettingsFragment__remove_sms_messages_from_signal_to_clear_up_storage_space">Hapus pesan SMS dari Signal untuk mengosongkan ruang penyimpanan.</string>
-    <!-- Information message shown at the top of sms settings to indicate it is being removed soon. -->
-    <string name="SmsSettingsFragment__sms_support_will_be_removed_soon_to_focus_on_encrypted_messaging">Dukungan untuk SMS akan segera dihentikan demi fokus pada pengiriman pesan terenkripsi.</string>
-
     <!-- NotificationsSettingsFragment -->
     <string name="NotificationsSettingsFragment__messages">Pesan</string>
     <string name="NotificationsSettingsFragment__calls">Panggilan</string>
@@ -4477,7 +4581,7 @@
     <string name="NewConversationActivity__">%1$s bukan pengguna Signal</string>
     <!-- Error message shown in a dialog when trying to create a new group with non-signal users (e.g., unregistered or phone number only contacts) -->
     <plurals name="CreateGroupActivity_not_signal_users">
-        <item quantity="other">%1$s are not Signal users</item>
+        <item quantity="other">%1$s bukan pengguna Signal</item>
     </plurals>
 
     <!-- ContactFilterView -->
@@ -4878,6 +4982,12 @@
     <string name="AddAllowedMembers__add_people_and_groups_you_want_notifications_and_calls_from_when_this_profile_is_on">Tambahkan orang dan grup yang Anda ingin dapatkan notifikasi dan panggilannya saat profil ini aktif</string>
     <!-- Button text that launches the contact picker to select from -->
     <string name="AddAllowedMembers__add_people_or_groups">Tambahkan orang atau grup</string>
+    <!-- Title for exceptions section of add people to notification profile screen in create flow -->
+    <string name="AddAllowedMembers__exceptions">Pengecualian</string>
+    <!-- List preference to toggle that allows calls through the notification profile during create flow -->
+    <string name="AddAllowedMembers__allow_all_calls">Izinkan semua panggilan</string>
+    <!-- List preference to toggle that allows mentions through the notification profile during create flow -->
+    <string name="AddAllowedMembers__notify_for_all_mentions">Notifikasi untuk semua penyebutan</string>
 
     <!-- Call to action button on contact picker for adding to profile -->
     <string name="SelectRecipientsFragment__add">Tambahkan</string>
@@ -5000,7 +5110,7 @@
     <!-- Donation receipts one-time tab label -->
     <string name="DonationReceiptListFragment__one_time">Sekali saja</string>
     <!-- Donation receipts gift tab -->
-    <string name="DonationReceiptListFragment__for_a_friend">For a friend</string>
+    <string name="DonationReceiptListFragment__for_a_friend">Untuk teman</string>
     <!-- Donation receipts gift tab label -->
     <string name="DonationReceiptListFragment__donation_for_a_friend">Donasi untuk teman</string>
     <!-- Donation receipts donation type heading -->
@@ -5475,7 +5585,7 @@
     <string name="SafetyNumberBottomSheetFragment__all_connections_have_been_reviewed">Semua koneksi telah ditinjau, ketuk kirim untuk melanjutkan.</string>
     <!-- Message of safety number changes bottom sheet when not showing individual records -->
     <plurals name="SafetyNumberBottomSheetFragment__you_have_d_connections_plural">
-        <item quantity="other">Anda punya %1$d koneksi yang mungkin telah menginstal ulang Signal atau berganti perangkat. Sebelum berbagi cerita dengan mereka, tinjau nomor keamanan mereka atau pertimbangkan untuk menghapus mereka dari cerita Anda.</item>
+        <item quantity="other">%1$d koneksi mungkin telah menginstal ulang Signal atau mengganti perangkat mereka. Anda dapat meninjau nomor keamanan mereka atau melanjutkan pengiriman.</item>
     </plurals>
     <!-- Menu action to launch safety number verification screen -->
     <string name="SafetyNumberBottomSheetFragment__verify_safety_number">Verifikasi nomor keamanan</string>
@@ -5563,47 +5673,6 @@
     <!-- Generic title for overflow menus -->
     <string name="OverflowMenu__overflow_menu">Menu overflow</string>
 
-    <!-- SMS Export Service -->
-    <!-- Displayed in the notification while export is running -->
-    <string name="SignalSmsExportService__exporting_messages">Mengekspor pesan…</string>
-    <!-- Displayed in the notification title when export completes -->
-    <string name="SignalSmsExportService__signal_sms_export_complete">Ekspor SMS Signal Selesai</string>
-    <!-- Displayed in the notification message when export completes -->
-    <string name="SignalSmsExportService__tap_to_return_to_signal">Ketuk untuk kembali ke Signal</string>
-
-    <!-- ExportYourSmsMessagesFragment -->
-    <!-- Title of the screen -->
-    <string name="ExportYourSmsMessagesFragment__export_your_sms_messages">Ekspor pesan SMS Anda</string>
-    <!-- Message of the screen -->
-    <string name="ExportYourSmsMessagesFragment__you_can_export_your_sms_messages_to_your_phones_sms_database_and_youll_have_the_option_to_keep_or_remove_them_from_signal">Anda dapat mengekspor pesan SMS ke database SMS di ponsel Anda, dan bisa memilih apakah ingin menyimpan atau menghapusnya dari Signal. Ini memungkinkan aplikasi SMS lain di ponsel Anda mengimpornya. Tindakan ini tidak menghasilkan file yang dapat dibagikan dari riwayat SMS Anda.</string>
-    <!-- Button label to begin export -->
-    <string name="ExportYourSmsMessagesFragment__continue">Lanjutkan</string>
-
-    <!-- ExportingSmsMessagesFragment -->
-    <!-- Title of the screen -->
-    <string name="ExportingSmsMessagesFragment__exporting_sms_messages">Mengekspor pesan SMS</string>
-    <!-- Message of the screen when exporting sms messages -->
-    <string name="ExportingSmsMessagesFragment__this_may_take_awhile">Proses ini mungkin butuh waktu beberapa saat</string>
-    <!-- Progress indicator for export -->
-    <plurals name="ExportingSmsMessagesFragment__exporting_d_of_d">
-        <item quantity="other">Mengekspor %1$d dari %2$d…</item>
-    </plurals>
-    <!-- Alert dialog title shown when we think a user may not have enough local storage available to export sms messages -->
-    <string name="ExportingSmsMessagesFragment__you_may_not_have_enough_disk_space">Ruang penyimpanan Anda mungkin tidak cukup</string>
-    <!-- Alert dialog message shown when we think a user may not have enough local storage available to export sms messages, placeholder is the file size, e.g., 128kB -->
-    <string name="ExportingSmsMessagesFragment__you_need_approximately_s_to_export_your_messages_ensure_you_have_enough_space_before_continuing">Anda butuh sekitar %1$s untuk mengekspor pesan, pastikan ruang penyimpanan Anda cukup sebelum melanjutkan.</string>
-    <!-- Alert dialog button to continue with exporting sms after seeing the lack of storage warning -->
-    <string name="ExportingSmsMessagesFragment__continue_anyway">Tetap Lanjutkan</string>
-    <!-- Dialog text shown when Signal isn\'t granted the sms permission needed to export messages, different than being selected as the sms app -->
-    <string name="ExportingSmsMessagesFragment__signal_needs_the_sms_permission_to_be_able_to_export_your_sms_messages">Signal memerlukan izin SMS untuk dapat mengekspor pesan SMS Anda.</string>
-
-    <!-- ChooseANewDefaultSmsAppFragment -->
-    <!-- Title of the screen -->
-    <string name="ChooseANewDefaultSmsAppFragment__choose_a_new">Pilih aplikasi SMS default baru</string>
-    <!-- Button label to launch picker -->
-    <string name="ChooseANewDefaultSmsAppFragment__continue">Lanjutkan</string>
-    <!-- Button label for when done with changing default SMS app -->
-    <string name="ChooseANewDefaultSmsAppFragment__done">Selesai</string>
     <!-- First step number/bullet for choose new default sms app instructions -->
     <string name="ChooseANewDefaultSmsAppFragment__bullet_1">1</string>
     <!-- Second step number/bullet for choose new default sms app instructions -->
@@ -5612,47 +5681,6 @@
     <string name="ChooseANewDefaultSmsAppFragment__bullet_3">3</string>
     <!-- Fourth step number/bullet for choose new default sms app instructions -->
     <string name="ChooseANewDefaultSmsAppFragment__bullet_4">4</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__tap_continue_to_open_the_defaults_apps_screen_in_settings">Ketuk \"Lanjutkan\" untuk membuka layar \"Aplikasi default\" di Pengaturan</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__select_sms_app_from_the_list">Pilih \"Aplikasi SMS\" dari daftar</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__choose_another_app_to_use_for_sms_messaging">Pilih aplikasi lain yang akan digunakan untuk perpesanan SMS</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__return_to_signal">Kembali ke Signal</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__open_your_phones_settings_app">Buka aplikasi Pengaturan di ponsel Anda</string>
-    <!-- Instruction step for choosing a new default sms app -->
-    <string name="ChooseANewDefaultSmsAppFragment__navigate_to_apps_default_apps_sms_app">Cari dan buka \"Aplikasi\" &gt; \"Aplikasi default\" &gt; \"Aplikasi SMS\"</string>
-
-    <!-- RemoveSmsMessagesDialogFragment -->
-    <!-- Action button to keep messages -->
-    <string name="RemoveSmsMessagesDialogFragment__keep_messages">Simpan pesan</string>
-    <!-- Action button to remove messages -->
-    <string name="RemoveSmsMessagesDialogFragment__remove_messages">Hapus pesan</string>
-    <!-- Title of dialog -->
-    <string name="RemoveSmsMessagesDialogFragment__remove_sms_messages">Hapus pesan SMS dari Signal?</string>
-    <!-- Message of dialog -->
-    <string name="RemoveSmsMessagesDialogFragment__you_can_now_remove_sms_messages_from_signal">Kini Anda dapat menghapus pesan SMS dari Signal untuk mengosongkan ruang penyimpanan. Pesan masih bisa dilihat di aplikasi SMS lain yang ada di ponsel meskipun Anda telah menghapusnya.</string>
-
-    <!-- ReExportSmsMessagesDialogFragment -->
-    <!-- Action button to re-export messages -->
-    <string name="ReExportSmsMessagesDialogFragment__continue">Lanjutkan</string>
-    <!-- Action button to cancel re-export process -->
-    <string name="ReExportSmsMessagesDialogFragment__cancel">Batal</string>
-    <!-- Title of dialog -->
-    <string name="ReExportSmsMessagesDialogFragment__export_sms_again">Ekspor SMS lagi?</string>
-    <!-- Message of dialog -->
-    <string name="ReExportSmsMessagesDialogFragment__you_already_exported_your_sms_messages">Anda sudah mengekspor pesan SMS.\nPERINGATAN: Jika Anda melanjutkan, Anda mungkin mendapatkan pesan duplikat.</string>
-
-    <!-- SetSignalAsDefaultSmsAppFragment -->
-    <!-- Title of the screen -->
-    <string name="SetSignalAsDefaultSmsAppFragment__set_signal_as_the_default_sms_app">Tetapkan Signal sebagai aplikasi SMS default</string>
-    <!-- Message of the screen -->
-    <string name="SetSignalAsDefaultSmsAppFragment__to_export_your_sms_messages">Untuk mengekspor pesan SMS, Anda harus menetapkan Signal sebagai aplikasi SMS default.</string>
-    <!-- Button label to start export -->
-    <string name="SetSignalAsDefaultSmsAppFragment__next">Berikutnya</string>
-
     <!-- BackupSchedulePermission Megaphone -->
     <!-- The title on an alert window that explains to the user that we are unable to backup their messages -->
     <string name="BackupSchedulePermissionMegaphone__cant_back_up_chats">Tidak dapat mencadangkan obrolan</string>
@@ -5670,44 +5698,6 @@
     <string name="BackupSchedulePermissionMegaphone__turn_on_allow_settings_alarms_and_reminders">Aktifkan \"Izinkan pengaturan alarm dan pengingat.\"</string>
     <!-- Re-enable backups permission bottom sheet call to action button to open settings -->
     <string name="BackupSchedulePermissionMegaphone__go_to_settings">Buka pengaturan</string>
-
-    <!-- SmsExportMegaphoneActivity -->
-    <!-- Phase 2 title of full screen megaphone indicating sms will no longer be supported in the near future -->
-    <string name="SmsExportMegaphoneActivity__signal_will_no_longer_support_sms">Signal tidak akan lagi mendukung SMS</string>
-    <!-- Phase 3 title of full screen megaphone indicating sms is longer supported  -->
-    <string name="SmsExportMegaphoneActivity__signal_no_longer_supports_sms">Signal tidak lagi mendukung SMS</string>
-    <!-- The text on a button in a popup that, when clicked, will dismiss the popup and schedule the prompt to occur at a later time. -->
-    <string name="SmsExportMegaphoneActivity__remind_me_later">Ingatkan saya nanti</string>
-    <!-- The text on a button in a popup that, when clicked, will navigate the user to a web article on SMS removal -->
-
-    <!-- Title for screen shown after sms export has completed -->
-    <string name="ExportSmsCompleteFragment__export_complete">Ekspor Selesai</string>
-    <!-- Button to continue to next screen -->
-    <string name="ExportSmsCompleteFragment__next">Berikutnya</string>
-    <!-- Message showing summary of sms export counts -->
-    <plurals name="ExportSmsCompleteFragment__d_of_d_messages_exported">
-        <item quantity="other">%1$d dari %2$d pesan diekspor</item>
-    </plurals>
-
-    <!-- Title of screen shown when some sms messages did not export -->
-    <string name="ExportSmsPartiallyComplete__export_partially_complete">Ekspor selesai sebagian</string>
-    <!-- Debug step 1 on screen shown when some sms messages did not export -->
-    <string name="ExportSmsPartiallyComplete__ensure_you_have_an_additional_s_free_on_your_phone_to_export_your_messages">Pastikan Anda punya %1$s ruang kosong tambahan di ponsel untuk bisa mengekspor pesan Anda</string>
-    <!-- Debug step 2 on screen shown when some sms messages dit not export -->
-    <string name="ExportSmsPartiallyComplete__retry_export_which_will_only_retry_messages_that_have_not_yet_been_exported">Coba ekspor lagi, hanya pesan yang belum diekspor yang akan coba diekspor lagi</string>
-    <!-- Partial sentence for Debug step 3 on screen shown when some sms messages did not export, is combined with \'contact us\' -->
-    <string name="ExportSmsPartiallyComplete__if_the_problem_persists">Jika masalah tetap terjadi, </string>
-    <!-- Partial sentence for deubg step 3 on screen shown when some sms messages did not export, combined with \'If the problem persists\', link text to open contact support view -->
-    <string name="ExportSmsPartiallyComplete__contact_us">Hubungi kami</string>
-    <!-- Button text to retry sms export -->
-    <string name="ExportSmsPartiallyComplete__retry">Coba lagi</string>
-    <!-- Button text to continue sms export flow and not retry failed message exports -->
-    <string name="ExportSmsPartiallyComplete__continue_anyway">Tetap Lanjutkan</string>
-    <!-- Title of screen shown when all sms messages failed to export -->
-    <string name="ExportSmsFullError__error_exporting_sms_messages">Terjadi kesalahan saat mengekspor pesan SMS</string>
-    <!-- Helper text shown when all sms messages failed to export -->
-    <string name="ExportSmsFullError__please_try_again_if_the_problem_persists">Mohon coba lagi. Jika masalah tetap terjadi, </string>
-
 
     <!-- DonateToSignalFragment -->
     <!-- Title below avatar -->
@@ -5729,9 +5719,9 @@
     <!-- Dialog body when a user opens the manage donations main screen and they have a pending iDEAL donation -->
     <string name="DonateToSignalFragment__your_ideal_payment_is_still_processing">Donasi via iDEAL Anda masih diproses. Cek aplikasi perbankan Anda untuk menyetujui pembayaran sebelum memberikan donasi lagi.</string>
     <!-- Dialog title shown when a user tries to donate an amount higher than is allowed for a given payment method. -->
-    <string name="DonateToSignal__donation_amount_too_high">Donation amount too high</string>
+    <string name="DonateToSignal__donation_amount_too_high">Jumlah donasi terlalu banyak</string>
     <!-- Dialog body shown when a user tries to donate an amount higher than is allowed for a given payment method, place holder is the maximum -->
-    <string name="DonateToSignalFragment__you_can_send_up_to_s_via_bank_transfer">You can send up to %1$s via bank transfer. Try a different amount or a different payment method.</string>
+    <string name="DonateToSignalFragment__you_can_send_up_to_s_via_bank_transfer">Anda bisa kirim maksimal %1$s via transfer bank. Coba jumlah lain atau metode pembayaran berbeda.</string>
 
     <!-- Donation pill toggle monthly text -->
     <string name="DonationPillToggle__monthly">Bulanan</string>
@@ -5829,12 +5819,18 @@
     <string name="BankTransferDetailsFragment__iban_country_code_is_not_supported">Kode negara IBAN tidak didukung</string>
     <!-- Error label for IBAN field when number is invalid -->
     <string name="BankTransferDetailsFragment__invalid_iban">IBAN tidak valid</string>
+    <!-- Error label for name field when name is not at least two characters long -->
+    <string name="BankTransferDetailsFragment__minimum_2_characters">Minimal 2 karakter</string>
+    <!-- Error label for email field when email is not valid -->
+    <string name="BankTransferDetailsFragment__invalid_email_address">Alamat email salah</string>
 
     <!-- IdealTransferDetailsFragment -->
     <!-- Title of the screen, displayed in the toolbar -->
     <string name="IdealTransferDetailsFragment__ideal">iDEAL</string>
     <!-- Subtitle of the screen, displayed below the toolbar. Placeholder is for \'learn more\' -->
     <string name="IdealTransferDetailsFragment__enter_your_bank">Masukkan detail bank, nama, dan email Anda. Stripe menggunakan email ini untuk mengirimkan info terbaru tentang donasi Anda. %1$s</string>
+    <!-- Subtitle of the screen, displayed below the toolbar. Placeholder is for \'learn more\' -->
+    <string name="IdealTransferDetailsFragment__enter_your_bank_details_one_time">Masukkan detail bank Anda. Signal tidak mengumpulkan atau menyimpan informasi pribadi Anda. %1$s</string>
     <!-- Subtitle learn-more button displayed inline with the subtitle text -->
     <string name="IdealTransferDetailsFragment__learn_more">Pelajari selengkapnya</string>
     <!-- Hint label for text entry box for name on bank account -->
@@ -5843,6 +5839,12 @@
     <string name="IdealTransferDetailsFragment__email">Surel</string>
     <!-- Default label for bank selection -->
     <string name="IdealTransferDetailsFragment__choose_your_bank">Pilih bank Anda</string>
+    <!-- Dialog title shown when using iDEAL payment for setting up a monthly donation -->
+    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">Confirm your donation with %1$s</string>
+    <!-- Dialog warning shown when using iDEAL payment for setting up a monthly donation -->
+    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">To setup your recurring donation tap continue to confirm a €0,01 charge with your bank. This will be automatically refunded and allows your €5/month donation to debited from your account.</string>
+    <!-- Dialog button shown when using iDEAL payment for setting up a monthly donation to continue with the donation -->
+    <string name="IdealTransferDetailsFragment__continue">Continue</string>
 
     <!-- IdealTransferDetailsBankSelectionDialogFragment -->
     <!-- Title of the screen, displayed in the toolbar -->
@@ -5945,28 +5947,15 @@
     <!-- Displayed in the "clear filter" item in the chat feed if the user opened the filter from the overflow menu -->
     <string name="ChatFilter__tip_pull_down">Tips: Tarik ke bawah pada daftar obrolan untuk memfilter</string>
 
-    <!-- Title for screen describing that sms support is going to be removed soon -->
-    <string name="SmsRemoval_title_going_away">Dukungan SMS akan dihentikan</string>
-    <!-- Bullet point message shown on describing screen as first bullet why sms is being removed, placeholder with be date of removal (e.g., March 21st) -->
-    <string name="SmsRemoval_info_bullet_1">Dukungan SMS di aplikasi Signal akan segera dihentikan.</string>
-    <!-- Bullet point message shown on describing screen as second bullet why sms is being removed -->
-    <string name="SmsRemoval_info_bullet_2">Pesan SMS berbeda dengan pesan Signal. <b>Ini tidak memengaruhi perpesanan terenkripsi Signal yang akan tetap berfungsi.</b></string>
-    <!-- Bullet point message shown on describing screen as third bullet why sms is being removed -->
-    <string name="SmsRemoval_info_bullet_3">Anda dapat mengekspor pesan SMS dan memilih aplikasi SMS baru.</string>
-    <!-- Bullet point message shown on describing screen as first bullet variant why sms is being removed when user is locked out of sms -->
-    <string name="SmsRemoval_info_bullet_1_phase_3">Signal telah menghentikan dukungan untuk pengiriman pesan SMS.</string>
-    <!-- Button label on sms removal info/megaphone to start the export SMS flow -->
-    <string name="SmsRemoval_export_sms">Ekspor SMS</string>
-
     <!-- Set up your username megaphone -->
     <!-- Displayed as a title on a megaphone which prompts user to set up a username -->
     <string name="SetUpYourUsername__set_up_your_signal_username">Buat nama pengguna Signal Anda</string>
     <!-- Displayed as a description on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__usernames_let_others">Dengan nama pengguna, orang lain dapat mengirimi Anda pesan tanpa memerlukan nomor telepon Anda</string>
+    <string name="SetUpYourUsername__introducing_phone_number_privacy">Memperkenalkan privasi nomor telepon, nama pengguna opsional, dan tautan.</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__not_now">Nanti saja</string>
+    <string name="SetUpYourUsername__dismiss">Tutup</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
-    <string name="SetUpYourUsername__continue">Lanjutkan</string>
+    <string name="SetUpYourUsername__learn_more">Pelajari selengkapnya</string>
 
     <!-- Text Formatting -->
     <!-- Popup menu label for applying bold style -->
@@ -5981,18 +5970,6 @@
     <string name="TextFormatting_spoiler">Bocoran</string>
     <!-- Popup menu label for clearing applied formatting -->
     <string name="TextFormatting_clear_formatting">Hapus pemformatan</string>
-
-    <!-- UsernameEducationFragment -->
-    <!-- Continue button which takes the user to the add a username screen -->
-    <string name="UsernameEducationFragment__continue">Lanjutkan</string>
-    <!-- Displayed as a title on the username education screen -->
-    <string name="UsernameEducationFragment__set_up_your_signal_username">Buat nama pengguna Signal Anda</string>
-    <!-- Displayed as body text in the username education screen -->
-    <string name="UsernameEducationFragment__usernames_are_paired_with_a_set_of_digits">Nama pengguna dipasangkan dengan satu set angka dan tidak dibagikan di profil Anda</string>
-    <!-- Displayed as body text in the username education screen -->
-    <string name="UsernameEducationFragment__each_username_has_a_unique_qr_code">Setiap nama pengguna memiliki kode QR dan tautan unik yang dapat Anda bagikan kepada teman untuk memulai obrolan dengan Anda</string>
-    <!-- Displayed as body text in the username education screen. The string references the names of settings, so they should match our translations for those settings. -->
-    <string name="UsernameEducationFragment__turn_off_phone_number_discovery">Nonaktifkan penemuan nomor telepon di Pengaturan &gt; Privasi &gt; Nomor Telepon &gt; Siapa bisa menemukan nomor saya, untuk menggunakan nama pengguna sebagai cara utama orang lain dapat menghubungi Anda</string>
 
     <!-- Username edit dialog -->
     <!-- Option to open username editor displayed as a list item in a dialog -->
@@ -6019,6 +5996,8 @@
     <string name="CallLogAdapter__outgoing">Panggilan Keluar</string>
     <!-- Displayed for missed calls -->
     <string name="CallLogAdapter__missed">Panggilan Tidak Terjawab</string>
+    <!-- Displayed for missed calls declined by notification profile -->
+    <string name="CallLogAdapter__missed_notification_profile">Tidak terjawab saat profil notifikasi aktif</string>
     <!-- Displayed on Group Call button if user is not in the call -->
     <string name="CallLogAdapter__join">Gabung</string>
     <!-- Displayed on Group Call button if user is in the call -->
@@ -6123,6 +6102,8 @@
     <string name="CallPreference__group_call">Panggilan grup</string>
     <!-- Missed group call in call info -->
     <string name="CallPreference__missed_group_call">Panggilan grup tak terjawab</string>
+    <!-- Missed group call while notification profile on in call info -->
+    <string name="CallPreference__missed_group_call_notification_profile">Panggilan grup tidak terjawab saat profil notifikasi aktif</string>
     <!-- Incoming group call in call info -->
     <string name="CallPreference__incoming_group_call">Panggilan grup masuk</string>
     <!-- Outgoing group call in call info -->
@@ -6224,6 +6205,8 @@
     <!-- Displayed as body in dialog when user attempts to delete the link -->
     <string name="CallLinkDetailsFragment__this_link_will_no_longer_work">Tautan ini tidak berfungsi lagi bagi siapa pun yang memilikinya.</string>
 
+    <!-- Button label for the link button in the username link settings -->
+    <string name="UsernameLinkSettings_link_button_label">Tautan</string>
     <!-- Button label for the share button in the username link settings -->
     <string name="UsernameLinkSettings_share_button_label">Bagikan</string>
     <!-- Button label for the color selector button in the username link settings -->
@@ -6268,6 +6251,8 @@
     <string name="UsernameLinkSettings_reset_link_result_network_unavailable">Anda tidak terhubung ke internet. Tautan Anda tidak direset. Coba lagi nanti.</string>
     <!-- Body of a dialog that is displayed when we failed to reset your username link because of a transient network issue. -->
     <string name="UsernameLinkSettings_reset_link_result_network_error">Terjadi kesalahan jaringan saat mencoba mereset tautan. Coba lagi nanti.</string>
+    <!-- Shown on the generated username qr code image to explain how to use it. -->
+    <string name="UsernameLinkSettings_scan_this_qr_code">Pindai kode QR ini dengan ponsel untuk mengobrol dengan saya di Signal.</string>
 
     <!-- Explanatory text at the top of a bottom sheet describing how username links work -->
     <string name="UsernameLinkShareBottomSheet_title">Siapa pun yang punya tautan ini bisa melihat nama pengguna Anda dan memulai obrolan dengan Anda. Hanya bagikan dengan orang yang Anda percaya.</string>
@@ -6302,6 +6287,8 @@
     <string name="GrantFullScreenIntentPermission_megaphone_body">Jangan pernah melewatkan panggilan dari kontak dan grup Anda.</string>
     <!-- Button on the megaphone megaphone shown at the bottom of the chat list when a user has disable the system setting for showing full screen notifications used showing incoming calls that starts the fix process -->
     <string name="GrantFullScreenIntentPermission_megaphone_turn_on">Aktifkan</string>
+    <!-- Button on the megaphone shown at the bottom of the chatlist when a user has disabled the system setting for showing full screen notifications used showing incoming calls that dismisses the megaphone -->
+    <string name="GrantFullScreenIntentPermission_megaphone_not_now">Tidak sekarang</string>
     <!-- Title of bottom sheet shown after tapping "Turn on" from the megaphone to re-enable full screen notifications for incoming call notifications -->
     <string name="GrantFullScreenIntentPermission_bottomsheet_title">Aktifkan notifikasi layar penuh</string>
     <!-- Subtitle of bottom sheet shown after tapping "Turn on" from the megaphone to re-enable full screen notifications for incoming call notifications -->
@@ -6312,7 +6299,7 @@
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, title for dialog -->
     <string name="MonthlyDonationCanceled__title">Donasi bulanan dibatalkan</string>
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, body for dialog. First placeholder is a payment related error message. Second placeholder is \'learn more\' -->
-    <string name="MonthlyDonationCanceled__message">Your recurring monthly donation was canceled. %1$s\n\nYour badge will no longer be visible on your profile. %2$s</string>
+    <string name="MonthlyDonationCanceled__message">Donasi bulanan berulang Anda telah dibatalkan. %1$s\n\nLencana Anda tidak akan ditampilkan lagi di profil. %2$s</string>
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, learn more used in placeholder for body for dialog. -->
     <string name="MonthlyDonationCanceled__learn_more">Pelajari selengkapnya</string>
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, primary button to renew subscription with new data -->

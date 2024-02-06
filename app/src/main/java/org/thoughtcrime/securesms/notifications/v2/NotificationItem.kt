@@ -225,15 +225,15 @@ class MessageNotification(threadRecipient: Recipient, record: MessageRecord) : N
     } else if (record.isRemoteDelete) {
       SpanUtil.italic(context.getString(R.string.MessageNotifier_this_message_was_deleted))
     } else if (record.isMms && !record.isMmsNotification && (record as MmsMessageRecord).slideDeck.slides.isNotEmpty()) {
-      ThreadBodyUtil.getFormattedBodyFor(context, record).body
+      ThreadBodyUtil.getFormattedBodyForNotification(context, record, getBodyWithMentionsAndStyles(context, record))
     } else if (record.isGroupCall) {
       MessageRecord.getGroupCallUpdateDescription(context, record.body, false).spannable
     } else if (record.hasGiftBadge()) {
-      ThreadBodyUtil.getFormattedBodyFor(context, record).body
+      ThreadBodyUtil.getFormattedBodyForNotification(context, record, null)
     } else if (record.isStoryReaction()) {
-      ThreadBodyUtil.getFormattedBodyFor(context, record).body
+      ThreadBodyUtil.getFormattedBodyForNotification(context, record, null)
     } else if (record.isPaymentNotification) {
-      ThreadBodyUtil.getFormattedBodyFor(context, record).body
+      ThreadBodyUtil.getFormattedBodyForNotification(context, record, null)
     } else {
       getBodyWithMentionsAndStyles(context, record)
     }
@@ -266,13 +266,15 @@ class MessageNotification(threadRecipient: Recipient, record: MessageRecord) : N
   }
 
   override fun getThumbnailInfo(context: Context): ThumbnailInfo {
-    if (thumbnailInfo.needsShrinking) {
-      if (SignalStore.settings().messageNotificationsPrivacy.isDisplayMessage && !KeyCachingService.isLocked(context)) {
+    return if (SignalStore.settings().messageNotificationsPrivacy.isDisplayMessage && !KeyCachingService.isLocked(context)) {
+      if (thumbnailInfo.needsShrinking) {
         thumbnailInfo = NotificationThumbnails.get(context, this)
       }
-    }
 
-    return thumbnailInfo
+      thumbnailInfo
+    } else {
+      ThumbnailInfo.NONE
+    }
   }
 
   override fun canReply(context: Context): Boolean {

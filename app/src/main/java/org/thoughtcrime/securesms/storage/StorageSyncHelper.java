@@ -17,6 +17,7 @@ import org.thoughtcrime.securesms.database.model.RecipientRecord;
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
 import org.thoughtcrime.securesms.jobs.RetrieveProfileAvatarJob;
 import org.thoughtcrime.securesms.jobs.StorageSyncJob;
+import org.thoughtcrime.securesms.keyvalue.AccountValues;
 import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.payments.Entropy;
@@ -146,7 +147,7 @@ public final class StorageSyncHelper {
                                                                  .setReadReceiptsEnabled(TextSecurePreferences.isReadReceiptsEnabled(context))
                                                                  .setSealedSenderIndicatorsEnabled(TextSecurePreferences.isShowUnidentifiedDeliveryIndicatorsEnabled(context))
                                                                  .setLinkPreviewsEnabled(SignalStore.settings().isLinkPreviewsEnabled())
-                                                                 .setUnlistedPhoneNumber(SignalStore.phoneNumberPrivacy().getPhoneNumberListingMode().isUnlisted())
+                                                                 .setUnlistedPhoneNumber(SignalStore.phoneNumberPrivacy().getPhoneNumberDiscoverabilityMode().isUndiscoverable())
                                                                  .setPhoneNumberSharingMode(StorageSyncModels.localToRemotePhoneNumberSharingMode(SignalStore.phoneNumberPrivacy().getPhoneNumberSharingMode()))
                                                                  .setPinnedConversations(StorageSyncModels.localToRemotePinnedConversations(pinned))
                                                                  .setPreferContactAvatars(SignalStore.settings().isPreferSystemContactPhotos())
@@ -195,7 +196,7 @@ public final class StorageSyncHelper {
     TextSecurePreferences.setTypingIndicatorsEnabled(context, update.getNew().isTypingIndicatorsEnabled());
     TextSecurePreferences.setShowUnidentifiedDeliveryIndicatorsEnabled(context, update.getNew().isSealedSenderIndicatorsEnabled());
     SignalStore.settings().setLinkPreviewsEnabled(update.getNew().isLinkPreviewsEnabled());
-    SignalStore.phoneNumberPrivacy().setPhoneNumberListingMode(update.getNew().isPhoneNumberUnlisted() ? PhoneNumberPrivacyValues.PhoneNumberListingMode.UNLISTED : PhoneNumberPrivacyValues.PhoneNumberListingMode.LISTED);
+    SignalStore.phoneNumberPrivacy().setPhoneNumberDiscoverabilityMode(update.getNew().isPhoneNumberUnlisted() ? PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode.NOT_DISCOVERABLE : PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode.DISCOVERABLE);
     SignalStore.phoneNumberPrivacy().setPhoneNumberSharingMode(StorageSyncModels.remoteToLocalPhoneNumberSharingMode(update.getNew().getPhoneNumberSharingMode()));
     SignalStore.settings().setPreferSystemContactPhotos(update.getNew().isPreferContactAvatars());
     SignalStore.paymentsValues().setEnabledAndEntropy(update.getNew().getPayments().isEnabled(), Entropy.fromBytes(update.getNew().getPayments().getEntropy().orElse(null)));
@@ -207,7 +208,6 @@ public final class StorageSyncHelper {
     SignalStore.storyValues().setUserHasViewedOnboardingStory(update.getNew().hasViewedOnboardingStory());
     SignalStore.storyValues().setFeatureDisabled(update.getNew().isStoriesDisabled());
     SignalStore.storyValues().setUserHasSeenGroupStoryEducationSheet(update.getNew().hasSeenGroupStoryEducationSheet());
-    SignalStore.account().setUsername(update.getNew().getUsername());
 
     if (update.getNew().getStoryViewReceiptsState() == OptionalBool.UNSET) {
       SignalStore.storyValues().setViewedReceiptsEnabled(update.getNew().isReadReceiptsEnabled());
@@ -234,6 +234,12 @@ public final class StorageSyncHelper {
 
     if (fetchProfile && update.getNew().getAvatarUrlPath().isPresent()) {
       ApplicationDependencies.getJobManager().add(new RetrieveProfileAvatarJob(self, update.getNew().getAvatarUrlPath().get()));
+    }
+
+    if (!update.getNew().getUsername().equals(update.getOld().getUsername())) {
+      SignalStore.account().setUsername(update.getNew().getUsername());
+      SignalStore.account().setUsernameSyncState(AccountValues.UsernameSyncState.IN_SYNC);
+      SignalStore.account().setUsernameSyncErrorCount(0);
     }
 
     if (update.getNew().getUsernameLink() != null) {

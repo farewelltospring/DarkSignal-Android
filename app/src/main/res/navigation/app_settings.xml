@@ -583,6 +583,21 @@
         app:popUpTo="@id/app_settings"
         app:popUpToInclusive="true" />
 
+    <action
+        android:id="@+id/action_direct_to_usernameRecovery"
+        app:destination="@id/create_username"
+        app:enterAnim="@anim/fragment_open_enter"
+        app:exitAnim="@anim/fragment_open_exit"
+        app:popEnterAnim="@anim/fragment_close_enter"
+        app:popExitAnim="@anim/fragment_close_exit"
+        app:popUpTo="@id/app_settings"
+        app:popUpToInclusive="true">
+        <argument
+            android:name="mode"
+            android:defaultValue="RECOVERY"
+            app:argType="org.thoughtcrime.securesms.profiles.manage.UsernameEditMode" />
+    </action>
+
     <!-- endregion -->
 
     <!-- Internal Settings -->
@@ -612,6 +627,9 @@
         <action
             android:id="@+id/action_internalSettingsFragment_to_terminalDonationConfigurationFragment"
             app:destination="@id/terminalDonationConfigurationFragment" />
+        <action
+            android:id="@+id/action_internalSettingsFragment_to_internalBackupPlaygroundFragment"
+            app:destination="@id/internalBackupPlaygroundFragment" />
     </fragment>
 
     <fragment
@@ -658,6 +676,11 @@
         android:id="@+id/internalConversationTestFragment"
         android:name="org.thoughtcrime.securesms.components.settings.app.internal.conversation.test.InternalConversationTestFragment"
         android:label="internal_conversation_test_fragment" />
+
+    <fragment
+        android:id="@+id/internalBackupPlaygroundFragment"
+        android:name="org.thoughtcrime.securesms.components.settings.app.internal.backup.InternalBackupPlaygroundFragment"
+        android:label="internal_backup_playground_fragment" />
 
     <!-- endregion -->
 
@@ -915,6 +938,7 @@
 
 
     <include app:graph="@navigation/username_link_settings" />
+    <include app:graph="@navigation/create_username" />
     <include app:graph="@navigation/story_privacy_settings" />
 
 </navigation>
