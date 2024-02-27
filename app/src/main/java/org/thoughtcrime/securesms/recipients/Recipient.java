@@ -561,7 +561,7 @@ public class Recipient {
     String name = getNameFromLocalData(context);
 
     if (Util.isEmpty(name)) {
-      name = context.getString(R.string.Recipient_unknown);
+      name = getUnknownDisplayName(context);
     }
 
     return StringUtil.isolateBidi(name);
@@ -575,7 +575,7 @@ public class Recipient {
     }
 
     if (Util.isEmpty(name)) {
-      name = StringUtil.isolateBidi(context.getString(R.string.Recipient_unknown));
+      name = StringUtil.isolateBidi(getUnknownDisplayName(context));
     }
 
     return StringUtil.isolateBidi(name);
@@ -652,11 +652,19 @@ public class Recipient {
     String name = Util.getFirstNonEmpty(getGroupName(context),
                                         getSystemProfileName().getGivenName(),
                                         getProfileName().getGivenName(),
-                                        getE164().orElse(null),
+                                        shouldShowE164() ? getE164().orElse(null) : null,
                                         getUsername().orElse(null),
                                         getDisplayName(context));
 
     return StringUtil.isolateBidi(name);
+  }
+
+  private String getUnknownDisplayName(@NonNull Context context) {
+    if (getRegistered() == RegisteredState.NOT_REGISTERED) {
+      return context.getString(R.string.Recipient_deleted_account);
+    } else {
+      return context.getString(R.string.Recipient_unknown);
+    }
   }
 
   public @NonNull Optional<ServiceId> getServiceId() {
@@ -672,11 +680,7 @@ public class Recipient {
   }
 
   public @NonNull Optional<String> getUsername() {
-    if (FeatureFlags.usernames()) {
-      return OptionalUtil.absentIfEmpty(username);
-    } else {
-      return Optional.empty();
-    }
+    return OptionalUtil.absentIfEmpty(username);
   }
 
   public @NonNull Optional<String> getE164() {
@@ -687,7 +691,7 @@ public class Recipient {
    * Whether or not we should show this user's e164 in the interface.
    */
   public boolean shouldShowE164() {
-    return hasE164() && (isSystemContact() || getPhoneNumberSharing() != PhoneNumberSharingState.DISABLED);
+    return hasE164() && (isSystemContact() || getPhoneNumberSharing() == PhoneNumberSharingState.ENABLED);
   }
 
   public @NonNull Optional<String> getEmail() {

@@ -21,8 +21,8 @@ plugins {
 
 apply(from = "static-ips.gradle.kts")
 
-val canonicalVersionCode = 1387
-val canonicalVersionName = "6.46.6"
+val canonicalVersionCode = 1396
+val canonicalVersionName = "7.0.2"
 
 val postFixSize = 100
 val abiPostFix: Map<String, Int> = mapOf(
@@ -509,6 +509,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.savedstate)
   implementation(libs.androidx.lifecycle.common.java8)
   implementation(libs.androidx.lifecycle.reactivestreams.ktx)
+  implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.camera.core)
   implementation(libs.androidx.camera.camera2)
   implementation(libs.androidx.camera.lifecycle)

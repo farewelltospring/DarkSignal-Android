@@ -84,6 +84,7 @@ import org.signal.core.util.PendingIntentFlags
 import org.signal.core.util.Result
 import org.signal.core.util.ThreadUtil
 import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.concurrent.ListenableFuture
 import org.signal.core.util.concurrent.addTo
 import org.signal.core.util.dp
 import org.signal.core.util.logging.Log
@@ -243,7 +244,6 @@ import org.thoughtcrime.securesms.mediasend.Media
 import org.thoughtcrime.securesms.mediasend.MediaSendActivityResult
 import org.thoughtcrime.securesms.messagedetails.MessageDetailsFragment
 import org.thoughtcrime.securesms.messagerequests.MessageRequestRepository
-import org.thoughtcrime.securesms.messagerequests.MessageRequestState
 import org.thoughtcrime.securesms.mms.AttachmentManager
 import org.thoughtcrime.securesms.mms.AudioSlide
 import org.thoughtcrime.securesms.mms.GifSlide
@@ -304,7 +304,6 @@ import org.thoughtcrime.securesms.util.StorageUtil
 import org.thoughtcrime.securesms.util.TextSecurePreferences
 import org.thoughtcrime.securesms.util.ViewUtil
 import org.thoughtcrime.securesms.util.WindowUtil
-import org.thoughtcrime.securesms.util.concurrent.ListenableFuture
 import org.thoughtcrime.securesms.util.createActivityViewModel
 import org.thoughtcrime.securesms.util.doAfterNextLayout
 import org.thoughtcrime.securesms.util.fragments.requireListener
@@ -1141,7 +1140,7 @@ class ConversationFragment :
     var inputDisabled = true
     when {
       inputReadyState.isClientExpired || inputReadyState.isUnauthorized -> disabledInputView.showAsExpiredOrUnauthorized(inputReadyState.isClientExpired, inputReadyState.isUnauthorized)
-      inputReadyState.messageRequestState != MessageRequestState.NONE && inputReadyState.messageRequestState != MessageRequestState.NONE_HIDDEN -> disabledInputView.showAsMessageRequest(inputReadyState.conversationRecipient, inputReadyState.messageRequestState)
+      !inputReadyState.messageRequestState.isAccepted -> disabledInputView.showAsMessageRequest(inputReadyState.conversationRecipient, inputReadyState.messageRequestState)
       inputReadyState.isActiveGroup == false -> disabledInputView.showAsNoLongerAMember()
       inputReadyState.isRequestingMember == true -> disabledInputView.showAsRequestingMember()
       inputReadyState.isAnnouncementGroup == true && inputReadyState.isAdmin == false -> disabledInputView.showAsAnnouncementGroupAdminsOnly()
@@ -2099,6 +2098,128 @@ class ConversationFragment :
     composeText.clearFocus()
   }
 
+  //region Message Request Helpers
+
+  @SuppressLint("CheckResult")
+  private fun onReportSpam() {
+    val recipient = viewModel.recipientSnapshot
+    if (recipient == null) {
+      Log.w(TAG, "[onBlockClicked] No recipient!")
+      return
+    }
+
+    BlockUnblockDialog.showReportSpamFor(
+      requireContext(),
+      lifecycle,
+      recipient,
+      {
+        messageRequestViewModel
+          .onReportSpam()
+          .doOnSubscribe { binding.conversationDisabledInput.showBusy() }
+          .doOnTerminate { binding.conversationDisabledInput.hideBusy() }
+          .subscribeBy {
+            Log.d(TAG, "report spam complete")
+            toast(R.string.ConversationFragment_reported_as_spam)
+          }
+      },
+      if (recipient.isBlocked) {
+        null
+      } else {
+        Runnable {
+          messageRequestViewModel
+            .onBlockAndReportSpam()
+            .doOnSubscribe { binding.conversationDisabledInput.showBusy() }
+            .doOnTerminate { binding.conversationDisabledInput.hideBusy() }
+            .subscribeBy { result ->
+              when (result) {
+                is Result.Success -> {
+                  Log.d(TAG, "report spam complete")
+                  toast(R.string.ConversationFragment_reported_as_spam_and_blocked)
+                }
+                is Result.Failure -> {
+                  Log.d(TAG, "report spam failed ${result.failure}")
+                  toast(GroupErrors.getUserDisplayMessage(result.failure))
+                }
+              }
+            }
+        }
+      }
+    )
+  }
+
+  @SuppressLint("CheckResult")
+  private fun onBlock() {
+    val recipient = viewModel.recipientSnapshot
+    if (recipient == null) {
+      Log.w(TAG, "[onBlockClicked] No recipient!")
+      return
+    }
+
+    BlockUnblockDialog.showBlockFor(
+      requireContext(),
+      lifecycle,
+      recipient
+    ) {
+      messageRequestViewModel
+        .onBlock()
+        .subscribeWithShowProgress("block")
+    }
+  }
+
+  @SuppressLint("CheckResult")
+  private fun onUnblock() {
+    val recipient = viewModel.recipientSnapshot
+    if (recipient == null) {
+      Log.w(TAG, "[onUnblockClicked] No recipient!")
+      return
+    }
+
+    BlockUnblockDialog.showUnblockFor(
+      requireContext(),
+      lifecycle,
+      recipient
+    ) {
+      messageRequestViewModel
+        .onUnblock()
+        .subscribeWithShowProgress("unblock")
+    }
+  }
+
+  private fun onMessageRequestAccept() {
+    messageRequestViewModel
+      .onAccept()
+      .subscribeWithShowProgress("accept message request")
+      .addTo(disposables)
+  }
+
+  private fun onDeleteConversation() {
+    val recipient = viewModel.recipientSnapshot
+    if (recipient == null) {
+      Log.w(TAG, "[onDeleteConversation] No recipient!")
+      return
+    }
+
+    ConversationDialogs.displayDeleteDialog(requireContext(), recipient) {
+      messageRequestViewModel
+        .onDelete()
+        .subscribeWithShowProgress("delete message request")
+    }
+  }
+
+  private fun Single<Result<Unit, GroupChangeFailureReason>>.subscribeWithShowProgress(logMessage: String): Disposable {
+    return doOnSubscribe { binding.conversationDisabledInput.showBusy() }
+      .doOnTerminate { binding.conversationDisabledInput.hideBusy() }
+      .subscribeBy { result ->
+        when (result) {
+          is Result.Success -> Log.d(TAG, "$logMessage complete")
+          is Result.Failure -> {
+            Log.d(TAG, "$logMessage failed ${result.failure}")
+            toast(GroupErrors.getUserDisplayMessage(result.failure))
+          }
+        }
+      }
+  }
+
   private inner class BackPressedDelegate : OnBackPressedCallback(true) {
     override fun handleOnBackPressed() {
       Log.d(TAG, "onBackPressed()")
@@ -2114,6 +2235,8 @@ class ConversationFragment :
       }
     }
   }
+
+  // endregion
 
   //region Message action handling
 
@@ -2602,7 +2725,7 @@ class ConversationFragment :
 
     override fun onGroupMemberClicked(recipientId: RecipientId, groupId: GroupId) {
       context ?: return
-      RecipientBottomSheetDialogFragment.create(recipientId, groupId).show(childFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
+      RecipientBottomSheetDialogFragment.show(childFragmentManager, recipientId, groupId)
     }
 
     override fun onMessageWithErrorClicked(messageRecord: MessageRecord) {
@@ -2735,10 +2858,11 @@ class ConversationFragment :
     override fun onRecipientNameClicked(target: RecipientId) {
       context ?: return
       disposables += viewModel.recipient.firstOrError().observeOn(AndroidSchedulers.mainThread()).subscribeBy {
-        RecipientBottomSheetDialogFragment.create(
+        RecipientBottomSheetDialogFragment.show(
+          parentFragmentManager,
           target,
           it.groupId.orElse(null)
-        ).show(parentFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
+        )
       }
     }
 
@@ -2983,6 +3107,31 @@ class ConversationFragment :
       CommunicationActions.startVideoCall(this@ConversationFragment, callLinkRootKey)
     }
 
+    override fun onShowSafetyTips(forGroup: Boolean) {
+      SafetyTipsBottomSheetDialog.show(childFragmentManager, forGroup)
+    }
+
+    override fun onReportSpamLearnMoreClicked() {
+      MaterialAlertDialogBuilder(requireContext())
+        .setTitle(R.string.ConversationFragment_reported_spam)
+        .setMessage(R.string.ConversationFragment_reported_spam_message)
+        .setPositiveButton(android.R.string.ok, null)
+        .show()
+    }
+
+    override fun onMessageRequestAcceptOptionsClicked() {
+      val recipient: Recipient? = viewModel.recipientSnapshot
+
+      if (recipient != null) {
+        MaterialAlertDialogBuilder(requireContext())
+          .setMessage(getString(R.string.ConversationFragment_you_accepted_a_message_request_from_s, recipient.getDisplayName(requireContext())))
+          .setPositiveButton(R.string.ConversationFragment_block) { _, _ -> onBlock() }
+          .setNegativeButton(R.string.ConversationFragment_report_spam) { _, _ -> onReportSpam() }
+          .setNeutralButton(R.string.ConversationFragment__cancel, null)
+          .show()
+      }
+    }
+
     private fun MessageRecord.getAudioUriForLongClick(): Uri? {
       val playbackState = getVoiceNoteMediaController().voiceNotePlaybackState.value
       if (playbackState == null || !playbackState.isPlaying) {
@@ -3012,7 +3161,7 @@ class ConversationFragment :
         hasActiveGroupCall = groupCallViewModel.hasOngoingGroupCallSnapshot,
         distributionType = args.distributionType,
         threadId = args.threadId,
-        isInMessageRequest = viewModel.hasMessageRequestState,
+        messageRequestState = viewModel.messageRequestState,
         isInBubble = args.conversationScreenType.isInBubble
       )
     }
@@ -3239,6 +3388,26 @@ class ConversationFragment :
 
     override fun handleFormatText(id: Int) {
       composeText.handleFormatText(id)
+    }
+
+    override fun handleBlock() {
+      onBlock()
+    }
+
+    override fun handleUnblock() {
+      onUnblock()
+    }
+
+    override fun handleReportSpam() {
+      onReportSpam()
+    }
+
+    override fun handleMessageRequestAccept() {
+      onMessageRequestAccept()
+    }
+
+    override fun handleDeleteConversation() {
+      onDeleteConversation()
     }
   }
 
@@ -3551,66 +3720,23 @@ class ConversationFragment :
     }
 
     override fun onAcceptMessageRequestClicked() {
-      messageRequestViewModel
-        .onAccept()
-        .subscribeWithShowProgress("accept message request")
-        .addTo(disposables)
+      onMessageRequestAccept()
     }
 
-    override fun onDeleteGroupClicked() {
-      val recipient = viewModel.recipientSnapshot
-      if (recipient == null) {
-        Log.w(TAG, "[onDeleteGroupClicked] No recipient!")
-        return
-      }
-
-      ConversationDialogs.displayDeleteDialog(requireContext(), recipient) {
-        messageRequestViewModel
-          .onDelete()
-          .subscribeWithShowProgress("delete message request")
-      }
+    override fun onDeleteClicked() {
+      onDeleteConversation()
     }
 
     override fun onBlockClicked() {
-      val recipient = viewModel.recipientSnapshot
-      if (recipient == null) {
-        Log.w(TAG, "[onBlockClicked] No recipient!")
-        return
-      }
-
-      BlockUnblockDialog.showBlockAndReportSpamFor(
-        requireContext(),
-        lifecycle,
-        recipient,
-        {
-          messageRequestViewModel
-            .onBlock()
-            .subscribeWithShowProgress("block")
-        },
-        {
-          messageRequestViewModel
-            .onBlockAndReportSpam()
-            .subscribeWithShowProgress("block")
-        }
-      )
+      onBlock()
     }
 
     override fun onUnblockClicked() {
-      val recipient = viewModel.recipientSnapshot
-      if (recipient == null) {
-        Log.w(TAG, "[onUnblockClicked] No recipient!")
-        return
-      }
+      onUnblock()
+    }
 
-      BlockUnblockDialog.showUnblockFor(
-        requireContext(),
-        lifecycle,
-        recipient
-      ) {
-        messageRequestViewModel
-          .onUnblock()
-          .subscribeWithShowProgress("unblock")
-      }
+    override fun onReportSpamClicked() {
+      onReportSpam()
     }
 
     override fun onInviteToSignal(recipient: Recipient) {
@@ -3624,20 +3750,6 @@ class ConversationFragment :
 
     override fun onUnmuteReleaseNotesChannel() {
       viewModel.muteConversation(0L)
-    }
-
-    private fun Single<Result<Unit, GroupChangeFailureReason>>.subscribeWithShowProgress(logMessage: String): Disposable {
-      return doOnSubscribe { binding.conversationDisabledInput.showBusy() }
-        .doOnTerminate { binding.conversationDisabledInput.hideBusy() }
-        .subscribeBy { result ->
-          when (result) {
-            is Result.Success -> Log.d(TAG, "$logMessage complete")
-            is Result.Failure -> {
-              Log.d(TAG, "$logMessage failed ${result.failure}")
-              toast(GroupErrors.getUserDisplayMessage(result.failure))
-            }
-          }
-        }
     }
   }
 

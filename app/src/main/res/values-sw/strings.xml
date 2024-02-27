@@ -46,7 +46,7 @@
     <string name="ApplicationPreferencesActivity_this_will_permanently_unlock_signal_and_message_notifications">Hii itafungua kabisa Signal na arifu za ujumbe</string>
     <string name="ApplicationPreferencesActivity_disable">Lemaza</string>
     <string name="ApplicationPreferencesActivity_disable_signal_messages_and_calls">Lemaza jumbe za Signal na simu?</string>
-    <string name="ApplicationPreferencesActivity_disable_signal_messages_and_calls_by_unregistering">Lemaza jumbe na simu za Signal kwa kutosajili kutoka kwenye seva. Utatakiwa kusajili tena numberi yako ya simu ili uzitumie tena baadae.</string>
+    <string name="ApplicationPreferencesActivity_disable_signal_messages_and_calls_by_unregistering">Lemaza jumbe na simu za Signal kwa kutosajili kutoka kwenye seva. Utatakiwa kusajili tena nambari yako ya simu ili uzitumie tena baadae.</string>
     <string name="ApplicationPreferencesActivity_error_connecting_to_server">Hitilafu kuunganisha kwa mtambo.</string>
     <string name="ApplicationPreferencesActivity_pins_are_required_for_registration_lock">Nambari za Siri zinahitajika kwenye kufuli ya usajili. Ili kulemaza Nambari za Siri, tafadhali kwanza lemaza kufuli ya usajili.</string>
     <string name="ApplicationPreferencesActivity_pin_created">Nenosiri limeundwa.</string>
@@ -179,7 +179,18 @@
     <string name="BlockUnblockDialog_unblock_s">Ondoa kizuizi kwa %1$s?</string>
     <string name="BlockUnblockDialog_block">Zuia</string>
     <string name="BlockUnblockDialog_block_and_leave">Zuia na Uondoke</string>
-    <string name="BlockUnblockDialog_report_spam_and_block">Ripoti spam na uzuie</string>
+    <!-- Dialog button label to report as spam and block the person -->
+    <string name="BlockUnblockDialog_report_spam_and_block">Toa ripoti na uzuie</string>
+    <!-- Dialog title for reporting spam -->
+    <string name="BlockUnblockDialog_report_spam_title">Ripoti kuwa spam?</string>
+    <!-- Dialog button to report as spam only -->
+    <string name="BlockUnblockDialog_report_spam">Toa ripoti ya spam</string>
+    <!-- Dialog message when reporting spam of an individual (1:1 conversation) -->
+    <string name="BlockUnblockDialog_report_spam_description">Signal itataarifiwa kuwa mtu huyu inawezekana anatuma jumbe za spam. Signal haiwezi kuona maudhui ya gumzo lolote.</string>
+    <!-- Dialog message when reporting spam of a group and we can determine the group member that invited you, placeholder is a name -->
+    <string name="BlockUnblockDialog_report_spam_group_named_adder">Signal itataarifiwa kuwa %1$s, aliyekualika kwenye kikundi hiki, inawezekana anakutumia jumbe taka. Signal haiwezi kuona maudhui ya gumzo lolote.</string>
+    <!-- Dialog message when reporting spam of a group and we cannot determine the group member that invited you -->
+    <string name="BlockUnblockDialog_report_spam_group_unknown_adder">Signal itataarifiwa kuwa mtu aliyekualika kwenye kikundi hiki, inawezekana anakutumia spam zake. Signal haiwezi kuona maudhui ya gumzo lolote.</string>
 
     <!-- BucketedThreadMedia -->
     <string name="BucketedThreadMedia_Today">Leo</string>
@@ -483,8 +494,8 @@
     <string name="ConversationFragment__you_can_add_notes_for_yourself_in_this_conversation">Unaweza kujiongezea vidokezo kwenye gumzo hili. Ikiwa akaunti yako ina vifaa vyovyote vilivyounganishwa, vidokezo vipya vitasawazishwa.</string>
     <string name="ConversationFragment__d_group_members_have_the_same_name">Washiriki %1$d wa kikundi wana majina yanayofanana</string>
     <string name="ConversationFragment__tap_to_review">Gusa ili ukague</string>
-    <string name="ConversationFragment__review_requests_carefully">Kagua maombi kwa uangalifu</string>
-    <string name="ConversationFragment__signal_found_another_contact_with_the_same_name">Signal imempata mtu mwingine mwenye jina kama hili.</string>
+    <!-- The body of a banner that can show up at the top of a chat, letting the user know that you have two contacts with the same name -->
+    <string name="ConversationFragment__review_banner_body">Mtu huyu ana jina sawa na muwasiliani mwingine</string>
     <string name="ConversationFragment_contact_us">Wasiliana nasi</string>
     <string name="ConversationFragment_verify">Hakikisha</string>
     <string name="ConversationFragment_not_now">Sio sasa</string>
@@ -510,6 +521,55 @@
     <string name="ConversationFragment__content_description_launch_signal_button">Fungua Signal</string>
     <!-- Dialog title shown when more than one contact in a group conversation is no longer verified -->
     <string name="ConversationFragment__no_longer_verified">Haijathibitishwa tena</string>
+    <!-- Button shown in conversation header when in a message request state and no groups in common to show new message safety tips -->
+    <string name="ConversationFragment_safety_tips">Vidokezo vya Usalama</string>
+    <!-- Menu option to report spam in a conversation -->
+    <string name="ConversationFragment_report_spam">Toa ripoti ya ulaghai</string>
+    <!-- Menu option to block in a conversation -->
+    <string name="ConversationFragment_block">Zuia</string>
+    <!-- Menu otpion to accept a message request in a conversation -->
+    <string name="ConversationFragment_accept">Kubali</string>
+    <!-- Menu option to delete an entire chat in a conversation -->
+    <string name="ConversationFragment_delete_chat">Futa gumzo</string>
+    <!-- Menu option to unblock in a conversation -->
+    <string name="ConversationFragment_unblock">Ondoa kizuizi</string>
+    <!-- Dialog title shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_spam">Spam imeripotiwa</string>
+    <!-- Dialog message shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_spam_message">Signal has been notified that this person may be sending spam. Signal can’t see the content of any chats.</string>
+    <!-- Toast shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_as_spam">Imeripotiwa kuwa spam</string>
+    <!-- Toast shown after reporting and blocking a conversation -->
+    <string name="ConversationFragment_reported_as_spam_and_blocked">Imeripotiwa kuwa spam na imezuiliwa</string>
+    <!-- Dialog message shown after accepting a message request and tapping on options from the conversation event -->
+    <string name="ConversationFragment_you_accepted_a_message_request_from_s">Umekubali ombi la ujumbe kutoka kwa %1$s. Ikiwa hii ilikuwa ni makosa, unaweza kuchagua hatua mojawapo hapa chini.</string>
+
+    <!-- Title of Safety Tips bottom sheet dialog -->
+    <string name="SafetyTips_title">Vidokezo vya Usalama</string>
+    <!-- Dialog subtitle when showign tips for a 1:1 conversation -->
+    <string name="SafetyTips_subtitle_individual">Kuwa makini unapokubali maombi ya ujumbe kutoka kwa watu usiowafahamu. Kuwa makini na:</string>
+    <!-- Dialog subtitle when showing tips for a group conversation -->
+    <string name="SafetyTips_subtitle_group">Pitia kwa umakini ombi hili. Hakuna yeyote kwenye wawasiliani wako au watu unaopiga nao gumzo yupo kwenye kikundi hiki. Haya hapa mambo machache ya kuwa makini nayo:</string>
+    <!-- Button text to move to the previous tip-->
+    <string name="SafetyTips_previous_tip">Kidokezo kilichopita</string>
+    <!-- Button text to move to the next tip -->
+    <string name="SafetyTips_next_tip">Kidokezo kifuatacho</string>
+    <!-- Title of tip 1 -->
+    <string name="SafetyTips_tip1_title">Ulaghai wa crypto au fedha</string>
+    <!-- Message of tip 1 -->
+    <string name="SafetyTips_tip1_message">If someone you don’t know messages about cryptocurrency (like Bitcoin) or a financial opportunity, be careful—it’s likely spam.</string>
+    <!-- Title of tip 2 -->
+    <string name="SafetyTips_tip2_title">Jumbe zisizoeleweka au zisizohusiana</string>
+    <!-- Message of tip 2 -->
+    <string name="SafetyTips_tip2_message">Mara nyingi walaghai huanza na jumbe nyepesi kama vile \"Mambo\" ili kukuvuta. Ukijibu wanaweza kuendelea kuwasiliana nawe.</string>
+    <!-- Title of tip 3 -->
+    <string name="SafetyTips_tip3_title">Jumbe zenye viungo</string>
+    <!-- Message of tip 3 -->
+    <string name="SafetyTips_tip3_message">Kuwa makini na jumbe kutoka kwa watu usiowafahamu ambazo zina viungo vya tovuti. Usitembelee viungo kutoka kwa watu usiowaamini.</string>
+    <!-- Title of tip 4 -->
+    <string name="SafetyTips_tip4_title">Taasisi na biashara batili</string>
+    <!-- Message of tip 4 -->
+    <string name="SafetyTips_tip4_message">Kuwa makini na biashara au mawakala wa serikali wanaokutafuta. Ujumbe unaohusisha mawakala wa kodi, matarishi, na zaidi unaweza kuwa wa ulaghai.</string>
 
     <!-- Label for a button displayed in conversation list to clear the chat filter -->
     <string name="ConversationListFragment__clear_filter">Futa chujio</string>
@@ -524,7 +584,10 @@
         <item quantity="other">Hii itafuta daima magumzo yote %1$d yaliyochaguliwa.</item>
     </plurals>
     <string name="ConversationListFragment_deleting">Inafutwa</string>
-    <string name="ConversationListFragment_deleting_selected_conversations">Inafuta magumzo yaliyochaguliwa…</string>
+    <plurals name="ConversationListFragment_deleting_selected_conversations">
+        <item quantity="one">Inafuta gumzo lililochaguliwa…</item>
+        <item quantity="other">Inafuta magumzo yaliyochaguliwa…</item>
+    </plurals>
     <plurals name="ConversationListFragment_conversations_archived">
         <item quantity="one">Gumzo limehifadhiwa</item>
         <item quantity="other">Magumzo %1$d yamehifadhiwa</item>
@@ -1000,7 +1063,9 @@
     <!-- ManageProfileFragment -->
     <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc -->
     <string name="ManageProfileFragment__your_username">Jina lako la mtumiaji, code yako ya QR na kiungo havionekani kwenye wasifu wako. Shiriki jina lako la mtumiaji na watu unaowaamini tu.</string>
-    <string name="ManageProfileFragment_profile_name">Jina la wasifa</string>
+    <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc, shown when you have no username -->
+    <string name="ManageProfileFragment__username_footer_no_username">Sasa watu wanaweza kukutumia ujumbe kwa kutumia jina lako la mtumiaji la ziada ili usilazimike kutoa nambari yako ya simu. </string>
+    <string name="ManageProfileFragment_profile_name">Jina la wasifu</string>
     <string name="ManageProfileFragment_username">Jina la mtumiaji</string>
     <string name="ManageProfileFragment_about">Kuhusu</string>
     <string name="ManageProfileFragment_failed_to_set_avatar">Umbo halijawekwa</string>
@@ -1482,7 +1547,7 @@
     <string name="MessageRecord_you_marked_your_safety_number_with_s_unverified">Umeweka alama kwenye nambari yako ya usalama na %1$s kuwa haijahakikishwa</string>
     <string name="MessageRecord_you_marked_your_safety_number_with_s_unverified_from_another_device">Umeweka alama kwenye nambari yako ya usalama na %1$s kuwa haijahakikishwa kutoka kwa kifaa kingine</string>
     <string name="MessageRecord_a_message_from_s_couldnt_be_delivered">Ujumbe kutoka %1$s haukuweza kuwasilishwa</string>
-    <string name="MessageRecord_s_changed_their_phone_number">%1$s amebadili namba yake ya simu.</string>
+    <string name="MessageRecord_s_changed_their_phone_number">%1$s amebadili nambari yake ya simu.</string>
     <!-- Update item message shown in the release channel when someone is already a sustainer so we ask them if they want to boost. -->
     <string name="MessageRecord_like_this_new_feature_help_support_signal_with_a_one_time_donation">Umependelea kipengele hiki kipya? Saidia kuiunga mkono Signal kwa mchango wa mara moja.</string>
     <!-- Update item message shown when we merge two threads together. First placeholder is a name, second placeholder is a phone number. -->
@@ -1533,6 +1598,10 @@
     <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Huwezi tena kutuma jumbe za SMS kupitia Signal. Mkaribishe %1$s Signal ili kuendeleza mazungumzo hapa.</string>
     <!-- Body for quote when message being quoted is an in-app payment message -->
     <string name="MessageRecord__payment_s">Malipo: %1$s</string>
+    <!-- Update message shown in chat after reporting it as spam -->
+    <string name="MessageRecord_reported_as_spam">Imeripotiwa kuwa spam</string>
+    <!-- Update message shown in chat after accept a message request -->
+    <string name="MessageRecord_you_accepted_the_message_request">Umekubali ombi la ujumbe</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">Kubali</string>
@@ -1579,6 +1648,8 @@
         <item quantity="one">Kikundi %1$d cha ziada</item>
         <item quantity="other">Vikundi %1$dvya ziada</item>
     </plurals>
+    <!-- Button label to report spam for a conversation when in a message request state -->
+    <string name="MessageRequestBottomView_report">Ripoti…</string>
 
     <!-- PassphraseChangeActivity -->
     <string name="PassphraseChangeActivity_passphrases_dont_match_exclamation">Nenosiro haiwiani</string>
@@ -1892,9 +1963,13 @@
 
     <!-- AboutSheet -->
     <!-- Displayed in a sheet row and allows user to open signal connection explanation on tap -->
-    <string name="AboutSheet__signal_connection">Muunganisho wa Signal</string>
+    <string name="AboutSheet__signal_connection">Signal Connection</string>
+    <!-- Displayed in a sheet row describing that the user has marked this contact as \'verified\' from within the app -->
+    <string name="AboutSheet__verified">Imethibitishwa</string>
+    <!-- Displayed in bottom sheet describing that the user has no direct messages with this person. The placeholder is a person\'s name. -->
+    <string name="AboutSheet__no_direct_message">Huna jumbe za moja kwa moja na %1$s</string>
     <!-- Explains that the given user (placeholder is short name) is in the users system contact -->
-    <string name="AboutSheet__s_is_in_your_system_contacts">%1$s yupo kwenye wawasiliani wako</string>
+    <string name="AboutSheet__s_is_in_your_system_contacts">%1$s yupo kwenye wawasiliani wako wa simu</string>
     <!-- Notice in a row when user has no groups in common -->
     <string name="AboutSheet__you_have_no_groups_in_common">Hamna vikundi mnavyoshiriki pamoja</string>
     <!-- Notice when a user is not a connection to review requests carefully -->
@@ -1959,7 +2034,7 @@
     </string>
 
     <!-- Dialog title shown when registering and we want to verify they entered the correct number before proceeding. -->
-    <string name="RegistrationActivity_phone_number_verification_dialog_title">Je, namba iliyo hapa chini ni sahihi?</string>
+    <string name="RegistrationActivity_phone_number_verification_dialog_title">Je, nambari iliyo hapa chini ni sahihi?</string>
     <!-- Dialog title shown when re-registering and skip sms flow failed or was aborted and now need perform additional verification via sms and warn about carrier charges -->
     <string name="RegistrationActivity_additional_verification_required">Uthibitishaji wa ziada unahitajika</string>
     <!-- Dialog message shown when we need to verify sms and carrier rates may apply. -->
@@ -2017,7 +2092,7 @@
     <!--    A title for a bottom sheet dialog offering to help a user having trouble entering their verification code.-->
     <string name="RegistrationActivity_support_bottom_sheet_title">Unasumbuka kujisajili?</string>
     <!--    A list of suggestions to try for a user having trouble entering their verification code.-->
-    <string name="RegistrationActivity_support_bottom_sheet_body_suggestions">• Hakikisha namba yako inapata mtandao wa simu ili kupokea SMS au kupigiwa simu\n • Hakikisha kama unaweza kupokea simu kwenye nambari\n • Angalia kama umeingiza vyema nambari za simu.</string>
+    <string name="RegistrationActivity_support_bottom_sheet_body_suggestions">• Hakikisha nambari yako inapata mtandao wa simu ili kupokea SMS au kupigiwa simu\n • Hakikisha kama unaweza kupokea simu kwenye nambari\n • Angalia kama umeingiza vyema nambari za simu.</string>
     <!--    A call to action for a user having trouble entering the verification to seek further help. -->
     <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">Kwa habari zaidi, tafadhali fuata maelekezo haya ya kutatua tatizo au Wasiliana na Msaada</string>
     <!--    A clickable piece of text that will take the user to our website with additional suggestions.-->
@@ -2220,13 +2295,15 @@
     <string name="UsernameEditFragment_delete">Futa</string>
     <string name="UsernameEditFragment_successfully_removed_username">Jina la mtumiaji limeondolewa kwa mafanikio.</string>
     <string name="UsernameEditFragment_encountered_a_network_error">Imekumbana na hitilafu ya mtandao.</string>
+    <!-- Toast message shown if user exceeds the rate limit for reserving usernames -->
+    <string name="UsernameEditFragment_rate_limit_exceeded_error">Too many attempts made, please try again later.</string>
     <string name="UsernameEditFragment_this_username_is_taken">Jina hili la mtumiaji limechukuliwa.</string>
     <string name="UsernameEditFragment_usernames_can_only_include">Majina ya watumiaji yanaweza kujumuisha tu herufi za A hadi Z, nambari za 0 hadi 9, na vistari-chini.</string>
     <string name="UsernameEditFragment_usernames_cannot_begin_with_a_number">Majina ya watumiaji hayawezi kuanza kwa nambari.</string>
     <string name="UsernameEditFragment_username_is_invalid">Jina la mtumiaji si halali.</string>
     <string name="UsernameEditFragment_usernames_must_be_between_a_and_b_characters">Majina ya watumiaji lazima yawe kati ya vibambo %1$dna %2$d.</string>
     <!-- Explanation about what usernames provide -->
-    <string name="UsernameEditFragment__usernames_let_others_message">Majina ya watumiaji yanawawezesha wengine kutuma ujumbe bila kuhitaji nambari yako ya simu. Yameoanishwa na seti ya tarakimu kukusaidia kuiweka siri anuani yako.</string>
+    <string name="UsernameEditFragment__usernames_let_others_message">Majina ya watumiaji huwa yana seti ya tarakimu.</string>
     <!-- Dialog title for explanation about numbers at the end of the username -->
     <string name="UsernameEditFragment__what_is_this_number">Hii ni nambari gani?</string>
     <string name="UsernameEditFragment__these_digits_help_keep">Tarakimu hizi ni usaidizi wa kuliweka jina lako la mtumiaji siri ili uweze kuepuka jumbe usizozihitaji. Shiriki jina lako la mtumiaji na watu na makundi unayopenda kuzungumza nayo tu. Ukibadili jina lako la mtumiaji, utapata seti mpya ya tarakimu.</string>
@@ -2242,10 +2319,14 @@
     <string name="UsernameEditFragment__invalid_username_enter_a_maximum_of_d_digits">Jina la mtumiaji lisilo sahihi, weka tarakimu zisizozidi %1$d.</string>
     <!-- Displayed when the chosen discriminator is 00 -->
     <string name="UsernameEditFragment__this_number_cant_be_00">Nambari hii haiwezi kuwa 00. Ingiza tarakimu kati ya 1–9</string>
-    <!-- Displayed when the chosen discriminator starts with 00 -->
-    <string name="UsernameEditFragment__this_number_cant_start_with_00">Nambari hii haiwezi kuanza na 00. Ingiza tarakimu kati ya 1–9</string>
+    <!-- Displayed when the chosen discriminator starts with 0 and has a length > 2 -->
+    <string name="UsernameEditFragment__this_number_cant_start_with_0">Numbers with more than 2 digits can\'t start with 0</string>
     <!-- The body of an alert dialog asking the user to confirm that they want to recover their username -->
     <string name="UsernameEditFragment_recovery_dialog_confirmation">Kurejesha jina lako la mtumiaji kutaweka upya mipangilio ya code ya QR na kiungo kilichopo. Una uhakika?</string>
+    <!-- The body of an alert dialog asking the user to confirm that they want to change their username, even if it resets their link -->
+    <string name="UsernameEditFragment_change_confirmation_message">Kubadili jina lako la mtumiaji kutaweka upya mipangilio ya msimbo na kiungo cha QR kilichopo. Una uhakika?</string>
+    <!-- Text for a button in a dialog asking if the user would like to continue the operation of changing their username -->
+    <string name="UsernameEditFragment_continue">Endelea</string>
 
     <plurals name="UserNotificationMigrationJob_d_contacts_are_on_signal">
         <item quantity="one">Anwani %1$diko katika Signal!</item>
@@ -2450,7 +2531,7 @@
     <!-- Button label for not right now -->
     <string name="NewWaysToConnectDialogFragment__not_now">Sio sasa</string>
     <!-- Button label for continue -->
-    <string name="NewWaysToConnectDialogFragment__set_up_your_username">Weka jina lako la mtumiaji</string>
+    <string name="NewWaysToConnectDialogFragment__set_up_your_username">Weka jina la mtumiaji</string>
 
     <!-- ThumbnailView -->
     <string name="ThumbnailView_Play_video_description">Cheza video</string>
@@ -2567,6 +2648,10 @@
         <item quantity="one">Mwanachama %1$d</item>
         <item quantity="other">Wanachama %1$d</item>
     </plurals>
+    <!-- Text on row item to find user by phone number -->
+    <string name="ContactSelectionListFragment__find_by_phone_number">Tafuta kwa nambari ya simu</string>
+    <!-- Text on row item to find user by username -->
+    <string name="ContactSelectionListFragment__find_by_username">Tafuta kwa jina la mtumiaji</string>
 
     <!-- contact_selection_list_fragment -->
     <string name="contact_selection_list_fragment__signal_needs_access_to_your_contacts_in_order_to_display_them">Signal inahitaji upatikanaji wa wawasiliani yako ili kuonyesha.</string>
@@ -2638,6 +2723,8 @@
     <string name="ConversationUpdateItem_activate_payments">Wezesha Malipo</string>
     <!-- Update item alerting the user they hid this person and that they can message them to unhide them -->
     <string name="ConversationUpdateItem_hidden_contact_message_to_add_back">Umemuondoa mtu huyu, kuwatumia tena jumbe kutawarudisha kwenye orodha yako.</string>
+    <!-- Update item button text shown for the accepted message request update message -->
+    <string name="ConversationUpdateItem_options">Chaguzi</string>
 
     <!-- audio_view -->
     <string name="audio_view__play_pause_accessibility_description">Cheza … Pumzisha</string>
@@ -3792,17 +3879,19 @@
     <!-- Subtext below option to launch into phone number privacy settings screen -->
     <string name="preferences_app_protection__choose_who_can_see">Chagua nani anayeweza kuona nambari yako ya simu na kuwasiliana nawe kwenye Signal kwa kuitumia.</string>
     <!-- Section title above two radio buttons for enabling and disabling phone number display -->
-    <string name="PhoneNumberPrivacySettingsFragment__who_can_see_my_number">Anayeweza kuona nambari yangu</string>
-    <!-- Subtext below radio buttons when who can see my number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see_your">Hakuna atakayeona nambari yako ya simu kwenye Signal hata ukiwatumia ujumbe.</string>
+    <string name="PhoneNumberPrivacySettingsFragment_who_can_see_my_number_heading">Anayeweza kuona nambari yangu</string>
+    <!-- Subtext below radio buttons when who can see my number is set to everybody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_on_description">Nambari yako ya simu itaonekana na watu wote na vikundi unavyowatumia ujumbe.</string>
+    <!-- Subtext below radio buttons when who can see my number is set to nobody and who can find me by number is set to everybody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_off_discovery_on_description">Nambari yako ya simu haitaonekana na yeyote isipokuwa tu kama wameihifadhi kwenye orodha ya wawasiliani kwenye simu zao.</string>
+    <!-- Subtext below radio buttons when who can see my number is set to nobody and who can find me by number is set to nobody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_off_discovery_off_description">Nambari yako ya simu haitaonekana na yeyote.</string>
     <!-- Section title above two radio buttons for enabling and disabling whether users can find me by my phone number  -->
-    <string name="PhoneNumberPrivacySettingsFragment__who_can_find_me_by_number">Yule anayeweza kunipata kupitia nambari yangu</string>
-    <!-- Subtext below radio buttons when who can see my number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number_will_be">Nambari yako ya simu itaonekana na watu wote na vikundi unavyowatumia ujumbe.</string>
+    <string name="PhoneNumberPrivacySettingsFragment_who_can_find_me_by_number_heading">Yule anayeweza kunipata kupitia nambari yangu</string>
     <!-- Subtext below radio buttons when who can find me by number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__anyone_who_has">Mtu yeyote mwenye nambari yako ya simu ataona kuwa upo Signal na anaweza kuanza gumzo na wewe.</string>
+    <string name="PhoneNumberPrivacySettingsFragment_discovery_on_description">Mtu yeyote mwenye nambari yako ya simu ataona kuwa upo Signal na anaweza kuanza gumzo na wewe.</string>
     <!-- Subtext below radio buttons when who can find me by number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_be_able_to_see">Hakuna atakayeweza kuona kuwa upo Signal isipokuwa utakapowatumia ujumbe au tayari una gumzo nao.</string>
+    <string name="PhoneNumberPrivacySettingsFragment_discovery_off_description">Hakuna atakayeweza kuona kuwa upo Signal isipokuwa utakapowatumia ujumbe au tayari una gumzo nao.</string>
     <!-- Snackbar text when pressing invalid radio item -->
     <string name="PhoneNumberPrivacySettingsFragment__to_change_this_setting">"Ili kubadili mpangilio huu, badili Nani anayeona nambari yangu kuwa Hakuna Yeyote."</string>
     <string name="PhoneNumberPrivacy_everyone">Kila mtu</string>
@@ -3833,6 +3922,8 @@
     <string name="prompt_passphrase_activity__signal_is_locked">Signal Imefungwa</string>
     <string name="prompt_passphrase_activity__tap_to_unlock">Gusa kufungua</string>
     <string name="Recipient_unknown">Isiyojulikana</string>
+    <!-- Name to use for a user across the UI when they are unregistered and have no other name available -->
+    <string name="Recipient_deleted_account">Akaunti iliyofutwa</string>
 
     <!-- Option in settings that will take use to re-register if they are no longer registered -->
     <string name="preferences_account_reregister">Sajili upya akaunti</string>
@@ -4035,8 +4126,10 @@
     <string name="BlockedUsersActivity__s_has_been_unblocked">\"%1$s\" ameondolewa kizuizi.</string>
 
     <!-- ReviewCardDialogFragment -->
-    <string name="ReviewCardDialogFragment__review_members">Kagua Wanachama</string>
-    <string name="ReviewCardDialogFragment__review_request">Kagua Ombi</string>
+    <!-- Title of a screen where the user will be prompted to review group members with the same name -->
+    <string name="ReviewCardDialogFragment__review_members">Kagua wanachama</string>
+    <!-- Title of a screen where the user will be prompted to review a message request matching the name of someone they already know -->
+    <string name="ReviewCardDialogFragment__review_request">Kagua ombi</string>
     <string name="ReviewCardDialogFragment__d_group_members_have_the_same_name">Washiriki %1$d wa kikundi wana majina yanayofanana, wakague wanachama hapa chini na uchague kuchukua hatua.</string>
     <string name="ReviewCardDialogFragment__if_youre_not_sure">Ikiwa hujui ombi hili limetoka kwa nani, kagua waasiliani walio hapa chini na uchukue hatua.</string>
     <string name="ReviewCardDialogFragment__no_other_groups_in_common">Hakuna vikundi vingine mnavyoshiriki pamoja.</string>
@@ -4063,7 +4156,7 @@
     <!-- Displayed when a recent name change has occurred. First placeholder is new short name, second is previous name, third is new name. -->
     <string name="ReviewCard__s_recently_changed">Hivi karibuni %1$s amebadili jina la wasifu wake kutoka %2$s kwenda %3$s</string>
     <!-- Displayed when a review user is in your system contacts. Placeholder is short name. -->
-    <string name="ReviewCard__s_is_in_your_system_contacts">%1$s yupo kwenye wawasiliani wako</string>
+    <string name="ReviewCard__s_is_in_your_system_contacts">%1$s yupo kwenye wawasiliani wako wa simu</string>
 
     <!-- CallParticipantsListUpdatePopupWindow -->
     <string name="CallParticipantsListUpdatePopupWindow__s_joined">%1$s amejiunga</string>
@@ -5387,7 +5480,7 @@
     <string name="MyStorySettingsFragment__who_can_view_this_story">Nani anaweza kutazama stori hii</string>
     <!-- Clickable option for selecting people to hide your story from -->
     <!-- Privacy setting title for sending stories to all your signal connections -->
-    <string name="MyStorySettingsFragment__all_signal_connections">Signal connections wote</string>
+    <string name="MyStorySettingsFragment__all_signal_connections">Signal Connections wote</string>
     <!-- Privacy setting description for sending stories to all your signal connections -->
     <!-- Privacy setting title for sending stories to all except the specified connections -->
     <string name="MyStorySettingsFragment__all_except">Wote isipokuwa….</string>
@@ -5424,7 +5517,7 @@
     <!-- Signal connections sheet bullet point 2 -->
     <string name="SignalConnectionsBottomSheet__accepting_a_message_request">Kukubali ombi la ujumbe</string>
     <!-- Signal connections sheet bullet point 3 -->
-    <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">Kuwa nao kwenye mfumo wako wa wawasiliani</string>
+    <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">Kuwa nao kwenye mfumo wako wa wawasiliani wa simu</string>
     <!-- Note at the bottom of the Signal connections sheet -->
     <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"Connections wako wanaweza kuona jina lako na picha yako, na wanaweza pia kuona post za Stori Yangu labda kama utawaficha."</string>
     <!-- Clickable option to add a viewer to a custom story -->
@@ -5752,7 +5845,7 @@
     <!-- Subtitle of initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__choose_who_can_see_posts_to_my_story_you_can_always_make_changes_in_settings">Chagua nani anayeweza kuona maudhui ya Stori Yangu. Unaweza kufanya mabadiliko kwenye mipangilio.</string>
     <!-- All connections option for initial My Story settings configuration shown when sending to My Story for the first time -->
-    <string name="ChooseInitialMyStoryMembershipFragment__all_signal_connections">Signal connections wote</string>
+    <string name="ChooseInitialMyStoryMembershipFragment__all_signal_connections">Signal Connections wote</string>
     <!-- All connections except option for initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__all_except">Wote isipokuwa….</string>
     <!-- Only with selected connections option for initial My Story settings configuration shown when sending to My Story for the first time -->
@@ -5976,11 +6069,11 @@
     <!-- Default label for bank selection -->
     <string name="IdealTransferDetailsFragment__choose_your_bank">Chagua benki yako</string>
     <!-- Dialog title shown when using iDEAL payment for setting up a monthly donation -->
-    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">Confirm your donation with %1$s</string>
+    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">Hakiki mchango wako kwa %1$s</string>
     <!-- Dialog warning shown when using iDEAL payment for setting up a monthly donation -->
-    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">To setup your recurring donation tap continue to confirm a €0,01 charge with your bank. This will be automatically refunded and allows your €5/month donation to debited from your account.</string>
+    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">Ili kuweka mipangilio ya michango inayojirudia gusa endelea ili kuthibitisha tozo la €0,01 kwenye benki unayotumia. Hii itafidiwa kiotomatiki na inawezesha mchango wako wa €5 kila mwezi kukatwa kutoka kwa akaunti yako.</string>
     <!-- Dialog button shown when using iDEAL payment for setting up a monthly donation to continue with the donation -->
-    <string name="IdealTransferDetailsFragment__continue">Continue</string>
+    <string name="IdealTransferDetailsFragment__continue">Endelea</string>
 
     <!-- IdealTransferDetailsBankSelectionDialogFragment -->
     <!-- Title of the screen, displayed in the toolbar -->
@@ -6093,6 +6186,15 @@
     <string name="SetUpYourUsername__dismiss">Tupilia mbali</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
     <string name="SetUpYourUsername__learn_more">Jifunze zaidi</string>
+
+    <!-- Displayed as a title on a megaphone which prompts user to set up a username -->
+    <string name="PnpLaunchMegaphone_title">Njia mpya za kufahamiana</string>
+    <!-- Displayed as a description on a megaphone which prompts user to set up a username -->
+    <string name="PnpLaunchMegaphone_body">Tunatambulisha faragha ya nambari ya simu, majina ya watumiaji ya hiari na viungo.</string>
+    <!-- Displayed as an action on a megaphone which prompts user to set up a username. Clicking it will dismiss the megaphone. -->
+    <string name="PnpLaunchMegaphone_dismiss">Tupilia mbali</string>
+    <!-- Displayed as an action on a megaphone which prompts user to set up a username. Clicking it will open a link. -->
+    <string name="PnpLaunchMegaphone_learn_more">Jifunze zaidi</string>
 
     <!-- Text Formatting -->
     <!-- Popup menu label for applying bold style -->
@@ -6391,6 +6493,10 @@
     <string name="UsernameLinkSettings_reset_link_result_network_unavailable">Hauna ufikiaji wa mtandao. Kiungo chako hakikuwekwa upya. Jaribu tena baadaye.</string>
     <!-- Body of a dialog that is displayed when we failed to reset your username link because of a transient network issue. -->
     <string name="UsernameLinkSettings_reset_link_result_network_error">Hitilafu ya kimtandao imetokea wakati wa kuweka upya kiungo chako. Jaribu tena baadaye.</string>
+    <!-- Body of a dialog that is displayed when we failed to reset your username link because of an unknown error. -->
+    <string name="UsernameLinkSettings_reset_link_result_unknown_error">Hitilafu isiyotarajiwa imetokea tukijaribu kuweka upya mipangilio ya kiungo chako. Jaribu tena baadaye.</string>
+    <!-- Body of a dialog that is displayed when we successfully reset you username link. -->
+    <string name="UsernameLinkSettings_reset_link_result_success">Code yako ya QR na kiungo imewekwa upya na code mpya ya QR na kiungo imeundwa.</string>
     <!-- Shown on the generated username qr code image to explain how to use it. -->
     <string name="UsernameLinkSettings_scan_this_qr_code">Skani code hii ya QR kupitia simu yako ili upige gumzo nami kwenye Signal.</string>
 
@@ -6448,6 +6554,42 @@
     <string name="MonthlyDonationCanceled__renew_button">Tengeneza upya usajili wako</string>
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, second button to dismiss the dialog entirely -->
     <string name="MonthlyDonationCanceled__not_now_button">Sio sasa</string>
+
+    <!-- FindByActivity -->
+    <!-- Title of activity when finding by username -->
+    <string name="FindByActivity__find_by_username">Tafuta kwa jina la mtumiaji</string>
+    <!-- Title of activity when finding by phone number -->
+    <string name="FindByActivity__find_by_phone_number">Tafuta kwa nambari ya simu</string>
+    <!-- Title of screen to select a country code -->
+    <string name="FindByActivity__select_country_code">Chagua Nambari ya Nchi</string>
+    <!-- Entry placeholder for find by username -->
+    <string name="FindByActivity__username">Jina la mtumiaji</string>
+    <!-- Entry placeholder for find by phone number -->
+    <string name="FindByActivity__phone_number">Nambari ya simu</string>
+    <!-- Help text under user entry for find by username -->
+    <string name="FindByActivity__enter_username_description">Ingiza jina la mtumiaji likifuatiwa na nukta na seti yake ya nambari.</string>
+    <!-- Content description for next action button -->
+    <string name="FindByActivity__next">Inayofuata</string>
+    <!-- Placeholder text for search input for selecting country code -->
+    <string name="FindByActivity__search">Tafuta</string>
+    <!-- Dialog title for invalid username -->
+    <string name="FindByActivity__invalid_username">Jina la mtumiaji batili</string>
+    <!-- Dialog title for invalid phone number -->
+    <string name="FindByActivity__invalid_phone_number">Nambari Batili ya Simu</string>
+    <!-- Dialog title when phone number is not a registered signal user -->
+    <string name="FindByActivity__invite_to_signal">Mwalike kwenye Signal</string>
+    <!-- Dialog title when username is not found -->
+    <string name="FindByActivity__username_not_found">Jina la mtumiaji halijapatikana</string>
+    <!-- Dialog body for invalid username. Placeholder is the entered username. -->
+    <string name="FindByActivity__s_is_not_a_valid_username">%1$s si jina la mtumiaji sahihi. Hakikisha umeandika jina kamili la mtumiaji likifuatiwa na seti ya tarakimu.</string>
+    <!-- Dialog body for an invalid phone number. Placeholder is the entered phone number. -->
+    <string name="FindByActivity__s_is_not_a_valid_phone_number">%1$s si nambari ya simu sahihi. Jaribu tena kwa nambari ya simu sahihi</string>
+    <!-- Dialog body for not found username -->
+    <string name="FindByActivity__s_is_not_a_signal_user">\"%1$s\" sio mtumiaji wa Signal. Tafadhali angalia jina la mtumiaji na ujaribu tena.</string>
+    <!-- Dialog body for not found phone number -->
+    <string name="FindByActivity__s_is_not_a_signal_user_would">%1$s si mtumiaji wa Signal. Je, ungependa kuikaribisha nambari hii?</string>
+    <!-- Dialog action to invite the phone number to Signal -->
+    <string name="FindByActivity__invite">Alika</string>
 
     <!-- EOF -->
 </resources>

@@ -682,7 +682,12 @@
 
     <activity android:name=".NewConversationActivity"
               android:theme="@style/Theme.Signal.DayNight.NoActionBar"
-              android:windowSoftInputMode="stateAlwaysVisible"
+              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
+              android:exported="false"/>
+
+    <activity android:name=".recipients.ui.findby.FindByActivity"
+              android:theme="@style/Theme.Signal.DayNight.NoActionBar"
+              android:windowSoftInputMode="adjustResize"
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
               android:exported="false"/>
 
@@ -968,11 +973,6 @@
 
     <activity android:name=".profiles.edit.CreateProfileActivity"
               android:theme="@style/TextSecure.LightRegistrationTheme"
-              android:windowSoftInputMode="stateVisible|adjustResize"
-              android:exported="false"/>
-
-    <activity android:name=".profiles.username.AddAUsernameActivity"
-              android:theme="@style/Signal.DayNight.NoActionBar"
               android:windowSoftInputMode="stateVisible|adjustResize"
               android:exported="false"/>
 

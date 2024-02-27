@@ -179,7 +179,18 @@
     <string name="BlockUnblockDialog_unblock_s">要解除封鎖 %1$s 嗎？</string>
     <string name="BlockUnblockDialog_block">封鎖</string>
     <string name="BlockUnblockDialog_block_and_leave">封鎖並退出</string>
+    <!-- Dialog button label to report as spam and block the person -->
     <string name="BlockUnblockDialog_report_spam_and_block">舉報垃圾訊息並封鎖</string>
+    <!-- Dialog title for reporting spam -->
+    <string name="BlockUnblockDialog_report_spam_title">是否舉報垃圾訊息？</string>
+    <!-- Dialog button to report as spam only -->
+    <string name="BlockUnblockDialog_report_spam">舉報垃圾訊息</string>
+    <!-- Dialog message when reporting spam of an individual (1:1 conversation) -->
+    <string name="BlockUnblockDialog_report_spam_description">Signal 將收到通知，此人可能正在發送垃圾訊息。Signal 不能看到任何聊天內容。</string>
+    <!-- Dialog message when reporting spam of a group and we can determine the group member that invited you, placeholder is a name -->
+    <string name="BlockUnblockDialog_report_spam_group_named_adder">Signal 將收到通知，邀請你加入此群組的 %1$s 可能正在發送垃圾訊息。Signal 不能看到任何聊天內容。</string>
+    <!-- Dialog message when reporting spam of a group and we cannot determine the group member that invited you -->
+    <string name="BlockUnblockDialog_report_spam_group_unknown_adder">Signal 將收到通知，邀請你加入此群組的人可能正在發送垃圾訊息。Signal 不能看到任何聊天內容。</string>
 
     <!-- BucketedThreadMedia -->
     <string name="BucketedThreadMedia_Today">今天</string>
@@ -474,8 +485,8 @@
     <string name="ConversationFragment__you_can_add_notes_for_yourself_in_this_conversation">你可在此聊天中為自己新增筆記。若你的帳戶有任何已連結裝置，新的筆記將會進行同步處理。</string>
     <string name="ConversationFragment__d_group_members_have_the_same_name">%1$d 個群組成員名稱相同。</string>
     <string name="ConversationFragment__tap_to_review">輕觸以檢閱</string>
-    <string name="ConversationFragment__review_requests_carefully">請仔細檢閱請求</string>
-    <string name="ConversationFragment__signal_found_another_contact_with_the_same_name">Signal 找到另一個名稱相同的聯絡人。</string>
+    <!-- The body of a banner that can show up at the top of a chat, letting the user know that you have two contacts with the same name -->
+    <string name="ConversationFragment__review_banner_body">此人與另一聯絡人同名</string>
     <string name="ConversationFragment_contact_us">聯絡我們</string>
     <string name="ConversationFragment_verify">驗證</string>
     <string name="ConversationFragment_not_now">現在不要</string>
@@ -501,6 +512,55 @@
     <string name="ConversationFragment__content_description_launch_signal_button">開啟 Signal</string>
     <!-- Dialog title shown when more than one contact in a group conversation is no longer verified -->
     <string name="ConversationFragment__no_longer_verified">已無驗證</string>
+    <!-- Button shown in conversation header when in a message request state and no groups in common to show new message safety tips -->
+    <string name="ConversationFragment_safety_tips">安全提示</string>
+    <!-- Menu option to report spam in a conversation -->
+    <string name="ConversationFragment_report_spam">舉報垃圾訊息</string>
+    <!-- Menu option to block in a conversation -->
+    <string name="ConversationFragment_block">封鎖</string>
+    <!-- Menu otpion to accept a message request in a conversation -->
+    <string name="ConversationFragment_accept">接受</string>
+    <!-- Menu option to delete an entire chat in a conversation -->
+    <string name="ConversationFragment_delete_chat">刪除聊天</string>
+    <!-- Menu option to unblock in a conversation -->
+    <string name="ConversationFragment_unblock">解除封鎖</string>
+    <!-- Dialog title shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_spam">已舉報垃圾訊息</string>
+    <!-- Dialog message shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_spam_message">Signal has been notified that this person may be sending spam. Signal can’t see the content of any chats.</string>
+    <!-- Toast shown after reporting spam and tapping the conversation item -->
+    <string name="ConversationFragment_reported_as_spam">已舉報垃圾訊息</string>
+    <!-- Toast shown after reporting and blocking a conversation -->
+    <string name="ConversationFragment_reported_as_spam_and_blocked">已舉報垃圾訊息並封鎖</string>
+    <!-- Dialog message shown after accepting a message request and tapping on options from the conversation event -->
+    <string name="ConversationFragment_you_accepted_a_message_request_from_s">你已接受來自 %1$s 的訊息請求。如果這是個錯誤，你可以選擇以下操作。</string>
+
+    <!-- Title of Safety Tips bottom sheet dialog -->
+    <string name="SafetyTips_title">安全提示</string>
+    <!-- Dialog subtitle when showign tips for a 1:1 conversation -->
+    <string name="SafetyTips_subtitle_individual">接受陌生人的訊息請求時要小心。注意：</string>
+    <!-- Dialog subtitle when showing tips for a group conversation -->
+    <string name="SafetyTips_subtitle_group">請仔細檢視請求。你的聯絡人或與你聊天的人都不在此群組中。以下是一些需要注意的事項：</string>
+    <!-- Button text to move to the previous tip-->
+    <string name="SafetyTips_previous_tip">上一個提示</string>
+    <!-- Button text to move to the next tip -->
+    <string name="SafetyTips_next_tip">下一個提示</string>
+    <!-- Title of tip 1 -->
+    <string name="SafetyTips_tip1_title">加密貨幣或金錢詐騙</string>
+    <!-- Message of tip 1 -->
+    <string name="SafetyTips_tip1_message">If someone you don’t know messages about cryptocurrency (like Bitcoin) or a financial opportunity, be careful—it’s likely spam.</string>
+    <!-- Title of tip 2 -->
+    <string name="SafetyTips_tip2_title">模糊或不相關的訊息</string>
+    <!-- Message of tip 2 -->
+    <string name="SafetyTips_tip2_message">垃圾訊息發送者通常會以「你好」等簡單訊息開始吸引你。如你作出回應，他們便可能會進一步與你互動。</string>
+    <!-- Title of tip 3 -->
+    <string name="SafetyTips_tip3_title">帶有連結的訊息</string>
+    <!-- Message of tip 3 -->
+    <string name="SafetyTips_tip3_message">請小心來自陌生人帶有網站連結的訊息。切勿點按來自你不信任之人的連結。</string>
+    <!-- Title of tip 4 -->
+    <string name="SafetyTips_tip4_title">虛假企業和機構</string>
+    <!-- Message of tip 4 -->
+    <string name="SafetyTips_tip4_message">請小心與你聯絡的企業或政府機構。涉及稅務機關、快遞公司等訊息可能是垃圾訊息。</string>
 
     <!-- Label for a button displayed in conversation list to clear the chat filter -->
     <string name="ConversationListFragment__clear_filter">清除篩選器</string>
@@ -513,7 +573,9 @@
         <item quantity="other">這將永久刪除共 %1$d 個選取的聊天。</item>
     </plurals>
     <string name="ConversationListFragment_deleting">正在刪除</string>
-    <string name="ConversationListFragment_deleting_selected_conversations">正在刪除已選取的聊天…</string>
+    <plurals name="ConversationListFragment_deleting_selected_conversations">
+        <item quantity="other">刪除已選取的聊天…</item>
+    </plurals>
     <plurals name="ConversationListFragment_conversations_archived">
         <item quantity="other">%1$d 個聊天已封存</item>
     </plurals>
@@ -966,8 +1028,10 @@
     <!-- ManageProfileFragment -->
     <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc -->
     <string name="ManageProfileFragment__your_username">你的個人資料不會顯示用戶名稱、二維碼及連結。僅與你信任的人分享你的用戶名稱。</string>
-    <string name="ManageProfileFragment_profile_name">個人資料名稱</string>
-    <string name="ManageProfileFragment_username">使用者名稱</string>
+    <!-- Explanation text about usernames etc displayed underneath buttons to view and edit username etc, shown when you have no username -->
+    <string name="ManageProfileFragment__username_footer_no_username">其他人現在可以使用你的自選用戶名稱向你發送訊息，因此你不需提供你的電話號碼。 </string>
+    <string name="ManageProfileFragment_profile_name">個人檔案名稱</string>
+    <string name="ManageProfileFragment_username">用戶名稱</string>
     <string name="ManageProfileFragment_about">關於</string>
     <string name="ManageProfileFragment_failed_to_set_avatar">設定頭像失敗</string>
     <string name="ManageProfileFragment_badges">徽章</string>
@@ -1272,8 +1336,8 @@
     </plurals>
 
     <!-- Profile change updates -->
-    <string name="MessageRecord_changed_their_profile_name_to">%1$s 已將個人資料名稱改為 %2$s。</string>
-    <string name="MessageRecord_changed_their_profile_name_from_to">%1$s 已將個人資料名稱 %2$s 改為 %3$s。</string>
+    <string name="MessageRecord_changed_their_profile_name_to">%1$s 已將個人檔案名稱改為 %2$s。</string>
+    <string name="MessageRecord_changed_their_profile_name_from_to">%1$s 已將個人檔案名稱 %2$s 改為 %3$s。</string>
     <string name="MessageRecord_changed_their_profile">%1$s 已變更其個人資料。</string>
 
     <!-- GV2 specific -->
@@ -1479,6 +1543,10 @@
     <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">你無法再於 Signal 傳送短訊。邀請 %1$s 加入 Signal 以繼續對話。</string>
     <!-- Body for quote when message being quoted is an in-app payment message -->
     <string name="MessageRecord__payment_s">付款：%1$s</string>
+    <!-- Update message shown in chat after reporting it as spam -->
+    <string name="MessageRecord_reported_as_spam">已舉報垃圾訊息</string>
+    <!-- Update message shown in chat after accept a message request -->
+    <string name="MessageRecord_you_accepted_the_message_request">你已接受訊息請求</string>
 
     <!-- MessageRequestBottomView -->
     <string name="MessageRequestBottomView_accept">接受</string>
@@ -1521,6 +1589,8 @@
     <plurals name="MessageRequestProfileView_member_of_d_additional_groups">
         <item quantity="other">另 %1$d 個群組</item>
     </plurals>
+    <!-- Button label to report spam for a conversation when in a message request state -->
+    <string name="MessageRequestBottomView_report">舉報…</string>
 
     <!-- PassphraseChangeActivity -->
     <string name="PassphraseChangeActivity_passphrases_dont_match_exclamation">密碼不匹配！</string>
@@ -1820,8 +1890,12 @@
     <!-- AboutSheet -->
     <!-- Displayed in a sheet row and allows user to open signal connection explanation on tap -->
     <string name="AboutSheet__signal_connection">Signal 人脈</string>
+    <!-- Displayed in a sheet row describing that the user has marked this contact as \'verified\' from within the app -->
+    <string name="AboutSheet__verified">已驗證</string>
+    <!-- Displayed in bottom sheet describing that the user has no direct messages with this person. The placeholder is a person\'s name. -->
+    <string name="AboutSheet__no_direct_message">沒有與 %1$s 的直接訊息</string>
     <!-- Explains that the given user (placeholder is short name) is in the users system contact -->
-    <string name="AboutSheet__s_is_in_your_system_contacts">%1$s 在你的系統聯絡人中</string>
+    <string name="AboutSheet__s_is_in_your_system_contacts">%1$s 在你的系統通訊錄中</string>
     <!-- Notice in a row when user has no groups in common -->
     <string name="AboutSheet__you_have_no_groups_in_common">你沒有共同的群組</string>
     <!-- Notice when a user is not a connection to review requests carefully -->
@@ -1875,7 +1949,7 @@
     <string name="RegistrationActivity_select_your_country">選擇你的國家</string>
     <string name="RegistrationActivity_you_must_specify_your_country_code">你必須標明 國家編號
     </string>
-    <string name="RegistrationActivity_please_enter_a_valid_phone_number_to_register">請輸入有效的手機號碼以註冊。</string>
+    <string name="RegistrationActivity_please_enter_a_valid_phone_number_to_register">請輸入有效的電話號碼以註冊。</string>
     <string name="RegistrationActivity_invalid_number">電話號碼無效</string>
     <string name="RegistrationActivity_the_number_you_specified_s_is_invalid">你所標明的號碼 (%1$s) 無效
     </string>
@@ -2137,17 +2211,19 @@
     <string name="UsernameEditFragment__add_a_username">新增用戶名稱</string>
     <!-- Instructional text at the top of the username edit screen -->
     <string name="UsernameEditFragment__choose_your_username">選擇你的用戶名稱</string>
-    <string name="UsernameEditFragment_username">使用者名稱</string>
+    <string name="UsernameEditFragment_username">用戶名稱</string>
     <string name="UsernameEditFragment_delete">刪除</string>
-    <string name="UsernameEditFragment_successfully_removed_username">已成功移除使用者名稱。</string>
+    <string name="UsernameEditFragment_successfully_removed_username">已成功移除用戶名稱。</string>
     <string name="UsernameEditFragment_encountered_a_network_error">遇到網絡問題。</string>
-    <string name="UsernameEditFragment_this_username_is_taken">此使用者名稱已有人使用。</string>
-    <string name="UsernameEditFragment_usernames_can_only_include">使用者名稱僅可包含 a–Z、0–9 以及底線。</string>
-    <string name="UsernameEditFragment_usernames_cannot_begin_with_a_number">使用者名稱不得以數字開首。</string>
-    <string name="UsernameEditFragment_username_is_invalid">使用者名稱無效。</string>
-    <string name="UsernameEditFragment_usernames_must_be_between_a_and_b_characters">使用者名稱長度必須介乎 %1$d 和 %2$d 個字元。</string>
+    <!-- Toast message shown if user exceeds the rate limit for reserving usernames -->
+    <string name="UsernameEditFragment_rate_limit_exceeded_error">Too many attempts made, please try again later.</string>
+    <string name="UsernameEditFragment_this_username_is_taken">此用戶名稱已有人使用。</string>
+    <string name="UsernameEditFragment_usernames_can_only_include">用戶名稱僅可包含 a–Z、0–9 以及底線。</string>
+    <string name="UsernameEditFragment_usernames_cannot_begin_with_a_number">用戶名稱不得以數字開首。</string>
+    <string name="UsernameEditFragment_username_is_invalid">用戶名稱無效。</string>
+    <string name="UsernameEditFragment_usernames_must_be_between_a_and_b_characters">用戶名稱長度必須介乎 %1$d 和 %2$d 個字元。</string>
     <!-- Explanation about what usernames provide -->
-    <string name="UsernameEditFragment__usernames_let_others_message">用戶名稱讓其他人無需透過你的電話號碼，已可向你傳送訊息。系統會將用戶名稱與一組數字配對，從而為你的地址保密。</string>
+    <string name="UsernameEditFragment__usernames_let_others_message">用戶名稱都會與一組數字配對。</string>
     <!-- Dialog title for explanation about numbers at the end of the username -->
     <string name="UsernameEditFragment__what_is_this_number">這個號碼是什麼？</string>
     <string name="UsernameEditFragment__these_digits_help_keep">這組數字有助將你的用戶名稱保密，以免你受到無謂的訊息滋擾。請僅向你願意與其通訊的聯絡人和群組分享你的用戶名稱。如要更改用戶名稱，你則會收到一組新的數字。</string>
@@ -2163,10 +2239,14 @@
     <string name="UsernameEditFragment__invalid_username_enter_a_maximum_of_d_digits">無效的用戶名稱，輸入最多 %1$d 位數。</string>
     <!-- Displayed when the chosen discriminator is 00 -->
     <string name="UsernameEditFragment__this_number_cant_be_00">此數字不能為 00。請輸入 1–9 之間的數字</string>
-    <!-- Displayed when the chosen discriminator starts with 00 -->
-    <string name="UsernameEditFragment__this_number_cant_start_with_00">此數字不能以 00 為首。請輸入 1–9 之間的數字</string>
+    <!-- Displayed when the chosen discriminator starts with 0 and has a length > 2 -->
+    <string name="UsernameEditFragment__this_number_cant_start_with_0">Numbers with more than 2 digits can\'t start with 0</string>
     <!-- The body of an alert dialog asking the user to confirm that they want to recover their username -->
     <string name="UsernameEditFragment_recovery_dialog_confirmation">恢復用戶名稱將重設你現有的二維碼和連結。你確定嗎？</string>
+    <!-- The body of an alert dialog asking the user to confirm that they want to change their username, even if it resets their link -->
+    <string name="UsernameEditFragment_change_confirmation_message">更改用戶名稱將重設你現有的二維碼和連結。你確定嗎？</string>
+    <!-- Text for a button in a dialog asking if the user would like to continue the operation of changing their username -->
+    <string name="UsernameEditFragment_continue">繼續</string>
 
     <plurals name="UserNotificationMigrationJob_d_contacts_are_on_signal">
         <item quantity="other">%1$d 個聯絡人現已使用 Signal！</item>
@@ -2368,7 +2448,7 @@
     <!-- Button label for not right now -->
     <string name="NewWaysToConnectDialogFragment__not_now">現在不要</string>
     <!-- Button label for continue -->
-    <string name="NewWaysToConnectDialogFragment__set_up_your_username">設定你的用戶名稱</string>
+    <string name="NewWaysToConnectDialogFragment__set_up_your_username">設定用戶名稱</string>
 
     <!-- ThumbnailView -->
     <string name="ThumbnailView_Play_video_description">播放影片</string>
@@ -2473,8 +2553,8 @@
     <!-- ContactSelectionListFragment-->
     <string name="ContactSelectionListFragment_signal_requires_the_contacts_permission_in_order_to_display_your_contacts">Signal 需要聯絡人權限才可顯示您的聯絡人，但已被永久拒絕。請前往應用程式設定功能表，選擇「權限」，然後啟用「聯絡人」。</string>
     <string name="ContactSelectionListFragment_error_retrieving_contacts_check_your_network_connection">提取聯絡人時發生錯誤，請檢查您的網絡連線</string>
-    <string name="ContactSelectionListFragment_username_not_found">找不到使用者名稱</string>
-    <string name="ContactSelectionListFragment_s_is_not_a_signal_user">"「%1$s」並非 Signal 使用者。請檢查使用者名稱，然後再試一次。"</string>
+    <string name="ContactSelectionListFragment_username_not_found">找不到用戶名稱</string>
+    <string name="ContactSelectionListFragment_s_is_not_a_signal_user">"「%1$s」並非 Signal 使用者。請檢查用戶名稱，然後再試一次。"</string>
     <string name="ContactSelectionListFragment_you_do_not_need_to_add_yourself_to_the_group">您不用將自己加入群組</string>
     <string name="ContactSelectionListFragment_maximum_group_size_reached">已到達群組人數上限</string>
     <string name="ContactSelectionListFragment_signal_groups_can_have_a_maximum_of_d_members">Signal 群組最多只得有 %1$d 個成員。</string>
@@ -2483,6 +2563,10 @@
     <plurals name="ContactSelectionListFragment_d_members">
         <item quantity="other">%1$d 個成員</item>
     </plurals>
+    <!-- Text on row item to find user by phone number -->
+    <string name="ContactSelectionListFragment__find_by_phone_number">以電話號碼搜尋</string>
+    <!-- Text on row item to find user by username -->
+    <string name="ContactSelectionListFragment__find_by_username">以用戶名稱搜尋</string>
 
     <!-- contact_selection_list_fragment -->
     <string name="contact_selection_list_fragment__signal_needs_access_to_your_contacts_in_order_to_display_them">Signal 需要存取您的聯絡人以便為您顯示。</string>
@@ -2552,6 +2636,8 @@
     <string name="ConversationUpdateItem_activate_payments">啟用付款</string>
     <!-- Update item alerting the user they hid this person and that they can message them to unhide them -->
     <string name="ConversationUpdateItem_hidden_contact_message_to_add_back">你已移除此人，再次傳送訊息給他們會將對方加回你的清單。</string>
+    <!-- Update item button text shown for the accepted message request update message -->
+    <string name="ConversationUpdateItem_options">選項</string>
 
     <!-- audio_view -->
     <string name="audio_view__play_pause_accessibility_description">播放 … 暫停</string>
@@ -2956,7 +3042,7 @@
     <string name="preferences__mmsc_url">MMSC URL</string>
     <string name="preferences__mms_proxy_host">MMS 代理伺服器主機</string>
     <string name="preferences__mms_proxy_port">MMS 代理伺服器連接埠</string>
-    <string name="preferences__mmsc_username">MMSC 使用者名稱</string>
+    <string name="preferences__mmsc_username">MMSC 用戶名稱</string>
     <string name="preferences__mmsc_password">MMSC 密碼</string>
     <string name="preferences__sms_delivery_reports">短訊傳遞報告</string>
     <string name="preferences__request_a_delivery_report_for_each_sms_message_you_send">為您傳送的每一則短訊訊息都要求傳遞報告</string>
@@ -3687,17 +3773,19 @@
     <!-- Subtext below option to launch into phone number privacy settings screen -->
     <string name="preferences_app_protection__choose_who_can_see">選擇誰可以看到你的電話號碼，以及誰可以透過電話號碼在 Signal 與你聯絡。</string>
     <!-- Section title above two radio buttons for enabling and disabling phone number display -->
-    <string name="PhoneNumberPrivacySettingsFragment__who_can_see_my_number">誰可以看到我的號碼</string>
-    <!-- Subtext below radio buttons when who can see my number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_see_your">即使傳送訊息給對方，也沒有人會在 Signal 上看到你的電話號碼。</string>
+    <string name="PhoneNumberPrivacySettingsFragment_who_can_see_my_number_heading">誰可以看到我的號碼</string>
+    <!-- Subtext below radio buttons when who can see my number is set to everybody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_on_description">所有你傳送訊息的人和群組都能看見你的電話號碼。</string>
+    <!-- Subtext below radio buttons when who can see my number is set to nobody and who can find me by number is set to everybody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_off_discovery_on_description">你的電話號碼不會被任何人看到，除非他們將其儲存在手機通訊錄中。</string>
+    <!-- Subtext below radio buttons when who can see my number is set to nobody and who can find me by number is set to nobody -->
+    <string name="PhoneNumberPrivacySettingsFragment_sharing_off_discovery_off_description">你的電話號碼不會被任何人看到。</string>
     <!-- Section title above two radio buttons for enabling and disabling whether users can find me by my phone number  -->
-    <string name="PhoneNumberPrivacySettingsFragment__who_can_find_me_by_number">誰可以透過電話號碼找到我</string>
-    <!-- Subtext below radio buttons when who can see my number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__your_phone_number_will_be">所有你傳送訊息的人和群組都能看見你的電話號碼。</string>
+    <string name="PhoneNumberPrivacySettingsFragment_who_can_find_me_by_number_heading">誰可以透過電話號碼找到我</string>
     <!-- Subtext below radio buttons when who can find me by number is set to everyone -->
-    <string name="PhoneNumberPrivacySettingsFragment__anyone_who_has">任何擁有你電話號碼的人都會看到你在使用 Signal，並可以開始與你聊天。</string>
+    <string name="PhoneNumberPrivacySettingsFragment_discovery_on_description">任何擁有你電話號碼的人都會看到你在使用 Signal，並可以開始與你聊天。</string>
     <!-- Subtext below radio buttons when who can find me by number is set to nobody -->
-    <string name="PhoneNumberPrivacySettingsFragment__nobody_will_be_able_to_see">除非你向對方傳送訊息或與對方已有聊天紀錄，否則沒有人能看到你使用 Signal。</string>
+    <string name="PhoneNumberPrivacySettingsFragment_discovery_off_description">除非你向對方傳送訊息或與對方已有聊天紀錄，否則沒有人能看到你使用 Signal。</string>
     <!-- Snackbar text when pressing invalid radio item -->
     <string name="PhoneNumberPrivacySettingsFragment__to_change_this_setting">"若要變更此設定，請將「誰可以看到我的號碼」設定為「沒有人」。"</string>
     <string name="PhoneNumberPrivacy_everyone">所有人</string>
@@ -3728,6 +3816,8 @@
     <string name="prompt_passphrase_activity__signal_is_locked">Signal 已鎖定</string>
     <string name="prompt_passphrase_activity__tap_to_unlock">輕觸以解除鎖定</string>
     <string name="Recipient_unknown">未知</string>
+    <!-- Name to use for a user across the UI when they are unregistered and have no other name available -->
+    <string name="Recipient_deleted_account">刪除帳戶</string>
 
     <!-- Option in settings that will take use to re-register if they are no longer registered -->
     <string name="preferences_account_reregister">重新註冊帳戶</string>
@@ -3930,8 +4020,10 @@
     <string name="BlockedUsersActivity__s_has_been_unblocked">「%1$s」已被解除封鎖。</string>
 
     <!-- ReviewCardDialogFragment -->
-    <string name="ReviewCardDialogFragment__review_members">檢閱成員</string>
-    <string name="ReviewCardDialogFragment__review_request">檢閱請求</string>
+    <!-- Title of a screen where the user will be prompted to review group members with the same name -->
+    <string name="ReviewCardDialogFragment__review_members">審查成員</string>
+    <!-- Title of a screen where the user will be prompted to review a message request matching the name of someone they already know -->
+    <string name="ReviewCardDialogFragment__review_request">檢查要求</string>
     <string name="ReviewCardDialogFragment__d_group_members_have_the_same_name">%1$d 個群組成員的名稱相同，請檢閱下列成員並選擇要採取的動作。</string>
     <string name="ReviewCardDialogFragment__if_youre_not_sure">若您不確定此請求來自誰人，請檢閱下列聯絡人並採取動作。</string>
     <string name="ReviewCardDialogFragment__no_other_groups_in_common">無其他共同群組。</string>
@@ -3954,9 +4046,9 @@
     <string name="ReviewCard__block">封鎖</string>
     <string name="ReviewCard__delete">刪除</string>
     <!-- Displayed when a recent name change has occurred. First placeholder is new short name, second is previous name, third is new name. -->
-    <string name="ReviewCard__s_recently_changed">%1$s 最近將個人資料名稱從 %2$s 更改為 %3$s</string>
+    <string name="ReviewCard__s_recently_changed">%1$s 最近將個人檔案名稱從 %2$s 更改為 %3$s</string>
     <!-- Displayed when a review user is in your system contacts. Placeholder is short name. -->
-    <string name="ReviewCard__s_is_in_your_system_contacts">%1$s 在你的系統聯絡人中</string>
+    <string name="ReviewCard__s_is_in_your_system_contacts">%1$s 在你的系統通訊錄中</string>
 
     <!-- CallParticipantsListUpdatePopupWindow -->
     <string name="CallParticipantsListUpdatePopupWindow__s_joined">%1$s 已加入</string>
@@ -4950,7 +5042,7 @@
     <!-- Title of create notification profile screen -->
     <string name="EditNotificationProfileFragment__name_your_profile">為您的情景命名</string>
     <!-- Hint text for create/edit notification profile name -->
-    <string name="EditNotificationProfileFragment__profile_name">情景名稱</string>
+    <string name="EditNotificationProfileFragment__profile_name">個人檔案名稱</string>
     <!-- Name has a max length, this shows how many characters are used out of the max -->
     <string name="EditNotificationProfileFragment__count">%1$d/%2$d</string>
     <!-- Call to action button to continue to the next step -->
@@ -5267,7 +5359,7 @@
     <string name="MyStorySettingsFragment__who_can_view_this_story">誰可以瀏覽此限時動態</string>
     <!-- Clickable option for selecting people to hide your story from -->
     <!-- Privacy setting title for sending stories to all your signal connections -->
-    <string name="MyStorySettingsFragment__all_signal_connections">所有 Signal 的人脈</string>
+    <string name="MyStorySettingsFragment__all_signal_connections">所有 Signal 人脈</string>
     <!-- Privacy setting description for sending stories to all your signal connections -->
     <!-- Privacy setting title for sending stories to all except the specified connections -->
     <string name="MyStorySettingsFragment__all_except">所有人，除了…</string>
@@ -5294,7 +5386,7 @@
     <!-- Summary for switchable option allowing replies and reactions on your story -->
     <string name="MyStorySettingsFragment__let_people_who_can_view_your_story_react_and_reply">讓瀏覽限時動態的人表達心情和回覆</string>
     <!-- Signal connections bolded text in the Signal Connections sheet -->
-    <string name="SignalConnectionsBottomSheet___signal_connections">Signal 的人脈</string>
+    <string name="SignalConnectionsBottomSheet___signal_connections">Signal 人脈</string>
     <!-- Displayed at the top of the signal connections sheet. Please remember to insert strong tag as required. -->
     <string name="SignalConnectionsBottomSheet__signal_connections_are_people">Signal 人脈是你透過以下方式選擇而值得信任的人：</string>
     <!-- Signal connections sheet bullet point 1 -->
@@ -5302,7 +5394,7 @@
     <!-- Signal connections sheet bullet point 2 -->
     <string name="SignalConnectionsBottomSheet__accepting_a_message_request">接受一則訊息請求</string>
     <!-- Signal connections sheet bullet point 3 -->
-    <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">系統聯絡人中存在對方</string>
+    <string name="SignalConnectionsBottomSheet__having_them_in_your_system_contacts">系統通訊錄中存在對方</string>
     <!-- Note at the bottom of the Signal connections sheet -->
     <string name="SignalConnectionsBottomSheet__your_connections_can_see_your_name">"你的人脈可以看見你的名稱和照片。除非你對他們隱藏，否則他們亦可看見「我的限時動態」中的貼文。"</string>
     <!-- Clickable option to add a viewer to a custom story -->
@@ -5617,7 +5709,7 @@
     <!-- Subtitle of initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__choose_who_can_see_posts_to_my_story_you_can_always_make_changes_in_settings">選擇誰可以看到「我的限時動態」貼文。你可以隨時在設定中作出更改。</string>
     <!-- All connections option for initial My Story settings configuration shown when sending to My Story for the first time -->
-    <string name="ChooseInitialMyStoryMembershipFragment__all_signal_connections">所有 Signal 的人脈</string>
+    <string name="ChooseInitialMyStoryMembershipFragment__all_signal_connections">所有 Signal 人脈</string>
     <!-- All connections except option for initial My Story settings configuration shown when sending to My Story for the first time -->
     <string name="ChooseInitialMyStoryMembershipFragment__all_except">所有人，除了…</string>
     <!-- Only with selected connections option for initial My Story settings configuration shown when sending to My Story for the first time -->
@@ -5840,11 +5932,11 @@
     <!-- Default label for bank selection -->
     <string name="IdealTransferDetailsFragment__choose_your_bank">選擇你的銀行</string>
     <!-- Dialog title shown when using iDEAL payment for setting up a monthly donation -->
-    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">Confirm your donation with %1$s</string>
+    <string name="IdealTransferDetailsFragment__confirm_your_donation_with_s">與 %1$s 確認你的捐款</string>
     <!-- Dialog warning shown when using iDEAL payment for setting up a monthly donation -->
-    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">To setup your recurring donation tap continue to confirm a €0,01 charge with your bank. This will be automatically refunded and allows your €5/month donation to debited from your account.</string>
+    <string name="IdealTransferDetailsFragment__monthly_ideal_warning">要設定你的定期捐款，請點選「繼續」以向銀行確認 €0.01 的費用。這筆款項將自動退還，並允許從你的帳戶中扣除每月 €5 的捐款。</string>
     <!-- Dialog button shown when using iDEAL payment for setting up a monthly donation to continue with the donation -->
-    <string name="IdealTransferDetailsFragment__continue">Continue</string>
+    <string name="IdealTransferDetailsFragment__continue">繼續</string>
 
     <!-- IdealTransferDetailsBankSelectionDialogFragment -->
     <!-- Title of the screen, displayed in the toolbar -->
@@ -5956,6 +6048,15 @@
     <string name="SetUpYourUsername__dismiss">解除</string>
     <!-- Displayed as an action on a megaphone which prompts user to set up a username -->
     <string name="SetUpYourUsername__learn_more">了解更多</string>
+
+    <!-- Displayed as a title on a megaphone which prompts user to set up a username -->
+    <string name="PnpLaunchMegaphone_title">新的連結方式</string>
+    <!-- Displayed as a description on a megaphone which prompts user to set up a username -->
+    <string name="PnpLaunchMegaphone_body">引入電話號碼隱私、自選用戶名稱和連結。</string>
+    <!-- Displayed as an action on a megaphone which prompts user to set up a username. Clicking it will dismiss the megaphone. -->
+    <string name="PnpLaunchMegaphone_dismiss">解除</string>
+    <!-- Displayed as an action on a megaphone which prompts user to set up a username. Clicking it will open a link. -->
+    <string name="PnpLaunchMegaphone_learn_more">了解更多</string>
 
     <!-- Text Formatting -->
     <!-- Popup menu label for applying bold style -->
@@ -6251,6 +6352,10 @@
     <string name="UsernameLinkSettings_reset_link_result_network_unavailable">你沒有使用網路連線。你的連結未能重設，請稍後再試。</string>
     <!-- Body of a dialog that is displayed when we failed to reset your username link because of a transient network issue. -->
     <string name="UsernameLinkSettings_reset_link_result_network_error">嘗試重設連結時發生網路錯誤。請稍後再試。</string>
+    <!-- Body of a dialog that is displayed when we failed to reset your username link because of an unknown error. -->
+    <string name="UsernameLinkSettings_reset_link_result_unknown_error">嘗試重設連結時發生未預期錯誤。請稍後再試。</string>
+    <!-- Body of a dialog that is displayed when we successfully reset you username link. -->
+    <string name="UsernameLinkSettings_reset_link_result_success">你的二維碼和連結已重設，並且已建立一個新的二維碼及連結。</string>
     <!-- Shown on the generated username qr code image to explain how to use it. -->
     <string name="UsernameLinkSettings_scan_this_qr_code">用你的手機掃描此二維碼，開始與我在 Signal 上聊天。</string>
 
@@ -6306,6 +6411,42 @@
     <string name="MonthlyDonationCanceled__renew_button">為定期贊助續期</string>
     <!-- Bottom sheet dialog shown when a monthly donation fails to renew, second button to dismiss the dialog entirely -->
     <string name="MonthlyDonationCanceled__not_now_button">現在不要</string>
+
+    <!-- FindByActivity -->
+    <!-- Title of activity when finding by username -->
+    <string name="FindByActivity__find_by_username">以用戶名稱搜尋</string>
+    <!-- Title of activity when finding by phone number -->
+    <string name="FindByActivity__find_by_phone_number">以電話號碼搜尋</string>
+    <!-- Title of screen to select a country code -->
+    <string name="FindByActivity__select_country_code">選取國家代碼</string>
+    <!-- Entry placeholder for find by username -->
+    <string name="FindByActivity__username">用戶名稱</string>
+    <!-- Entry placeholder for find by phone number -->
+    <string name="FindByActivity__phone_number">電話號碼</string>
+    <!-- Help text under user entry for find by username -->
+    <string name="FindByActivity__enter_username_description">輸入用戶名稱，後面跟著一個點及其配對數字。</string>
+    <!-- Content description for next action button -->
+    <string name="FindByActivity__next">下一步</string>
+    <!-- Placeholder text for search input for selecting country code -->
+    <string name="FindByActivity__search">搜尋</string>
+    <!-- Dialog title for invalid username -->
+    <string name="FindByActivity__invalid_username">用戶名稱無效</string>
+    <!-- Dialog title for invalid phone number -->
+    <string name="FindByActivity__invalid_phone_number">電話號碼無效</string>
+    <!-- Dialog title when phone number is not a registered signal user -->
+    <string name="FindByActivity__invite_to_signal">邀請加入 Signal</string>
+    <!-- Dialog title when username is not found -->
+    <string name="FindByActivity__username_not_found">找不到用戶名稱</string>
+    <!-- Dialog body for invalid username. Placeholder is the entered username. -->
+    <string name="FindByActivity__s_is_not_a_valid_username">%1$s 不是有效的用戶名稱。請確保你已輸入完整的用戶名稱，以及隨後的一組數字。</string>
+    <!-- Dialog body for an invalid phone number. Placeholder is the entered phone number. -->
+    <string name="FindByActivity__s_is_not_a_valid_phone_number">%1$s 不是有效的用戶名稱。請使用有效的電話號碼重試</string>
+    <!-- Dialog body for not found username -->
+    <string name="FindByActivity__s_is_not_a_signal_user">「%1$s」並非 Signal 使用者。請檢查用戶名稱，然後再試一次。</string>
+    <!-- Dialog body for not found phone number -->
+    <string name="FindByActivity__s_is_not_a_signal_user_would">%1$s 不是 Signal 用戶。你想向此號碼發出邀請嗎？</string>
+    <!-- Dialog action to invite the phone number to Signal -->
+    <string name="FindByActivity__invite">邀請</string>
 
     <!-- EOF -->
 </resources>
