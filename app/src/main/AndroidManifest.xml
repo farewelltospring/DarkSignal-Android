@@ -749,7 +749,7 @@
         android:exported="false"/>
 
     <activity
-        android:name=".backup.v2.ui.MessageBackupsFlowActivity"
+        android:name=".backup.v2.ui.subscription.MessageBackupsFlowActivity"
         android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
         android:exported="false"
         android:theme="@style/Signal.DayNight.NoActionBar"
@@ -831,6 +831,20 @@
         android:exported="false"/>
 
     <activity android:name=".registration.RegistrationNavigationActivity"
+              android:launchMode="singleTask"
+              android:theme="@style/Theme.Signal.DayNight.NoActionBar"
+              android:windowSoftInputMode="stateHidden"
+              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
+              android:exported="false"/>
+
+    <activity android:name=".registration.v2.ui.RegistrationV2Activity"
+              android:launchMode="singleTask"
+              android:theme="@style/Theme.Signal.DayNight.NoActionBar"
+              android:windowSoftInputMode="stateHidden"
+              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
+              android:exported="false"/>
+
+    <activity android:name=".restore.RestoreActivity"
               android:launchMode="singleTask"
               android:theme="@style/Theme.Signal.DayNight.NoActionBar"
               android:windowSoftInputMode="stateHidden"
@@ -933,10 +947,16 @@
         android:launchMode="singleTask"
         android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize">
 
-        <intent-filter>
+        <intent-filter tools:ignore="AppLinkUrlError">
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <data android:mimeType="vnd.android.cursor.item/vnd.org.thoughtcrime.securesms.call" />
+        </intent-filter>
+
+        <intent-filter tools:ignore="AppLinkUrlError">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="vnd.android.cursor.item/vnd.org.thoughtcrime.securesms.videocall" />
         </intent-filter>
 
     </activity>
@@ -962,7 +982,7 @@
               android:windowSoftInputMode="stateVisible|adjustResize"
               android:exported="false"/>
 
-    <activity android:name=".backup.v2.ui.MessageBackupsTestRestoreActivity"
+    <activity android:name=".backup.v2.ui.subscription.MessageBackupsTestRestoreActivity"
               android:theme="@style/TextSecure.LightRegistrationTheme"
               android:exported="false"/>
 
@@ -1101,6 +1121,12 @@
 
     <service
         android:enabled="true"
+        android:name=".service.webrtc.WebRtcCallService"
+        android:foregroundServiceType="camera|microphone"
+        android:exported="false"/>
+
+    <service
+        android:enabled="true"
         android:exported="false"
         android:name=".service.KeyCachingService" />
 
@@ -1160,6 +1186,10 @@
 
     <service
         android:name=".service.AttachmentProgressService"
+        android:exported="false"/>
+
+    <service
+        android:name=".service.BackupProgressService"
         android:exported="false"/>
 
     <service

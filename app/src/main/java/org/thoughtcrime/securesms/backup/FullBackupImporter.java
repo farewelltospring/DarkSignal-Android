@@ -37,6 +37,7 @@ import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.profiles.AvatarHelper;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.util.BackupUtil;
+import org.thoughtcrime.securesms.util.FeatureFlags;
 import org.thoughtcrime.securesms.util.Util;
 
 import java.io.ByteArrayOutputStream;

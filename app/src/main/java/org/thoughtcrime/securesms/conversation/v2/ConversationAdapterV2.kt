@@ -6,6 +6,9 @@
 package org.thoughtcrime.securesms.conversation.v2
 
 import android.text.TextUtils
+import android.view.GestureDetector
+import android.view.GestureDetector.SimpleOnGestureListener
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.text.HtmlCompat
@@ -384,6 +387,7 @@ class ConversationAdapterV2(
   private inner class OutgoingMediaViewHolder(itemView: View) : ConversationViewHolder<OutgoingMedia>(itemView) {
     override fun bind(model: OutgoingMedia) {
       bindable.setEventListener(clickListener)
+      bindable.setGestureDetector(gestureDetector)
 
       if (bindPayloadsIfAvailable()) {
         return
@@ -469,6 +473,19 @@ class ConversationAdapterV2(
     val bindable: BindableConversationItem
       get() = itemView as BindableConversationItem
 
+    val gestureDetector = GestureDetector(
+      context,
+      object : SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+          if (clickListener != null && selectedItems.isEmpty()) {
+            clickListener.onItemDoubleClick(getMultiselectPartForLatestTouch())
+            return true
+          }
+          return false
+        }
+      }
+    )
+
     override val root: ViewGroup = bindable.root
 
     protected val previousMessage: Optional<MessageRecord>
@@ -495,6 +512,8 @@ class ConversationAdapterV2(
         )
         true
       }
+
+      itemView.setOnTouchListener { _, event: MotionEvent -> gestureDetector.onTouchEvent(event) }
     }
 
     fun bindPayloadsIfAvailable(): Boolean {

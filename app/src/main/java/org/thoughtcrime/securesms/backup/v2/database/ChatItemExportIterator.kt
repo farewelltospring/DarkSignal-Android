@@ -6,7 +6,6 @@
 package org.thoughtcrime.securesms.backup.v2.database
 
 import android.database.Cursor
-import com.annimon.stream.Stream
 import okio.ByteString.Companion.toByteString
 import org.signal.core.util.Base64
 import org.signal.core.util.Base64.decode
@@ -17,14 +16,15 @@ import org.signal.core.util.requireBoolean
 import org.signal.core.util.requireInt
 import org.signal.core.util.requireLong
 import org.signal.core.util.requireString
+import org.thoughtcrime.securesms.attachments.Cdn
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment
-import org.thoughtcrime.securesms.backup.v2.proto.CallChatUpdate
+import org.thoughtcrime.securesms.backup.v2.BackupRepository.getMediaName
 import org.thoughtcrime.securesms.backup.v2.proto.ChatItem
 import org.thoughtcrime.securesms.backup.v2.proto.ChatUpdateMessage
 import org.thoughtcrime.securesms.backup.v2.proto.ExpirationTimerChatUpdate
 import org.thoughtcrime.securesms.backup.v2.proto.FilePointer
-import org.thoughtcrime.securesms.backup.v2.proto.GroupCallChatUpdate
-import org.thoughtcrime.securesms.backup.v2.proto.IndividualCallChatUpdate
+import org.thoughtcrime.securesms.backup.v2.proto.GroupCall
+import org.thoughtcrime.securesms.backup.v2.proto.IndividualCall
 import org.thoughtcrime.securesms.backup.v2.proto.MessageAttachment
 import org.thoughtcrime.securesms.backup.v2.proto.ProfileChangeChatUpdate
 import org.thoughtcrime.securesms.backup.v2.proto.Quote
@@ -36,6 +36,8 @@ import org.thoughtcrime.securesms.backup.v2.proto.SimpleChatUpdate
 import org.thoughtcrime.securesms.backup.v2.proto.StandardMessage
 import org.thoughtcrime.securesms.backup.v2.proto.Text
 import org.thoughtcrime.securesms.backup.v2.proto.ThreadMergeChatUpdate
+import org.thoughtcrime.securesms.database.AttachmentTable
+import org.thoughtcrime.securesms.database.CallTable
 import org.thoughtcrime.securesms.database.GroupReceiptTable
 import org.thoughtcrime.securesms.database.MessageTable
 import org.thoughtcrime.securesms.database.MessageTypes
@@ -63,7 +65,6 @@ import java.io.Closeable
 import java.io.IOException
 import java.util.LinkedList
 import java.util.Queue
-import java.util.UUID
 import org.thoughtcrime.securesms.backup.v2.proto.BodyRange as BackupBodyRange
 
 /**
@@ -73,7 +74,7 @@ import org.thoughtcrime.securesms.backup.v2.proto.BodyRange as BackupBodyRange
  *
  * All of this complexity is hidden from the user -- they just get a normal iterator interface.
  */
-class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: Int) : Iterator<ChatItem>, Closeable {
+class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: Int, private val archiveMedia: Boolean) : Iterator<ChatItem>, Closeable {
 
   companion object {
     private val TAG = Log.tag(ChatItemExportIterator::class.java)
@@ -136,9 +137,10 @@ class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: 
         MessageTypes.isPaymentsRequestToActivate(record.type) -> builder.updateMessage = ChatUpdateMessage(simpleUpdate = SimpleChatUpdate(type = SimpleChatUpdate.Type.PAYMENT_ACTIVATION_REQUEST))
         MessageTypes.isExpirationTimerUpdate(record.type) -> {
           builder.updateMessage = ChatUpdateMessage(expirationTimerChange = ExpirationTimerChatUpdate(record.expiresIn.toInt()))
-          builder.expiresInMs = null
+          builder.expiresInMs = 0
         }
         MessageTypes.isProfileChange(record.type) -> {
+          if (record.body == null) continue
           builder.updateMessage = ChatUpdateMessage(
             profileChange = try {
               val decoded: ByteArray = Base64.decode(record.body!!)
@@ -196,45 +198,115 @@ class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: 
           }
         }
         MessageTypes.isCallLog(record.type) -> {
+          builder.sms = false
           val call = calls.getCallByMessageId(record.id)
           if (call != null) {
-            builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callId = call.callId))
+            if (call.type == CallTable.Type.GROUP_CALL) {
+              builder.updateMessage = ChatUpdateMessage(
+                groupCall = GroupCall(
+                  callId = record.id,
+                  state = when (call.event) {
+                    CallTable.Event.MISSED -> GroupCall.State.MISSED
+                    CallTable.Event.ONGOING -> GroupCall.State.GENERIC
+                    CallTable.Event.ACCEPTED -> GroupCall.State.ACCEPTED
+                    CallTable.Event.NOT_ACCEPTED -> GroupCall.State.GENERIC
+                    CallTable.Event.MISSED_NOTIFICATION_PROFILE -> GroupCall.State.MISSED_NOTIFICATION_PROFILE
+                    CallTable.Event.DELETE -> continue
+                    CallTable.Event.GENERIC_GROUP_CALL -> GroupCall.State.GENERIC
+                    CallTable.Event.JOINED -> GroupCall.State.JOINED
+                    CallTable.Event.RINGING -> GroupCall.State.RINGING
+                    CallTable.Event.DECLINED -> GroupCall.State.DECLINED
+                    CallTable.Event.OUTGOING_RING -> GroupCall.State.OUTGOING_RING
+                  },
+                  ringerRecipientId = call.ringerRecipient?.toLong(),
+                  startedCallAci = if (call.ringerRecipient != null) SignalDatabase.recipients.getRecord(call.ringerRecipient).aci?.toByteString() else null,
+                  startedCallTimestamp = call.timestamp
+                )
+              )
+            } else if (call.type != CallTable.Type.AD_HOC_CALL) {
+              builder.updateMessage = ChatUpdateMessage(
+                individualCall = IndividualCall(
+                  callId = call.callId,
+                  type = if (call.type == CallTable.Type.VIDEO_CALL) IndividualCall.Type.VIDEO_CALL else IndividualCall.Type.AUDIO_CALL,
+                  direction = if (call.direction == CallTable.Direction.INCOMING) IndividualCall.Direction.INCOMING else IndividualCall.Direction.OUTGOING,
+                  state = when (call.event) {
+                    CallTable.Event.MISSED -> IndividualCall.State.MISSED
+                    CallTable.Event.MISSED_NOTIFICATION_PROFILE -> IndividualCall.State.MISSED_NOTIFICATION_PROFILE
+                    CallTable.Event.ACCEPTED -> IndividualCall.State.ACCEPTED
+                    CallTable.Event.NOT_ACCEPTED -> IndividualCall.State.NOT_ACCEPTED
+                    else -> IndividualCall.State.UNKNOWN_STATE
+                  },
+                  startedCallTimestamp = call.timestamp
+                )
+              )
+            } else {
+              continue
+            }
           } else {
             when {
               MessageTypes.isMissedAudioCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.MISSED_INCOMING_AUDIO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.AUDIO_CALL,
+                    state = IndividualCall.State.MISSED,
+                    direction = IndividualCall.Direction.INCOMING
+                  )
+                )
               }
               MessageTypes.isMissedVideoCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.MISSED_INCOMING_VIDEO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.VIDEO_CALL,
+                    state = IndividualCall.State.MISSED,
+                    direction = IndividualCall.Direction.INCOMING
+                  )
+                )
               }
               MessageTypes.isIncomingAudioCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.INCOMING_AUDIO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.AUDIO_CALL,
+                    state = IndividualCall.State.ACCEPTED,
+                    direction = IndividualCall.Direction.INCOMING
+                  )
+                )
               }
               MessageTypes.isIncomingVideoCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.INCOMING_VIDEO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.VIDEO_CALL,
+                    state = IndividualCall.State.ACCEPTED,
+                    direction = IndividualCall.Direction.INCOMING
+                  )
+                )
               }
               MessageTypes.isOutgoingAudioCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.OUTGOING_AUDIO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.AUDIO_CALL,
+                    state = IndividualCall.State.ACCEPTED,
+                    direction = IndividualCall.Direction.OUTGOING
+                  )
+                )
               }
               MessageTypes.isOutgoingVideoCall(record.type) -> {
-                builder.updateMessage = ChatUpdateMessage(callingMessage = CallChatUpdate(callMessage = IndividualCallChatUpdate(type = IndividualCallChatUpdate.Type.OUTGOING_VIDEO_CALL)))
+                builder.updateMessage = ChatUpdateMessage(
+                  individualCall = IndividualCall(
+                    type = IndividualCall.Type.VIDEO_CALL,
+                    state = IndividualCall.State.ACCEPTED,
+                    direction = IndividualCall.Direction.OUTGOING
+                  )
+                )
               }
               MessageTypes.isGroupCall(record.type) -> {
                 try {
                   val groupCallUpdateDetails = GroupCallUpdateDetailsUtil.parse(record.body)
-
-                  val joinedMembers = Stream.of(groupCallUpdateDetails.inCallUuids)
-                    .map { uuid: String? -> UuidUtil.parseOrNull(uuid) }
-                    .withoutNulls()
-                    .map { obj: UUID? -> ACI.from(obj!!).toByteString() }
-                    .toList()
                   builder.updateMessage = ChatUpdateMessage(
-                    callingMessage = CallChatUpdate(
-                      groupCall = GroupCallChatUpdate(
-                        startedCallAci = ACI.from(UuidUtil.parseOrThrow(groupCallUpdateDetails.startedCallUuid)).toByteString(),
-                        startedCallTimestamp = groupCallUpdateDetails.startedCallTimestamp,
-                        inCallAcis = joinedMembers
-                      )
+                    groupCall = GroupCall(
+                      state = GroupCall.State.GENERIC,
+                      startedCallAci = ACI.from(UuidUtil.parseOrThrow(groupCallUpdateDetails.startedCallUuid)).toByteString(),
+                      startedCallTimestamp = groupCallUpdateDetails.startedCallTimestamp,
+                      endedCallTimestamp = groupCallUpdateDetails.endedCallTimestamp
                     )
                   )
                 } catch (exception: java.lang.Exception) {
@@ -282,12 +354,13 @@ class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: 
       chatId = record.threadId
       authorId = record.fromRecipientId
       dateSent = record.dateSent
-      expireStartDate = if (record.expireStarted > 0) record.expireStarted else null
-      expiresInMs = if (record.expiresIn > 0) record.expiresIn else null
+      expireStartDate = if (record.expireStarted > 0) record.expireStarted else 0
+      expiresInMs = if (record.expiresIn > 0) record.expiresIn else 0
       revisions = emptyList()
       sms = !MessageTypes.isSecureType(record.type)
-
-      if (MessageTypes.isOutgoingMessageType(record.type)) {
+      if (MessageTypes.isCallLog(record.type)) {
+        directionless = ChatItem.DirectionlessMessageDetails()
+      } else if (MessageTypes.isOutgoingMessageType(record.type)) {
         outgoing = ChatItem.OutgoingMessageDetails(
           sendStatus = record.toBackupSendStatus(groupReceipts)
         )
@@ -354,24 +427,46 @@ class ChatItemExportIterator(private val cursor: Cursor, private val batchSize: 
   }
 
   private fun DatabaseAttachment.toBackupAttachment(): MessageAttachment {
+    val builder = FilePointer.Builder()
+    builder.contentType = contentType
+    builder.incrementalMac = incrementalDigest?.toByteString()
+    builder.incrementalMacChunkSize = incrementalMacChunkSize
+    builder.fileName = fileName
+    builder.width = width
+    builder.height = height
+    builder.caption = caption
+    builder.blurHash = blurHash?.hash
+
+    if (remoteKey.isNullOrBlank() || remoteDigest == null || size == 0L) {
+      builder.invalidAttachmentLocator = FilePointer.InvalidAttachmentLocator()
+    } else {
+      if (archiveMedia) {
+        builder.backupLocator = FilePointer.BackupLocator(
+          mediaName = archiveMediaName ?: this.getMediaName().toString(),
+          cdnNumber = if (archiveMediaName != null) archiveCdn else Cdn.CDN_3.cdnNumber, // TODO (clark): Update when new proto with optional cdn is landed
+          key = decode(remoteKey).toByteString(),
+          size = this.size.toInt(),
+          digest = remoteDigest.toByteString()
+        )
+      } else {
+        if (remoteLocation.isNullOrBlank()) {
+          builder.invalidAttachmentLocator = FilePointer.InvalidAttachmentLocator()
+        } else {
+          builder.attachmentLocator = FilePointer.AttachmentLocator(
+            cdnKey = this.remoteLocation,
+            cdnNumber = this.cdn.cdnNumber,
+            uploadTimestamp = this.uploadTimestamp,
+            key = decode(remoteKey).toByteString(),
+            size = this.size.toInt(),
+            digest = remoteDigest.toByteString()
+          )
+        }
+      }
+    }
     return MessageAttachment(
-      pointer = FilePointer(
-        attachmentLocator = FilePointer.AttachmentLocator(
-          cdnKey = this.remoteLocation ?: "",
-          cdnNumber = this.cdnNumber,
-          uploadTimestamp = this.uploadTimestamp
-        ),
-        key = if (remoteKey != null) decode(remoteKey).toByteString() else null,
-        contentType = this.contentType,
-        size = this.size.toInt(),
-        incrementalMac = this.incrementalDigest?.toByteString(),
-        incrementalMacChunkSize = this.incrementalMacChunkSize,
-        fileName = this.fileName,
-        width = this.width,
-        height = this.height,
-        caption = this.caption,
-        blurHash = this.blurHash?.hash
-      )
+      pointer = builder.build(),
+      wasDownloaded = this.transferState == AttachmentTable.TRANSFER_PROGRESS_DONE || this.transferState == AttachmentTable.TRANSFER_NEEDS_RESTORE,
+      flag = if (voiceNote) MessageAttachment.Flag.VOICE_MESSAGE else if (videoGif) MessageAttachment.Flag.GIF else if (borderless) MessageAttachment.Flag.BORDERLESS else MessageAttachment.Flag.NONE
     )
   }
 

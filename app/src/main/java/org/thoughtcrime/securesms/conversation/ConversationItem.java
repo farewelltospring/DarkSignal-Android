@@ -40,6 +40,7 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.TouchDelegate;
@@ -236,6 +237,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
   private                Stub<GiftMessageView>                   giftViewStub;
   private                Stub<PaymentMessageView>                paymentViewStub;
   private @Nullable      EventListener                           eventListener;
+  private @Nullable      GestureDetector                         gestureDetector;
 
   private int     defaultBubbleColor;
   private int     defaultBubbleColorForWallpaper;
@@ -256,6 +258,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
   private final UrlClickListener                urlClickListener                = new UrlClickListener();
   private final Rect                            thumbnailMaskingRect            = new Rect();
   private final TouchDelegateChangedListener    touchDelegateChangedListener    = new TouchDelegateChangedListener();
+  private final DoubleTapEditTouchListener      doubleTapEditTouchListener      = new DoubleTapEditTouchListener();
   private final GiftMessageViewCallback         giftMessageViewCallback         = new GiftMessageViewCallback();
 
   private final Context context;
@@ -351,6 +354,7 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
 
     setOnClickListener(new ClickListener(null));
 
+    bodyText.setOnTouchListener(doubleTapEditTouchListener);
     bodyText.setOnLongClickListener(passthroughClickListener);
     bodyText.setOnClickListener(passthroughClickListener);
     footer.setOnTouchDelegateChangedListener(touchDelegateChangedListener);
@@ -494,6 +498,11 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
   @Override
   public void setEventListener(@Nullable EventListener eventListener) {
     this.eventListener = eventListener;
+  }
+
+  @Override
+  public void setGestureDetector(GestureDetector gestureDetector) {
+    this.gestureDetector = gestureDetector;
   }
 
   public boolean disallowSwipe(float downX, float downY) {
@@ -2455,6 +2464,16 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
     }
   }
 
+  private class DoubleTapEditTouchListener implements View.OnTouchListener {
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+      if (gestureDetector != null && batchSelected.isEmpty()) {
+        return gestureDetector.onTouchEvent(event);
+      }
+      return false;
+    }
+  }
+
   private class AttachmentDownloadClickListener implements SlidesClickedListener {
     @Override
     public void onClick(View v, final List<Slide> slides) {
@@ -2467,7 +2486,8 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
         for (Slide slide : slides) {
           ApplicationDependencies.getJobManager().add(new AttachmentDownloadJob(messageRecord.getId(),
                                                                                 ((DatabaseAttachment) slide.asAttachment()).attachmentId,
-                                                                                true));
+                                                                                true,
+                                                                                false));
         }
       }
     }
@@ -2493,7 +2513,8 @@ public final class ConversationItem extends RelativeLayout implements BindableCo
           setup(v, slide);
           jobManager.add(new AttachmentDownloadJob(messageRecord.getId(),
                                                    attachmentId,
-                                                   true));
+                                                   true,
+                                                   false));
           jobManager.addListener(queue, (job, jobState) -> {
             if (jobState.isComplete()) {
               cleanup();

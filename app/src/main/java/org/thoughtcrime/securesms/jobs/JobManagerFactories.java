@@ -26,6 +26,7 @@ import org.thoughtcrime.securesms.jobmanager.impl.NotInCallConstraint;
 import org.thoughtcrime.securesms.jobmanager.impl.NotInCallConstraintObserver;
 import org.thoughtcrime.securesms.jobmanager.impl.SqlCipherMigrationConstraint;
 import org.thoughtcrime.securesms.jobmanager.impl.SqlCipherMigrationConstraintObserver;
+import org.thoughtcrime.securesms.jobmanager.impl.WifiConstraint;
 import org.thoughtcrime.securesms.jobmanager.migrations.DonationReceiptRedemptionJobMigration;
 import org.thoughtcrime.securesms.jobmanager.migrations.PushDecryptMessageJobEnvelopeMigration;
 import org.thoughtcrime.securesms.jobmanager.migrations.PushProcessMessageJobMigration;
@@ -100,6 +101,9 @@ public final class JobManagerFactories {
     return new HashMap<String, Job.Factory>() {{
       put(AccountConsistencyWorkerJob.KEY,           new AccountConsistencyWorkerJob.Factory());
       put(AnalyzeDatabaseJob.KEY,                    new AnalyzeDatabaseJob.Factory());
+      put(ArchiveAttachmentJob.KEY,                  new ArchiveAttachmentJob.Factory());
+      put(ArchiveAttachmentBackfillJob.KEY,          new ArchiveAttachmentBackfillJob.Factory());
+      put(ArchiveThumbnailUploadJob.KEY,             new ArchiveThumbnailUploadJob.Factory());
       put(AttachmentCompressionJob.KEY,              new AttachmentCompressionJob.Factory());
       put(AttachmentCopyJob.KEY,                     new AttachmentCopyJob.Factory());
       put(AttachmentDownloadJob.KEY,                 new AttachmentDownloadJob.Factory());
@@ -109,6 +113,9 @@ public final class JobManagerFactories {
       put(AutomaticSessionResetJob.KEY,              new AutomaticSessionResetJob.Factory());
       put(AvatarGroupsV1DownloadJob.KEY,             new AvatarGroupsV1DownloadJob.Factory());
       put(AvatarGroupsV2DownloadJob.KEY,             new AvatarGroupsV2DownloadJob.Factory());
+      put(BackupMessagesJob.KEY,                     new BackupMessagesJob.Factory());
+      put(BackupRestoreJob.KEY,                      new BackupRestoreJob.Factory());
+      put(BackupRestoreMediaJob.KEY,                 new BackupRestoreMediaJob.Factory());
       put(BoostReceiptRequestResponseJob.KEY,        new BoostReceiptRequestResponseJob.Factory());
       put(CallLinkPeekJob.KEY,                       new CallLinkPeekJob.Factory());
       put(CallLinkUpdateSendJob.KEY,                 new CallLinkUpdateSendJob.Factory());
@@ -193,6 +200,7 @@ public final class JobManagerFactories {
       put(ResumableUploadSpecJob.KEY,                new ResumableUploadSpecJob.Factory());
       put(RequestGroupV2InfoWorkerJob.KEY,           new RequestGroupV2InfoWorkerJob.Factory());
       put(RequestGroupV2InfoJob.KEY,                 new RequestGroupV2InfoJob.Factory());
+      put(RestoreAttachmentJob.KEY,                  new RestoreAttachmentJob.Factory());
       put(RetrieveProfileAvatarJob.KEY,              new RetrieveProfileAvatarJob.Factory());
       put(RetrieveProfileJob.KEY,                    new RetrieveProfileJob.Factory());
       put(RetrieveRemoteAnnouncementsJob.KEY,        new RetrieveRemoteAnnouncementsJob.Factory());
@@ -218,6 +226,7 @@ public final class JobManagerFactories {
       put(StoryOnboardingDownloadJob.KEY,            new StoryOnboardingDownloadJob.Factory());
       put(SubmitRateLimitPushChallengeJob.KEY,       new SubmitRateLimitPushChallengeJob.Factory());
       put(Svr2MirrorJob.KEY,                         new Svr2MirrorJob.Factory());
+      put(SyncArchivedMediaJob.KEY,                  new SyncArchivedMediaJob.Factory());
       put(ThreadUpdateJob.KEY,                       new ThreadUpdateJob.Factory());
       put(TrimThreadJob.KEY,                         new TrimThreadJob.Factory());
       put(TypingSendJob.KEY,                         new TypingSendJob.Factory());
@@ -332,6 +341,7 @@ public final class JobManagerFactories {
       put(NetworkOrCellServiceConstraint.LEGACY_KEY, new NetworkOrCellServiceConstraint.Factory(application));
       put(NotInCallConstraint.KEY,                   new NotInCallConstraint.Factory());
       put(SqlCipherMigrationConstraint.KEY,          new SqlCipherMigrationConstraint.Factory(application));
+      put(WifiConstraint.KEY,                        new WifiConstraint.Factory(application));
     }};
   }
 
