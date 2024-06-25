@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2024 Signal Messenger, LLC
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
 <!-- smartling.instruction_comments_enabled = on -->
 <resources>
   <!-- Removed by excludeNonTranslatables <string name="app_name" translatable="false">Signal</string> -->
@@ -226,37 +230,37 @@
     <string name="CameraXFragment_change_camera_description">Schimbă camera</string>
     <string name="CameraXFragment_open_gallery_description">Deschide galerie</string>
     <!-- Button text asking for access to camera permissions -->
-    <string name="CameraXFragment_allow_access">Allow access</string>
+    <string name="CameraXFragment_allow_access">Permite accesul</string>
     <!-- Dialog title asking users for camera and microphone permission -->
-    <string name="CameraXFragment_allow_access_camera_microphone">Allow access to your camera and microphone</string>
+    <string name="CameraXFragment_allow_access_camera_microphone">Permite accesul la microfon și camera foto</string>
     <!-- Dialog title asking users for camera permission -->
-    <string name="CameraXFragment_allow_access_camera">Allow access to your camera</string>
+    <string name="CameraXFragment_allow_access_camera">Permite accesul la camera foto</string>
     <!-- Dialog title asking users for microphone permission -->
-    <string name="CameraXFragment_allow_access_microphone">Allow access to your microphone</string>
+    <string name="CameraXFragment_allow_access_microphone">Permite acces la microfonul tău</string>
     <!-- Text explaining why Signal needs camera access in order to take photos -->
-    <string name="CameraXFragment_to_capture_photos_allow_camera">To capture photos, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_allow_camera">Ca să realizezi fotografii, permite accesul Signal la camera foto.</string>
     <!-- Text explaining why Signal needs camera access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">To capture photos and video, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">Pentru a captura poze sau filme, permite aplicației Signal să acceseze camera.</string>
     <!-- Text explaining why Signal needs camera and microphone access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">To capture photos and video, allow Signal access to the camera and microphone.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">Ca să realizezi poze sau filme, permite aplicației Signal să acceseze camera și microfonul.</string>
     <!-- Text explaining why Signal needs microphone access to take videos -->
-    <string name="CameraXFragment_to_capture_videos_with_sound">To capture videos with sound, allow Signal access to your microphone.</string>
+    <string name="CameraXFragment_to_capture_videos_with_sound">Ca să realizezi videoclipuri cu sunet, permite accesul la microfonul Signal.</string>
     <!-- Text explaining why Signal needs camera access to scan QR codes -->
-    <string name="CameraXFragment_to_scan_qr_code_allow_camera">To scan a QR code, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_scan_qr_code_allow_camera">Ca să scanezi un cod QR, permite accesul Signal la cameră.</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when capturing photos -->
-    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">Signal needs camera access to capture photos</string>
+    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">Signal are nevoie de acces la cameră pentru a captura fotografii</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when scanning QR codes -->
-    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">Signal needs camera access to scan QR codes</string>
+    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">Signal are nevoie de acces la cameră pentru a scana codurile QR</string>
     <!-- Toast dialog explaining why Signal needs microphone permissions -->
-    <string name="CameraXFragment_signal_needs_microphone_access_video">Signal needs microphone access to capture video</string>
+    <string name="CameraXFragment_signal_needs_microphone_access_video">Signal are nevoie de acces la microfon pentru a captura video</string>
     <!-- Dialog description that explains the steps needed to give camera permission -->
-    <string name="CameraXFragment_to_capture_photos">To capture photos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos">Ca să realizezi fotografii în Signal:</string>
     <!-- Dialog description that explains the steps needed to give camera and microphone permission -->
-    <string name="CameraXFragment_to_capture_photos_videos">To capture photos and videos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos_videos">Ca să realizezi fotografii și clipuri video în Signal:</string>
     <!-- Dialog description that explains the steps needed to give microphone permission -->
-    <string name="CameraXFragment_to_capture_videos">To capture videos with sound:</string>
+    <string name="CameraXFragment_to_capture_videos">Ca să realizezi videoclipuri cu sunet:</string>
     <!-- Dialog description that explains the steps needed to give Signal camera permissions -->
-    <string name="CameraXFragment_to_scan_qr_codes">To scan QR codes:</string>
+    <string name="CameraXFragment_to_scan_qr_codes">Ca să scanezi coduri QR:</string>
 
     <!-- CameraContacts -->
     <string name="CameraContacts_recent_contacts">Contacte recente</string>
@@ -328,8 +332,8 @@
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">Mesaj %1$s</string>
-    <string name="ContactsDatabase_signal_call_s">Signal Voice Call %1$s</string>
-    <string name="ContactsDatabase_signal_video_call_s">Signal Video Call %1$s</string>
+    <string name="ContactsDatabase_signal_call_s">Apel vocal Signal %1$s</string>
+    <string name="ContactsDatabase_signal_video_call_s">Apel video Signal %1$s</string>
 
     <!-- ContactNameEditActivity -->
     <!-- Toolbar title for contact name edit activity -->
@@ -554,6 +558,8 @@
     <string name="ConversationFragment_delete_for_everyone">Șterge pentru toată lumea</string>
     <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
     <string name="ConversationFragment_delete_on_this_device">Șterge pe acest dispozitiv</string>
+    <!-- Dialog button for deleting one or more note-to-self messages that will be sync\'d to other devices -->
+    <string name="ConversationFragment_delete">Șterge</string>
     <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
     <string name="ConversationFragment_delete_everywhere">Șterge de peste tot</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">Acest mesaj va fi șters pentru toți participanții la conversație dacă aceștia folosesc o versiune recentă Signal. Participanții vor putea vedea că ai șters mesajul.</string>
@@ -657,6 +663,12 @@
         <item quantity="one">Această acțiune va șterge permanent conversația selectată.</item>
         <item quantity="few">Această acțiune va șterge permanent toate cele %1$d conversații selectate.</item>
         <item quantity="other">Această acțiune va șterge permanent toate cele %1$d de conversații selectate.</item>
+    </plurals>
+    <!-- Dialog message shown when deleting one to many conversations from the chat list and the user has a linked device -->
+    <plurals name="ConversationListFragment_this_will_permanently_delete_all_n_selected_conversations_linked_device">
+        <item quantity="one">Acest lucru va elimina definitiv conversația selectată de pe toate dispozitivele tale.</item>
+        <item quantity="few">Acest lucru va elimina definitiv toate cele %1$d conversații selectate de pe toate dispozitivele tale.</item>
+        <item quantity="other">Acest lucru va elimina definitiv toate cele %1$d de conversații selectate de pe toate dispozitivele tale.</item>
     </plurals>
     <string name="ConversationListFragment_deleting">Se șterge</string>
     <plurals name="ConversationListFragment_deleting_selected_conversations">
@@ -866,6 +878,61 @@
     <string name="DecryptionFailedDialog_chat_session_refreshed">Sesiunea conversației a fost resetată</string>
     <string name="DecryptionFailedDialog_signal_uses_end_to_end_encryption">Signal folosește criptare integrală și câteodată va avea nevoie să reîmprospăteze sesiunile de conversație. Acest lucru nu va afecta securitatea conversațiilor dar s-ar putea să fi ratat un mesaj de la acest contact și ai putea să-l rogi să-l retrimită.</string>
 
+    <!-- LinkDeviceFragment -->
+    <!-- Description for how Signal will work with a linked device (eg desktop, iPad) -->
+    <string name="LinkDeviceFragment__use_signal_on_desktop_ipad">Folosește Signal pe desktop sau pe iPad. Mesajele tale se vor sincroniza cu dispozitivele asociate.</string>
+    <!-- Button prompting users to link a new device to their account -->
+    <string name="LinkDeviceFragment__link_a_new_device">Asociază un dispozitiv nou</string>
+    <!-- Text explaining that on linked devices, messages will be encrypted where %s will be replaced with an image-->
+    <string name="LinkDeviceFragment__messages_and_chat_info_are_protected">%1$s Informațiile privind conversațiile și mesajele sunt protejate prin criptare end-to-end pe toate dispozitivele</string>
+    <!-- Bottom sheet title explaining how Signal works on a linked device -->
+    <string name="LinkDeviceFragment__signal_on_desktop_ipad">Signal on desktop or iPad</string>
+    <!-- Bottom sheet description explaining that messages on linked devices are private -->
+    <string name="LinkDeviceFragment__all_messaging_is_private">Toate mesajele de pe dispozitivele conectate sunt private</string>
+    <!-- Bottom sheet description explaining that future messages on linked devices will be in sync with your phone but previous messages will not appear -->
+    <string name="LinkDeviceFragment__signal_messages_are_synchronized">Mesajele Signal sunt sincronizate cu Signal de pe telefonul mobil după ce acesta este asociat. Istoricul mesajelor anterioare nu va apărea.</string>
+    <!-- Bottom sheet description explaining that for non-desktop/iPad devices, they should go to %s to download Signal where %s is Signal\'s website -->
+    <string name="LinkDeviceFragment__on_other_device_visit_signal">Pe celălalt dispozitiv, vizitează %1$s pentru a instala Signal</string>
+  <!-- Removed by excludeNonTranslatables <string name="LinkDeviceFragment__signal_download_url" translatable="false">signal.org/download</string> -->
+    <!-- Header title listing out current linked devices -->
+    <string name="LinkDeviceFragment__my_linked_devices">Dispozitivele mele asociate</string>
+    <!-- Dialog confirmation to unlink a device -->
+    <string name="LinkDeviceFragment__unlink">Disociază</string>
+    <!-- Toast message indicating a device has been unlinked where %s is the name of the device -->
+    <string name="LinkDeviceFragment__s_unlinked">%1$s fără asociere</string>
+    <!-- Progress dialog message indicating that a device is currently being linked with an account -->
+    <string name="LinkDeviceFragment__linking_device">Se asociază dispozitivul…</string>
+    <!-- Toast message shown after a device has been linked -->
+    <string name="LinkDeviceFragment__device_approved">Dispozitiv aprobat</string>
+    <!-- Progress dialog message indicating that the list of linked devices is currently loading -->
+    <string name="LinkDeviceFragment__loading">Se încarcă…</string>
+    <!-- Text message shown when the user has no linked devices -->
+    <string name="LinkDeviceFragment__no_linked_devices">Nu există dispozitive asociate</string>
+    <!-- Title on biometrics prompt explaining what biometrics are being used for -->
+    <string name="LinkDeviceFragment__unlock_to_link">Unlock to link a device</string>
+
+    <!-- AddLinkDeviceFragment -->
+    <!-- Description text shown on the QR code scanner when linking a device -->
+    <string name="AddLinkDeviceFragment__scan_the_qr_code">Scanează codul QR afișat pe dispozitiv pentru a face asocierea.</string>
+    <!-- Bottom sheet title telling users to scan a qr code -->
+    <string name="AddLinkDeviceFragment__scan_qr_code">Scanează codul QR</string>
+    <!-- Bottom sheet description telling users how to scan a qr code -->
+    <string name="AddLinkDeviceFragment__use_this_device_to_scan_qr_code">Folosește acest dispozitiv pentru a scana codul QR afișat pe dispozitivul pe care dorești să îl conectezi</string>
+    <!-- Confirmation button to dismiss bottom sheet dialog -->
+    <string name="AddLinkDeviceFragment__okay">Okay</string>
+    <!-- Dialog text describing the consequences of linking a device -->
+    <string name="AddLinkDeviceFragment__this_device_will_see_your_groups_contacts">Acest dispozitiv va putea vedea grupurile și contactele tale, accesa conversațiile și să trimită mesaje în numele tău.</string>
+    <!-- Bottom sheet title telling users to complete the linking process on the other device  -->
+    <string name="AddLinkDeviceFragment__finish_linking_on_other_device">Finalizează asocierea pe celălalt dispozitiv</string>
+    <!-- Bottom sheet description telling users to complete the linking process -->
+    <string name="AddLinkDeviceFragment__finish_linking_signal">Finalizează asocierea Signal pe celălalt dispozitiv.</string>
+    <!-- Title of dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__linking_device_failed">Asocierea Dispozitivului a Eșuat</string>
+    <!-- Text shown in a dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__this_qr_code_not_valid">Acest cod QR nu este valid. Te rugăm să te asiguri că scanezi codul QR afișat pe dispozitivul pe care vrei să-l conectezi.</string>
+    <!-- Button in dialog to retry linking a device with a qr code -->
+    <string name="AddLinkDeviceFragment__retry">Încearcă din nou</string>
+
     <!-- DeviceListActivity -->
     <string name="DeviceListActivity_unlink_s">Disociez \'%1$s\'?</string>
     <string name="DeviceListActivity_by_unlinking_this_device_it_will_no_longer_be_able_to_send_or_receive">Prin disocierea acestui dispozitiv, nu va mai putea trimite și primi mesaje.</string>
@@ -1064,10 +1131,11 @@
     <!-- Button to continue to try and disable battery saver -->
     <string name="PromptBatterySaverBottomSheet__continue">Continuă</string>
     <!-- Button to dismiss battery saver dialog prompt-->
-    <string name="PromptBatterySaverBottomSheet__dismiss">Revocare</string>
+    <string name="PromptBatterySaverBottomSheet__no_thanks">No thanks</string>
+  <!-- Removed by excludeNonTranslatables <string name="PromptBatterySaverBottomSheet__learn_more_url" translatable="false">https://support.signal.org/hc/articles/360007318711#android_notifications_troubleshooting</string> -->
 
     <!-- PendingMembersActivity -->
-    <string name="PendingMembersActivity_pending_group_invites">Invitații la grup în așteptare</string>
+    <string name="PendingMembersActivity_pending_group_invites">Cereri și invitații</string>
     <string name="PendingMembersActivity_requests">Solicitări</string>
     <string name="PendingMembersActivity_invites">Invitații</string>
     <string name="PendingMembersActivity_people_you_invited">Persoane pe care le-ai invitat</string>
@@ -1680,6 +1748,14 @@
     <string name="MessageRecord_you_activated_payments">Ai activat Plăți</string>
     <!-- Message to inform sender that recipient can now accept payments -->
     <string name="MessageRecord_can_accept_payments">%1$s poate să accepte acum Plăți</string>
+    <!-- Message shown to inform user that a payment is missing details due to restore -->
+    <string name="MessageRecord_payments_restore_tombstone">Detaliile de plată nu sunt disponibile</string>
+    <!-- Message shown to inform user to tap the payment to learn more about why the details arent available -->
+    <string name="MessageRecord_payments_restore_tombstone_tap_more">Apasă pentru detalii</string>
+    <!-- Title for dialog explaining why a specific mobile coin payment does not have any transaction details -->
+    <string name="PaymentTombstoneLearnMoreDialog_title">Detaliile de plată nu sunt disponibile</string>
+    <!-- Message for dialog explaining why a specific mobile coin payment does not have any transaction details because it was restored from a backup-->
+    <string name="PaymentTombstoneLearnMoreDialog_message">Detaliile acestei plăți nu sunt disponibile deoarece mesajele tale au fost restaurate dintr-o sursă care nu conținea acest istoric de plăți. Acest lucru nu afectează soldul portofelului tău sau situația plăților anterioare.</string>
 
     <!-- Group Calling update messages -->
     <!-- Chat log text for an ongoing group call that has one participant with a placeholder for the short display name of the user that joined and a placeholder for formatted time -->
@@ -1741,6 +1817,8 @@
     <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Nu mai poți să trimiți mesaje SMS în Signal. Invită pe %1$s pe Signal ca să continui conversația aici.</string>
     <!-- Body for quote when message being quoted is an in-app payment message -->
     <string name="MessageRecord__payment_s">Plată: %1$s</string>
+    <!-- Body for quote when message being quoted is an in-app payment message tombstone without an amount -->
+    <string name="MessageRecord__payment_tombstone">Plată</string>
     <!-- Update message shown in chat after reporting it as spam -->
     <string name="MessageRecord_reported_as_spam">Raportat ca spam</string>
     <!-- Update message shown in chat after accept a message request -->
@@ -1930,7 +2008,8 @@
     <string name="RedPhone_ringing">Sună…</string>
     <string name="RedPhone_busy">Ocupat</string>
     <string name="RedPhone_recipient_unavailable">Destinatar indisponibil</string>
-    <string name="RedPhone_network_failed">Eroare de rețea!</string>
+    <!-- Error message shown during a call when a fatal network error occurs. -->
+    <string name="RedPhone_network_failed">Eroare de rețea! Te rugăm să verifici conexiunea și să încerci din nou.</string>
     <string name="RedPhone_number_not_registered">Numărul nu este înregistrat!</string>
     <string name="RedPhone_the_number_you_dialed_does_not_support_secure_voice">Numărul format nu suportă apeluri securizate!</string>
     <string name="RedPhone_got_it">Am înțeles</string>
@@ -2002,6 +2081,26 @@
     <string name="WebRtcCallActivity__removed_from_call">Eliminat din apel</string>
     <!-- Message of dialog displayed when a user is removed from a call link -->
     <string name="WebRtcCallActivity__someone_has_removed_you_from_the_call">Cineva te-a exclus din apel.</string>
+    <!-- Dialog title asking users for camera and microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_camera_microphone">Permite accesul la microfon și camera foto</string>
+    <!-- Dialog title asking users for microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_microphone">Permite acces la microfonul tău</string>
+    <!-- Dialog title asking users for camera permission -->
+    <string name="WebRtcCallActivity__allow_access_camera">Permite accesul la camera foto</string>
+    <!-- Dialog description explaining why camera and microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_camera_microphone">Pentru a începe un apel sau pentru a te alătura unui apel, permite accesul semnalului la camera foto și la microfon.</string>
+    <!-- Dialog description explaining why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_microphone">Pentru a începe sau a te alătura unui apel, permite accesul semnalului la microfon.</string>
+    <!-- Dialog description explaining why camera permissions are needed to enable a user\'s video in a call -->
+    <string name="WebRtcCallActivity__to_enable_video_allow_camera">Pentru a activa înregistrarea video, permite accesul Signal la camera ta de filmat.</string>
+    <!-- Toast describing why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__signal_needs_microphone_start_call">Signal are nevoie de permisiuni pentru microfon pentru a începe sau a se alătura unui apel.</string>
+    <!-- Toast describing why camera permissions are needed to enable a video in a call -->
+    <string name="WebRtcCallActivity__signal_needs_camera_access_enable_video">Signal are nevoie de acces la cameră pentru a-ți activa videoclipul</string>
+    <!-- Dialog description that will explain the steps needed to give microphone permissions -->
+    <string name="WebRtcCallActivity__to_start_call">Pentru a începe un apel sau pentru a te alătura unui apel:</string>
+    <!-- Dialog description that will explain the steps needed to give camera permissions -->
+    <string name="WebRtcCallActivity__to_enable_video">Ca să-ți activezi videoclipul:</string>
 
     <!-- WebRtcCallView -->
     <string name="WebRtcCallView__signal_call">Apel Signal</string>
@@ -2103,20 +2202,41 @@
     <string name="CallOverflowPopupWindow__lower_hand">Coboară mâna</string>
     <!-- A negative button for a dialog confirming the user wants to lower their hand (withdraw a raised hand) -->
     <string name="CallOverflowPopupWindow__cancel">Anulează</string>
-    <!-- A notification to the user that they successfully raised their hand -->
-    <string name="CallOverflowPopupWindow__you_raised_your_hand">Ți-ai ridicat mâna</string>
     <!-- A button to take you to a list of participants with raised hands -->
     <string name="CallOverflowPopupWindow__view">Vizualizare</string>
 
-    <!-- A notification to the user that one or more participants in the call successfully raised their hand. In the singular case, it is a name. In the plural case, it is a name or "You" -->
-    <plurals name="CallOverflowPopupWindow__raised_a_hand">
-        <item quantity="one">%1$s a ridicat mâna</item>
-        <item quantity="few">%1$s + %2$d au ridicat mâna</item>
-        <item quantity="other">%1$s + %2$d au ridicat mâna</item>
+
+    <!-- A notification to the user that they successfully raised their hand. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_single">%1$s ai ridicat mâna</string>
+    <!-- A notification to the user that they and at least one more participants in the call successfully raised their hand. The placeholder is a number quantifying how many other hands are also raised, besides the user. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_multiple">
+        <item quantity="one">%1$s și încă %2$d ați ridicat mâna</item>
+        <item quantity="few">%1$s și încă %2$d ați ridicat mâna</item>
+        <item quantity="other">%1$s + încă %2$d ați ridicat mâna</item>
     </plurals>
 
-    <!-- A badge to show how many hands are raised. The first string may be a name or "You" -->
-    <plurals name="CallRaiseHandSnackbar_raised_hands">
+    <!-- A notification to the user that one participant in the call successfully raised their hand. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_single">%1$s a ridicat mâna</string>
+    <!-- A notification to the user that two or more participants in the call successfully raised their hand. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_multiple">
+        <item quantity="one">%1$s + încă %2$d au ridicat mâna</item>
+        <item quantity="few">%1$s + încă %2$d au ridicat mâna</item>
+        <item quantity="other">%1$s + încă %2$d au ridicat mâna</item>
+    </plurals>
+
+    <!-- A badge to show the user has their hand raised. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__collapsed_second_person_raised_hand_single">%1$s</string>
+    <!-- A badge to show the user and at least one other participant in the call have their hand raised. The placeholder is a number quantifying how many other hands are also raised, besides the user.  -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_second_person_raised_hands_multiple">
+        <item quantity="one">%1$s</item>
+        <item quantity="few">%1$s +%2$d</item>
+        <item quantity="other">%1$s +%2$d</item>
+    </plurals>
+
+    <!-- A badge to show how many hands are raised. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_singular">%1$s</string>
+    <!-- A badge to show how many hands are raised. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_multiple">
         <item quantity="one">%1$s</item>
         <item quantity="few">%1$s +%2$d</item>
         <item quantity="other">%1$s +%2$d</item>
@@ -2266,8 +2386,8 @@
     <string name="RegistrationActivity_support_bottom_sheet_title">Ai probleme la înregistrare?</string>
     <!--    A list of suggestions to try for a user having trouble entering their verification code.-->
     <string name="RegistrationActivity_support_bottom_sheet_body_suggestions">• Asigură-te că telefonul tău are semnal celular ca să primești SMS-ul sau apelul\n • Confirmă că poți primi un apel telefonic pe numărul tău\n • Verifică că ai introdus corect numărul de telefon.</string>
-    <!--    A call to action for a user having trouble entering the verification to seek further help. -->
-    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">Pentru mai multe informații, urmează acești pași de depanare sau contactează Asistența</string>
+    <!--    A call to action for a user having trouble entering the verification to seek further help. The first placeholder is RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring, the second is RegistrationActivity_support_bottom_sheet_cta_contact_support_substring -->
+    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">Pentru mai multe informații, urmărește %1$s sau %2$s</string>
     <!--    A clickable piece of text that will take the user to our website with additional suggestions.-->
     <string name="RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring">acești pași de depanare</string>
     <!--    A clickable piece of text that will pre-fill a request for support email in the user\'s email app.-->
@@ -2431,7 +2551,7 @@
     <!-- Displayed in the conversation list when someone reacted to your story -->
     <string name="ThreadRecord__reacted_s_to_your_story">A reacționat cu %1$s la povestea ta</string>
     <!-- Displayed in the conversation list when you reacted to someone\'s story -->
-    <string name="ThreadRecord__reacted_s_to_their_story">A reacționat cu %1$s la povestea lor</string>
+    <string name="ThreadRecord__reacted_s_to_their_story">Ai reacționat cu %1$s la povestea sa</string>
     <!-- Displayed in the conversation list when your most recent message is a payment to or from the person the conversation is with -->
     <string name="ThreadRecord_payment">Plată</string>
     <!-- Displayed in the conversation list when your only message in a conversation is a scheduled send. -->
@@ -2797,9 +2917,9 @@
     <!-- Row item description for refreshing contacts -->
     <string name="contact_selection_activity__missing_someone">Îți lipsește cineva? Încearcă să reîncarci</string>
     <!-- Row item title for finding people on Signal via your contacts -->
-    <string name="contact_selection_activity__find_people_you_know">Find people you know on Signal</string>
+    <string name="contact_selection_activity__find_people_you_know">Găsește persoane pe care le cunoști pe Signal</string>
     <!-- Row item description asking users for access to their contacts to find people they know -->
-    <string name="contact_selection_activity__allow_access_to_contacts">Allow access to your contacts</string>
+    <string name="contact_selection_activity__allow_access_to_contacts">Permite accesul la contactele tale</string>
     <!-- Row header title for more section -->
     <string name="contact_selection_activity__more">Mai multe</string>
 
@@ -2835,13 +2955,15 @@
     <!-- Text on row item to find user by username -->
     <string name="ContactSelectionListFragment__find_by_username">Caută după nume de utilizator</string>
     <!-- Dialog title asking users for contact permission -->
-    <string name="ContactSelectionListFragment_allow_access_contacts">Allow access to contacts</string>
+    <string name="ContactSelectionListFragment_allow_access_contacts">Permite accesul la contacte</string>
     <!-- Dialog description that will explain the steps needed to give contact permissions -->
-    <string name="ContactSelectionListFragment_to_find_people">To find people you know on Signal:</string>
+    <string name="ContactSelectionListFragment_to_find_people">Ca să găsești persoane pe care le cunoști pe Signal:</string>
     <!-- Text on button prompting users to give Signal contact permissions -->
-    <string name="ContactSelectionListFragment__allow_access">Allow access</string>
+    <string name="ContactSelectionListFragment__allow_access">Permite accesul</string>
+    <!-- Text on button to dismiss Signal\'s request for contact permissions -->
+    <string name="ContactSelectionListFragment__no_thanks">Nu, mulțumesc</string>
     <!-- Text asking for user\'s contact permission -->
-    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">Allow access to your contacts. Your contacts are encrypted and not visible to the Signal service.</string>
+    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">Permite accesul la contacte. Contactele tale sunt criptate și nu sunt vizibile pentru serviciul Signal.</string>
 
     <!-- contact_selection_list_fragment -->
     <string name="contact_selection_list_fragment__signal_needs_access_to_your_contacts_in_order_to_display_them">Signal are nevoie de acces la contactele tale pentru a le afișa.</string>
@@ -3433,8 +3555,12 @@
         <item quantity="other">Această acțiune va șterge definitiv toate conversațiile până la cele mai recente %1$s de mesaje.</item>
     </plurals>
     <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">Această acțiune va șterge definitiv tot istoricul mesajelor și fișierele media de pe dispozitiv.</string>
+    <!-- Dialog message warning about delete chat message history will delete everything everywhere including linked devices -->
+    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device_linked_device">Aceasta va elimina definitiv tot istoricul mesajelor și tot conținutul media de pe acest dispozitiv și de pe toate dispozitivele asociate.</string>
     <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">Sigur dorești să ștergi tot istoricul mesajelor?</string>
     <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">Tot istoricul mesajelor va fi eliminat definitiv. Această acțiune nu poate fi anulată.</string>
+    <!-- Secondary warning dialog message about deleting all chat message history from everything everywhere including linked devices -->
+    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone_linked_device">Tot istoricul mesajelor va fi eliminat definitiv de pe toate dispozitivele. Această acțiune este ireversibilă.</string>
     <string name="preferences_storage__delete_all_now">Șterge tot acum</string>
     <string name="preferences_storage__forever">Pentru totdeauna</string>
     <string name="preferences_storage__one_year">1 an</string>
@@ -4199,8 +4325,15 @@
     <string name="TransferOrRestoreFragment__you_need_access_to_your_old_device">Ai nevoie de acces la vechiul dispozitiv.</string>
     <string name="TransferOrRestoreFragment__restore_from_backup">Restaurare din backup</string>
     <string name="TransferOrRestoreFragment__restore_your_messages_from_a_local_backup">Restaurează mesajele dintr-un backup local. Dacă nu restaurezi acum, nu vei putea restaura mai târziu.</string>
+    <string name="TransferOrRestoreFragment__restore_from_local_backup">Restaurează backup-ul local</string>
+    <string name="TransferOrRestoreFragment__restore_from_signal_backup">Restaurare backup Signal</string>
+    <string name="TransferOrRestoreFragment__restore_your_messages_from_a_signal_backup">Restaurează toate mesajele text + ultimele 30 de zile de fișiere media</string>
     <!-- Button label for more options -->
     <string name="TransferOrRestoreFragment__more_options">Mai multe opțiuni</string>
+
+    <string name="TransferOrRestoreFragment__cancel">Anulează</string>
+    <string name="TransferOrRestoreFragment__skip_transfer">Conectează-te fără transfer</string>
+    <string name="TransferOrRestoreFragment__skip_transfer_description">Continuă fără a transfera mesajele și fișierele tale media</string>
 
     <!-- NewDeviceTransferInstructionsFragment -->
     <string name="NewDeviceTransferInstructions__open_signal_on_your_old_android_phone">Deschide Signal pe vechiul telefon Android</string>
@@ -5117,9 +5250,6 @@
     <!-- VectorAvatarCreationFragment -->
     <string name="VectorAvatarCreationFragment__select_a_color">Selectează o culoare</string>
 
-    <!-- ContactSelectionListItem -->
-    <string name="ContactSelectionListItem__sms">SMS</string>
-
     <!-- Displayed in the toolbar when externally sharing text to multiple recipients -->
     <string name="ShareInterstitialActivity__share">Distribuie</string>
 
@@ -5157,7 +5287,8 @@
     </plurals>
     <!-- Error message shown when attempting to select a group to forward/share but it\'s announcement only and you are not an admin -->
     <string name="MultiselectForwardFragment__only_admins_can_send_messages_to_this_group">Numai administratorii pot trimite mesaje acestui grup.</string>
-    <string name="MultiselectForwardFragment__limit_reached">Ai atins limita</string>
+    <!-- Error message shown when users try to choose more than 5 chats to send a message to -->
+    <string name="MultiselectForwardFragment__you_cant_select_more_chats">Nu poți selecta mai mult de 5 conversații</string>
 
     <!-- Media V2 -->
     <!-- Dialog message when sending a story via an add to group story button -->
@@ -5793,8 +5924,10 @@
     <string name="StoryGroupReplyFragment__no_replies_yet">Niciun răspuns încă</string>
     <!-- Displayed when no longer a group member -->
     <string name="StoryGroupReplyFragment__you_cant_reply">Nu poți răspunde la această poveste pentru că nu mai ești membru al acestui grup.</string>
-    <!-- Displayed for each user that reacted to a story when viewing replies -->
-    <string name="StoryGroupReactionReplyItem__reacted_to_the_story">Ai reacționat la poveste</string>
+    <!-- Displayed for when you reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__you_reacted_to_the_story">Ai reacționat la poveste</string>
+    <!-- Displayed for other users that reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__someone_reacted_to_the_story">A reacționat la poveste</string>
     <!-- Label for story views tab -->
     <string name="StoryViewsAndRepliesDialogFragment__views">Vizualizări</string>
     <!-- Label for story replies tab -->
@@ -6641,7 +6774,7 @@
     <!-- Dialog body to clear all call events -->
     <string name="CallLogFragment__this_will_permanently_delete_all_call_history">Aceasta va șterge definitiv tot istoricul apelurilor</string>
     <!-- Action bar menu item to delete all call events -->
-    <string name="CallLogFragment__clear_call_history">Ștergeți istoricul apelurilor</string>
+    <string name="CallLogFragment__clear_call_history">Șterge istoricul apelurilor</string>
     <!-- Action bar menu item to only display missed calls -->
     <string name="CallLogFragment__filter_missed_calls">Filtrează apeluri ratate</string>
     <!-- Action bar menu item to clear missed call filter -->
@@ -7012,6 +7145,22 @@
     <!-- Notification title shown while downloading backup restore data -->
     <string name="BackupProgressService_title_downloading">Se descarcă datele din copia de rezervă…</string>
 
+    <!-- BackupAlertBottomSheet -->
+    <!-- Sheet title when user does not have enough space to download their backup -->
+    <string name="BackupAlertBottomSheet__cant_complete_download">Can\'t complete download</string>
+    <!-- Sheet body part 1 when user does not have enough space to download their backup. Placeholder is the amount of space needed. -->
+    <string name="BackupAlertBottomSheet__your_device_does_not_have_enough_free_space">Your device does not have enough free space. Free up to %1$s of space to download the media stored in your backup.</string>
+    <!-- Sheet body part 2 when user does not have enough space to download their backup. Placeholder is the number of days until deletion -->
+    <string name="BackupAlertBottomSheet__if_you_choose_skip">If you choose \"Skip\" the media in your backup will be deleted in %1$d days.</string>
+    <!-- Clickable text to learn more about the content of this bottom sheet -->
+    <string name="BackupAlertBottomSheet__learn_more">Learn more</string>
+    <!-- Secondary action button text when user does not have enough free space to download their backup. -->
+    <string name="BackupAlertBottomSheet__skip">Skip</string>
+
+    <!-- BackupStatus -->
+    <!-- Status title when user does not have enough free space to download their media. Placeholder is required disk space. -->
+    <string name="BackupStatus__free_up_s_of_space_to_download_your_media">Free up %1$s of space to download your media.</string>
+
     <!-- BackupsTypeSettingsFragment -->
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__credit_or_debit_card">Card de credit sau debit</string>
@@ -7025,6 +7174,12 @@
     <string name="BackupsTypeSettingsFragment__paypal">PayPal</string>
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__unknown">Necunoscut</string>
+    <!-- Row title for entering payment history -->
+    <string name="BackupsTypeSettingsFragment__payment_history">Payment history</string>
+
+    <!-- RemoteRestoreActivity -->
+    <!-- Displayed at restore time to tell the user when their last backup was made. %$1s is replaced with the date (e.g. March 5, 2024) and %$2s is replaced with the time (e.g. 9:00am) -->
+    <string name="RemoteRestoreActivity__backup_created_at">Ultima copie de rezervă a fost făcută pe %1$s la %2$s.</string>
 
     <!-- ManageStorageSettingsFragment -->
     <!-- Settings section title header show above manage settings options for automatic chat history management (deleting) -->
@@ -7035,6 +7190,93 @@
     <string name="ManageStorageSettingsFragment_keep_messages_duration_warning">Mesajele mai vechi decât perioada selectată vor fi șterse permanent.</string>
     <!-- Warning message at the bottom of a settings screen indicating how messages will be deleted based on user\'s selection (limit is a number like 500 or 5,000) -->
     <string name="ManageStorageSettingsFragment_chat_length_limit_warning">Mesajele care depășesc lungimea selectată vor fi șterse definitiv.</string>
+    <!-- Setting title for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_title">Aplică limite dispozitivelor conectate</string>
+    <!-- Setting description for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_description">Atunci când sunt activate, limitele de chat vor elimina și mesajele de pe dispozitivele asociate.</string>
+
+    <!-- Educational bottom sheet dialog title shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_title">Eliminarea este acum sincronizată pe toate dispozitivele tale</string>
+    <!-- Educational bottom sheet dialog message shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_message">Atunci când elimini mesaje sau conversații, acestea vor fi șterse de pe telefon și de pe toate dispozitivele asociate.</string>
+    <!-- Educational bottom sheet confirm/dismiss button text shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_acknowledge_button">OK</string>
+
+    <!-- RemoteBackupsPaymentHistoryFragment -->
+    <!-- Title of the screen for payment history -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_history">Payment history</string>
+    <!-- Description for backup rows -->
+    <string name="RemoteBackupsPaymentHistoryFragment__text_and_all_media_backup">Text and all media backup</string>
+    <!-- Title of the screen for payment details -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_details">Payment details</string>
+    <!-- Title of row specifying the type of backup -->
+    <string name="RemoteBackupsPaymentHistoryFragment__backup_type">Backup type</string>
+    <!-- Title of row specifying the date the backup was paid on -->
+    <string name="RemoteBackupsPaymentHistoryFragment__date_paid">Date paid</string>
+    <!-- Button label to share the receipt -->
+    <string name="RemoteBackupsPaymentHistoryFragment__share">Share</string>
+
+    <!-- RemoteBackupsSettingsFragment -->
+    <!-- Displayed on the title bar -->
+    <string name="RemoteBackupsSettingsFragment__signal_backups">Backup-uri Signal</string>
+    <!-- Row label to launch payment history screen -->
+    <string name="RemoteBackupsSettingsFragment__payment_history">Istoricul plăților</string>
+    <!-- Section header for backup information -->
+    <string name="RemoteBackupsSettingsFragment__backup_details">Detaliile backup-ului</string>
+    <!-- Row label for backup size -->
+    <string name="RemoteBackupsSettingsFragment__backup_size">Dimensiunea backup-ului</string>
+    <!-- Row label for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__backup_frequency">Frecvența backup-ului</string>
+    <!-- Toggle row label for allowing backups to occur while on cellular connection -->
+    <string name="RemoteBackupsSettingsFragment__back_up_using_cellular">Efectuează backup folosind date mobile</string>
+    <!-- Row label for cancelling and deleting backup -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backup">Dezactivează și elimină backup-ul</string>
+    <!-- Snackbar text displayed when backup has been deleted and turned off -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted_and_turned_off">Backup eliminat și dezactivat.</string>
+    <!-- Snackbar text displayed when backup type is downgraded -->
+    <string name="RemoteBackupsSettingsFragment__backup_type_changed_and_subcription_deleted">Tipul de backup schimbat și abonamentul anulat</string>
+    <!-- Snackbar text displayed when backup subscription is cancelled -->
+    <string name="RemoteBackupsSettingsFragment__subscription_cancelled">Abonament anulat</string>
+    <!-- Snackbar text displayed when backup is successfully downloaded -->
+    <string name="RemoteBackupsSettingsFragment__download_complete">Descărcare completă</string>
+    <!-- Title text in row detailing selected backup type -->
+    <string name="RemoteBackupsSettingsFragment__backup_type">Tipul de backup</string>
+    <!-- Subtitle text in row detailing selected backup type displayed when backups are disabled -->
+    <string name="RemoteBackupsSettingsFragment__backups_disabled">Backup-uri dezactivate</string>
+    <!-- Format string for backup and cost. First placeholder is backup title, second is cost per month. -->
+    <string name="RemoteBackupsSettingsFragment__s_dot_s_per_month">%1$s - %2$s/lună</string>
+    <!-- Button label to enable backups -->
+    <string name="RemoteBackupsSettingsFragment__enable_backups">Activează backup-urile</string>
+    <!-- Progress indicator subtext displayed when a backup is in progress -->
+    <string name="RemoteBackupsSettingsFragment__d_slash_d">%1$d/%2$d</string>
+    <!-- Title text in row detailing last backup -->
+    <string name="RemoteBackupsSettingsFragment__last_backup">Ultimul backup</string>
+    <!-- Subtext describing when a backup took place. First placeholder is the day, second is time. -->
+    <string name="RemoteBackupsSettingsFragment__s_at_s">%1$s la %2$s</string>
+    <!-- Subtext describing when a backup has never taken place. -->
+    <string name="RemoteBackupsSettingsFragment__never">Niciodată</string>
+    <!-- Button label to perform a backup immediately -->
+    <string name="RemoteBackupsSettingsFragment__back_up_now">Faceți un backup acum</string>
+    <!-- Dialog title when confirming whether to turn off and deleting backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backups">Dezactivezi și elimini backup-urile?</string>
+    <!-- Dialog message when confirming whether to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__you_will_not_be_charged_again">Nu vei fi taxat/ă din nou. Backup-ul tău va fi eliminat și nu vor fi create backup-uri noi.</string>
+    <!-- Confirmation action on dialog to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete">Dezactivează și șterge</string>
+    <!-- Text on dialog while user backup is being deleted -->
+    <string name="RemoteBackupsSettingsFragment__deleting_backup">Se elimină backup-ul…</string>
+    <!-- Text on dialog when user backup is deleted -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted">Backup eliminat</string>
+    <!-- Subtitle for frequency option MANUAL for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__by_tapping_back_up_now">"Atingând Fă backup acum"</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__daily">Zilnic</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__weekly">Săptămânal</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__monthly">Lunar</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__manually_back_up">Efectuează backup manual</string>
 
     <!-- EOF -->
 </resources>

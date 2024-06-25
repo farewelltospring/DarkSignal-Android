@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2024 Signal Messenger, LLC
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
 <!-- smartling.instruction_comments_enabled = on -->
 <resources>
   <!-- Removed by excludeNonTranslatables <string name="app_name" translatable="false">Signal</string> -->
@@ -226,37 +230,37 @@
     <string name="CameraXFragment_change_camera_description">切换相机</string>
     <string name="CameraXFragment_open_gallery_description">打开相册</string>
     <!-- Button text asking for access to camera permissions -->
-    <string name="CameraXFragment_allow_access">Allow access</string>
+    <string name="CameraXFragment_allow_access">允许访问</string>
     <!-- Dialog title asking users for camera and microphone permission -->
-    <string name="CameraXFragment_allow_access_camera_microphone">Allow access to your camera and microphone</string>
+    <string name="CameraXFragment_allow_access_camera_microphone">允许访问您的相机和麦克风</string>
     <!-- Dialog title asking users for camera permission -->
-    <string name="CameraXFragment_allow_access_camera">Allow access to your camera</string>
+    <string name="CameraXFragment_allow_access_camera">允许访问您的相机</string>
     <!-- Dialog title asking users for microphone permission -->
-    <string name="CameraXFragment_allow_access_microphone">Allow access to your microphone</string>
+    <string name="CameraXFragment_allow_access_microphone">允许访问您的麦克风</string>
     <!-- Text explaining why Signal needs camera access in order to take photos -->
-    <string name="CameraXFragment_to_capture_photos_allow_camera">To capture photos, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_allow_camera">如要拍照，请允许 Signal 访问相机。</string>
     <!-- Text explaining why Signal needs camera access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">To capture photos and video, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">要拍照或录像，请允许 Signal 访问相机。</string>
     <!-- Text explaining why Signal needs camera and microphone access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">To capture photos and video, allow Signal access to the camera and microphone.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">如要拍照或录像，请允许 Signal 访问相机和麦克风。</string>
     <!-- Text explaining why Signal needs microphone access to take videos -->
-    <string name="CameraXFragment_to_capture_videos_with_sound">To capture videos with sound, allow Signal access to your microphone.</string>
+    <string name="CameraXFragment_to_capture_videos_with_sound">如要拍摄有声视频，请允许 Signal 访问麦克风。</string>
     <!-- Text explaining why Signal needs camera access to scan QR codes -->
-    <string name="CameraXFragment_to_scan_qr_code_allow_camera">To scan a QR code, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_scan_qr_code_allow_camera">如要扫描二维码，请允许 Signal 访问相机。</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when capturing photos -->
-    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">Signal needs camera access to capture photos</string>
+    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">Signal 需要相机访问权限才能拍摄照片</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when scanning QR codes -->
-    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">Signal needs camera access to scan QR codes</string>
+    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">Signal 需要相机访问权限才能扫描二维码</string>
     <!-- Toast dialog explaining why Signal needs microphone permissions -->
-    <string name="CameraXFragment_signal_needs_microphone_access_video">Signal needs microphone access to capture video</string>
+    <string name="CameraXFragment_signal_needs_microphone_access_video">Signal 需要麦克风访问权限才能拍摄视频</string>
     <!-- Dialog description that explains the steps needed to give camera permission -->
-    <string name="CameraXFragment_to_capture_photos">To capture photos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos">如要在 Signal 中拍照：</string>
     <!-- Dialog description that explains the steps needed to give camera and microphone permission -->
-    <string name="CameraXFragment_to_capture_photos_videos">To capture photos and videos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos_videos">如要在 Signal 中拍照和录像：</string>
     <!-- Dialog description that explains the steps needed to give microphone permission -->
-    <string name="CameraXFragment_to_capture_videos">To capture videos with sound:</string>
+    <string name="CameraXFragment_to_capture_videos">如要拍摄有声视频：</string>
     <!-- Dialog description that explains the steps needed to give Signal camera permissions -->
-    <string name="CameraXFragment_to_scan_qr_codes">To scan QR codes:</string>
+    <string name="CameraXFragment_to_scan_qr_codes">如要扫描二维码：</string>
 
     <!-- CameraContacts -->
     <string name="CameraContacts_recent_contacts">最近联系人</string>
@@ -326,8 +330,8 @@
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">消息 %1$s</string>
-    <string name="ContactsDatabase_signal_call_s">Signal Voice Call %1$s</string>
-    <string name="ContactsDatabase_signal_video_call_s">Signal Video Call %1$s</string>
+    <string name="ContactsDatabase_signal_call_s">Signal 语音通话 %1$s</string>
+    <string name="ContactsDatabase_signal_video_call_s">Signal 视频通话 %1$s</string>
 
     <!-- ContactNameEditActivity -->
     <!-- Toolbar title for contact name edit activity -->
@@ -536,6 +540,8 @@
     <string name="ConversationFragment_delete_for_everyone">对每个人删除</string>
     <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
     <string name="ConversationFragment_delete_on_this_device">仅从此设备中删除</string>
+    <!-- Dialog button for deleting one or more note-to-self messages that will be sync\'d to other devices -->
+    <string name="ConversationFragment_delete">删除</string>
     <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
     <string name="ConversationFragment_delete_everywhere">从所有设备中删除</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">此操作将对此聊天中使用较新版本 Signal 的所有成员永久删除此消息，他们将看到您删除了一条消息。</string>
@@ -635,6 +641,10 @@
     </plurals>
     <plurals name="ConversationListFragment_this_will_permanently_delete_all_n_selected_conversations">
         <item quantity="other">这将永久删除全部 %1$d 个已选聊天。</item>
+    </plurals>
+    <!-- Dialog message shown when deleting one to many conversations from the chat list and the user has a linked device -->
+    <plurals name="ConversationListFragment_this_will_permanently_delete_all_n_selected_conversations_linked_device">
+        <item quantity="other">这将会从您的所有设备上永久删除全部 %1$d 个已选聊天。</item>
     </plurals>
     <string name="ConversationListFragment_deleting">正在删除</string>
     <plurals name="ConversationListFragment_deleting_selected_conversations">
@@ -832,6 +842,61 @@
     <string name="DecryptionFailedDialog_chat_session_refreshed">聊天会话已刷新</string>
     <string name="DecryptionFailedDialog_signal_uses_end_to_end_encryption">Signal 使用端对端加密，有时可能需刷新聊天会话。虽然这并不影响聊天的安全性，但可能错过该联系人的消息。您可请求他们重新发送。</string>
 
+    <!-- LinkDeviceFragment -->
+    <!-- Description for how Signal will work with a linked device (eg desktop, iPad) -->
+    <string name="LinkDeviceFragment__use_signal_on_desktop_ipad">在电脑或 iPad 上使用 Signal。您的消息会同步到您的已链接设备上。</string>
+    <!-- Button prompting users to link a new device to their account -->
+    <string name="LinkDeviceFragment__link_a_new_device">链接新设备</string>
+    <!-- Text explaining that on linked devices, messages will be encrypted where %s will be replaced with an image-->
+    <string name="LinkDeviceFragment__messages_and_chat_info_are_protected">%1$s 消息和聊天信息在所有设备上均受端对端加密保护</string>
+    <!-- Bottom sheet title explaining how Signal works on a linked device -->
+    <string name="LinkDeviceFragment__signal_on_desktop_ipad">Signal on desktop or iPad</string>
+    <!-- Bottom sheet description explaining that messages on linked devices are private -->
+    <string name="LinkDeviceFragment__all_messaging_is_private">链接设备上的所有消息均受私密保护</string>
+    <!-- Bottom sheet description explaining that future messages on linked devices will be in sync with your phone but previous messages will not appear -->
+    <string name="LinkDeviceFragment__signal_messages_are_synchronized">链接后，Signal 消息会同步到您手机的 Signal 上。链接以前的消息记录将不会显示。</string>
+    <!-- Bottom sheet description explaining that for non-desktop/iPad devices, they should go to %s to download Signal where %s is Signal\'s website -->
+    <string name="LinkDeviceFragment__on_other_device_visit_signal">在其他设备上，请访问 %1$s 以安装 Signal</string>
+  <!-- Removed by excludeNonTranslatables <string name="LinkDeviceFragment__signal_download_url" translatable="false">signal.org/download</string> -->
+    <!-- Header title listing out current linked devices -->
+    <string name="LinkDeviceFragment__my_linked_devices">我的已链接设备</string>
+    <!-- Dialog confirmation to unlink a device -->
+    <string name="LinkDeviceFragment__unlink">解绑</string>
+    <!-- Toast message indicating a device has been unlinked where %s is the name of the device -->
+    <string name="LinkDeviceFragment__s_unlinked">%1$s 未链接</string>
+    <!-- Progress dialog message indicating that a device is currently being linked with an account -->
+    <string name="LinkDeviceFragment__linking_device">正在链接设备…</string>
+    <!-- Toast message shown after a device has been linked -->
+    <string name="LinkDeviceFragment__device_approved">设备成功链接</string>
+    <!-- Progress dialog message indicating that the list of linked devices is currently loading -->
+    <string name="LinkDeviceFragment__loading">正在加载…</string>
+    <!-- Text message shown when the user has no linked devices -->
+    <string name="LinkDeviceFragment__no_linked_devices">无链接设备</string>
+    <!-- Title on biometrics prompt explaining what biometrics are being used for -->
+    <string name="LinkDeviceFragment__unlock_to_link">Unlock to link a device</string>
+
+    <!-- AddLinkDeviceFragment -->
+    <!-- Description text shown on the QR code scanner when linking a device -->
+    <string name="AddLinkDeviceFragment__scan_the_qr_code">扫描设备上显示的二维码进行链接。</string>
+    <!-- Bottom sheet title telling users to scan a qr code -->
+    <string name="AddLinkDeviceFragment__scan_qr_code">扫描二维码</string>
+    <!-- Bottom sheet description telling users how to scan a qr code -->
+    <string name="AddLinkDeviceFragment__use_this_device_to_scan_qr_code">使用此设备扫描要链接的设备上显示的二维码</string>
+    <!-- Confirmation button to dismiss bottom sheet dialog -->
+    <string name="AddLinkDeviceFragment__okay">好的</string>
+    <!-- Dialog text describing the consequences of linking a device -->
+    <string name="AddLinkDeviceFragment__this_device_will_see_your_groups_contacts">此设备将能查看您的群组和联系人、读取您的对话及以您的名义发送消息。</string>
+    <!-- Bottom sheet title telling users to complete the linking process on the other device  -->
+    <string name="AddLinkDeviceFragment__finish_linking_on_other_device">在其他设备上完成链接</string>
+    <!-- Bottom sheet description telling users to complete the linking process -->
+    <string name="AddLinkDeviceFragment__finish_linking_signal">在另一台设备上完成链接 Signal。</string>
+    <!-- Title of dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__linking_device_failed">绑定设备失败</string>
+    <!-- Text shown in a dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__this_qr_code_not_valid">此二维码无效，请确认您想要连接的设备所显示的是此二维码。</string>
+    <!-- Button in dialog to retry linking a device with a qr code -->
+    <string name="AddLinkDeviceFragment__retry">重试</string>
+
     <!-- DeviceListActivity -->
     <string name="DeviceListActivity_unlink_s">取消关联“%1$s”？</string>
     <string name="DeviceListActivity_by_unlinking_this_device_it_will_no_longer_be_able_to_send_or_receive">取消关联之后，将不能再通过该设备发送或接收消息。</string>
@@ -1002,10 +1067,11 @@
     <!-- Button to continue to try and disable battery saver -->
     <string name="PromptBatterySaverBottomSheet__continue">继续</string>
     <!-- Button to dismiss battery saver dialog prompt-->
-    <string name="PromptBatterySaverBottomSheet__dismiss">不予考虑</string>
+    <string name="PromptBatterySaverBottomSheet__no_thanks">No thanks</string>
+  <!-- Removed by excludeNonTranslatables <string name="PromptBatterySaverBottomSheet__learn_more_url" translatable="false">https://support.signal.org/hc/articles/360007318711#android_notifications_troubleshooting</string> -->
 
     <!-- PendingMembersActivity -->
-    <string name="PendingMembersActivity_pending_group_invites">待处理的入群邀请</string>
+    <string name="PendingMembersActivity_pending_group_invites">请求与邀请</string>
     <string name="PendingMembersActivity_requests">入群申请</string>
     <string name="PendingMembersActivity_invites">邀请</string>
     <string name="PendingMembersActivity_people_you_invited">你邀请的人</string>
@@ -1574,6 +1640,14 @@
     <string name="MessageRecord_you_activated_payments">您已激活付款</string>
     <!-- Message to inform sender that recipient can now accept payments -->
     <string name="MessageRecord_can_accept_payments">%1$s现在可以接受付款啦</string>
+    <!-- Message shown to inform user that a payment is missing details due to restore -->
+    <string name="MessageRecord_payments_restore_tombstone">无法获取付款详情</string>
+    <!-- Message shown to inform user to tap the payment to learn more about why the details arent available -->
+    <string name="MessageRecord_payments_restore_tombstone_tap_more">点击查看更多</string>
+    <!-- Title for dialog explaining why a specific mobile coin payment does not have any transaction details -->
+    <string name="PaymentTombstoneLearnMoreDialog_title">无法获取付款详情</string>
+    <!-- Message for dialog explaining why a specific mobile coin payment does not have any transaction details because it was restored from a backup-->
+    <string name="PaymentTombstoneLearnMoreDialog_message">由于您的消息是从一个不包含此付款记录的来源恢复的，因此付款详情无法获取。这不会影响您的钱包余额或过往付款情况。</string>
 
     <!-- Group Calling update messages -->
     <!-- Chat log text for an ongoing group call that has one participant with a placeholder for the short display name of the user that joined and a placeholder for formatted time -->
@@ -1631,6 +1705,8 @@
     <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">您无法再从 Signal 发送短信消息。您可以邀请%1$s加入 Signal，在这里进行对话。</string>
     <!-- Body for quote when message being quoted is an in-app payment message -->
     <string name="MessageRecord__payment_s">付款：%1$s</string>
+    <!-- Body for quote when message being quoted is an in-app payment message tombstone without an amount -->
+    <string name="MessageRecord__payment_tombstone">付款</string>
     <!-- Update message shown in chat after reporting it as spam -->
     <string name="MessageRecord_reported_as_spam">已举报为垃圾消息</string>
     <!-- Update message shown in chat after accept a message request -->
@@ -1808,7 +1884,8 @@
     <string name="RedPhone_ringing">响铃中…</string>
     <string name="RedPhone_busy">占线</string>
     <string name="RedPhone_recipient_unavailable">接收人无法应答</string>
-    <string name="RedPhone_network_failed">网络失败！</string>
+    <!-- Error message shown during a call when a fatal network error occurs. -->
+    <string name="RedPhone_network_failed">网络失败！ 请检查互联网连接并重试。</string>
     <string name="RedPhone_number_not_registered">号码未注册！</string>
     <string name="RedPhone_the_number_you_dialed_does_not_support_secure_voice">您输入的号码不支持加密语音！</string>
     <string name="RedPhone_got_it">知道了</string>
@@ -1868,6 +1945,26 @@
     <string name="WebRtcCallActivity__removed_from_call">被移除出通话</string>
     <!-- Message of dialog displayed when a user is removed from a call link -->
     <string name="WebRtcCallActivity__someone_has_removed_you_from_the_call">有人已将您移除出通话。</string>
+    <!-- Dialog title asking users for camera and microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_camera_microphone">允许访问您的相机和麦克风</string>
+    <!-- Dialog title asking users for microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_microphone">允许访问您的麦克风</string>
+    <!-- Dialog title asking users for camera permission -->
+    <string name="WebRtcCallActivity__allow_access_camera">允许访问您的相机</string>
+    <!-- Dialog description explaining why camera and microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_camera_microphone">如要发起或加入通话，请允许 Signal 访问您的相机和麦克风。</string>
+    <!-- Dialog description explaining why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_microphone">如要发起或加入通话，请允许 Signal 访问您的麦克风。</string>
+    <!-- Dialog description explaining why camera permissions are needed to enable a user\'s video in a call -->
+    <string name="WebRtcCallActivity__to_enable_video_allow_camera">如要开启视频，请允许 Signal 访问您的相机。</string>
+    <!-- Toast describing why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__signal_needs_microphone_start_call">Signal 需要麦克风权限才能发起或加入通话。</string>
+    <!-- Toast describing why camera permissions are needed to enable a video in a call -->
+    <string name="WebRtcCallActivity__signal_needs_camera_access_enable_video">Signal 需要相机权限才能开启视频</string>
+    <!-- Dialog description that will explain the steps needed to give microphone permissions -->
+    <string name="WebRtcCallActivity__to_start_call">如要发起或加入通话：</string>
+    <!-- Dialog description that will explain the steps needed to give camera permissions -->
+    <string name="WebRtcCallActivity__to_enable_video">如要开启视频：</string>
 
     <!-- WebRtcCallView -->
     <string name="WebRtcCallView__signal_call">Signal 通话</string>
@@ -1959,18 +2056,35 @@
     <string name="CallOverflowPopupWindow__lower_hand">放下</string>
     <!-- A negative button for a dialog confirming the user wants to lower their hand (withdraw a raised hand) -->
     <string name="CallOverflowPopupWindow__cancel">取消</string>
-    <!-- A notification to the user that they successfully raised their hand -->
-    <string name="CallOverflowPopupWindow__you_raised_your_hand">您举手了</string>
     <!-- A button to take you to a list of participants with raised hands -->
     <string name="CallOverflowPopupWindow__view">查看</string>
 
-    <!-- A notification to the user that one or more participants in the call successfully raised their hand. In the singular case, it is a name. In the plural case, it is a name or "You" -->
-    <plurals name="CallOverflowPopupWindow__raised_a_hand">
-        <item quantity="other">%1$s + %2$d 举手了</item>
+
+    <!-- A notification to the user that they successfully raised their hand. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_single">%1$s举手了</string>
+    <!-- A notification to the user that they and at least one more participants in the call successfully raised their hand. The placeholder is a number quantifying how many other hands are also raised, besides the user. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_multiple">
+        <item quantity="other">%1$s和其他 %2$d 人举手了</item>
     </plurals>
 
-    <!-- A badge to show how many hands are raised. The first string may be a name or "You" -->
-    <plurals name="CallRaiseHandSnackbar_raised_hands">
+    <!-- A notification to the user that one participant in the call successfully raised their hand. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_single">%1$s举手了</string>
+    <!-- A notification to the user that two or more participants in the call successfully raised their hand. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_multiple">
+        <item quantity="other">%1$s和其他 %2$d 人举手了</item>
+    </plurals>
+
+    <!-- A badge to show the user has their hand raised. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__collapsed_second_person_raised_hand_single">%1$s</string>
+    <!-- A badge to show the user and at least one other participant in the call have their hand raised. The placeholder is a number quantifying how many other hands are also raised, besides the user.  -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_second_person_raised_hands_multiple">
+        <item quantity="other">%1$s + %2$d</item>
+    </plurals>
+
+    <!-- A badge to show how many hands are raised. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_singular">%1$s</string>
+    <!-- A badge to show how many hands are raised. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_multiple">
         <item quantity="other">%1$s + %2$d</item>
     </plurals>
 
@@ -2106,8 +2220,8 @@
     <string name="RegistrationActivity_support_bottom_sheet_title">在注册时遇到问题？</string>
     <!--    A list of suggestions to try for a user having trouble entering their verification code.-->
     <string name="RegistrationActivity_support_bottom_sheet_body_suggestions">• 确保您的手机有手机信号，能够接收短信或来电\n • 确认您可以接听拨到该号码的来电\n • 检查您输入的手机号码是否正确无误。</string>
-    <!--    A call to action for a user having trouble entering the verification to seek further help. -->
-    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">如需更多信息，请按照这里列出的故障排查步骤进行操作，或联系支持人员</string>
+    <!--    A call to action for a user having trouble entering the verification to seek further help. The first placeholder is RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring, the second is RegistrationActivity_support_bottom_sheet_cta_contact_support_substring -->
+    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">如需了解更多信息，请按照%1$s进行操作或%2$s</string>
     <!--    A clickable piece of text that will take the user to our website with additional suggestions.-->
     <string name="RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring">这里列出的故障排查步骤</string>
     <!--    A clickable piece of text that will pre-fill a request for support email in the user\'s email app.-->
@@ -2629,9 +2743,9 @@
     <!-- Row item description for refreshing contacts -->
     <string name="contact_selection_activity__missing_someone">找不到某个好友？请刷新试试</string>
     <!-- Row item title for finding people on Signal via your contacts -->
-    <string name="contact_selection_activity__find_people_you_know">Find people you know on Signal</string>
+    <string name="contact_selection_activity__find_people_you_know">在 Signal 上查找认识的人</string>
     <!-- Row item description asking users for access to their contacts to find people they know -->
-    <string name="contact_selection_activity__allow_access_to_contacts">Allow access to your contacts</string>
+    <string name="contact_selection_activity__allow_access_to_contacts">允许访问您的联系人</string>
     <!-- Row header title for more section -->
     <string name="contact_selection_activity__more">更多</string>
 
@@ -2665,13 +2779,15 @@
     <!-- Text on row item to find user by username -->
     <string name="ContactSelectionListFragment__find_by_username">按用户名查找</string>
     <!-- Dialog title asking users for contact permission -->
-    <string name="ContactSelectionListFragment_allow_access_contacts">Allow access to contacts</string>
+    <string name="ContactSelectionListFragment_allow_access_contacts">允许访问联系人</string>
     <!-- Dialog description that will explain the steps needed to give contact permissions -->
-    <string name="ContactSelectionListFragment_to_find_people">To find people you know on Signal:</string>
+    <string name="ContactSelectionListFragment_to_find_people">如要在 Signal 上查找认识的人：</string>
     <!-- Text on button prompting users to give Signal contact permissions -->
-    <string name="ContactSelectionListFragment__allow_access">Allow access</string>
+    <string name="ContactSelectionListFragment__allow_access">允许访问</string>
+    <!-- Text on button to dismiss Signal\'s request for contact permissions -->
+    <string name="ContactSelectionListFragment__no_thanks">不，谢谢。</string>
     <!-- Text asking for user\'s contact permission -->
-    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">Allow access to your contacts. Your contacts are encrypted and not visible to the Signal service.</string>
+    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">允许访问您的联系人。您的联系人将会被加密，Signal 服务将无法看到您的联系人。</string>
 
     <!-- contact_selection_list_fragment -->
     <string name="contact_selection_list_fragment__signal_needs_access_to_your_contacts_in_order_to_display_them">为了显示联系人，Signal 需要其访问权限。</string>
@@ -3241,8 +3357,12 @@
         <item quantity="other">这将永久删减所有聊天，使之仅保留最近 %1$s 条消息。</item>
     </plurals>
     <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">这将从您的设备中永久删除所有消息记录和媒体文件。</string>
+    <!-- Dialog message warning about delete chat message history will delete everything everywhere including linked devices -->
+    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device_linked_device">这将会从此设备和任何已链接设备上永久删除所有消息历史记录和媒体。</string>
     <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">您确定要删除所有消息记录吗？</string>
     <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">所有消息记录将会被永久删除。此操作无法撤销。</string>
+    <!-- Secondary warning dialog message about deleting all chat message history from everything everywhere including linked devices -->
+    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone_linked_device">所有设备上的所有消息历史记录将会被永久删除。此操作无法撤销。</string>
     <string name="preferences_storage__delete_all_now">马上删除所有</string>
     <string name="preferences_storage__forever">永久</string>
     <string name="preferences_storage__one_year">1 年</string>
@@ -3987,8 +4107,15 @@
     <string name="TransferOrRestoreFragment__you_need_access_to_your_old_device">您需要可访问旧设备。</string>
     <string name="TransferOrRestoreFragment__restore_from_backup">从备份还原</string>
     <string name="TransferOrRestoreFragment__restore_your_messages_from_a_local_backup">从本地备份还原消息。如果现在不进行还原，以后将无法还原。</string>
+    <string name="TransferOrRestoreFragment__restore_from_local_backup">还原本地备份</string>
+    <string name="TransferOrRestoreFragment__restore_from_signal_backup">还原 Signal 备份</string>
+    <string name="TransferOrRestoreFragment__restore_your_messages_from_a_signal_backup">还原您的所有文本消息和最近 30 天的媒体</string>
     <!-- Button label for more options -->
     <string name="TransferOrRestoreFragment__more_options">更多选项</string>
+
+    <string name="TransferOrRestoreFragment__cancel">取消</string>
+    <string name="TransferOrRestoreFragment__skip_transfer">登录但不转移</string>
+    <string name="TransferOrRestoreFragment__skip_transfer_description">继续但不转移您的消息和媒体</string>
 
     <!-- NewDeviceTransferInstructionsFragment -->
     <string name="NewDeviceTransferInstructions__open_signal_on_your_old_android_phone">在旧的 Android 手机上打开 Signal</string>
@@ -4881,9 +5008,6 @@
     <!-- VectorAvatarCreationFragment -->
     <string name="VectorAvatarCreationFragment__select_a_color">选择一种颜色</string>
 
-    <!-- ContactSelectionListItem -->
-    <string name="ContactSelectionListItem__sms">短信</string>
-
     <!-- Displayed in the toolbar when externally sharing text to multiple recipients -->
     <string name="ShareInterstitialActivity__share">分享</string>
 
@@ -4913,7 +5037,8 @@
     </plurals>
     <!-- Error message shown when attempting to select a group to forward/share but it\'s announcement only and you are not an admin -->
     <string name="MultiselectForwardFragment__only_admins_can_send_messages_to_this_group">只有管理员可发送消息至该群组。</string>
-    <string name="MultiselectForwardFragment__limit_reached">已达上限</string>
+    <!-- Error message shown when users try to choose more than 5 chats to send a message to -->
+    <string name="MultiselectForwardFragment__you_cant_select_more_chats">您最多可选 5 个聊天</string>
 
     <!-- Media V2 -->
     <!-- Dialog message when sending a story via an add to group story button -->
@@ -5539,8 +5664,10 @@
     <string name="StoryGroupReplyFragment__no_replies_yet">未有回复</string>
     <!-- Displayed when no longer a group member -->
     <string name="StoryGroupReplyFragment__you_cant_reply">您已不是此群组的成员，因此不能回复此动态。</string>
-    <!-- Displayed for each user that reacted to a story when viewing replies -->
-    <string name="StoryGroupReactionReplyItem__reacted_to_the_story">回应了此动态</string>
+    <!-- Displayed for when you reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__you_reacted_to_the_story">回应了此动态</string>
+    <!-- Displayed for other users that reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__someone_reacted_to_the_story">回应了此动态</string>
     <!-- Label for story views tab -->
     <string name="StoryViewsAndRepliesDialogFragment__views">浏览</string>
     <!-- Label for story replies tab -->
@@ -6710,6 +6837,22 @@
     <!-- Notification title shown while downloading backup restore data -->
     <string name="BackupProgressService_title_downloading">正在下载备份数据…</string>
 
+    <!-- BackupAlertBottomSheet -->
+    <!-- Sheet title when user does not have enough space to download their backup -->
+    <string name="BackupAlertBottomSheet__cant_complete_download">Can\'t complete download</string>
+    <!-- Sheet body part 1 when user does not have enough space to download their backup. Placeholder is the amount of space needed. -->
+    <string name="BackupAlertBottomSheet__your_device_does_not_have_enough_free_space">Your device does not have enough free space. Free up to %1$s of space to download the media stored in your backup.</string>
+    <!-- Sheet body part 2 when user does not have enough space to download their backup. Placeholder is the number of days until deletion -->
+    <string name="BackupAlertBottomSheet__if_you_choose_skip">If you choose \"Skip\" the media in your backup will be deleted in %1$d days.</string>
+    <!-- Clickable text to learn more about the content of this bottom sheet -->
+    <string name="BackupAlertBottomSheet__learn_more">Learn more</string>
+    <!-- Secondary action button text when user does not have enough free space to download their backup. -->
+    <string name="BackupAlertBottomSheet__skip">Skip</string>
+
+    <!-- BackupStatus -->
+    <!-- Status title when user does not have enough free space to download their media. Placeholder is required disk space. -->
+    <string name="BackupStatus__free_up_s_of_space_to_download_your_media">Free up %1$s of space to download your media.</string>
+
     <!-- BackupsTypeSettingsFragment -->
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__credit_or_debit_card">信用卡或借记卡</string>
@@ -6723,6 +6866,12 @@
     <string name="BackupsTypeSettingsFragment__paypal">PayPal</string>
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__unknown">未知</string>
+    <!-- Row title for entering payment history -->
+    <string name="BackupsTypeSettingsFragment__payment_history">Payment history</string>
+
+    <!-- RemoteRestoreActivity -->
+    <!-- Displayed at restore time to tell the user when their last backup was made. %$1s is replaced with the date (e.g. March 5, 2024) and %$2s is replaced with the time (e.g. 9:00am) -->
+    <string name="RemoteRestoreActivity__backup_created_at">您上一次备份的时间是 %1$s %2$s。</string>
 
     <!-- ManageStorageSettingsFragment -->
     <!-- Settings section title header show above manage settings options for automatic chat history management (deleting) -->
@@ -6733,6 +6882,93 @@
     <string name="ManageStorageSettingsFragment_keep_messages_duration_warning">早于选定时间的消息将会被永久删除。</string>
     <!-- Warning message at the bottom of a settings screen indicating how messages will be deleted based on user\'s selection (limit is a number like 500 or 5,000) -->
     <string name="ManageStorageSettingsFragment_chat_length_limit_warning">超过选定长度的消息将会被永久删除。</string>
+    <!-- Setting title for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_title">对已链接设备应用限制</string>
+    <!-- Setting description for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_description">启用后，已链接设备上的消息也会被聊天限制功能删除。</string>
+
+    <!-- Educational bottom sheet dialog title shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_title">删除操作现可在所有设备上同步进行</string>
+    <!-- Educational bottom sheet dialog message shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_message">当您删除消息或聊天时，它们在手机和已链接设备上将会被同步删除。</string>
+    <!-- Educational bottom sheet confirm/dismiss button text shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_acknowledge_button">好</string>
+
+    <!-- RemoteBackupsPaymentHistoryFragment -->
+    <!-- Title of the screen for payment history -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_history">Payment history</string>
+    <!-- Description for backup rows -->
+    <string name="RemoteBackupsPaymentHistoryFragment__text_and_all_media_backup">Text and all media backup</string>
+    <!-- Title of the screen for payment details -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_details">Payment details</string>
+    <!-- Title of row specifying the type of backup -->
+    <string name="RemoteBackupsPaymentHistoryFragment__backup_type">Backup type</string>
+    <!-- Title of row specifying the date the backup was paid on -->
+    <string name="RemoteBackupsPaymentHistoryFragment__date_paid">Date paid</string>
+    <!-- Button label to share the receipt -->
+    <string name="RemoteBackupsPaymentHistoryFragment__share">Share</string>
+
+    <!-- RemoteBackupsSettingsFragment -->
+    <!-- Displayed on the title bar -->
+    <string name="RemoteBackupsSettingsFragment__signal_backups">Signal 备份</string>
+    <!-- Row label to launch payment history screen -->
+    <string name="RemoteBackupsSettingsFragment__payment_history">付款历史</string>
+    <!-- Section header for backup information -->
+    <string name="RemoteBackupsSettingsFragment__backup_details">备份详情</string>
+    <!-- Row label for backup size -->
+    <string name="RemoteBackupsSettingsFragment__backup_size">备份大小</string>
+    <!-- Row label for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__backup_frequency">备份频率</string>
+    <!-- Toggle row label for allowing backups to occur while on cellular connection -->
+    <string name="RemoteBackupsSettingsFragment__back_up_using_cellular">使用蜂窝网络备份</string>
+    <!-- Row label for cancelling and deleting backup -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backup">关闭并删除备份</string>
+    <!-- Snackbar text displayed when backup has been deleted and turned off -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted_and_turned_off">备份已删除并关闭。</string>
+    <!-- Snackbar text displayed when backup type is downgraded -->
+    <string name="RemoteBackupsSettingsFragment__backup_type_changed_and_subcription_deleted">备份类型已更改并已取消备份套餐</string>
+    <!-- Snackbar text displayed when backup subscription is cancelled -->
+    <string name="RemoteBackupsSettingsFragment__subscription_cancelled">备份套餐已取消</string>
+    <!-- Snackbar text displayed when backup is successfully downloaded -->
+    <string name="RemoteBackupsSettingsFragment__download_complete">下载完成</string>
+    <!-- Title text in row detailing selected backup type -->
+    <string name="RemoteBackupsSettingsFragment__backup_type">备份类型</string>
+    <!-- Subtitle text in row detailing selected backup type displayed when backups are disabled -->
+    <string name="RemoteBackupsSettingsFragment__backups_disabled">已停用备份</string>
+    <!-- Format string for backup and cost. First placeholder is backup title, second is cost per month. -->
+    <string name="RemoteBackupsSettingsFragment__s_dot_s_per_month">%1$s · %2$s/月</string>
+    <!-- Button label to enable backups -->
+    <string name="RemoteBackupsSettingsFragment__enable_backups">启用备份</string>
+    <!-- Progress indicator subtext displayed when a backup is in progress -->
+    <string name="RemoteBackupsSettingsFragment__d_slash_d">%1$d/%2$d</string>
+    <!-- Title text in row detailing last backup -->
+    <string name="RemoteBackupsSettingsFragment__last_backup">上次备份</string>
+    <!-- Subtext describing when a backup took place. First placeholder is the day, second is time. -->
+    <string name="RemoteBackupsSettingsFragment__s_at_s">%1$s 于 %2$s</string>
+    <!-- Subtext describing when a backup has never taken place. -->
+    <string name="RemoteBackupsSettingsFragment__never">永不</string>
+    <!-- Button label to perform a backup immediately -->
+    <string name="RemoteBackupsSettingsFragment__back_up_now">现在备份</string>
+    <!-- Dialog title when confirming whether to turn off and deleting backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backups">要关闭并删除备份？</string>
+    <!-- Dialog message when confirming whether to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__you_will_not_be_charged_again">您将不会再被收取费用。您的备份将被删除，并且不会创建新的备份。</string>
+    <!-- Confirmation action on dialog to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete">关闭和删除</string>
+    <!-- Text on dialog while user backup is being deleted -->
+    <string name="RemoteBackupsSettingsFragment__deleting_backup">正在删除备份…</string>
+    <!-- Text on dialog when user backup is deleted -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted">备份已删除</string>
+    <!-- Subtitle for frequency option MANUAL for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__by_tapping_back_up_now">"手动点击“立即备份”"</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__daily">每日</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__weekly">每周</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__monthly">每月</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__manually_back_up">手动备份</string>
 
     <!-- EOF -->
 </resources>

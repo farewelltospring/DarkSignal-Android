@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2024 Signal Messenger, LLC
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  -->
 <!-- smartling.instruction_comments_enabled = on -->
 <resources>
   <!-- Removed by excludeNonTranslatables <string name="app_name" translatable="false">Signal</string> -->
@@ -226,37 +230,37 @@
     <string name="CameraXFragment_change_camera_description">Смени камера</string>
     <string name="CameraXFragment_open_gallery_description">Отвори галерија</string>
     <!-- Button text asking for access to camera permissions -->
-    <string name="CameraXFragment_allow_access">Allow access</string>
+    <string name="CameraXFragment_allow_access">Дозволи пристап</string>
     <!-- Dialog title asking users for camera and microphone permission -->
-    <string name="CameraXFragment_allow_access_camera_microphone">Allow access to your camera and microphone</string>
+    <string name="CameraXFragment_allow_access_camera_microphone">Дозволете пристап до камерата и микрофонот</string>
     <!-- Dialog title asking users for camera permission -->
-    <string name="CameraXFragment_allow_access_camera">Allow access to your camera</string>
+    <string name="CameraXFragment_allow_access_camera">Дозволете пристап до камерата</string>
     <!-- Dialog title asking users for microphone permission -->
-    <string name="CameraXFragment_allow_access_microphone">Allow access to your microphone</string>
+    <string name="CameraXFragment_allow_access_microphone">Дозволи пристап до микрофонот</string>
     <!-- Text explaining why Signal needs camera access in order to take photos -->
-    <string name="CameraXFragment_to_capture_photos_allow_camera">To capture photos, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_allow_camera">За да сликате, дозволете му на Signal пристап до камерата.</string>
     <!-- Text explaining why Signal needs camera access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">To capture photos and video, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera">За да снимате фотографии и видеа, дозволете му на Signal пристап до камерата.</string>
     <!-- Text explaining why Signal needs camera and microphone access in order to take photos and videos -->
-    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">To capture photos and video, allow Signal access to the camera and microphone.</string>
+    <string name="CameraXFragment_to_capture_photos_and_video_allow_camera_microphone">За да снимате фотографии и видеа, дозволете му на Signal пристап до камерата и микрофонот.</string>
     <!-- Text explaining why Signal needs microphone access to take videos -->
-    <string name="CameraXFragment_to_capture_videos_with_sound">To capture videos with sound, allow Signal access to your microphone.</string>
+    <string name="CameraXFragment_to_capture_videos_with_sound">За да снимате видеа со звук, дозволете му на Signal пристап до вашиот микрофон.</string>
     <!-- Text explaining why Signal needs camera access to scan QR codes -->
-    <string name="CameraXFragment_to_scan_qr_code_allow_camera">To scan a QR code, allow Signal access to the camera.</string>
+    <string name="CameraXFragment_to_scan_qr_code_allow_camera">За да скенирате QR код, дозволете му на Signal пристап до камерата.</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when capturing photos -->
-    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">Signal needs camera access to capture photos</string>
+    <string name="CameraXFragment_signal_needs_camera_access_capture_photos">На Signal му треба пристап до вашата камера за да слика</string>
     <!-- Toast dialog explaining why Signal needs camera permissions when scanning QR codes -->
-    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">Signal needs camera access to scan QR codes</string>
+    <string name="CameraXFragment_signal_needs_camera_access_scan_qr_code">На Signal му треба пристап до камерата за да скенира QR кодови</string>
     <!-- Toast dialog explaining why Signal needs microphone permissions -->
-    <string name="CameraXFragment_signal_needs_microphone_access_video">Signal needs microphone access to capture video</string>
+    <string name="CameraXFragment_signal_needs_microphone_access_video">На Signal му треба пристап до вашиот микрофон за да снима видео</string>
     <!-- Dialog description that explains the steps needed to give camera permission -->
-    <string name="CameraXFragment_to_capture_photos">To capture photos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos">За да сликате со Signal:</string>
     <!-- Dialog description that explains the steps needed to give camera and microphone permission -->
-    <string name="CameraXFragment_to_capture_photos_videos">To capture photos and videos in Signal:</string>
+    <string name="CameraXFragment_to_capture_photos_videos">За да снимате фотографии и видеа преку Signal:</string>
     <!-- Dialog description that explains the steps needed to give microphone permission -->
-    <string name="CameraXFragment_to_capture_videos">To capture videos with sound:</string>
+    <string name="CameraXFragment_to_capture_videos">За да снимате видеа со звук:</string>
     <!-- Dialog description that explains the steps needed to give Signal camera permissions -->
-    <string name="CameraXFragment_to_scan_qr_codes">To scan QR codes:</string>
+    <string name="CameraXFragment_to_scan_qr_codes">За да скенирате QR кодови:</string>
 
     <!-- CameraContacts -->
     <string name="CameraContacts_recent_contacts">Скорешни контакти</string>
@@ -327,8 +331,8 @@
 
     <!-- ContactsDatabase -->
     <string name="ContactsDatabase_message_s">Порака %1$s</string>
-    <string name="ContactsDatabase_signal_call_s">Signal Voice Call %1$s</string>
-    <string name="ContactsDatabase_signal_video_call_s">Signal Video Call %1$s</string>
+    <string name="ContactsDatabase_signal_call_s">Signal гласовен повик %1$s</string>
+    <string name="ContactsDatabase_signal_video_call_s">Signal видео повик %1$s</string>
 
     <!-- ContactNameEditActivity -->
     <!-- Toolbar title for contact name edit activity -->
@@ -545,6 +549,8 @@
     <string name="ConversationFragment_delete_for_everyone">Избриши за сите</string>
     <!-- Dialog button for deleting one or more note-to-self messages only on this device, leaving that same message intact on other devices. -->
     <string name="ConversationFragment_delete_on_this_device">Избриши на овој уред</string>
+    <!-- Dialog button for deleting one or more note-to-self messages that will be sync\'d to other devices -->
+    <string name="ConversationFragment_delete">Избриши</string>
     <!-- Dialog button for deleting one or more note-to-self messages on all linked devices. -->
     <string name="ConversationFragment_delete_everywhere">Избриши секаде</string>
     <string name="ConversationFragment_this_message_will_be_deleted_for_everyone_in_the_conversation">Оваа порака ќе биде избришана за сите во разговорот ако ја користат најновата верзија на Signal. Тие ќе можат да видат дека сте ја избришале пораката.</string>
@@ -646,6 +652,11 @@
     <plurals name="ConversationListFragment_this_will_permanently_delete_all_n_selected_conversations">
         <item quantity="one">Ова трајно ќе го избрише избраниот разговор.</item>
         <item quantity="other">Ова трајно ќе ги избрише сите %1$d избрани разговори.</item>
+    </plurals>
+    <!-- Dialog message shown when deleting one to many conversations from the chat list and the user has a linked device -->
+    <plurals name="ConversationListFragment_this_will_permanently_delete_all_n_selected_conversations_linked_device">
+        <item quantity="one">Ова трајно ќе го избрише избраниот разговор од сите ваши уреди.</item>
+        <item quantity="other">Ова трајно ќе ги избрише сите %1$d избрани разговори од сите ваши уреди.</item>
     </plurals>
     <string name="ConversationListFragment_deleting">Бришење</string>
     <plurals name="ConversationListFragment_deleting_selected_conversations">
@@ -849,6 +860,61 @@
     <string name="DecryptionFailedDialog_chat_session_refreshed">Сесијата со разговорот е освежена</string>
     <string name="DecryptionFailedDialog_signal_uses_end_to_end_encryption">Signal користи шифрирање од-крај-до-крај и можно е да има потреба да ги освежи Вашите разговори понекогаш. Ова нема никаков ефект на безбедноста на разговорите, но може да се случи да пропуштите порака од овој контакт. Затоа можете да го прашате повторно да ја испрати пораката.</string>
 
+    <!-- LinkDeviceFragment -->
+    <!-- Description for how Signal will work with a linked device (eg desktop, iPad) -->
+    <string name="LinkDeviceFragment__use_signal_on_desktop_ipad">Користете Signal на десктоп или iPad. Вашите пораки ќе се синхронизираат на поврзаните уреди.</string>
+    <!-- Button prompting users to link a new device to their account -->
+    <string name="LinkDeviceFragment__link_a_new_device">Поврзете нов уред</string>
+    <!-- Text explaining that on linked devices, messages will be encrypted where %s will be replaced with an image-->
+    <string name="LinkDeviceFragment__messages_and_chat_info_are_protected">%1$s Пораките и информациите за разговорите се заштитени со целосно шифрирање на сите уреди</string>
+    <!-- Bottom sheet title explaining how Signal works on a linked device -->
+    <string name="LinkDeviceFragment__signal_on_desktop_ipad">Signal on desktop or iPad</string>
+    <!-- Bottom sheet description explaining that messages on linked devices are private -->
+    <string name="LinkDeviceFragment__all_messaging_is_private">Допишувањето на поврзаните уреди е приватно</string>
+    <!-- Bottom sheet description explaining that future messages on linked devices will be in sync with your phone but previous messages will not appear -->
+    <string name="LinkDeviceFragment__signal_messages_are_synchronized">Signal пораките се синхрoнизираат со Signal на вашиот телефон откако ќе се поврзе. Нема да се појави претходната историја на разговори.</string>
+    <!-- Bottom sheet description explaining that for non-desktop/iPad devices, they should go to %s to download Signal where %s is Signal\'s website -->
+    <string name="LinkDeviceFragment__on_other_device_visit_signal">Посетете ја %1$s на вашиот друг уред за да инсталирате Signal</string>
+  <!-- Removed by excludeNonTranslatables <string name="LinkDeviceFragment__signal_download_url" translatable="false">signal.org/download</string> -->
+    <!-- Header title listing out current linked devices -->
+    <string name="LinkDeviceFragment__my_linked_devices">Мои поврзани уреди</string>
+    <!-- Dialog confirmation to unlink a device -->
+    <string name="LinkDeviceFragment__unlink">Неповрзан</string>
+    <!-- Toast message indicating a device has been unlinked where %s is the name of the device -->
+    <string name="LinkDeviceFragment__s_unlinked">Неповрзан: %1$s</string>
+    <!-- Progress dialog message indicating that a device is currently being linked with an account -->
+    <string name="LinkDeviceFragment__linking_device">Поврзување на уред…</string>
+    <!-- Toast message shown after a device has been linked -->
+    <string name="LinkDeviceFragment__device_approved">Уредот е одобрен</string>
+    <!-- Progress dialog message indicating that the list of linked devices is currently loading -->
+    <string name="LinkDeviceFragment__loading">Се вчитува…</string>
+    <!-- Text message shown when the user has no linked devices -->
+    <string name="LinkDeviceFragment__no_linked_devices">Нема поврзани уреди</string>
+    <!-- Title on biometrics prompt explaining what biometrics are being used for -->
+    <string name="LinkDeviceFragment__unlock_to_link">Unlock to link a device</string>
+
+    <!-- AddLinkDeviceFragment -->
+    <!-- Description text shown on the QR code scanner when linking a device -->
+    <string name="AddLinkDeviceFragment__scan_the_qr_code">Скенирајте го QR кодот прикажан на уредот за да се поврзете.</string>
+    <!-- Bottom sheet title telling users to scan a qr code -->
+    <string name="AddLinkDeviceFragment__scan_qr_code">Скенирајте го QR кодот</string>
+    <!-- Bottom sheet description telling users how to scan a qr code -->
+    <string name="AddLinkDeviceFragment__use_this_device_to_scan_qr_code">Користете го овој уред за да го скенирате QR кодот прикажан на уредот што сакате да го поврзете</string>
+    <!-- Confirmation button to dismiss bottom sheet dialog -->
+    <string name="AddLinkDeviceFragment__okay">Во ред</string>
+    <!-- Dialog text describing the consequences of linking a device -->
+    <string name="AddLinkDeviceFragment__this_device_will_see_your_groups_contacts">Овој уред ќе може да ги види Вашите групи и контакти, да им пристапи на Вашите разговори и да испраќа пораки во Ваше име.</string>
+    <!-- Bottom sheet title telling users to complete the linking process on the other device  -->
+    <string name="AddLinkDeviceFragment__finish_linking_on_other_device">Завршете со поврзувањето на вашиот друг уред</string>
+    <!-- Bottom sheet description telling users to complete the linking process -->
+    <string name="AddLinkDeviceFragment__finish_linking_signal">Завршете со поврзувањето на Signal на вашиот друг уред.</string>
+    <!-- Title of dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__linking_device_failed">Неуспешно поврзување на уредот</string>
+    <!-- Text shown in a dialog when the QR code being scanned is invalid -->
+    <string name="AddLinkDeviceFragment__this_qr_code_not_valid">Овој QR код не е валиден. Ве молиме осигурајте се дека сте го скенирале QR кодот кој што е прикажан на уредот на кој сакате да се поврзете.</string>
+    <!-- Button in dialog to retry linking a device with a qr code -->
+    <string name="AddLinkDeviceFragment__retry">Обидете се повторно</string>
+
     <!-- DeviceListActivity -->
     <string name="DeviceListActivity_unlink_s">Да го одврзам \'%1$s\'?</string>
     <string name="DeviceListActivity_by_unlinking_this_device_it_will_no_longer_be_able_to_send_or_receive">Ако го одврзете овој уред истиот повеќе нема да може да праќа и прима пораки.</string>
@@ -1033,10 +1099,11 @@
     <!-- Button to continue to try and disable battery saver -->
     <string name="PromptBatterySaverBottomSheet__continue">Продолжи</string>
     <!-- Button to dismiss battery saver dialog prompt-->
-    <string name="PromptBatterySaverBottomSheet__dismiss">Откажи</string>
+    <string name="PromptBatterySaverBottomSheet__no_thanks">No thanks</string>
+  <!-- Removed by excludeNonTranslatables <string name="PromptBatterySaverBottomSheet__learn_more_url" translatable="false">https://support.signal.org/hc/articles/360007318711#android_notifications_troubleshooting</string> -->
 
     <!-- PendingMembersActivity -->
-    <string name="PendingMembersActivity_pending_group_invites">Групни покани на чекање</string>
+    <string name="PendingMembersActivity_pending_group_invites">Барања и покани</string>
     <string name="PendingMembersActivity_requests">Барања</string>
     <string name="PendingMembersActivity_invites">Покани</string>
     <string name="PendingMembersActivity_people_you_invited">Луѓе кои ги поканивте</string>
@@ -1627,6 +1694,14 @@
     <string name="MessageRecord_you_activated_payments">Активиравте плаќања</string>
     <!-- Message to inform sender that recipient can now accept payments -->
     <string name="MessageRecord_can_accept_payments">%1$s сега може да прифаќа плаќања</string>
+    <!-- Message shown to inform user that a payment is missing details due to restore -->
+    <string name="MessageRecord_payments_restore_tombstone">Не се достапни детали за плаќањето</string>
+    <!-- Message shown to inform user to tap the payment to learn more about why the details arent available -->
+    <string name="MessageRecord_payments_restore_tombstone_tap_more">Допрете за повеќе</string>
+    <!-- Title for dialog explaining why a specific mobile coin payment does not have any transaction details -->
+    <string name="PaymentTombstoneLearnMoreDialog_title">Не се достапни детали за плаќањето</string>
+    <!-- Message for dialog explaining why a specific mobile coin payment does not have any transaction details because it was restored from a backup-->
+    <string name="PaymentTombstoneLearnMoreDialog_message">Деталите за ова плаќање не се достапни зашто вашите пораки се вратени од извор кој не ја содржел историјата на ова плаќање. Ова не влијае на средствата на вашата сметка или на статусот на поранешните плаќања.</string>
 
     <!-- Group Calling update messages -->
     <!-- Chat log text for an ongoing group call that has one participant with a placeholder for the short display name of the user that joined and a placeholder for formatted time -->
@@ -1686,6 +1761,8 @@
     <string name="MessageRecord__you_can_no_longer_send_sms_messages_in_signal">Повеќе не можете да испраќате SMS пораки на Signal. Испратете покана на %1$s за користење Signal за да продолжите со разговорот тука.</string>
     <!-- Body for quote when message being quoted is an in-app payment message -->
     <string name="MessageRecord__payment_s">Плаќања: %1$s</string>
+    <!-- Body for quote when message being quoted is an in-app payment message tombstone without an amount -->
+    <string name="MessageRecord__payment_tombstone">Плаќања</string>
     <!-- Update message shown in chat after reporting it as spam -->
     <string name="MessageRecord_reported_as_spam">Пријавено како спам</string>
     <!-- Update message shown in chat after accept a message request -->
@@ -1869,7 +1946,8 @@
     <string name="RedPhone_ringing">Ѕвонам…</string>
     <string name="RedPhone_busy">Зафатено</string>
     <string name="RedPhone_recipient_unavailable">Примателот не е достапен.</string>
-    <string name="RedPhone_network_failed">Мрежата падна!</string>
+    <!-- Error message shown during a call when a fatal network error occurs. -->
+    <string name="RedPhone_network_failed">Мрежата падна! Ве молиме проверете ја вашата мрежна поврзаност и обидете се повторно.</string>
     <string name="RedPhone_number_not_registered">Бројот не е регистриран!</string>
     <string name="RedPhone_the_number_you_dialed_does_not_support_secure_voice">Бројот што го биравте не поддржува безбедни гласовни повици!</string>
     <string name="RedPhone_got_it">Во ред</string>
@@ -1935,6 +2013,26 @@
     <string name="WebRtcCallActivity__removed_from_call">Отстранети сте од повикот</string>
     <!-- Message of dialog displayed when a user is removed from a call link -->
     <string name="WebRtcCallActivity__someone_has_removed_you_from_the_call">Некој ве отстранил од повикот.</string>
+    <!-- Dialog title asking users for camera and microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_camera_microphone">Дозволете пристап до камерата и микрофонот</string>
+    <!-- Dialog title asking users for microphone permission -->
+    <string name="WebRtcCallActivity__allow_access_microphone">Дозволи пристап до микрофонот</string>
+    <!-- Dialog title asking users for camera permission -->
+    <string name="WebRtcCallActivity__allow_access_camera">Дозволете пристап до камерата</string>
+    <!-- Dialog description explaining why camera and microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_camera_microphone">Дозволете пристап на Signal до вашите камера и микрофон за да започнете или да се приклучите на повик.</string>
+    <!-- Dialog description explaining why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__to_start_call_microphone">Дозволете пристап на Signal до вашиот микрофон за да започнете или да се приклучите на повик.</string>
+    <!-- Dialog description explaining why camera permissions are needed to enable a user\'s video in a call -->
+    <string name="WebRtcCallActivity__to_enable_video_allow_camera">За да снимате видеа, дозволете му на Signal пристап до камерата.</string>
+    <!-- Toast describing why microphone permissions are needed to start or join a call -->
+    <string name="WebRtcCallActivity__signal_needs_microphone_start_call">Signal има потреба од дозвола до микрофонот за да започнете или да се приклучите на повик.</string>
+    <!-- Toast describing why camera permissions are needed to enable a video in a call -->
+    <string name="WebRtcCallActivity__signal_needs_camera_access_enable_video">На Signal му треба пристап до вашата камера за да снима</string>
+    <!-- Dialog description that will explain the steps needed to give microphone permissions -->
+    <string name="WebRtcCallActivity__to_start_call">За да започнете или да се приклучите на повик:</string>
+    <!-- Dialog description that will explain the steps needed to give camera permissions -->
+    <string name="WebRtcCallActivity__to_enable_video">За да снимате:</string>
 
     <!-- WebRtcCallView -->
     <string name="WebRtcCallView__signal_call">Signal повик</string>
@@ -2031,19 +2129,38 @@
     <string name="CallOverflowPopupWindow__lower_hand">Спуштете ја раката</string>
     <!-- A negative button for a dialog confirming the user wants to lower their hand (withdraw a raised hand) -->
     <string name="CallOverflowPopupWindow__cancel">Откажи</string>
-    <!-- A notification to the user that they successfully raised their hand -->
-    <string name="CallOverflowPopupWindow__you_raised_your_hand">Кренавте рака</string>
     <!-- A button to take you to a list of participants with raised hands -->
     <string name="CallOverflowPopupWindow__view">Поглед</string>
 
-    <!-- A notification to the user that one or more participants in the call successfully raised their hand. In the singular case, it is a name. In the plural case, it is a name or "You" -->
-    <plurals name="CallOverflowPopupWindow__raised_a_hand">
-        <item quantity="one">%1$s има кренато рака</item>
+
+    <!-- A notification to the user that they successfully raised their hand. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_single">%1$s крена рака</string>
+    <!-- A notification to the user that they and at least one more participants in the call successfully raised their hand. The placeholder is a number quantifying how many other hands are also raised, besides the user. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_multiple">
+        <item quantity="one">%1$s +%2$d имате кренато рака</item>
         <item quantity="other">%1$s + %2$d имаат кренато рака</item>
     </plurals>
 
-    <!-- A badge to show how many hands are raised. The first string may be a name or "You" -->
-    <plurals name="CallRaiseHandSnackbar_raised_hands">
+    <!-- A notification to the user that one participant in the call successfully raised their hand. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_single">%1$s крена рака</string>
+    <!-- A notification to the user that two or more participants in the call successfully raised their hand. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_multiple">
+        <item quantity="one">%1$s +%2$d имаат кренато рака</item>
+        <item quantity="other">%1$s +%2$d имаат кренато рака</item>
+    </plurals>
+
+    <!-- A badge to show the user has their hand raised. The placeholder string is CallParticipant__you, or CallParticipant__you_on_another_device -->
+    <string name="CallRaiseHandSnackbar__collapsed_second_person_raised_hand_single">%1$s</string>
+    <!-- A badge to show the user and at least one other participant in the call have their hand raised. The placeholder is a number quantifying how many other hands are also raised, besides the user.  -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_second_person_raised_hands_multiple">
+        <item quantity="one">%1$s</item>
+        <item quantity="other">%1$s +%2$d</item>
+    </plurals>
+
+    <!-- A badge to show how many hands are raised. The placeholder string is a name. -->
+    <string name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_singular">%1$s</string>
+    <!-- A badge to show how many hands are raised. The first placeholder is a name. The second placeholder is a number quantifying how many other hands are also raised, in addition to the name. -->
+    <plurals name="CallRaiseHandSnackbar__collapsed_third_person_raised_hands_multiple">
         <item quantity="one">%1$s</item>
         <item quantity="other">%1$s +%2$d</item>
     </plurals>
@@ -2186,8 +2303,8 @@
     <string name="RegistrationActivity_support_bottom_sheet_title">Имате проблеми при регистрација?</string>
     <!--    A list of suggestions to try for a user having trouble entering their verification code.-->
     <string name="RegistrationActivity_support_bottom_sheet_body_suggestions">• Проверете дали вашиот телефон има сигнал за да ја прими пораката или повикот\n• Проверете дали можете да примите повик на овој број\n• Проверете дали точно го внесовте телефонскиот број.</string>
-    <!--    A call to action for a user having trouble entering the verification to seek further help. -->
-    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">За повеќе информации, следете ги овие чекори за решавање на проблеми или контактирајте го тимот за корисничка поддршка</string>
+    <!--    A call to action for a user having trouble entering the verification to seek further help. The first placeholder is RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring, the second is RegistrationActivity_support_bottom_sheet_cta_contact_support_substring -->
+    <string name="RegistrationActivity_support_bottom_sheet_body_call_to_action">За повеќе информации ве молиме следете ги %1$s или %2$s</string>
     <!--    A clickable piece of text that will take the user to our website with additional suggestions.-->
     <string name="RegistrationActivity_support_bottom_sheet_cta_troubleshooting_steps_substring">овие чекори за решавање на проблеми</string>
     <!--    A clickable piece of text that will pre-fill a request for support email in the user\'s email app.-->
@@ -2713,9 +2830,9 @@
     <!-- Row item description for refreshing contacts -->
     <string name="contact_selection_activity__missing_someone">Ви недостига некој? Пробајте да ги освежите контактите</string>
     <!-- Row item title for finding people on Signal via your contacts -->
-    <string name="contact_selection_activity__find_people_you_know">Find people you know on Signal</string>
+    <string name="contact_selection_activity__find_people_you_know">Пронајдете луѓе кои ги познавате на Signal</string>
     <!-- Row item description asking users for access to their contacts to find people they know -->
-    <string name="contact_selection_activity__allow_access_to_contacts">Allow access to your contacts</string>
+    <string name="contact_selection_activity__allow_access_to_contacts">Дозволете пристап до вашите контакти</string>
     <!-- Row header title for more section -->
     <string name="contact_selection_activity__more">Повеќе</string>
 
@@ -2750,13 +2867,15 @@
     <!-- Text on row item to find user by username -->
     <string name="ContactSelectionListFragment__find_by_username">Пронајдете со корисничко име</string>
     <!-- Dialog title asking users for contact permission -->
-    <string name="ContactSelectionListFragment_allow_access_contacts">Allow access to contacts</string>
+    <string name="ContactSelectionListFragment_allow_access_contacts">Дозолете пристап до контактите</string>
     <!-- Dialog description that will explain the steps needed to give contact permissions -->
-    <string name="ContactSelectionListFragment_to_find_people">To find people you know on Signal:</string>
+    <string name="ContactSelectionListFragment_to_find_people">За да пронајдете луѓе кои ги познавате на Signal:</string>
     <!-- Text on button prompting users to give Signal contact permissions -->
-    <string name="ContactSelectionListFragment__allow_access">Allow access</string>
+    <string name="ContactSelectionListFragment__allow_access">Дозволи пристап</string>
+    <!-- Text on button to dismiss Signal\'s request for contact permissions -->
+    <string name="ContactSelectionListFragment__no_thanks">Не, благодарам</string>
     <!-- Text asking for user\'s contact permission -->
-    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">Allow access to your contacts. Your contacts are encrypted and not visible to the Signal service.</string>
+    <string name="ContactSelectionListFragment__allow_access_to_your_contacts_encrypted">Дозволете пристап до вашите контакти. Вашите контакти се шифрирани и не се видливи за услугата Signal.</string>
 
     <!-- contact_selection_list_fragment -->
     <string name="contact_selection_list_fragment__signal_needs_access_to_your_contacts_in_order_to_display_them">На Signal му треба пристап до Вашите контакти за да може да ги прикаже.</string>
@@ -3337,8 +3456,12 @@
         <item quantity="other">Ова трајно ќе ги скрати сите разговори до најскорешните %1$s пораки.</item>
     </plurals>
     <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device">Ова трајно ќе ја избрише цела историја на пораки и медиумски датотеки од вашиот уред.</string>
+    <!-- Dialog message warning about delete chat message history will delete everything everywhere including linked devices -->
+    <string name="preferences_storage__this_will_delete_all_message_history_and_media_from_your_device_linked_device">Ова трајно ќе ја избрише цела историја на пораки и медиумски датотеки од овој и сите поврзани уреди.</string>
     <string name="preferences_storage__are_you_sure_you_want_to_delete_all_message_history">Дали сте сигурни дека сакате да ја избришете цела историја на пораки?</string>
     <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone">Целата историја на пораки ќе биде трајно отстранета. Ова дејство е неповратно.</string>
+    <!-- Secondary warning dialog message about deleting all chat message history from everything everywhere including linked devices -->
+    <string name="preferences_storage__all_message_history_will_be_permanently_removed_this_action_cannot_be_undone_linked_device">Целата историја на пораки ќе биде трајно отстранета од сите уреди. Ова дејство е неповратно.</string>
     <string name="preferences_storage__delete_all_now">Избриши сѐ веднаш</string>
     <string name="preferences_storage__forever">Засекогаш</string>
     <string name="preferences_storage__one_year">1 година</string>
@@ -4093,8 +4216,15 @@
     <string name="TransferOrRestoreFragment__you_need_access_to_your_old_device">Потребен ви е пристап до стариот уред.</string>
     <string name="TransferOrRestoreFragment__restore_from_backup">Врати од резервна копија</string>
     <string name="TransferOrRestoreFragment__restore_your_messages_from_a_local_backup">Вратете ги Вашите пораки од локална резервна копија. Ако не ги вратите сега нема да можете да го направите тоа подоцна.</string>
+    <string name="TransferOrRestoreFragment__restore_from_local_backup">Вратете податоци од локална резервна копија</string>
+    <string name="TransferOrRestoreFragment__restore_from_signal_backup">Вратете податоци од Signal резервна копија</string>
+    <string name="TransferOrRestoreFragment__restore_your_messages_from_a_signal_backup">Вратете ги сите ваши текстуални пораки + медиумските датотеки од последните 30 дена</string>
     <!-- Button label for more options -->
     <string name="TransferOrRestoreFragment__more_options">Повеќе опции</string>
+
+    <string name="TransferOrRestoreFragment__cancel">Откажи</string>
+    <string name="TransferOrRestoreFragment__skip_transfer">Најавете се без пренос</string>
+    <string name="TransferOrRestoreFragment__skip_transfer_description">Продолжете без пренос на вашите пораки и медиумски датотеки</string>
 
     <!-- NewDeviceTransferInstructionsFragment -->
     <string name="NewDeviceTransferInstructions__open_signal_on_your_old_android_phone">Отворете го Signal на Вашиот стар телефон</string>
@@ -4773,7 +4903,7 @@
 
     <!-- ChatColorSelectionFragment -->
     <!-- Text shown on a circle button to indicate the app will automatically select a color for conversation bubbles for this chat. -->
-    <string name="ChatColorSelectionFragment__auto">Автоматски</string>
+    <string name="ChatColorSelectionFragment__auto">Дадена</string>
     <string name="ChatColorSelectionFragment__use_custom_colors">Користи сопствени бои</string>
     <string name="ChatColorSelectionFragment__chat_color">Боја на разговор</string>
     <string name="ChatColorSelectionFragment__edit">Измени</string>
@@ -4999,9 +5129,6 @@
     <!-- VectorAvatarCreationFragment -->
     <string name="VectorAvatarCreationFragment__select_a_color">Избери боја</string>
 
-    <!-- ContactSelectionListItem -->
-    <string name="ContactSelectionListItem__sms">SMS</string>
-
     <!-- Displayed in the toolbar when externally sharing text to multiple recipients -->
     <string name="ShareInterstitialActivity__share">Сподели</string>
 
@@ -5035,7 +5162,8 @@
     </plurals>
     <!-- Error message shown when attempting to select a group to forward/share but it\'s announcement only and you are not an admin -->
     <string name="MultiselectForwardFragment__only_admins_can_send_messages_to_this_group">Само администраторите можат да испраќаат пораки во оваа група.</string>
-    <string name="MultiselectForwardFragment__limit_reached">Постигнат максимум</string>
+    <!-- Error message shown when users try to choose more than 5 chats to send a message to -->
+    <string name="MultiselectForwardFragment__you_cant_select_more_chats">Не можете да изберете повеќе од 5 разговори</string>
 
     <!-- Media V2 -->
     <!-- Dialog message when sending a story via an add to group story button -->
@@ -5666,8 +5794,10 @@
     <string name="StoryGroupReplyFragment__no_replies_yet">Сè уште нема одговори</string>
     <!-- Displayed when no longer a group member -->
     <string name="StoryGroupReplyFragment__you_cant_reply">Не можете да одговорите на приказната бидејќи повеќе не сте член на оваа група.</string>
-    <!-- Displayed for each user that reacted to a story when viewing replies -->
-    <string name="StoryGroupReactionReplyItem__reacted_to_the_story">Реагираше на приказната</string>
+    <!-- Displayed for when you reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__you_reacted_to_the_story">Реагиравте на приказната</string>
+    <!-- Displayed for other users that reacted to a story when viewing replies -->
+    <string name="StoryGroupReactionReplyItem__someone_reacted_to_the_story">Реагираше на приказната</string>
     <!-- Label for story views tab -->
     <string name="StoryViewsAndRepliesDialogFragment__views">Прегледи</string>
     <!-- Label for story replies tab -->
@@ -6861,6 +6991,22 @@
     <!-- Notification title shown while downloading backup restore data -->
     <string name="BackupProgressService_title_downloading">Се преземаат податоците од резервната копија…</string>
 
+    <!-- BackupAlertBottomSheet -->
+    <!-- Sheet title when user does not have enough space to download their backup -->
+    <string name="BackupAlertBottomSheet__cant_complete_download">Can\'t complete download</string>
+    <!-- Sheet body part 1 when user does not have enough space to download their backup. Placeholder is the amount of space needed. -->
+    <string name="BackupAlertBottomSheet__your_device_does_not_have_enough_free_space">Your device does not have enough free space. Free up to %1$s of space to download the media stored in your backup.</string>
+    <!-- Sheet body part 2 when user does not have enough space to download their backup. Placeholder is the number of days until deletion -->
+    <string name="BackupAlertBottomSheet__if_you_choose_skip">If you choose \"Skip\" the media in your backup will be deleted in %1$d days.</string>
+    <!-- Clickable text to learn more about the content of this bottom sheet -->
+    <string name="BackupAlertBottomSheet__learn_more">Learn more</string>
+    <!-- Secondary action button text when user does not have enough free space to download their backup. -->
+    <string name="BackupAlertBottomSheet__skip">Skip</string>
+
+    <!-- BackupStatus -->
+    <!-- Status title when user does not have enough free space to download their media. Placeholder is required disk space. -->
+    <string name="BackupStatus__free_up_s_of_space_to_download_your_media">Free up %1$s of space to download your media.</string>
+
     <!-- BackupsTypeSettingsFragment -->
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__credit_or_debit_card">Кредитна или дебитна картичка</string>
@@ -6874,6 +7020,12 @@
     <string name="BackupsTypeSettingsFragment__paypal">PayPal</string>
     <!-- Displayed as the user\'s payment method as a label in a preference row -->
     <string name="BackupsTypeSettingsFragment__unknown">Непознато</string>
+    <!-- Row title for entering payment history -->
+    <string name="BackupsTypeSettingsFragment__payment_history">Payment history</string>
+
+    <!-- RemoteRestoreActivity -->
+    <!-- Displayed at restore time to tell the user when their last backup was made. %$1s is replaced with the date (e.g. March 5, 2024) and %$2s is replaced with the time (e.g. 9:00am) -->
+    <string name="RemoteRestoreActivity__backup_created_at">Вашата последна резервна копија беше направена на %1$s во %2$s.</string>
 
     <!-- ManageStorageSettingsFragment -->
     <!-- Settings section title header show above manage settings options for automatic chat history management (deleting) -->
@@ -6884,6 +7036,93 @@
     <string name="ManageStorageSettingsFragment_keep_messages_duration_warning">Пораките постари од избраниот период ќе бидат трајно избришани.</string>
     <!-- Warning message at the bottom of a settings screen indicating how messages will be deleted based on user\'s selection (limit is a number like 500 or 5,000) -->
     <string name="ManageStorageSettingsFragment_chat_length_limit_warning">Пораките што ја надминуваат избраната должина ќе бидат трајно избришани.</string>
+    <!-- Setting title for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_title">Примени ги ограничувањата на поврзани уреди</string>
+    <!-- Setting description for syncing automated chat limit trimming (deleting messages automatically by length or date) to linked devices -->
+    <string name="ManageStorageSettingsFragment_apply_limits_description">Кога ограничувањето за максимален број на пораки во разговор е овозможено, ќе се бришат и пораките од поврзаните уреди.</string>
+
+    <!-- Educational bottom sheet dialog title shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_title">Бришењето сега е синхронизирано на сите ваши уреди</string>
+    <!-- Educational bottom sheet dialog message shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_message">Кога бришете пораки или разговори, тие ќе бидат избришани од вашиот телефон и сите поврзани уреди.</string>
+    <!-- Educational bottom sheet confirm/dismiss button text shown to notify about delete syncs causing deletes to happen across all devices -->
+    <string name="DeleteSyncEducation_acknowledge_button">Во ред</string>
+
+    <!-- RemoteBackupsPaymentHistoryFragment -->
+    <!-- Title of the screen for payment history -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_history">Payment history</string>
+    <!-- Description for backup rows -->
+    <string name="RemoteBackupsPaymentHistoryFragment__text_and_all_media_backup">Text and all media backup</string>
+    <!-- Title of the screen for payment details -->
+    <string name="RemoteBackupsPaymentHistoryFragment__payment_details">Payment details</string>
+    <!-- Title of row specifying the type of backup -->
+    <string name="RemoteBackupsPaymentHistoryFragment__backup_type">Backup type</string>
+    <!-- Title of row specifying the date the backup was paid on -->
+    <string name="RemoteBackupsPaymentHistoryFragment__date_paid">Date paid</string>
+    <!-- Button label to share the receipt -->
+    <string name="RemoteBackupsPaymentHistoryFragment__share">Share</string>
+
+    <!-- RemoteBackupsSettingsFragment -->
+    <!-- Displayed on the title bar -->
+    <string name="RemoteBackupsSettingsFragment__signal_backups">Signal резервни копии</string>
+    <!-- Row label to launch payment history screen -->
+    <string name="RemoteBackupsSettingsFragment__payment_history">Историја на плаќања</string>
+    <!-- Section header for backup information -->
+    <string name="RemoteBackupsSettingsFragment__backup_details">Детали за резервната копија</string>
+    <!-- Row label for backup size -->
+    <string name="RemoteBackupsSettingsFragment__backup_size">Големина на резервната копија</string>
+    <!-- Row label for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__backup_frequency">Зачестеност на правење резервни копии</string>
+    <!-- Toggle row label for allowing backups to occur while on cellular connection -->
+    <string name="RemoteBackupsSettingsFragment__back_up_using_cellular">Правење резервна копија користејќи мобилен интернет</string>
+    <!-- Row label for cancelling and deleting backup -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backup">Исклучи и избриши ги резервните копии</string>
+    <!-- Snackbar text displayed when backup has been deleted and turned off -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted_and_turned_off">Резервната копија е избришана и исклучена.</string>
+    <!-- Snackbar text displayed when backup type is downgraded -->
+    <string name="RemoteBackupsSettingsFragment__backup_type_changed_and_subcription_deleted">Видот на резервна копија е сменет и претплатата е откажана</string>
+    <!-- Snackbar text displayed when backup subscription is cancelled -->
+    <string name="RemoteBackupsSettingsFragment__subscription_cancelled">Претплатата е откажана</string>
+    <!-- Snackbar text displayed when backup is successfully downloaded -->
+    <string name="RemoteBackupsSettingsFragment__download_complete">Преземањето е завршено</string>
+    <!-- Title text in row detailing selected backup type -->
+    <string name="RemoteBackupsSettingsFragment__backup_type">Вид на резервна копија</string>
+    <!-- Subtitle text in row detailing selected backup type displayed when backups are disabled -->
+    <string name="RemoteBackupsSettingsFragment__backups_disabled">Резервните копии се оневозможени</string>
+    <!-- Format string for backup and cost. First placeholder is backup title, second is cost per month. -->
+    <string name="RemoteBackupsSettingsFragment__s_dot_s_per_month">%1$s · %2$s/месечно</string>
+    <!-- Button label to enable backups -->
+    <string name="RemoteBackupsSettingsFragment__enable_backups">Вклучи резервна копија</string>
+    <!-- Progress indicator subtext displayed when a backup is in progress -->
+    <string name="RemoteBackupsSettingsFragment__d_slash_d">%1$d/%2$d</string>
+    <!-- Title text in row detailing last backup -->
+    <string name="RemoteBackupsSettingsFragment__last_backup">Последна резервна копија</string>
+    <!-- Subtext describing when a backup took place. First placeholder is the day, second is time. -->
+    <string name="RemoteBackupsSettingsFragment__s_at_s">%1$s во %2$s</string>
+    <!-- Subtext describing when a backup has never taken place. -->
+    <string name="RemoteBackupsSettingsFragment__never">Никогаш</string>
+    <!-- Button label to perform a backup immediately -->
+    <string name="RemoteBackupsSettingsFragment__back_up_now">Направи резервна копија сега</string>
+    <!-- Dialog title when confirming whether to turn off and deleting backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete_backups">Исклучи и избриши ги резервните копии?</string>
+    <!-- Dialog message when confirming whether to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__you_will_not_be_charged_again">Нема да ви се наплати повторно. Вашата резервна копија ќе биде избришана и нема да се направат нови резервни копии.</string>
+    <!-- Confirmation action on dialog to turn off and delete backups -->
+    <string name="RemoteBackupsSettingsFragment__turn_off_and_delete">Исклучи и избриши</string>
+    <!-- Text on dialog while user backup is being deleted -->
+    <string name="RemoteBackupsSettingsFragment__deleting_backup">Се брише резервната копија…</string>
+    <!-- Text on dialog when user backup is deleted -->
+    <string name="RemoteBackupsSettingsFragment__backup_deleted">Резервната копија е избришана</string>
+    <!-- Subtitle for frequency option MANUAL for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__by_tapping_back_up_now">"Со допирање на „Направи резервна копија сега“"</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__daily">Дневно</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__weekly">Неделно</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__monthly">Месечно</string>
+    <!-- Title for frequency option DAILY for backup frequency -->
+    <string name="RemoteBackupsSettingsFragment__manually_back_up">Направете резервна копија рачно</string>
 
     <!-- EOF -->
 </resources>
