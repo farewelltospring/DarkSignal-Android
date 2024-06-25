@@ -5,6 +5,7 @@ import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.avatar.Avatars
+import org.thoughtcrime.securesms.util.ThemeUtil
 
 class AvatarColorPair private constructor(
   @ColorInt val foregroundColor: Int,
@@ -26,6 +27,13 @@ class AvatarColorPair private constructor(
           foregroundColor = Avatars.getForegroundColor(avatarColor).colorInt,
           backgroundColor = avatarColor.colorInt()
         )
+      }.let {
+        if (ThemeUtil.isDarkTheme(context))
+          // Dark mode avatars need to have a dark background and light text. To accomplish
+          // this, just invert the foreground/background colours on the basic avatar.
+          AvatarColorPair(it.backgroundColor, it.foregroundColor)
+        else
+          it
       }
     }
   }
