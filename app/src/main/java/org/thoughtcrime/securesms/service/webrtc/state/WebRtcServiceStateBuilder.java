@@ -137,6 +137,11 @@ public class WebRtcServiceStateBuilder {
       toBuild.setNetworkConnectionType(type);
       return this;
     }
+
+    public @NonNull LocalDeviceStateBuilder setHandRaisedTimestamp(long handRaisedTimestamp) {
+      toBuild.setHandRaisedTimestamp(handRaisedTimestamp);
+      return this;
+    }
   }
 
   public class CallSetupStateBuilder {

@@ -7,7 +7,9 @@ package org.thoughtcrime.securesms.conversation.v2.items
 
 import android.net.Uri
 import android.view.View
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
+import com.bumptech.glide.RequestManager
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -29,7 +31,6 @@ import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.groups.GroupMigrationMembershipChange
 import org.thoughtcrime.securesms.linkpreview.LinkPreview
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory
-import org.thoughtcrime.securesms.mms.GlideRequests
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.stickers.StickerLocator
@@ -203,14 +204,15 @@ class V2ConversationItemShapeTest {
 
     private val colorizer = Colorizer()
 
+    override val lifecycleOwner: LifecycleOwner = mockk(relaxed = true)
     override val displayMode: ConversationItemDisplayMode = ConversationItemDisplayMode.Standard
-
     override val clickListener: ConversationAdapter.ItemClickListener = FakeConversationItemClickListener
     override val selectedItems: Set<MultiselectPart> = emptySet()
     override val isMessageRequestAccepted: Boolean = true
     override val searchQuery: String? = null
-    override val glideRequests: GlideRequests = mockk()
+    override val requestManager: RequestManager = mockk()
     override val isParentInScroll: Boolean = false
+    override fun getChatColorsData(): ChatColorsDrawable.ChatColorsData = ChatColorsDrawable.ChatColorsData(null, null)
 
     override fun onStartExpirationTimeout(messageRecord: MessageRecord) = Unit
 
@@ -312,7 +314,7 @@ class V2ConversationItemShapeTest {
 
     override fun goToMediaPreview(parent: ConversationItem?, sharedElement: View?, args: MediaIntentFactory.MediaPreviewArgs?) = Unit
 
-    override fun onEditedIndicatorClicked(messageRecord: MessageRecord) = Unit
+    override fun onEditedIndicatorClicked(conversationMessage: ConversationMessage) = Unit
 
     override fun onShowGroupDescriptionClicked(groupName: String, description: String, shouldLinkifyWebLinks: Boolean) = Unit
 
@@ -321,5 +323,14 @@ class V2ConversationItemShapeTest {
     override fun onItemClick(item: MultiselectPart?) = Unit
 
     override fun onItemLongClick(itemView: View?, item: MultiselectPart?) = Unit
+
+    override fun onShowSafetyTips(forGroup: Boolean) = Unit
+
+    override fun onReportSpamLearnMoreClicked() = Unit
+
+    override fun onMessageRequestAcceptOptionsClicked() = Unit
+
+    override fun onItemDoubleClick(item: MultiselectPart) = Unit
+    override fun onPaymentTombstoneClicked() = Unit
   }
 }

@@ -1,6 +1,5 @@
 package org.thoughtcrime.securesms.contacts;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,7 +13,7 @@ import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.ThreadTable;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
 import org.signal.core.util.concurrent.SimpleTask;
@@ -47,8 +46,8 @@ public class TurnOffContactJoinedNotificationsActivity extends AppCompatActivity
         })
         .setNegativeButton(android.R.string.cancel, ((dialog, which) -> {
           dialog.dismiss();
-          finish();
         }))
+        .setOnDismissListener(dialog -> finish())
         .show();
   }
 
@@ -60,12 +59,11 @@ public class TurnOffContactJoinedNotificationsActivity extends AppCompatActivity
       MarkReadReceiver.process(marked);
 
       SignalStore.settings().setNotifyWhenContactJoinsSignal(false);
-      ApplicationDependencies.getMessageNotifier().updateNotification(this);
+      AppDependencies.getMessageNotifier().updateNotification(this);
 
       return null;
     }, unused -> {
       dialog.dismiss();
-      finish();
     });
   }
 }

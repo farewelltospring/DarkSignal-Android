@@ -9,6 +9,7 @@ import org.signal.core.util.logging.Log
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.thoughtcrime.securesms.AppCapabilities
 import org.thoughtcrime.securesms.gcm.FcmUtil
+import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.pin.SvrWrongPinException
 import org.thoughtcrime.securesms.push.AccountManagerFactory
@@ -179,20 +180,20 @@ class VerifyAccountRepository(private val context: Application) {
       unidentifiedAccessKey = unidentifiedAccessKey,
       unrestrictedUnidentifiedAccess = universalUnidentifiedAccess,
       capabilities = AppCapabilities.getCapabilities(true),
-      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy().phoneNumberListingMode.isDiscoverable,
+      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy.phoneNumberDiscoverabilityMode == PhoneNumberDiscoverabilityMode.DISCOVERABLE,
       name = null,
       pniRegistrationId = registrationData.pniRegistrationId,
       recoveryPassword = registrationData.recoveryPassword
     )
 
-    SignalStore.account().generateAciIdentityKeyIfNecessary()
-    val aciIdentity: IdentityKeyPair = SignalStore.account().aciIdentityKey
+    SignalStore.account.generateAciIdentityKeyIfNecessary()
+    val aciIdentity: IdentityKeyPair = SignalStore.account.aciIdentityKey
 
-    SignalStore.account().generatePniIdentityKeyIfNecessary()
-    val pniIdentity: IdentityKeyPair = SignalStore.account().pniIdentityKey
+    SignalStore.account.generatePniIdentityKeyIfNecessary()
+    val pniIdentity: IdentityKeyPair = SignalStore.account.pniIdentityKey
 
-    val aciPreKeyCollection = RegistrationRepository.generateSignedAndLastResortPreKeys(aciIdentity, SignalStore.account().aciPreKeys)
-    val pniPreKeyCollection = RegistrationRepository.generateSignedAndLastResortPreKeys(pniIdentity, SignalStore.account().pniPreKeys)
+    val aciPreKeyCollection = RegistrationRepository.generateSignedAndLastResortPreKeys(aciIdentity, SignalStore.account.aciPreKeys)
+    val pniPreKeyCollection = RegistrationRepository.generateSignedAndLastResortPreKeys(pniIdentity, SignalStore.account.pniPreKeys)
 
     return Single.fromCallable {
       val response = accountManager.registerAccount(sessionId, registrationData.recoveryPassword, accountAttributes, aciPreKeyCollection, pniPreKeyCollection, registrationData.fcmToken, true)
@@ -206,7 +207,7 @@ class VerifyAccountRepository(private val context: Application) {
     }.subscribeOn(Schedulers.io())
   }
 
-  interface MasterKeyProducer {
+  fun interface MasterKeyProducer {
     @Throws(IOException::class, SvrWrongPinException::class, SvrNoDataException::class)
     fun produceMasterKey(): MasterKey
   }

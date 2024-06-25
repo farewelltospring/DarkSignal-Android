@@ -17,6 +17,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.Interpolator;
 import android.view.animation.TranslateAnimation;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -32,9 +33,13 @@ import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import org.signal.core.util.ThreadUtil;
+import org.signal.core.util.concurrent.ListenableFuture;
+import org.signal.core.util.concurrent.SettableFuture;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.animation.AnimationCompleteListener;
@@ -49,9 +54,9 @@ import org.thoughtcrime.securesms.conversation.ConversationStickerSuggestionAdap
 import org.thoughtcrime.securesms.conversation.MessageStyler;
 import org.thoughtcrime.securesms.conversation.VoiceNoteDraftView;
 import org.thoughtcrime.securesms.database.DraftTable;
-import org.thoughtcrime.securesms.database.model.MmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.MessageId;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
+import org.thoughtcrime.securesms.database.model.MmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.Quote;
 import org.thoughtcrime.securesms.database.model.StickerRecord;
 import org.thoughtcrime.securesms.keyboard.KeyboardPage;
@@ -59,8 +64,6 @@ import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.linkpreview.LinkPreview;
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewRepository;
 import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader;
-import org.thoughtcrime.securesms.mms.GlideApp;
-import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.mms.QuoteModel;
 import org.thoughtcrime.securesms.mms.Slide;
 import org.thoughtcrime.securesms.mms.SlideDeck;
@@ -69,8 +72,6 @@ import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.util.MessageRecordUtil;
 import org.thoughtcrime.securesms.util.ViewUtil;
 import org.thoughtcrime.securesms.util.concurrent.AssertedSuccessListener;
-import org.thoughtcrime.securesms.util.concurrent.ListenableFuture;
-import org.thoughtcrime.securesms.util.concurrent.SettableFuture;
 
 import java.util.Arrays;
 import java.util.List;
@@ -105,11 +106,13 @@ public class InputPanel extends ConstraintLayout
   private View            editMessageCancel;
   private ImageView       editMessageThumbnail;
   private View            editMessageTitle;
+  private FrameLayout     composeTextContainer;
 
   private MicrophoneRecorderView microphoneRecorderView;
   private SlideToCancel          slideToCancel;
   private RecordTime             recordTime;
   private ValueAnimator          quoteAnimator;
+  private ValueAnimator          editMessageAnimator;
   private VoiceNoteDraftView     voiceNoteDraftView;
 
   private @Nullable Listener listener;
@@ -148,6 +151,7 @@ public class InputPanel extends ConstraintLayout
     this.linkPreview            = findViewById(R.id.link_preview);
     this.mediaKeyboard          = findViewById(R.id.emoji_toggle);
     this.composeText            = findViewById(R.id.embedded_text_editor);
+    this.composeTextContainer   = findViewById(R.id.embedded_text_editor_container);
     this.quickCameraToggle      = findViewById(R.id.quick_camera_toggle);
     this.quickAudioToggle       = findViewById(R.id.quick_audio_toggle);
     this.buttonToggle           = findViewById(R.id.button_toggle);
@@ -184,7 +188,7 @@ public class InputPanel extends ConstraintLayout
       }
     });
 
-    stickerSuggestionAdapter = new ConversationStickerSuggestionAdapter(GlideApp.with(this), this);
+    stickerSuggestionAdapter = new ConversationStickerSuggestionAdapter(Glide.with(this), this);
 
     stickerSuggestion.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
     stickerSuggestion.setAdapter(stickerSuggestionAdapter);
@@ -212,14 +216,14 @@ public class InputPanel extends ConstraintLayout
     composeText.setMediaListener(listener);
   }
 
-  public void setQuote(@NonNull GlideRequests glideRequests,
+  public void setQuote(@NonNull RequestManager requestManager,
                        long id,
                        @NonNull Recipient author,
                        @Nullable CharSequence body,
                        @NonNull SlideDeck attachments,
                        @NonNull QuoteModel.Type quoteType)
   {
-    this.quoteView.setQuote(glideRequests, id, author, body, false, attachments, null, quoteType);
+    this.quoteView.setQuote(requestManager, id, author, body, false, attachments, null, quoteType);
 
     int originalHeight = this.quoteView.getVisibility() == VISIBLE ? this.quoteView.getMeasuredHeight()
                                                                    : 0;
@@ -325,10 +329,10 @@ public class InputPanel extends ConstraintLayout
     this.linkPreview.setNoPreview(customError);
   }
 
-  public void setLinkPreview(@NonNull GlideRequests glideRequests, @NonNull Optional<LinkPreview> preview) {
+  public void setLinkPreview(@NonNull RequestManager requestManager, @NonNull Optional<LinkPreview> preview) {
     if (preview.isPresent()) {
       this.linkPreview.setVisibility(View.VISIBLE);
-      this.linkPreview.setLinkPreview(glideRequests, preview.get(), true);
+      this.linkPreview.setLinkPreview(requestManager, preview.get(), true);
     } else {
       this.linkPreview.setVisibility(View.GONE);
     }
@@ -404,7 +408,8 @@ public class InputPanel extends ConstraintLayout
     quoteView.setWallpaperEnabled(enabled);
   }
 
-  public void enterEditMessageMode(@NonNull GlideRequests glideRequests, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft) {
+  public void enterEditMessageMode(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft) {
+    int originalHeight         = composeTextContainer.getMeasuredHeight();
     SpannableString textToEdit = conversationMessageToEdit.getDisplayBody(getContext());
     if (!fromDraft) {
       MessageStyler.convertSpoilersToComposeMode(textToEdit);
@@ -415,14 +420,35 @@ public class InputPanel extends ConstraintLayout
     if (quote == null) {
       clearQuote();
     } else {
-      setQuote(glideRequests, quote.getId(), Recipient.resolved(quote.getAuthor()), quote.getDisplayText(), quote.getAttachment(), quote.getQuoteType());
+      setQuote(requestManager, quote.getId(), Recipient.resolved(quote.getAuthor()), quote.getDisplayText(), quote.getAttachment(), quote.getQuoteType());
     }
     this.messageToEdit = conversationMessageToEdit.getMessageRecord();
-    updateEditModeThumbnail(glideRequests);
-    updateEditModeUi();
+    updateEditModeThumbnail(requestManager);
+
+    int maxWidth = composeContainer.getWidth();
+    if (composeContainer.getLayoutParams() instanceof MarginLayoutParams) {
+      MarginLayoutParams layoutParams = (MarginLayoutParams) composeContainer.getLayoutParams();
+      maxWidth -= layoutParams.leftMargin + layoutParams.rightMargin;
+    }
+    composeTextContainer.measure(MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), MeasureSpec.UNSPECIFIED);
+    int finalHeight = (inEditMessageMode()) ? composeTextContainer.getMeasuredHeight() : composeTextContainer.getMeasuredHeight() + editMessageTitle.getMeasuredHeight();
+
+    if (editMessageAnimator != null) {
+     editMessageAnimator.cancel();
+    }
+    editMessageAnimator = createHeightAnimator(composeTextContainer, originalHeight, finalHeight, new AnimationCompleteListener() {
+      @Override
+      public void onAnimationEnd(Animator animation) {
+        ViewGroup.LayoutParams params = composeTextContainer.getLayoutParams();
+        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        composeTextContainer.setLayoutParams(params);
+        updateEditModeUi();
+      }
+    });
+    editMessageAnimator.start();
   }
 
-  private void updateEditModeThumbnail(@NonNull GlideRequests glideRequests) {
+  private void updateEditModeThumbnail(@NonNull RequestManager requestManager) {
     if (messageToEdit instanceof MmsMessageRecord) {
       MmsMessageRecord mediaEditMessage = (MmsMessageRecord) messageToEdit;
       SlideDeck        slideDeck        = mediaEditMessage.getSlideDeck();
@@ -430,7 +456,7 @@ public class InputPanel extends ConstraintLayout
 
       if (imageVideoSlide != null && imageVideoSlide.getUri() != null) {
         editMessageThumbnail.setVisibility(VISIBLE);
-        glideRequests.load(new DecryptableStreamUriLoader.DecryptableUri(imageVideoSlide.getUri()))
+        requestManager.load(new DecryptableStreamUriLoader.DecryptableUri(imageVideoSlide.getUri()))
                      .centerCrop()
                      .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                      .into(editMessageThumbnail);
@@ -443,12 +469,29 @@ public class InputPanel extends ConstraintLayout
   }
 
   public void exitEditMessageMode() {
+    int originalHeight = composeTextContainer.getMeasuredHeight();
     if (messageToEdit != null) {
       composeText.setText("");
       messageToEdit = null;
       quoteView.setMessageType(QuoteView.MessageType.PREVIEW);
+      clearQuote();
     }
     updateEditModeUi();
+
+    composeTextContainer.measure(0, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+
+    if (editMessageAnimator != null) {
+     editMessageAnimator.cancel();
+    }
+    editMessageAnimator = createHeightAnimator(composeTextContainer, originalHeight, composeTextContainer.getMeasuredHeight(), new AnimationCompleteListener() {
+      @Override
+      public void onAnimationEnd(Animator animation) {
+        ViewGroup.LayoutParams params = composeTextContainer.getLayoutParams();
+        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        composeTextContainer.setLayoutParams(params);
+      }
+    });
+    editMessageAnimator.start();
   }
 
   private void updateEditModeUi() {

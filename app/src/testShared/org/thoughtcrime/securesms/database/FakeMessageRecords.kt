@@ -1,6 +1,7 @@
 package org.thoughtcrime.securesms.database
 
 import org.thoughtcrime.securesms.attachments.AttachmentId
+import org.thoughtcrime.securesms.attachments.Cdn
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment
 import org.thoughtcrime.securesms.audio.AudioHash
 import org.thoughtcrime.securesms.blurhash.BlurHash
@@ -27,15 +28,16 @@ import org.thoughtcrime.securesms.util.MediaUtil
 object FakeMessageRecords {
 
   fun buildDatabaseAttachment(
-    attachmentId: AttachmentId = AttachmentId(1, 1),
+    attachmentId: AttachmentId = AttachmentId(1),
     mmsId: Long = 1,
     hasData: Boolean = true,
     hasThumbnail: Boolean = true,
+    hasArchiveThumbnail: Boolean = false,
     contentType: String = MediaUtil.IMAGE_JPEG,
     transferProgress: Int = AttachmentTable.TRANSFER_PROGRESS_DONE,
     size: Long = 0L,
     fileName: String = "",
-    cdnNumber: Int = 1,
+    cdnNumber: Int = 3,
     location: String = "",
     key: String = "",
     relay: String = "",
@@ -55,21 +57,28 @@ object FakeMessageRecords {
     audioHash: AudioHash? = null,
     transformProperties: AttachmentTable.TransformProperties? = null,
     displayOrder: Int = 0,
-    uploadTimestamp: Long = 200
+    uploadTimestamp: Long = 200,
+    dataHash: String? = null,
+    archiveCdn: Int = 0,
+    archiveThumbnailCdn: Int = 0,
+    archiveMediaName: String? = null,
+    archiveMediaId: String? = null,
+    archiveThumbnailId: String? = null,
+    thumbnailRestoreState: AttachmentTable.ThumbnailRestoreState = AttachmentTable.ThumbnailRestoreState.NONE
   ): DatabaseAttachment {
     return DatabaseAttachment(
       attachmentId,
       mmsId,
       hasData,
       hasThumbnail,
+      hasArchiveThumbnail,
       contentType,
       transferProgress,
       size,
       fileName,
-      cdnNumber,
+      Cdn.fromCdnNumber(cdnNumber),
       location,
       key,
-      relay,
       digest,
       incrementalDigest,
       incrementalMacChunkSize,
@@ -86,7 +95,14 @@ object FakeMessageRecords {
       audioHash,
       transformProperties,
       displayOrder,
-      uploadTimestamp
+      uploadTimestamp,
+      dataHash,
+      archiveCdn,
+      archiveThumbnailCdn,
+      archiveMediaId,
+      archiveMediaName,
+      thumbnailRestoreState,
+      null
     )
   }
 
@@ -183,7 +199,9 @@ object FakeMessageRecords {
       -1,
       null,
       null,
-      0
+      0,
+      false,
+      null
     )
   }
 }

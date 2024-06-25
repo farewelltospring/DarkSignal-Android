@@ -6,11 +6,14 @@
 package org.thoughtcrime.securesms.conversation.v2
 
 import android.content.Context
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.lifecycle.ViewModel
+import com.bumptech.glide.RequestManager
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Maybe
@@ -33,8 +36,10 @@ import org.thoughtcrime.securesms.components.reminder.Reminder
 import org.thoughtcrime.securesms.contactshare.Contact
 import org.thoughtcrime.securesms.conversation.ConversationMessage
 import org.thoughtcrime.securesms.conversation.ScheduledMessagesRepository
+import org.thoughtcrime.securesms.conversation.colors.ChatColors
 import org.thoughtcrime.securesms.conversation.mutiselect.MultiselectPart
 import org.thoughtcrime.securesms.conversation.v2.data.ConversationElementKey
+import org.thoughtcrime.securesms.conversation.v2.items.ChatColorsDrawable
 import org.thoughtcrime.securesms.database.DatabaseObserver
 import org.thoughtcrime.securesms.database.MessageTable
 import org.thoughtcrime.securesms.database.model.IdentityRecord
@@ -47,20 +52,18 @@ import org.thoughtcrime.securesms.database.model.ReactionRecord
 import org.thoughtcrime.securesms.database.model.StickerRecord
 import org.thoughtcrime.securesms.database.model.StoryViewState
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.RetrieveProfileJob
 import org.thoughtcrime.securesms.keyboard.KeyboardUtil
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.linkpreview.LinkPreview
 import org.thoughtcrime.securesms.messagerequests.MessageRequestRepository
 import org.thoughtcrime.securesms.messagerequests.MessageRequestState
-import org.thoughtcrime.securesms.mms.GlideRequests
 import org.thoughtcrime.securesms.mms.QuoteModel
 import org.thoughtcrime.securesms.mms.Slide
 import org.thoughtcrime.securesms.mms.SlideDeck
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
-import org.thoughtcrime.securesms.search.MessageResult
 import org.thoughtcrime.securesms.sms.MessageSender
 import org.thoughtcrime.securesms.util.BubbleUtil
 import org.thoughtcrime.securesms.util.ConversationUtil
@@ -79,6 +82,7 @@ import kotlin.time.Duration
 class ConversationViewModel(
   val threadId: Long,
   private val requestedStartingPosition: Int,
+  initialChatColors: ChatColors,
   private val repository: ConversationRepository,
   recipientRepository: ConversationRecipientRepository,
   messageRequestRepository: MessageRequestRepository,
@@ -110,6 +114,10 @@ class ConversationViewModel(
     .distinctUntilChanged()
     .observeOn(AndroidSchedulers.mainThread())
 
+  private val chatBounds: BehaviorSubject<Rect> = BehaviorSubject.create()
+  private val chatColors: RxStore<ChatColorsDrawable.ChatColorsData> = RxStore(ChatColorsDrawable.ChatColorsData(initialChatColors, null))
+  val chatColorsSnapshot: ChatColorsDrawable.ChatColorsData get() = chatColors.state
+
   @Volatile
   var recipientSnapshot: Recipient? = null
     private set
@@ -123,9 +131,11 @@ class ConversationViewModel(
   private val _inputReadyState: Observable<InputReadyState>
   val inputReadyState: Observable<InputReadyState>
 
-  private val hasMessageRequestStateSubject: BehaviorSubject<Boolean> = BehaviorSubject.createDefault(false)
+  private val hasMessageRequestStateSubject: BehaviorSubject<MessageRequestState> = BehaviorSubject.createDefault(MessageRequestState())
   val hasMessageRequestState: Boolean
-    get() = hasMessageRequestStateSubject.value ?: false
+    get() = hasMessageRequestStateSubject.value?.state != MessageRequestState.State.NONE
+  val messageRequestState: MessageRequestState
+    get() = hasMessageRequestStateSubject.value ?: MessageRequestState()
 
   private val refreshReminder: Subject<Unit> = PublishSubject.create()
   val reminder: Observable<Optional<Reminder>>
@@ -147,11 +157,28 @@ class ConversationViewModel(
 
   private val startExpiration = BehaviorSubject.create<MessageTable.ExpirationInfo>()
 
+  private val _jumpToDateValidator: JumpToDateValidator by lazy { JumpToDateValidator(threadId) }
+  val jumpToDateValidator: JumpToDateValidator
+    get() = _jumpToDateValidator
+
   init {
     disposables += recipient
       .subscribeBy {
         recipientSnapshot = it
       }
+
+    val chatColorsDataObservable: Observable<ChatColorsDrawable.ChatColorsData> = Observable.combineLatest(
+      recipient.map { it.chatColors }.distinctUntilChanged(),
+      chatBounds.distinctUntilChanged()
+    ) { chatColors, bounds ->
+      val chatMask = chatColors.chatBubbleMask
+
+      chatMask.bounds = bounds
+
+      ChatColorsDrawable.ChatColorsData(chatColors, chatMask)
+    }
+
+    disposables += chatColors.update(chatColorsDataObservable.toFlowable(BackpressureStrategy.LATEST)) { c, _ -> c }
 
     disposables += repository.getConversationThreadState(threadId, requestedStartingPosition)
       .subscribeBy(onSuccess = {
@@ -172,14 +199,14 @@ class ConversationViewModel(
           controller.onDataInvalidated()
         }
 
-        ApplicationDependencies.getDatabaseObserver().registerMessageUpdateObserver(messageUpdateObserver)
-        ApplicationDependencies.getDatabaseObserver().registerMessageInsertObserver(threadId, messageInsertObserver)
-        ApplicationDependencies.getDatabaseObserver().registerConversationObserver(threadId, conversationObserver)
+        AppDependencies.databaseObserver.registerMessageUpdateObserver(messageUpdateObserver)
+        AppDependencies.databaseObserver.registerMessageInsertObserver(threadId, messageInsertObserver)
+        AppDependencies.databaseObserver.registerConversationObserver(threadId, conversationObserver)
 
         emitter.setCancellable {
-          ApplicationDependencies.getDatabaseObserver().unregisterObserver(messageUpdateObserver)
-          ApplicationDependencies.getDatabaseObserver().unregisterObserver(messageInsertObserver)
-          ApplicationDependencies.getDatabaseObserver().unregisterObserver(conversationObserver)
+          AppDependencies.databaseObserver.unregisterObserver(messageUpdateObserver)
+          AppDependencies.databaseObserver.unregisterObserver(messageInsertObserver)
+          AppDependencies.databaseObserver.unregisterObserver(conversationObserver)
         }
       }
     }.subscribeOn(Schedulers.io()).subscribe()
@@ -213,11 +240,12 @@ class ConversationViewModel(
         conversationRecipient = recipient,
         messageRequestState = messageRequestRepository.getMessageRequestState(recipient, threadId),
         groupRecord = groupRecord.orNull(),
-        isClientExpired = SignalStore.misc().isClientDeprecated,
-        isUnauthorized = TextSecurePreferences.isUnauthorizedReceived(ApplicationDependencies.getApplication())
+        isClientExpired = SignalStore.misc.isClientDeprecated,
+        isUnauthorized = TextSecurePreferences.isUnauthorizedReceived(AppDependencies.application),
+        threadContainsSms = !recipient.isRegistered && !recipient.isPushGroup && !recipient.isSelf && messageRequestRepository.threadContainsSms(threadId)
       )
     }.doOnNext {
-      hasMessageRequestStateSubject.onNext(it.messageRequestState != MessageRequestState.NONE)
+      hasMessageRequestStateSubject.onNext(it.messageRequestState)
     }
     inputReadyState = _inputReadyState.observeOn(AndroidSchedulers.mainThread())
 
@@ -251,12 +279,21 @@ class ConversationViewModel(
       })
   }
 
+  fun onChatBoundsChanged(bounds: Rect) {
+    chatBounds.onNext(bounds)
+  }
+
   fun setSearchQuery(query: String?) {
     _searchQuery.onNext(query ?: "")
   }
 
   fun refreshReminder() {
     refreshReminder.onNext(Unit)
+  }
+
+  fun onDismissReview() {
+    val recipientId = recipientSnapshot?.id ?: return
+    repository.dismissRequestReviewState(recipientId)
   }
 
   override fun onCleared() {
@@ -283,8 +320,8 @@ class ConversationViewModel(
     return repository.getQuotedMessagePosition(threadId, quote)
   }
 
-  fun moveToSearchResult(messageResult: MessageResult): Single<Int> {
-    return repository.getMessageResultPosition(threadId, messageResult)
+  fun moveToDate(receivedTimestamp: Long): Single<Int> {
+    return repository.getMessageResultPosition(threadId, receivedTimestamp)
   }
 
   fun getNextMentionPosition(): Single<Int> {
@@ -322,9 +359,9 @@ class ConversationViewModel(
       .addTo(disposables)
   }
 
-  fun getContactPhotoIcon(context: Context, glideRequests: GlideRequests): Single<ShortcutInfoCompat> {
+  fun getContactPhotoIcon(context: Context, requestManager: RequestManager): Single<ShortcutInfoCompat> {
     return recipient.firstOrError().flatMap {
-      repository.getRecipientContactPhotoBitmap(context, glideRequests, it)
+      repository.getRecipientContactPhotoBitmap(context, requestManager, it)
     }
   }
 
@@ -477,5 +514,16 @@ class ConversationViewModel(
 
   fun markLastSeen() {
     repository.markLastSeen(threadId)
+  }
+
+  fun onChatSearchOpened() {
+    // Trigger the lazy load, so we can race initialization of the validator
+    _jumpToDateValidator
+  }
+
+  fun getEarliestMessageSentDate(): Single<Long> {
+    return repository
+      .getEarliestMessageSentDate(threadId)
+      .observeOn(AndroidSchedulers.mainThread())
   }
 }

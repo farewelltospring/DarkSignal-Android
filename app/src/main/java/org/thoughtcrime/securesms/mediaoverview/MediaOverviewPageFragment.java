@@ -26,12 +26,15 @@ import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.codewaves.stickyheadergrid.StickyHeaderGridLayoutManager;
 
 import org.signal.core.util.DimensionUnit;
+import org.signal.core.util.concurrent.LifecycleDisposable;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment;
+import org.thoughtcrime.securesms.components.DeleteSyncEducationDialog;
 import org.thoughtcrime.securesms.components.menu.ActionItem;
 import org.thoughtcrime.securesms.components.menu.SignalBottomActionBar;
 import org.thoughtcrime.securesms.components.voice.VoiceNoteMediaController;
@@ -41,7 +44,6 @@ import org.thoughtcrime.securesms.database.loaders.GroupedThreadMediaLoader;
 import org.thoughtcrime.securesms.database.loaders.MediaLoader;
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory;
 import org.thoughtcrime.securesms.mediapreview.MediaPreviewV2Activity;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.mms.PartAuthority;
 import org.thoughtcrime.securesms.util.BottomOffsetDecoration;
 import org.thoughtcrime.securesms.util.MediaUtil;
@@ -63,9 +65,9 @@ public final class MediaOverviewPageFragment extends Fragment
   private static final String MEDIA_TYPE_EXTRA = "media_type";
   private static final String GRID_MODE        = "grid_mode";
 
-  private final ActionModeCallback    actionModeCallback = new ActionModeCallback();
-  private       MediaTable.Sorting    sorting            = MediaTable.Sorting.Newest;
-  private       MediaLoader.MediaType mediaType          = MediaLoader.MediaType.GALLERY;
+  private final ActionModeCallback            actionModeCallback = new ActionModeCallback();
+  private       MediaTable.Sorting            sorting            = MediaTable.Sorting.Newest;
+  private       MediaLoader.MediaType         mediaType          = MediaLoader.MediaType.GALLERY;
   private       long                          threadId;
   private       TextView                      noMedia;
   private       RecyclerView                  recyclerView;
@@ -76,6 +78,7 @@ public final class MediaOverviewPageFragment extends Fragment
   private       GridMode                      gridMode;
   private       VoiceNoteMediaController      voiceNoteMediaController;
   private       SignalBottomActionBar         bottomActionBar;
+  private       LifecycleDisposable           lifecycleDisposable;
 
   public static @NonNull Fragment newInstance(long threadId,
                                               @NonNull MediaLoader.MediaType mediaType,
@@ -115,6 +118,9 @@ public final class MediaOverviewPageFragment extends Fragment
 
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    lifecycleDisposable = new LifecycleDisposable();
+    lifecycleDisposable.bindTo(getViewLifecycleOwner());
+
     Context context = requireContext();
     View    view    = inflater.inflate(R.layout.media_overview_page_fragment, container, false);
     int     spans   = getResources().getInteger(R.integer.media_overview_cols);
@@ -125,7 +131,7 @@ public final class MediaOverviewPageFragment extends Fragment
     this.gridManager     = new StickyHeaderGridLayoutManager(spans);
 
     this.adapter = new MediaGalleryAllAdapter(context,
-                                              GlideApp.with(this),
+                                              Glide.with(this),
                                               new GroupedThreadMediaLoader.EmptyGroupedThreadMedia(),
                                               this,
                                               this,
@@ -247,17 +253,17 @@ public final class MediaOverviewPageFragment extends Fragment
           mediaRecord.getDate(),
           Objects.requireNonNull(mediaRecord.getAttachment().getUri()),
           mediaRecord.getContentType(),
-          mediaRecord.getAttachment().getSize(),
-          mediaRecord.getAttachment().getCaption(),
+          mediaRecord.getAttachment().size,
+          mediaRecord.getAttachment().caption,
           true,
           true,
           threadId == MediaTable.ALL_THREADS,
           true,
           sorting,
-          attachment.isVideoGif(),
+          attachment.videoGif,
           new MediaIntentFactory.SharedElementArgs(
-              attachment.getWidth(),
-              attachment.getHeight(),
+              attachment.width,
+              attachment.height,
               DimensionUnit.DP.toDp(12),
               DimensionUnit.DP.toDp(12),
               DimensionUnit.DP.toDp(12),
@@ -295,6 +301,19 @@ public final class MediaOverviewPageFragment extends Fragment
     }
 
     handleMediaMultiSelectClick(mediaRecord);
+  }
+
+  private void handleDeleteSelectedMedia() {
+    if (DeleteSyncEducationDialog.shouldShow()) {
+      lifecycleDisposable.add(
+          DeleteSyncEducationDialog.show(getChildFragmentManager())
+                                   .subscribe(this::handleDeleteSelectedMedia)
+      );
+      return;
+    }
+
+    MediaActions.handleDeleteMedia(requireContext(), getListAdapter().getSelectedMedia());
+    exitMultiSelect();
   }
 
   private void handleSelectAllMedia() {
@@ -344,10 +363,7 @@ public final class MediaOverviewPageFragment extends Fragment
                                          this::exitMultiSelect);
           }),
           new ActionItem(R.drawable.symbol_check_circle_24, getString(R.string.MediaOverviewActivity_select_all), this::handleSelectAllMedia),
-          new ActionItem(R.drawable.symbol_trash_24, getResources().getQuantityString(R.plurals.MediaOverviewActivity_delete_plural, selectionCount), () -> {
-            MediaActions.handleDeleteMedia(requireContext(), getListAdapter().getSelectedMedia());
-            exitMultiSelect();
-          })
+          new ActionItem(R.drawable.symbol_trash_24, getResources().getQuantityString(R.plurals.MediaOverviewActivity_delete_plural, selectionCount), this::handleDeleteSelectedMedia)
       ));
     }
   }

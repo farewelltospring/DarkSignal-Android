@@ -12,9 +12,9 @@ import org.signal.ringrtc.CallLinkRootKey
 import org.thoughtcrime.securesms.database.CallLinkTable
 import org.thoughtcrime.securesms.database.DatabaseObserver
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.service.webrtc.links.CallLinkRoomId
-import org.thoughtcrime.securesms.util.FeatureFlags
+import org.thoughtcrime.securesms.util.RemoteConfig
 import java.net.URLDecoder
 
 /**
@@ -43,9 +43,9 @@ object CallLinks {
         refresh()
       }
 
-      ApplicationDependencies.getDatabaseObserver().registerCallLinkObserver(roomId, observer)
+      AppDependencies.databaseObserver.registerCallLinkObserver(roomId, observer)
       emitter.setCancellable {
-        ApplicationDependencies.getDatabaseObserver().unregisterObserver(observer)
+        AppDependencies.databaseObserver.unregisterObserver(observer)
       }
 
       refresh()
@@ -54,11 +54,11 @@ object CallLinks {
 
   @JvmStatic
   fun isCallLink(url: String): Boolean {
-    if (!FeatureFlags.adHocCalling()) {
+    if (!RemoteConfig.adHocCalling) {
       return false
     }
 
-    if (!url.startsWith(HTTPS_LINK_PREFIX) || !url.startsWith(SNGL_LINK_PREFIX)) {
+    if (!url.startsWith(HTTPS_LINK_PREFIX) && !url.startsWith(SNGL_LINK_PREFIX)) {
       return false
     }
 
@@ -67,7 +67,7 @@ object CallLinks {
 
   @JvmStatic
   fun parseUrl(url: String): CallLinkRootKey? {
-    if (!FeatureFlags.adHocCalling()) {
+    if (!RemoteConfig.adHocCalling) {
       return null
     }
 

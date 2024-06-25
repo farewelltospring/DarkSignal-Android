@@ -19,7 +19,7 @@ import org.thoughtcrime.securesms.crypto.UnidentifiedAccessUtil;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.IdentityRecord;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
@@ -151,18 +151,23 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
         return;
       }
 
-      Optional<IdentityRecord>  identityRecord  = ApplicationDependencies.getProtocolStore().aci().identities().getIdentityRecord(recipient.getId());
+      if (!recipient.getHasE164() && !recipient.getHasAci()) {
+        Log.w(TAG, recipientId + " has no valid identifier!");
+        return;
+      }
+
+      Optional<IdentityRecord>  identityRecord  = AppDependencies.getProtocolStore().aci().identities().getIdentityRecord(recipient.getId());
       Optional<VerifiedMessage> verifiedMessage = getVerifiedMessage(recipient, identityRecord);
       Map<RecipientId, Integer> inboxPositions  = SignalDatabase.threads().getInboxPositions();
       Set<RecipientId>          archived        = SignalDatabase.threads().getArchivedRecipients();
 
-      out.write(new DeviceContact(RecipientUtil.toSignalServiceAddress(context, recipient),
+      out.write(new DeviceContact(recipient.getAci(),
+                                  recipient.getE164(),
                                   Optional.ofNullable(recipient.isGroup() || recipient.isSystemContact() ? recipient.getDisplayName(context) : null),
                                   getSystemAvatar(recipient.getContactUri()),
                                   Optional.of(ChatColorsMapper.getMaterialColor(recipient.getChatColors()).serialize()),
                                   verifiedMessage,
                                   ProfileKeyUtil.profileKeyOptional(recipient.getProfileKey()),
-                                  recipient.isBlocked(),
                                   recipient.getExpiresInSeconds() > 0 ? Optional.of(recipient.getExpiresInSeconds())
                                                                       : Optional.empty(),
                                   Optional.ofNullable(inboxPositions.get(recipientId)),
@@ -173,7 +178,7 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
 
       long length = BlobProvider.getInstance().calculateFileSize(context, updateUri);
 
-      sendUpdate(ApplicationDependencies.getSignalServiceMessageSender(),
+      sendUpdate(AppDependencies.getSignalServiceMessageSender(),
                  BlobProvider.getInstance().getStream(context, updateUri),
                  length,
                  false);
@@ -190,7 +195,7 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
   private void generateFullContactUpdate()
       throws IOException, UntrustedIdentityException, NetworkException
   {
-    boolean isAppVisible      = ApplicationDependencies.getAppForegroundObserver().isForegrounded();
+    boolean isAppVisible      = AppDependencies.getAppForegroundObserver().isForegrounded();
     long    timeSinceLastSync = System.currentTimeMillis() - TextSecurePreferences.getLastFullContactSyncTime(context);
 
     Log.d(TAG, "Requesting a full contact sync. forced = " + forceSync + ", appVisible = " + isAppVisible + ", timeSinceLastSync = " + timeSinceLastSync + " ms");
@@ -214,7 +219,7 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
       Set<RecipientId>           archived       = SignalDatabase.threads().getArchivedRecipients();
 
       for (Recipient recipient : recipients) {
-        Optional<IdentityRecord>  identity      = ApplicationDependencies.getProtocolStore().aci().identities().getIdentityRecord(recipient.getId());
+        Optional<IdentityRecord>  identity      = AppDependencies.getProtocolStore().aci().identities().getIdentityRecord(recipient.getId());
         Optional<VerifiedMessage> verified      = getVerifiedMessage(recipient, identity);
         Optional<String>          name          = Optional.ofNullable(recipient.isSystemContact() ? recipient.getDisplayName(context) : recipient.getGroupName(context));
         Optional<ProfileKey>      profileKey    = ProfileKeyUtil.profileKeyOptional(recipient.getProfileKey());
@@ -222,13 +227,13 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
         Optional<Integer>         expireTimer   = recipient.getExpiresInSeconds() > 0 ? Optional.of(recipient.getExpiresInSeconds()) : Optional.empty();
         Optional<Integer>         inboxPosition = Optional.ofNullable(inboxPositions.get(recipient.getId()));
 
-        out.write(new DeviceContact(RecipientUtil.toSignalServiceAddress(context, recipient),
+        out.write(new DeviceContact(recipient.getAci(),
+                                    recipient.getE164(),
                                     name,
                                     getSystemAvatar(recipient.getContactUri()),
                                     Optional.of(ChatColorsMapper.getMaterialColor(recipient.getChatColors()).serialize()),
                                     verified,
                                     profileKey,
-                                    blocked,
                                     expireTimer,
                                     inboxPosition,
                                     archived.contains(recipient.getId())));
@@ -239,13 +244,13 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
       byte[]    profileKey = self.getProfileKey();
 
       if (profileKey != null) {
-        out.write(new DeviceContact(RecipientUtil.toSignalServiceAddress(context, self),
+        out.write(new DeviceContact(Optional.of(SignalStore.account().getAci()),
+                                    Optional.of(SignalStore.account().getE164()),
                                     Optional.empty(),
                                     Optional.empty(),
                                     Optional.of(ChatColorsMapper.getMaterialColor(self.getChatColors()).serialize()),
                                     Optional.empty(),
                                     ProfileKeyUtil.profileKeyOptionalOrThrow(self.getProfileKey()),
-                                    false,
                                     self.getExpiresInSeconds() > 0 ? Optional.of(self.getExpiresInSeconds()) : Optional.empty(),
                                     Optional.ofNullable(inboxPositions.get(self.getId())),
                                     archived.contains(self.getId())));
@@ -257,7 +262,7 @@ public class MultiDeviceContactUpdateJob extends BaseJob {
 
       long length = BlobProvider.getInstance().calculateFileSize(context, updateUri);
 
-      sendUpdate(ApplicationDependencies.getSignalServiceMessageSender(),
+      sendUpdate(AppDependencies.getSignalServiceMessageSender(),
                  BlobProvider.getInstance().getStream(context, updateUri),
                  length,
                  true);

@@ -19,7 +19,7 @@ import org.thoughtcrime.securesms.database.AttachmentTable.TransformProperties
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.DistributionListId
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.AttachmentDownloadJob
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.mediasend.Media
@@ -64,7 +64,7 @@ object Stories {
    */
   @JvmStatic
   fun isFeatureEnabled(): Boolean {
-    return !SignalStore.storyValues().isFeatureDisabled
+    return !SignalStore.story.isFeatureDisabled
   }
 
   fun getHeaderAction(onClick: () -> Unit): HeaderAction {
@@ -83,7 +83,7 @@ object Stories {
 
   fun sendTextStories(messages: List<OutgoingMessage>): Completable {
     return Completable.create { emitter ->
-      MessageSender.sendStories(ApplicationDependencies.getApplication(), messages, null, null)
+      MessageSender.sendStories(AppDependencies.application, messages, null, null)
       emitter.onComplete()
     }
   }
@@ -113,7 +113,7 @@ object Stories {
   @WorkerThread
   fun enqueueNextStoriesForDownload(recipientId: RecipientId, force: Boolean = false, limit: Int) {
     val recipient = Recipient.resolved(recipientId)
-    if (!force && !recipient.isSelf && (recipient.shouldHideStory() || !recipient.hasViewedStory())) {
+    if (!force && !recipient.isSelf && (recipient.shouldHideStory || !recipient.hasViewedStory)) {
       return
     }
 
@@ -136,12 +136,12 @@ object Stories {
   fun enqueueAttachmentsFromStoryForDownloadSync(record: MmsMessageRecord, ignoreAutoDownloadConstraints: Boolean) {
     SignalDatabase.attachments.getAttachmentsForMessage(record.id).filterNot { it.isSticker }.forEach {
       val job = AttachmentDownloadJob(record.id, it.attachmentId, ignoreAutoDownloadConstraints)
-      ApplicationDependencies.getJobManager().add(job)
+      AppDependencies.jobManager.add(job)
     }
 
     if (record.hasLinkPreview() && record.linkPreviews[0].attachmentId != null) {
-      ApplicationDependencies.getJobManager().add(
-        AttachmentDownloadJob(record.id, record.linkPreviews[0].attachmentId, true)
+      AppDependencies.jobManager.add(
+        AttachmentDownloadJob(record.id, record.linkPreviews[0].attachmentId!!, true)
       )
     }
   }
@@ -246,7 +246,7 @@ object Stories {
       return if (MediaUtil.isVideo(media.mimeType)) {
         val mediaDuration = if (media.duration == 0L && media.transformProperties.map(TransformProperties::shouldSkipTransform).orElse(true)) {
           getVideoDuration(media.uri)
-        } else if (media.transformProperties.map { it.isVideoTrim }.orElse(false)) {
+        } else if (media.transformProperties.map { it.videoTrim }.orElse(false)) {
           TimeUnit.MICROSECONDS.toMillis(media.transformProperties.get().videoTrimEndTimeUs - media.transformProperties.get().videoTrimStartTimeUs)
         } else {
           media.duration
@@ -273,11 +273,13 @@ object Stories {
     @JvmStatic
     @WorkerThread
     fun getVideoDuration(uri: Uri): Long {
+      ThreadUtil.assertNotMainThread()
+
       var duration = 0L
       var player: ExoPlayer? = null
       val countDownLatch = CountDownLatch(1)
       ThreadUtil.runOnMainSync {
-        val mainThreadPlayer = ApplicationDependencies.getExoPlayerPool().get("stories_duration_check")
+        val mainThreadPlayer = AppDependencies.exoPlayerPool.get("stories_duration_check")
         if (mainThreadPlayer == null) {
           Log.w(TAG, "Could not get a player from the pool, so we cannot get the length of the video.")
           countDownLatch.countDown()
@@ -307,7 +309,7 @@ object Stories {
       ThreadUtil.runOnMainSync {
         val mainThreadPlayer = player
         if (mainThreadPlayer != null) {
-          ApplicationDependencies.getExoPlayerPool().pool(mainThreadPlayer)
+          AppDependencies.exoPlayerPool.pool(mainThreadPlayer)
         }
       }
 
@@ -339,7 +341,7 @@ object Stories {
           error("Illegal clip: $startTimeUs > $endTimeUs for clip $clipIndex")
         }
 
-        AttachmentTable.TransformProperties(false, true, startTimeUs, endTimeUs, SentMediaQuality.STANDARD.code)
+        AttachmentTable.TransformProperties(false, true, startTimeUs, endTimeUs, SentMediaQuality.STANDARD.code, false)
       }.map { transformMedia(media, it) }
     }
 

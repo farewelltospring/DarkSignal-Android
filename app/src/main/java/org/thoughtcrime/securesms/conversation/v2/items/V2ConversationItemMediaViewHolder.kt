@@ -77,7 +77,7 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
 
     binding.quoteStub.visibility = View.VISIBLE
     quoteView.setQuote(
-      conversationContext.glideRequests,
+      conversationContext.requestManager,
       quote.id,
       Recipient.live(quote.author).get(),
       quote.displayText,
@@ -97,7 +97,7 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
     )
 
     quoteView.setWallpaperEnabled(conversationContext.hasWallpaper())
-    quoteView.setTextSize(TypedValue.COMPLEX_UNIT_SP, SignalStore.settings().getMessageQuoteFontSize(context).toFloat())
+    quoteView.setTextSize(TypedValue.COMPLEX_UNIT_SP, SignalStore.settings.getMessageQuoteFontSize(context).toFloat())
 
     val isOutgoing = conversationMessage.messageRecord.isOutgoing
     when (shape) {

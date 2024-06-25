@@ -20,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.media3.common.MediaItem;
 
+import com.bumptech.glide.RequestManager;
+
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.conversation.ConversationItem;
@@ -30,10 +32,11 @@ import org.thoughtcrime.securesms.conversation.ConversationItemDisplayMode;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.giph.mp4.GiphyMp4Playable;
 import org.thoughtcrime.securesms.giph.mp4.GiphyMp4PlaybackPolicyEnforcer;
-import org.thoughtcrime.securesms.mms.GlideRequests;
+import org.thoughtcrime.securesms.messagedetails.MessageDetailsAdapter.Callbacks;
 import org.thoughtcrime.securesms.sms.MessageSender;
 import org.thoughtcrime.securesms.util.DateUtils;
 import org.thoughtcrime.securesms.util.ExpirationUtil;
+import org.thoughtcrime.securesms.util.RemoteConfig;
 import org.thoughtcrime.securesms.util.Projection;
 import org.thoughtcrime.securesms.util.ProjectionList;
 
@@ -52,30 +55,34 @@ final class MessageHeaderViewHolder extends RecyclerView.ViewHolder implements G
   private final TextView      errorText;
   private final View          resendButton;
   private final View          messageMetadata;
+  private final View          internalDetailsButton;
   private final ViewStub      updateStub;
   private final ViewStub      sentStub;
   private final ViewStub      receivedStub;
   private final Colorizer     colorizer;
-  private final GlideRequests glideRequests;
+  private final RequestManager requestManager;
+  private final Callbacks      callbacks;
 
   private ConversationItem conversationItem;
   private CountDownTimer   expiresUpdater;
 
-  MessageHeaderViewHolder(@NonNull View itemView, GlideRequests glideRequests, @NonNull Colorizer colorizer) {
+  MessageHeaderViewHolder(@NonNull View itemView, RequestManager requestManager, @NonNull Colorizer colorizer, @NonNull Callbacks callbacks) {
     super(itemView);
-    this.glideRequests = glideRequests;
-    this.colorizer     = colorizer;
+    this.requestManager = requestManager;
+    this.colorizer      = colorizer;
+    this.callbacks      = callbacks;
 
-    sentDate        = itemView.findViewById(R.id.message_details_header_sent_time);
-    receivedDate    = itemView.findViewById(R.id.message_details_header_received_time);
-    expiresIn       = itemView.findViewById(R.id.message_details_header_expires_in);
-    transport       = itemView.findViewById(R.id.message_details_header_transport);
-    errorText       = itemView.findViewById(R.id.message_details_header_error_text);
-    resendButton    = itemView.findViewById(R.id.message_details_header_resend_button);
-    messageMetadata = itemView.findViewById(R.id.message_details_header_message_metadata);
-    updateStub      = itemView.findViewById(R.id.message_details_header_message_view_update);
-    sentStub        = itemView.findViewById(R.id.message_details_header_message_view_sent_multimedia);
-    receivedStub    = itemView.findViewById(R.id.message_details_header_message_view_received_multimedia);
+    sentDate              = itemView.findViewById(R.id.message_details_header_sent_time);
+    receivedDate          = itemView.findViewById(R.id.message_details_header_received_time);
+    expiresIn             = itemView.findViewById(R.id.message_details_header_expires_in);
+    transport             = itemView.findViewById(R.id.message_details_header_transport);
+    errorText             = itemView.findViewById(R.id.message_details_header_error_text);
+    resendButton          = itemView.findViewById(R.id.message_details_header_resend_button);
+    messageMetadata       = itemView.findViewById(R.id.message_details_header_message_metadata);
+    internalDetailsButton = itemView.findViewById(R.id.message_details_header_internal_details_button);
+    updateStub            = itemView.findViewById(R.id.message_details_header_message_view_update);
+    sentStub              = itemView.findViewById(R.id.message_details_header_message_view_sent_multimedia);
+    receivedStub          = itemView.findViewById(R.id.message_details_header_message_view_received_multimedia);
   }
 
   void bind(@NonNull LifecycleOwner lifecycleOwner, @NonNull ConversationMessage conversationMessage) {
@@ -85,6 +92,17 @@ final class MessageHeaderViewHolder extends RecyclerView.ViewHolder implements G
     bindSentReceivedDates(messageRecord);
     bindExpirationTime(lifecycleOwner, messageRecord);
     bindTransport(messageRecord);
+    bindInternalDetails(messageRecord);
+  }
+
+  private void bindInternalDetails(MessageRecord messageRecord) {
+    if (!RemoteConfig.internalUser()) {
+      internalDetailsButton.setVisibility(View.GONE);
+      return;
+    }
+
+    internalDetailsButton.setVisibility(View.VISIBLE);
+    internalDetailsButton.setOnClickListener(v -> callbacks.onInternalDetailsClicked(messageRecord));
   }
 
   private void bindMessageView(@NonNull LifecycleOwner lifecycleOwner, @NonNull ConversationMessage conversationMessage) {
@@ -101,7 +119,7 @@ final class MessageHeaderViewHolder extends RecyclerView.ViewHolder implements G
                           conversationMessage,
                           Optional.empty(),
                           Optional.empty(),
-                          glideRequests,
+                          requestManager,
                           Locale.getDefault(),
                           new HashSet<>(),
                           conversationMessage.getMessageRecord().getToRecipient(),

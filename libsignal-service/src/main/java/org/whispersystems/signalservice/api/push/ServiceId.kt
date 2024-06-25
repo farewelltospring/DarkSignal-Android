@@ -34,8 +34,9 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
     }
 
     /** Parses a ServiceId serialized as a string. Returns null if the ServiceId is invalid. */
+    @JvmOverloads
     @JvmStatic
-    fun parseOrNull(raw: String?): ServiceId? {
+    fun parseOrNull(raw: String?, logFailures: Boolean = true): ServiceId? {
       if (raw == null) {
         return null
       }
@@ -43,10 +44,14 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
       return try {
         fromLibSignal(LibSignalServiceId.parseFromString(raw))
       } catch (e: IllegalArgumentException) {
-        Log.w(TAG, "[parseOrNull(String)] Illegal argument!", e)
+        if (logFailures) {
+          Log.w(TAG, "[parseOrNull(String)] Illegal argument!", e)
+        }
         null
       } catch (e: InvalidServiceIdException) {
-        Log.w(TAG, "[parseOrNull(String)] Invalid ServiceId!", e)
+        if (logFailures) {
+          Log.w(TAG, "[parseOrNull(String)] Invalid ServiceId!", e)
+        }
         null
       }
     }
@@ -75,7 +80,7 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
 
     /** Parses a ServiceId serialized as a ByteString. Returns null if the ServiceId is invalid. */
     @JvmStatic
-    fun parseOrNull(bytes: okio.ByteString): ServiceId? = parseOrNull(bytes.toByteArray())
+    fun parseOrNull(bytes: okio.ByteString?): ServiceId? = parseOrNull(bytes?.toByteArray())
 
     /** Parses a ServiceId serialized as a string. Crashes if the ServiceId is invalid. */
     @JvmStatic
@@ -196,6 +201,10 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
           }
         }
       }
+
+      /** Parses a [ByteString] as a PNI, regardless if the `PNI:` prefix is present or not. Only use this if you are certain that what you're reading is a PNI. */
+      @JvmStatic
+      fun parseOrNull(bytes: ByteString): PNI? = parseOrNull(bytes.toByteArray())
 
       /** Parses a string as a PNI, regardless if the `PNI:` prefix is present or not. Only use this if you are certain that what you're reading is a PNI. */
       @JvmStatic

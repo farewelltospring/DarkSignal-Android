@@ -13,7 +13,7 @@ import org.signal.ringrtc.CallManager;
 import org.thoughtcrime.securesms.database.CallTable;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.WebRtcViewModel;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
@@ -183,14 +183,14 @@ public class IncomingCallActionProcessor extends DeviceAwareActionProcessor {
                                               CallTable.Direction.INCOMING,
                                               CallTable.Event.ONGOING);
 
-    webRtcInteractor.updatePhoneState(LockManager.PhoneState.INTERACTIVE);
 
     boolean shouldDisturbUserWithCall = DoNotDisturbUtil.shouldDisturbUserWithCall(context.getApplicationContext(), recipient);
     if (shouldDisturbUserWithCall) {
+      webRtcInteractor.updatePhoneState(LockManager.PhoneState.INTERACTIVE);
       boolean started = webRtcInteractor.startWebRtcCallActivityIfPossible();
       if (!started) {
         Log.i(TAG, "Unable to start call activity due to OS version or not being in the foreground");
-        ApplicationDependencies.getAppForegroundObserver().addListener(webRtcInteractor.getForegroundListener());
+        AppDependencies.getAppForegroundObserver().addListener(webRtcInteractor.getForegroundListener());
       }
     }
 

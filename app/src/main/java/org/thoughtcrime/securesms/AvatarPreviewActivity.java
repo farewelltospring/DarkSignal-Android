@@ -18,6 +18,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
+import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
@@ -27,12 +28,11 @@ import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 
 import org.signal.core.util.logging.Log;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatar;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable;
 import org.thoughtcrime.securesms.components.emoji.EmojiTextView;
 import org.thoughtcrime.securesms.contacts.avatars.ContactPhoto;
-import org.thoughtcrime.securesms.contacts.avatars.FallbackContactPhoto;
 import org.thoughtcrime.securesms.contacts.avatars.ProfileContactPhoto;
-import org.thoughtcrime.securesms.contacts.avatars.ResourceContactPhoto;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.util.FullscreenHelper;
@@ -91,16 +91,18 @@ public final class AvatarPreviewActivity extends PassphraseRequiredActivity {
     Recipient.live(recipientId).observe(this, recipient -> {
       ContactPhoto contactPhoto  = recipient.isSelf() ? new ProfileContactPhoto(recipient)
                                                       : recipient.getContactPhoto();
-      FallbackContactPhoto fallbackPhoto = recipient.isSelf() ? new ResourceContactPhoto(R.drawable.ic_profile_outline_40, R.drawable.ic_profile_outline_20, R.drawable.ic_person_large)
-                                                              : recipient.getFallbackContactPhoto();
+      FallbackAvatar fallbackAvatar = recipient.isSelf() ? new FallbackAvatar.Resource.Person(recipient.getAvatarColor())
+                                                         : recipient.getFallbackAvatar();
+
+      Drawable fallbackDrawable = new FallbackAvatarDrawable(context, fallbackAvatar);
 
       Resources resources = this.getResources();
 
-      GlideApp.with(this)
+      Glide.with(this)
               .asBitmap()
               .load(contactPhoto)
-              .fallback(fallbackPhoto.asCallCard(this))
-              .error(fallbackPhoto.asCallCard(this))
+              .fallback(fallbackDrawable)
+              .error(fallbackDrawable)
               .diskCacheStrategy(DiskCacheStrategy.ALL)
               .addListener(new RequestListener<Bitmap>() {
                 @Override

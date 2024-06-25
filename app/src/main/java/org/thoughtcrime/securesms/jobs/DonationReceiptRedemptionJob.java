@@ -11,11 +11,12 @@ import org.thoughtcrime.securesms.components.settings.app.subscription.errors.Do
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.NoSuchMessageException;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
 import org.thoughtcrime.securesms.database.model.databaseprotos.DonationErrorValue;
 import org.thoughtcrime.securesms.database.model.databaseprotos.GiftBadge;
 import org.thoughtcrime.securesms.database.model.databaseprotos.TerminalDonationQueue;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JobManager;
 import org.thoughtcrime.securesms.jobmanager.JsonJobData;
@@ -28,17 +29,18 @@ import org.whispersystems.signalservice.internal.ServiceResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import okio.ByteString;
 
 /**
  * Job to redeem a verified donation receipt. It is up to the Job prior in the chain to specify a valid
  * presentation object via setOutputData. This is expected to be the byte[] blob of a ReceiptCredentialPresentation object.
+ *
+ * @deprecated Replaced with InAppPaymentRedemptionJob
  */
+@Deprecated
 public class DonationReceiptRedemptionJob extends BaseJob {
-  private static final String TAG   = Log.tag(DonationReceiptRedemptionJob.class);
-  private static final long   NO_ID = -1L;
+  private static final String TAG         = Log.tag(DonationReceiptRedemptionJob.class);
+  private static final long   NO_ID       = -1L;
+  private static final int    MAX_RETRIES = 1500;
 
   public static final String SUBSCRIPTION_QUEUE                    = "ReceiptRedemption";
   public static final String ONE_TIME_QUEUE                        = "BoostReceiptRedemption";
@@ -71,8 +73,8 @@ public class DonationReceiptRedemptionJob extends BaseJob {
             .Builder()
             .addConstraint(NetworkConstraint.KEY)
             .setQueue(SUBSCRIPTION_QUEUE + (isLongRunningDonationPaymentType ? LONG_RUNNING_QUEUE_SUFFIX : ""))
-            .setMaxAttempts(Parameters.UNLIMITED)
-            .setLifespan(TimeUnit.DAYS.toMillis(1))
+            .setMaxAttempts(MAX_RETRIES)
+            .setLifespan(Parameters.IMMORTAL)
             .build());
   }
 
@@ -86,8 +88,8 @@ public class DonationReceiptRedemptionJob extends BaseJob {
             .Builder()
             .addConstraint(NetworkConstraint.KEY)
             .setQueue(ONE_TIME_QUEUE + (isLongRunningDonationPaymentType ? LONG_RUNNING_QUEUE_SUFFIX : ""))
-            .setMaxAttempts(Parameters.UNLIMITED)
-            .setLifespan(TimeUnit.DAYS.toMillis(1))
+            .setMaxAttempts(MAX_RETRIES)
+            .setLifespan(Parameters.IMMORTAL)
             .build());
   }
 
@@ -96,33 +98,10 @@ public class DonationReceiptRedemptionJob extends BaseJob {
     RefreshOwnProfileJob               refreshOwnProfileJob               = new RefreshOwnProfileJob();
     MultiDeviceProfileContentUpdateJob multiDeviceProfileContentUpdateJob = new MultiDeviceProfileContentUpdateJob();
 
-    return ApplicationDependencies.getJobManager()
-                                  .startChain(redemptionJob)
-                                  .then(refreshOwnProfileJob)
-                                  .then(multiDeviceProfileContentUpdateJob);
-  }
-
-  public static JobManager.Chain createJobChainForGift(long messageId, boolean primary) {
-    DonationReceiptRedemptionJob redeemReceiptJob = new DonationReceiptRedemptionJob(
-        messageId,
-        primary,
-        DonationErrorSource.GIFT_REDEMPTION,
-        -1L,
-        new Job.Parameters
-            .Builder()
-            .addConstraint(NetworkConstraint.KEY)
-            .setQueue("GiftReceiptRedemption-" + messageId)
-            .setMaxAttempts(Parameters.UNLIMITED)
-            .setLifespan(TimeUnit.DAYS.toMillis(1))
-            .build());
-
-    RefreshOwnProfileJob               refreshOwnProfileJob               = new RefreshOwnProfileJob();
-    MultiDeviceProfileContentUpdateJob multiDeviceProfileContentUpdateJob = new MultiDeviceProfileContentUpdateJob();
-
-    return ApplicationDependencies.getJobManager()
-                                  .startChain(redeemReceiptJob)
-                                  .then(refreshOwnProfileJob)
-                                  .then(multiDeviceProfileContentUpdateJob);
+    return AppDependencies.getJobManager()
+                          .startChain(redemptionJob)
+                          .then(refreshOwnProfileJob)
+                          .then(multiDeviceProfileContentUpdateJob);
   }
 
   private DonationReceiptRedemptionJob(long giftMessageId, boolean primary, @NonNull DonationErrorSource errorSource, long uiSessionKey, @NonNull Job.Parameters parameters) {
@@ -157,14 +136,14 @@ public class DonationReceiptRedemptionJob extends BaseJob {
 
     if (isForSubscription()) {
       Log.d(TAG, "Marking subscription failure", true);
-      SignalStore.donationsValues().markSubscriptionRedemptionFailed();
+      SignalStore.donations().markSubscriptionRedemptionFailed();
       MultiDeviceSubscriptionSyncRequestJob.enqueue();
     } else if (giftMessageId != NO_ID) {
       SignalDatabase.messages().markGiftRedemptionFailed(giftMessageId);
     }
 
     if (terminalDonation != null) {
-      SignalStore.donationsValues().appendToTerminalDonationQueue(terminalDonation);
+      SignalStore.donations().appendToTerminalDonationQueue(terminalDonation);
     }
   }
 
@@ -178,7 +157,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
   @Override
   protected void onRun() throws Exception {
     if (isForSubscription()) {
-      synchronized (SubscriptionReceiptRequestResponseJob.MUTEX) {
+      synchronized (InAppPaymentSubscriberRecord.Type.DONATION) {
         doRun();
       }
     } else {
@@ -213,9 +192,9 @@ public class DonationReceiptRedemptionJob extends BaseJob {
     }
 
     Log.d(TAG, "Attempting to redeem token... isForSubscription: " + isForSubscription(), true);
-    ServiceResponse<EmptyResponse> response = ApplicationDependencies.getDonationsService()
-                                                                     .redeemReceipt(presentation,
-                                                                                    SignalStore.donationsValues().getDisplayBadgesOnProfile(),
+    ServiceResponse<EmptyResponse> response = AppDependencies.getDonationsService()
+                                                             .redeemDonationReceipt(presentation,
+                                                                                    SignalStore.donations().getDisplayBadgesOnProfile(),
                                                                                     makePrimary);
 
     if (response.getApplicationError().isPresent()) {
@@ -224,7 +203,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
         throw new RetryableException();
       } else {
         Log.w(TAG, "Encountered a non-recoverable exception " + response.getStatus(), response.getApplicationError().get(), true);
-        DonationError.routeBackgroundError(context, uiSessionKey, DonationError.genericBadgeRedemptionFailure(errorSource));
+        DonationError.routeBackgroundError(context, DonationError.genericBadgeRedemptionFailure(errorSource));
 
         if (isForOneTimeDonation()) {
           DonationErrorValue donationErrorValue = new DonationErrorValue.Builder()
@@ -232,7 +211,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
               .code(Integer.toString(response.getStatus()))
               .build();
 
-          SignalStore.donationsValues().setPendingOneTimeDonationError(
+          SignalStore.donations().setPendingOneTimeDonationError(
               donationErrorValue
           );
 
@@ -253,12 +232,12 @@ public class DonationReceiptRedemptionJob extends BaseJob {
 
     if (isForSubscription()) {
       Log.d(TAG, "Clearing subscription failure", true);
-      SignalStore.donationsValues().clearSubscriptionRedemptionFailed();
+      SignalStore.donations().clearSubscriptionRedemptionFailed();
       Log.i(TAG, "Recording end of period from active subscription", true);
-      SignalStore.donationsValues()
-                 .setSubscriptionEndOfPeriodRedeemed(SignalStore.donationsValues()
+      SignalStore.donations()
+                 .setSubscriptionEndOfPeriodRedeemed(SignalStore.donations()
                                                                 .getSubscriptionEndOfPeriodRedemptionStarted());
-      SignalStore.donationsValues().clearSubscriptionReceiptCredential();
+      SignalStore.donations().clearSubscriptionReceiptCredential();
     } else if (giftMessageId != NO_ID) {
       Log.d(TAG, "Marking gift redemption completed for " + giftMessageId);
       SignalDatabase.messages().markGiftRedemptionCompleted(giftMessageId);
@@ -270,7 +249,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
     }
 
     if (isForOneTimeDonation()) {
-      SignalStore.donationsValues().setPendingOneTimeDonation(null);
+      SignalStore.donations().setPendingOneTimeDonation(null);
     }
   }
 
@@ -278,7 +257,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
     final ReceiptCredentialPresentation receiptCredentialPresentation;
 
     if (isForSubscription()) {
-      receiptCredentialPresentation = SignalStore.donationsValues().getSubscriptionReceiptCredential();
+      receiptCredentialPresentation = SignalStore.donations().getSubscriptionReceiptCredential();
     } else {
       receiptCredentialPresentation = null;
     }
@@ -346,7 +325,7 @@ public class DonationReceiptRedemptionJob extends BaseJob {
       return;
     }
 
-    SignalStore.donationsValues().appendToTerminalDonationQueue(terminalDonation);
+    SignalStore.donations().appendToTerminalDonationQueue(terminalDonation);
   }
 
   @Override

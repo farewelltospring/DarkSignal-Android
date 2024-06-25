@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:filename")
+@file:Suppress("ktlint:standard:filename")
 
 package org.thoughtcrime.securesms.database
 
@@ -13,7 +13,7 @@ import org.signal.core.util.requireLong
 import org.signal.core.util.requireString
 import org.signal.core.util.toInt
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.notifications.profiles.NotificationProfile
 import org.thoughtcrime.securesms.notifications.profiles.NotificationProfileSchedule
 import org.thoughtcrime.securesms.recipients.RecipientId
@@ -111,6 +111,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
         put(NotificationProfileTable.EMOJI, emoji)
         put(NotificationProfileTable.COLOR, color.serialize())
         put(NotificationProfileTable.CREATED_AT, createdAt)
+        put(NotificationProfileTable.ALLOW_ALL_CALLS, 1)
       }
 
       val profileId = db.insert(NotificationProfileTable.TABLE_NAME, null, profileValues)
@@ -134,12 +135,13 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
           name = name,
           emoji = emoji,
           createdAt = createdAt,
-          schedule = getProfileSchedule(profileId)
+          schedule = getProfileSchedule(profileId),
+          allowAllCalls = true
         )
       )
     } finally {
       db.endTransaction()
-      ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+      AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     }
   }
 
@@ -154,7 +156,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
     return try {
       val count = writableDatabase.update(NotificationProfileTable.TABLE_NAME, profileValues, updateQuery.where, updateQuery.whereArgs)
       if (count > 0) {
-        ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+        AppDependencies.databaseObserver.notifyNotificationProfileObservers()
       }
 
       NotificationProfileChangeResult.Success(getProfile(profileId)!!)
@@ -200,7 +202,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
       return NotificationProfileChangeResult.Success(getProfile(profile.id)!!)
     } finally {
       db.endTransaction()
-      ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+      AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     }
   }
 
@@ -216,7 +218,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
     writableDatabase.update(NotificationProfileScheduleTable.TABLE_NAME, scheduleValues, updateQuery.where, updateQuery.whereArgs)
 
     if (!silent) {
-      ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+      AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     }
   }
 
@@ -241,7 +243,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
     } finally {
       db.endTransaction()
 
-      ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+      AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     }
   }
 
@@ -252,7 +254,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
     }
     writableDatabase.insert(NotificationProfileAllowedMembersTable.TABLE_NAME, null, allowedValues)
 
-    ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+    AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     return getProfile(profileId)!!
   }
 
@@ -263,7 +265,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
       SqlUtil.buildArgs(profileId, recipientId)
     )
 
-    ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+    AppDependencies.databaseObserver.notifyNotificationProfileObservers()
     return getProfile(profileId)!!
   }
 
@@ -291,7 +293,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
 
   fun deleteProfile(profileId: Long) {
     writableDatabase.delete(NotificationProfileTable.TABLE_NAME, ID_WHERE, SqlUtil.buildArgs(profileId))
-    ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+    AppDependencies.databaseObserver.notifyNotificationProfileObservers()
   }
 
   override fun remapRecipient(oldId: RecipientId, newId: RecipientId) {
@@ -303,7 +305,7 @@ class NotificationProfileDatabase(context: Context, databaseHelper: SignalDataba
 
     databaseHelper.signalWritableDatabase.update(NotificationProfileAllowedMembersTable.TABLE_NAME, values, query, args)
 
-    ApplicationDependencies.getDatabaseObserver().notifyNotificationProfileObservers()
+    AppDependencies.databaseObserver.notifyNotificationProfileObservers()
   }
 
   private fun getProfile(cursor: Cursor): NotificationProfile {

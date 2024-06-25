@@ -1,10 +1,11 @@
 package org.whispersystems.signalservice.api.messages
 
+import okio.ByteString
 import org.signal.libsignal.protocol.message.DecryptionErrorMessage
+import org.signal.libsignal.protocol.message.SenderKeyDistributionMessage
 import org.signal.libsignal.zkgroup.InvalidInputException
 import org.signal.libsignal.zkgroup.groups.GroupMasterKey
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialPresentation
-import org.whispersystems.signalservice.api.InvalidMessageStructureException
 import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
 import org.whispersystems.signalservice.internal.push.AttachmentPointer
@@ -13,6 +14,7 @@ import org.whispersystems.signalservice.internal.push.DataMessage
 import org.whispersystems.signalservice.internal.push.EditMessage
 import org.whispersystems.signalservice.internal.push.Envelope
 import org.whispersystems.signalservice.internal.push.GroupContextV2
+import org.whispersystems.signalservice.internal.push.PniSignatureMessage
 import org.whispersystems.signalservice.internal.push.ReceiptMessage
 import org.whispersystems.signalservice.internal.push.StoryMessage
 import org.whispersystems.signalservice.internal.push.SyncMessage
@@ -39,6 +41,14 @@ object EnvelopeContentValidator {
       return Result.Invalid("Envelope had an invalid sourceServiceId!")
     }
 
+    if (content.senderKeyDistributionMessage != null) {
+      validateSenderKeyDistributionMessage(content.senderKeyDistributionMessage.toByteArray())?.let { return it }
+    }
+
+    if (content.pniSignatureMessage != null) {
+      validatePniSignatureMessage(content.pniSignatureMessage)?.let { return it }
+    }
+
     // Reminder: envelope.destinationServiceId was already validated since we need that for decryption
 
     return when {
@@ -51,9 +61,9 @@ object EnvelopeContentValidator {
       content.typingMessage != null -> validateTypingMessage(envelope, content.typingMessage)
       content.decryptionErrorMessage != null -> validateDecryptionErrorMessage(content.decryptionErrorMessage.toByteArray())
       content.storyMessage != null -> validateStoryMessage(content.storyMessage)
+      content.editMessage != null -> validateEditMessage(content.editMessage)
       content.pniSignatureMessage != null -> Result.Valid
       content.senderKeyDistributionMessage != null -> Result.Valid
-      content.editMessage != null -> validateEditMessage(content.editMessage)
       else -> Result.Invalid("Content is empty!")
     }
   }
@@ -237,9 +247,30 @@ object EnvelopeContentValidator {
     return try {
       DecryptionErrorMessage(serializedDecryptionErrorMessage)
       Result.Valid
-    } catch (e: InvalidMessageStructureException) {
+    } catch (e: Exception) {
       Result.Invalid("[DecryptionErrorMessage] Bad decryption error message!", e)
     }
+  }
+
+  private fun validateSenderKeyDistributionMessage(serializedSenderKeyDistributionMessage: ByteArray): Result.Invalid? {
+    return try {
+      SenderKeyDistributionMessage(serializedSenderKeyDistributionMessage)
+      null
+    } catch (e: Exception) {
+      Result.Invalid("[SenderKeyDistributionMessage] Bad sender key distribution message!", e)
+    }
+  }
+
+  private fun validatePniSignatureMessage(pniSignatureMessage: PniSignatureMessage): Result? {
+    if (pniSignatureMessage.pni.isNullOrInvalidPni()) {
+      return Result.Invalid("[PniSignatureMessage] Invalid PNI")
+    }
+
+    if (pniSignatureMessage.signature == null) {
+      return Result.Invalid("[PniSignatureMessage] Signature is null")
+    }
+
+    return null
   }
 
   private fun validateStoryMessage(storyMessage: StoryMessage): Result {
@@ -312,6 +343,11 @@ object EnvelopeContentValidator {
 
   private fun String?.isNullOrInvalidAci(): Boolean {
     val parsed = ACI.parseOrNull(this)
+    return parsed == null || parsed.isUnknown
+  }
+
+  private fun ByteString?.isNullOrInvalidPni(): Boolean {
+    val parsed = ServiceId.PNI.parseOrNull(this?.toByteArray())
     return parsed == null || parsed.isUnknown
   }
 

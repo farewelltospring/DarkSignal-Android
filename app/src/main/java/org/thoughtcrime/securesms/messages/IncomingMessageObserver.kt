@@ -14,7 +14,7 @@ import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.crypto.ReentrantSessionLock
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.GroupsV2ProcessingLock
 import org.thoughtcrime.securesms.jobmanager.impl.BackoffUtil
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint
@@ -30,8 +30,8 @@ import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.AppForegroundObserver
 import org.thoughtcrime.securesms.util.SignalLocalMetrics
+import org.thoughtcrime.securesms.util.asChain
 import org.whispersystems.signalservice.api.push.ServiceId
-import org.whispersystems.signalservice.api.util.UuidUtil
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 import org.whispersystems.signalservice.api.websocket.WebSocketUnavailableException
 import org.whispersystems.signalservice.internal.push.Envelope
@@ -74,7 +74,7 @@ class IncomingMessageObserver(private val context: Application) {
     const val FOREGROUND_ID = 313399
 
     private val censored: Boolean
-      get() = ApplicationDependencies.getSignalServiceNetworkAccess().isCensored()
+      get() = AppDependencies.signalServiceNetworkAccess.isCensored()
   }
 
   private val decryptionDrainedListeners: MutableList<Runnable> = CopyOnWriteArrayList()
@@ -113,7 +113,7 @@ class IncomingMessageObserver(private val context: Application) {
 
     MessageRetrievalThread().start()
 
-    if (!SignalStore.account().fcmEnabled || SignalStore.internalValues().isWebsocketModeForced) {
+    if (!SignalStore.account.fcmEnabled || SignalStore.internal.isWebsocketModeForced) {
       try {
         ForegroundServiceUtil.start(context, Intent(context, ForegroundService::class.java))
       } catch (e: UnableToStartException) {
@@ -128,7 +128,7 @@ class IncomingMessageObserver(private val context: Application) {
       }
     }
 
-    ApplicationDependencies.getAppForegroundObserver().addListener(object : AppForegroundObserver.Listener {
+    AppDependencies.appForegroundObserver.addListener(object : AppForegroundObserver.Listener {
       override fun onForeground() {
         onAppForegrounded()
       }
@@ -193,11 +193,11 @@ class IncomingMessageObserver(private val context: Application) {
       }.toImmutableSet()
     }
 
-    val registered = SignalStore.account().isRegistered
-    val fcmEnabled = SignalStore.account().fcmEnabled
+    val registered = SignalStore.account.isRegistered
+    val fcmEnabled = SignalStore.account.fcmEnabled
     val hasNetwork = NetworkConstraint.isMet(context)
-    val hasProxy = SignalStore.proxy().isProxyEnabled
-    val forceWebsocket = SignalStore.internalValues().isWebsocketModeForced
+    val hasProxy = SignalStore.proxy.isProxyEnabled
+    val forceWebsocket = SignalStore.internal.isWebsocketModeForced
 
     val lastInteractionString = if (appVisibleSnapshot) "N/A" else timeIdle.toString() + " ms (" + (if (timeIdle < maxBackgroundTime) "within limit" else "over limit") + ")"
     val conclusion = registered &&
@@ -236,7 +236,7 @@ class IncomingMessageObserver(private val context: Application) {
   }
 
   private fun disconnect() {
-    ApplicationDependencies.getSignalWebSocket().disconnect()
+    AppDependencies.signalWebSocket.disconnect()
   }
 
   @JvmOverloads
@@ -295,7 +295,7 @@ class IncomingMessageObserver(private val context: Application) {
       is MessageDecryptor.Result.Success -> {
         val job = PushProcessMessageJob.processOrDefer(messageContentProcessor, result, localReceiveMetric)
         if (job != null) {
-          return result.followUpOperations + FollowUpOperation { job }
+          return result.followUpOperations + FollowUpOperation { job.asChain() }
         }
       }
       is MessageDecryptor.Result.Error -> {
@@ -304,7 +304,7 @@ class IncomingMessageObserver(private val context: Application) {
             result.toMessageState(),
             result.errorMetadata.toExceptionMetadata(),
             result.envelope.timestamp!!
-          )
+          ).asChain()
         }
       }
       is MessageDecryptor.Result.Ignore -> {
@@ -319,12 +319,13 @@ class IncomingMessageObserver(private val context: Application) {
   }
 
   private fun processReceipt(envelope: Envelope) {
-    if (!UuidUtil.isUuid(envelope.sourceServiceId)) {
-      Log.w(TAG, "Invalid envelope source UUID!")
+    val serviceId = ServiceId.parseOrNull(envelope.sourceServiceId)
+    if (serviceId == null) {
+      Log.w(TAG, "Invalid envelope sourceServiceId!")
       return
     }
 
-    val senderId = RecipientId.from(ServiceId.parseOrThrow(envelope.sourceServiceId!!))
+    val senderId = RecipientId.from(serviceId)
 
     Log.i(TAG, "Received server receipt. Sender: $senderId, Device: ${envelope.sourceDevice}, Timestamp: ${envelope.timestamp}")
     SignalDatabase.messages.incrementDeliveryReceiptCount(envelope.timestamp!!, senderId, System.currentTimeMillis())
@@ -371,8 +372,8 @@ class IncomingMessageObserver(private val context: Application) {
         waitForConnectionNecessary()
         Log.i(TAG, "Making websocket connection....")
 
-        val signalWebSocket = ApplicationDependencies.getSignalWebSocket()
-        val webSocketDisposable = signalWebSocket.webSocketState.subscribe { state: WebSocketConnectionState ->
+        val signalWebSocket = AppDependencies.signalWebSocket
+        val webSocketDisposable = AppDependencies.webSocketObserver.subscribe { state: WebSocketConnectionState ->
           Log.d(TAG, "WebSocket State: $state")
 
           // Any state change at all means that we are not drained
@@ -404,7 +405,7 @@ class IncomingMessageObserver(private val context: Application) {
                       if (followUpOperations != null) {
                         Log.d(TAG, "Running ${followUpOperations.size} follow-up operations...")
                         val jobs = followUpOperations.mapNotNull { it.run() }
-                        ApplicationDependencies.getJobManager().addAll(jobs)
+                        AppDependencies.jobManager.addAllChains(jobs)
                       }
 
                       signalWebSocket.sendAck(response)

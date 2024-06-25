@@ -1,11 +1,14 @@
 package org.thoughtcrime.securesms.util;
 
+import android.database.sqlite.SQLiteDatabaseCorruptException;
+
 import androidx.annotation.NonNull;
 
 import org.signal.core.util.ExceptionUtil;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.database.LogDatabase;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 
 import java.io.IOException;
@@ -36,6 +39,15 @@ public class SignalUncaughtExceptionHandler implements Thread.UncaughtExceptionH
       return;
     }
 
+    if (e instanceof SQLiteDatabaseCorruptException) {
+      if (e.getMessage().indexOf("message_fts") >= 0) {
+        Log.w(TAG, "FTS corrupted! Resetting FTS index.");
+        SignalDatabase.messageSearch().fullyResetTables();
+      } else {
+        Log.w(TAG, "Some non-FTS related corruption?");
+      }
+    }
+
     if (e instanceof OnErrorNotImplementedException && e.getCause() != null) {
       e = e.getCause();
     }
@@ -46,10 +58,10 @@ public class SignalUncaughtExceptionHandler implements Thread.UncaughtExceptionH
     }
 
     Log.e(TAG, "", e, true);
-    LogDatabase.getInstance(ApplicationDependencies.getApplication()).crashes().saveCrash(System.currentTimeMillis(), exceptionName, e.getMessage(), ExceptionUtil.convertThrowableToString(e));
+    LogDatabase.getInstance(AppDependencies.getApplication()).crashes().saveCrash(System.currentTimeMillis(), exceptionName, e.getMessage(), ExceptionUtil.convertThrowableToString(e));
     SignalStore.blockUntilAllWritesFinished();
     Log.blockUntilAllWritesFinished();
-    ApplicationDependencies.getJobManager().flush();
+    AppDependencies.getJobManager().flush();
     originalHandler.uncaughtException(t, ExceptionUtil.joinStackTraceAndMessage(e));
   }
 }

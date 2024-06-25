@@ -16,16 +16,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
+import com.bumptech.glide.RequestManager;
+
 import org.signal.ringrtc.CallLinkRootKey;
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatar;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable;
 import org.thoughtcrime.securesms.calls.links.CallLinks;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColorHash;
 import org.thoughtcrime.securesms.linkpreview.LinkPreview;
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewRepository;
-import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.mms.ImageSlide;
 import org.thoughtcrime.securesms.mms.SlidesClickedListener;
-import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.util.Util;
 import org.thoughtcrime.securesms.util.ViewUtil;
 import org.thoughtcrime.securesms.util.views.Stub;
@@ -162,11 +164,11 @@ public class LinkPreviewView extends FrameLayout {
     noPreview.setText(getLinkPreviewErrorString(customError));
   }
 
-  public void setLinkPreview(@NonNull GlideRequests glideRequests, @NonNull LinkPreview linkPreview, boolean showThumbnail) {
-    setLinkPreview(glideRequests, linkPreview, showThumbnail, true, false);
+  public void setLinkPreview(@NonNull RequestManager requestManager, @NonNull LinkPreview linkPreview, boolean showThumbnail) {
+    setLinkPreview(requestManager, linkPreview, showThumbnail, true, false);
   }
 
-  public void setLinkPreview(@NonNull GlideRequests glideRequests, @NonNull LinkPreview linkPreview, boolean showThumbnail, boolean showDescription, boolean scheduleMessageMode) {
+  public void setLinkPreview(@NonNull RequestManager requestManager, @NonNull LinkPreview linkPreview, boolean showThumbnail, boolean showDescription, boolean scheduleMessageMode) {
     spinner.setVisibility(GONE);
     noPreview.setVisibility(GONE);
 
@@ -216,17 +218,17 @@ public class LinkPreviewView extends FrameLayout {
     if (showThumbnail && linkPreview.getThumbnail().isPresent()) {
       thumbnail.setVisibility(VISIBLE);
       thumbnailState.applyState(thumbnail);
-      thumbnail.get().setImageResource(glideRequests, new ImageSlide(linkPreview.getThumbnail().get()), type == TYPE_CONVERSATION && !scheduleMessageMode, false);
+      thumbnail.get().setImageResource(requestManager, new ImageSlide(linkPreview.getThumbnail().get()), type == TYPE_CONVERSATION && !scheduleMessageMode, false);
       thumbnail.get().showSecondaryText(false);
     } else if (callLinkRootKey != null) {
       thumbnail.setVisibility(VISIBLE);
       thumbnailState.applyState(thumbnail);
       thumbnail.get().setImageDrawable(
-          glideRequests,
-          Recipient.DEFAULT_FALLBACK_PHOTO_PROVIDER
-                   .getPhotoForCallLink()
-                   .asDrawable(getContext(),
-                               AvatarColorHash.forCallLink(callLinkRootKey.getKeyBytes()))
+          requestManager,
+          new FallbackAvatarDrawable(
+              getContext(),
+              new FallbackAvatar.Resource.CallLink(AvatarColorHash.forCallLink(callLinkRootKey.getKeyBytes()))
+          )
       );
       thumbnail.get().showSecondaryText(false);
     } else {

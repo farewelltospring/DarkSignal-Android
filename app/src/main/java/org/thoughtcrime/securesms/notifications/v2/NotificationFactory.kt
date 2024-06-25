@@ -19,13 +19,14 @@ import org.signal.core.util.concurrent.SignalExecutors
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.MainActivity
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatar
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable
 import org.thoughtcrime.securesms.components.emoji.EmojiStrings
-import org.thoughtcrime.securesms.contacts.avatars.GeneratedContactPhoto
 import org.thoughtcrime.securesms.conversation.ConversationIntents
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.InMemoryMessageRecord
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.NotificationIds
@@ -201,7 +202,7 @@ object NotificationFactory {
   private fun shouldAlert(conversation: NotificationConversation, lastNotificationTimestamp: Long, alertOverride: Boolean): Boolean {
     val throttle: Duration = when {
       conversation.recipient.isGroup && (conversation.mostRecentNotification as? MessageNotification)?.hasSelfMention == false -> GROUP_THROTTLE
-      ApplicationDependencies.getIncomingMessageObserver().decryptionDrained -> STILL_DECRYPTING_INDIVIDUAL_THROTTLE
+      AppDependencies.incomingMessageObserver.decryptionDrained -> STILL_DECRYPTING_INDIVIDUAL_THROTTLE
       else -> 0.seconds
     }
     val canAlertBasedOnTime: Boolean = lastNotificationTimestamp < System.currentTimeMillis() - throttle.inWholeMilliseconds || lastNotificationTimestamp > System.currentTimeMillis()
@@ -307,7 +308,7 @@ object NotificationFactory {
   }
 
   private fun notifyInThread(context: Context, recipient: Recipient, lastAudibleNotification: Long) {
-    if (!SignalStore.settings().isMessageNotificationsInChatSoundsEnabled ||
+    if (!SignalStore.settings.isMessageNotificationsInChatSoundsEnabled ||
       ServiceUtil.getAudioManager(context).ringerMode != AudioManager.RINGER_MODE_NORMAL ||
       (System.currentTimeMillis() - lastAudibleNotification) < DefaultMessageNotifier.MIN_AUDIBLE_PERIOD_MILLIS
     ) {
@@ -317,7 +318,7 @@ object NotificationFactory {
     val uri: Uri = if (NotificationChannels.supported()) {
       NotificationChannels.getInstance().getMessageRingtone(recipient) ?: NotificationChannels.getInstance().messageRingtone
     } else {
-      recipient.messageRingtone ?: SignalStore.settings().messageNotificationSound
+      recipient.messageRingtone ?: SignalStore.settings.messageNotificationSound
     }
 
     if (uri == Uri.EMPTY || uri.toString().isEmpty()) {
@@ -357,7 +358,7 @@ object NotificationFactory {
 
     builder.apply {
       setSmallIcon(R.drawable.ic_notification)
-      setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.ic_action_warning_red))
+      setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.symbol_error_triangle_fill_32))
       setContentTitle(context.getString(R.string.MessageNotifier_message_delivery_failed))
       setContentText(context.getString(R.string.MessageNotifier_failed_to_deliver_message))
       setTicker(context.getString(R.string.MessageNotifier_error_delivering_message))
@@ -373,7 +374,7 @@ object NotificationFactory {
   fun notifyStoryDeliveryFailed(context: Context, recipient: Recipient, thread: ConversationId) {
     val intent = Intent(context, MyStoriesActivity::class.java).makeUniqueToPreventMerging()
 
-    val contentTitle = if (SignalStore.settings().messageNotificationsPrivacy.isDisplayContact) {
+    val contentTitle = if (SignalStore.settings.messageNotificationsPrivacy.isDisplayContact) {
       if (recipient.isGroup) {
         context.getString(R.string.MessageNotifier_group_story_title, recipient.getDisplayName(context))
       } else {
@@ -383,14 +384,14 @@ object NotificationFactory {
       context.getString(R.string.SingleRecipientNotificationBuilder_signal)
     }
 
-    val largeIcon = if (SignalStore.settings().messageNotificationsPrivacy.isDisplayContact) {
+    val largeIcon = if (SignalStore.settings.messageNotificationsPrivacy.isDisplayContact) {
       if (recipient.isMyStory) {
         Recipient.self().getContactDrawable(context)
       } else {
         recipient.getContactDrawable(context)
       }
     } else {
-      GeneratedContactPhoto("Unknown", R.drawable.ic_profile_outline_40).asDrawable(context, AvatarColor.UNKNOWN)
+      FallbackAvatarDrawable(context, FallbackAvatar.forTextOrDefault("Unknown", AvatarColor.UNKNOWN)).circleCrop()
     }.toLargeBitmap(context)
 
     val builder: NotificationBuilder = NotificationBuilder.create(context)

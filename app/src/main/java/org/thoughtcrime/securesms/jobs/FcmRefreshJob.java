@@ -33,7 +33,7 @@ import org.signal.core.util.PendingIntentFlags;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.PlayServicesProblemActivity;
 import org.thoughtcrime.securesms.R;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.gcm.FcmUtil;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
@@ -100,7 +100,7 @@ public class FcmRefreshJob extends BaseJob {
           Log.i(TAG, "Token didn't change.");
         }
 
-        ApplicationDependencies.getSignalServiceAccountManager().setGcmId(token);
+        AppDependencies.getSignalServiceAccountManager().setGcmId(token);
         SignalStore.account().setFcmToken(token.get());
       } else {
         throw new RetryLaterException(new IOException("Failed to retrieve a token."));
@@ -126,7 +126,7 @@ public class FcmRefreshJob extends BaseJob {
 
     builder.setSmallIcon(R.drawable.ic_notification);
     builder.setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
-                                                      R.drawable.ic_action_warning_red));
+                                                      R.drawable.symbol_error_triangle_fill_32));
     builder.setContentTitle(context.getString(R.string.GcmRefreshJob_Permanent_Signal_communication_failure));
     builder.setContentText(context.getString(R.string.GcmRefreshJob_Signal_was_unable_to_register_with_Google_Play_Services));
     builder.setTicker(context.getString(R.string.GcmRefreshJob_Permanent_Signal_communication_failure));

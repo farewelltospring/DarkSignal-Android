@@ -9,7 +9,7 @@ import org.signal.core.util.delete
 import org.signal.core.util.update
 import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.ReactionRecord
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.recipients.RecipientId
 
 /**
@@ -22,10 +22,10 @@ class ReactionTable(context: Context, databaseHelper: SignalDatabase) : Database
 
     private const val ID = "_id"
     const val MESSAGE_ID = "message_id"
-    private const val AUTHOR_ID = "author_id"
-    private const val EMOJI = "emoji"
-    private const val DATE_SENT = "date_sent"
-    private const val DATE_RECEIVED = "date_received"
+    const val AUTHOR_ID = "author_id"
+    const val EMOJI = "emoji"
+    const val DATE_SENT = "date_sent"
+    const val DATE_RECEIVED = "date_received"
 
     @JvmField
     val CREATE_TABLE = """
@@ -119,7 +119,7 @@ class ReactionTable(context: Context, databaseHelper: SignalDatabase) : Database
       writableDatabase.endTransaction()
     }
 
-    ApplicationDependencies.getDatabaseObserver().notifyMessageUpdateObservers(messageId)
+    AppDependencies.databaseObserver.notifyMessageUpdateObservers(messageId)
   }
 
   fun deleteReaction(messageId: MessageId, recipientId: RecipientId) {
@@ -137,7 +137,7 @@ class ReactionTable(context: Context, databaseHelper: SignalDatabase) : Database
       writableDatabase.endTransaction()
     }
 
-    ApplicationDependencies.getDatabaseObserver().notifyMessageUpdateObservers(messageId)
+    AppDependencies.databaseObserver.notifyMessageUpdateObservers(messageId)
   }
 
   fun deleteReactions(messageId: MessageId) {

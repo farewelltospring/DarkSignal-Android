@@ -10,6 +10,7 @@ import android.view.ContextThemeWrapper
 import android.view.View
 import androidx.core.graphics.scale
 import androidx.core.view.drawToBitmap
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.Key
 import com.bumptech.glide.load.Options
 import com.bumptech.glide.load.ResourceDecoder
@@ -25,12 +26,11 @@ import org.thoughtcrime.securesms.database.model.MessageRecord
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
 import org.thoughtcrime.securesms.database.model.databaseprotos.StoryTextPost
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.fonts.TextFont
 import org.thoughtcrime.securesms.fonts.TextToScript
 import org.thoughtcrime.securesms.fonts.TypefaceCache
 import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader
-import org.thoughtcrime.securesms.mms.GlideApp
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.ParcelUtil
 import java.io.IOException
@@ -125,14 +125,14 @@ data class StoryTextPostModel(
           this
         }
       }
-      val view = StoryTextPostView(ContextThemeWrapper(ApplicationDependencies.getApplication(), R.style.TextSecure_DarkNoActionBar))
+      val view = StoryTextPostView(ContextThemeWrapper(AppDependencies.application, R.style.TextSecure_DarkNoActionBar))
       val typeface = TypefaceCache.get(
-        ApplicationDependencies.getApplication(),
+        AppDependencies.application,
         TextFont.fromStyle(source.storyTextPost.style),
         TextToScript.guessScript(source.storyTextPost.body)
       ).safeBlockingGet()
 
-      val displayWidth: Int = ApplicationDependencies.getApplication().resources.displayMetrics.widthPixels
+      val displayWidth: Int = AppDependencies.application.resources.displayMetrics.widthPixels
       val arHeight: Int = (RENDER_HW_AR * displayWidth).toInt()
 
       val linkPreview = (message as? MmsMessageRecord)?.linkPreviews?.firstOrNull()
@@ -148,7 +148,7 @@ data class StoryTextPostModel(
       view.layout(0, 0, view.measuredWidth, view.measuredHeight)
 
       val drawable = if (linkPreview != null && linkPreview.thumbnail.isPresent) {
-        GlideApp
+        Glide
           .with(view)
           .load(DecryptableStreamUriLoader.DecryptableUri(linkPreview.thumbnail.get().uri!!))
           .centerCrop()

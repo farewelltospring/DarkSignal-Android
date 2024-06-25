@@ -21,10 +21,10 @@ import java.util.UUID
  */
 class BufferedSignalServiceAccountDataStore(selfServiceId: ServiceId) : SignalServiceAccountDataStore {
 
-  private val identityStore: BufferedIdentityKeyStore = if (selfServiceId == SignalStore.account().pni) {
-    BufferedIdentityKeyStore(selfServiceId, SignalStore.account().pniIdentityKey, SignalStore.account().pniRegistrationId)
+  private val identityStore: BufferedIdentityKeyStore = if (selfServiceId == SignalStore.account.pni) {
+    BufferedIdentityKeyStore(selfServiceId, SignalStore.account.pniIdentityKey, SignalStore.account.pniRegistrationId)
   } else {
-    BufferedIdentityKeyStore(selfServiceId, SignalStore.account().aciIdentityKey, SignalStore.account().registrationId)
+    BufferedIdentityKeyStore(selfServiceId, SignalStore.account.aciIdentityKey, SignalStore.account.registrationId)
   }
 
   private val oneTimePreKeyStore: BufferedOneTimePreKeyStore = BufferedOneTimePreKeyStore(selfServiceId)
@@ -177,7 +177,7 @@ class BufferedSignalServiceAccountDataStore(selfServiceId: ServiceId) : SignalSe
     sessionStore.archiveSession(address)
   }
 
-  override fun getAllAddressesWithActiveSessions(addressNames: MutableList<String>): Set<SignalProtocolAddress> {
+  override fun getAllAddressesWithActiveSessions(addressNames: MutableList<String>): Map<SignalProtocolAddress, SessionRecord> {
     return sessionStore.getAllAddressesWithActiveSessions(addressNames)
   }
 
@@ -200,6 +200,7 @@ class BufferedSignalServiceAccountDataStore(selfServiceId: ServiceId) : SignalSe
   fun flushToDisk(persistentStore: SignalServiceAccountDataStore) {
     identityStore.flushToDisk(persistentStore)
     oneTimePreKeyStore.flushToDisk(persistentStore)
+    kyberPreKeyStore.flushToDisk(persistentStore)
     signedPreKeyStore.flushToDisk(persistentStore)
     sessionStore.flushToDisk(persistentStore)
     senderKeyStore.flushToDisk(persistentStore)

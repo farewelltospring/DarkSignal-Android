@@ -10,27 +10,35 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.databinding.PromptBatterySaverBottomSheetBinding
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.notifications.DelayedNotificationConfig
 import org.thoughtcrime.securesms.util.BottomSheetUtil
+import org.thoughtcrime.securesms.util.LocalMetrics
 import org.thoughtcrime.securesms.util.PowerManagerCompat
 
 @RequiresApi(23)
 class PromptBatterySaverDialogFragment : FixedRoundedCornerBottomSheetDialogFragment() {
 
   companion object {
+    private val TAG = Log.tag(PromptBatterySaverDialogFragment::class.java)
+    private const val ARG_LEARN_MORE_LINK = "arg.learn.more.link"
 
     @JvmStatic
     fun show(fragmentManager: FragmentManager) {
       if (fragmentManager.findFragmentByTag(BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG) == null) {
         PromptBatterySaverDialogFragment().apply {
-          arguments = bundleOf()
+          arguments = bundleOf(
+            ARG_LEARN_MORE_LINK to DelayedNotificationConfig.currentConfig.link
+          )
         }.show(fragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
-        SignalStore.uiHints().lastBatterySaverPrompt = System.currentTimeMillis()
+        SignalStore.uiHints.lastBatterySaverPrompt = System.currentTimeMillis()
       }
     }
   }
@@ -49,11 +57,19 @@ class PromptBatterySaverDialogFragment : FixedRoundedCornerBottomSheetDialogFrag
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     disposables.bindTo(viewLifecycleOwner)
 
+    val learnMoreLink = arguments?.getString(ARG_LEARN_MORE_LINK) ?: getString(R.string.PromptBatterySaverBottomSheet__learn_more_url)
+    binding.message.setLearnMoreVisible(true)
+    binding.message.setLinkColor(ContextCompat.getColor(requireContext(), R.color.signal_colorPrimary))
+    binding.message.setLink(learnMoreLink)
+
     binding.continueButton.setOnClickListener {
       PowerManagerCompat.requestIgnoreBatteryOptimizations(requireContext())
+      Log.i(TAG, "Requested to ignore battery optimizations, clearing local metrics.")
+      LocalMetrics.clear()
     }
     binding.dismissButton.setOnClickListener {
-      SignalStore.uiHints().markDismissedBatterySaverPrompt()
+      Log.i(TAG, "User denied request to ignore battery optimizations.")
+      SignalStore.uiHints.markDismissedBatterySaverPrompt()
       dismiss()
     }
   }

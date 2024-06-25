@@ -13,7 +13,7 @@
 
         <action
             android:id="@+id/action_restore"
-            app:destination="@id/restoreBackupFragment"
+            app:destination="@id/restoreBackupFragmentV2"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
@@ -60,7 +60,7 @@
 
         <action
             android:id="@+id/action_restore"
-            app:destination="@id/restoreBackupFragment"
+            app:destination="@id/restoreBackupFragmentV2"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
@@ -96,7 +96,7 @@
 
         <action
             android:id="@+id/action_restore"
-            app:destination="@id/restoreBackupFragment"
+            app:destination="@id/restoreBackupFragmentV2"
             app:enterAnim="@anim/nav_default_enter_anim"
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
@@ -284,7 +284,7 @@
         tools:layout="@layout/fragment_registration_captcha" />
 
     <fragment
-        android:id="@+id/restoreBackupFragment"
+        android:id="@+id/restoreBackupFragmentV2"
         android:name="org.thoughtcrime.securesms.registration.fragments.RestoreBackupFragment"
         android:label="fragment_restore_backup"
         tools:layout="@layout/fragment_registration_restore_backup">
@@ -296,7 +296,7 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/restoreBackupFragment"
+            app:popUpTo="@id/restoreBackupFragmentV2"
             app:popUpToInclusive="true" />
 
         <action
@@ -314,7 +314,7 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@id/restoreBackupFragment"
+            app:popUpTo="@id/restoreBackupFragmentV2"
             app:popUpToInclusive="true" />
 
         <action
@@ -324,7 +324,7 @@
             app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim"
-            app:popUpTo="@+id/restoreBackupFragment"
+            app:popUpTo="@+id/restoreBackupFragmentV2"
             app:popUpToInclusive="true" />
 
         <argument
@@ -368,7 +368,34 @@
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim" />
 
+        <action
+            android:id="@+id/action_transferOrRestore_to_moreOptions"
+            app:destination="@+id/transferOrRestoreMoreOptionsDialog" />
+
     </fragment>
+
+    <fragment
+        android:id="@+id/restoreFromBackupFragment"
+        android:name="org.thoughtcrime.securesms.backup.v2.ui.restore.RestoreFromBackupFragment">
+
+        <action
+            android:id="@+id/action_restoreFromBacakupFragment_to_moreOptions"
+            app:destination="@+id/transferOrRestoreMoreOptionsDialog" />
+
+        <argument
+            android:name="cancelable"
+            app:argType="boolean" />
+
+    </fragment>
+
+    <dialog
+        android:id="@+id/transferOrRestoreMoreOptionsDialog"
+        android:name="org.thoughtcrime.securesms.devicetransfer.moreoptions.MoreTransferOrRestoreOptionsSheet">
+
+        <argument
+            android:name="mode"
+            app:argType="org.thoughtcrime.securesms.devicetransfer.moreoptions.MoreTransferOrRestoreOptionsMode" />
+    </dialog>
 
     <fragment
         android:id="@+id/newDeviceTransferInstructions"

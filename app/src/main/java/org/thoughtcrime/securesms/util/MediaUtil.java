@@ -24,6 +24,7 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.WorkerThread;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.gif.GifDrawable;
 
@@ -36,7 +37,6 @@ import org.thoughtcrime.securesms.mms.AudioSlide;
 import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader.DecryptableUri;
 import org.thoughtcrime.securesms.mms.DocumentSlide;
 import org.thoughtcrime.securesms.mms.GifSlide;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.mms.ImageSlide;
 import org.thoughtcrime.securesms.mms.MmsSlide;
 import org.thoughtcrime.securesms.mms.PartAuthority;
@@ -100,7 +100,7 @@ public class MediaUtil {
       return new StickerSlide(attachment);
     }
 
-    switch (getSlideTypeFromContentType(attachment.getContentType())) {
+    switch (getSlideTypeFromContentType(attachment.contentType)) {
       case GIF       : return new GifSlide(attachment);
       case IMAGE     : return new ImageSlide(attachment);
       case VIDEO     : return new VideoSlide(attachment);
@@ -202,7 +202,7 @@ public class MediaUtil {
 
     if (MediaUtil.isGif(contentType)) {
       try {
-        GifDrawable drawable = GlideApp.with(context)
+        GifDrawable drawable = Glide.with(context)
                                        .asGif()
                                        .skipMemoryCache(true)
                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -262,31 +262,31 @@ public class MediaUtil {
   }
 
   public static boolean isGif(Attachment attachment) {
-    return isGif(attachment.getContentType());
+    return isGif(attachment.contentType);
   }
 
   public static boolean isJpeg(Attachment attachment) {
-    return isJpegType(attachment.getContentType());
+    return isJpegType(attachment.contentType);
   }
 
   public static boolean isHeic(Attachment attachment) {
-    return isHeicType(attachment.getContentType());
+    return isHeicType(attachment.contentType);
   }
 
   public static boolean isHeif(Attachment attachment) {
-    return isHeifType(attachment.getContentType());
+    return isHeifType(attachment.contentType);
   }
 
   public static boolean isImage(Attachment attachment) {
-    return isImageType(attachment.getContentType());
+    return isImageType(attachment.contentType);
   }
 
   public static boolean isAudio(Attachment attachment) {
-    return isAudioType(attachment.getContentType());
+    return isAudioType(attachment.contentType);
   }
 
   public static boolean isVideo(Attachment attachment) {
-    return isVideoType(attachment.getContentType());
+    return isVideoType(attachment.contentType);
   }
 
   public static boolean isVideo(String contentType) {
@@ -408,6 +408,11 @@ public class MediaUtil {
   }
 
   @WorkerThread
+  public static @Nullable Bitmap getVideoThumbnail(@NonNull Context context, @Nullable Uri uri) {
+    return getVideoThumbnail(context, uri, 1000);
+  }
+
+  @WorkerThread
   public static @Nullable Bitmap getVideoThumbnail(@NonNull Context context, @Nullable Uri uri, long timeUs) {
     if (uri == null) {
       return null;
@@ -468,12 +473,9 @@ public class MediaUtil {
   }
 
   public static boolean isInstantVideoSupported(Slide slide) {
-    if (!FeatureFlags.instantVideoPlayback()) {
-      return false;
-    }
     final Attachment attachment                        = slide.asAttachment();
     final boolean    isIncremental                     = attachment.getIncrementalDigest() != null;
-    final boolean    hasIncrementalMacChunkSizeDefined = attachment.getIncrementalMacChunkSize() > 0;
+    final boolean    hasIncrementalMacChunkSizeDefined = attachment.incrementalMacChunkSize > 0;
     final boolean    contentTypeSupported              = isVideoType(slide.getContentType());
     return isIncremental && contentTypeSupported && hasIncrementalMacChunkSizeDefined;
   }

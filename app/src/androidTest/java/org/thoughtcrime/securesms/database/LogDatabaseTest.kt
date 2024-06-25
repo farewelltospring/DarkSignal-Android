@@ -10,14 +10,14 @@ import org.signal.core.util.forEach
 import org.signal.core.util.requireLong
 import org.signal.core.util.requireNonNullString
 import org.signal.core.util.select
-import org.signal.core.util.update
+import org.signal.core.util.updateAll
 import org.thoughtcrime.securesms.crash.CrashConfig
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.testing.assertIs
 
 class LogDatabaseTest {
 
-  private val db: LogDatabase = LogDatabase.getInstance(ApplicationDependencies.getApplication())
+  private val db: LogDatabase = LogDatabase.getInstance(AppDependencies.application)
 
   @Test
   fun crashTable_matchesNamePattern() {
@@ -220,7 +220,7 @@ class LogDatabaseTest {
     )
 
     db.writableDatabase
-      .update(LogDatabase.CrashTable.TABLE_NAME)
+      .updateAll(LogDatabase.CrashTable.TABLE_NAME)
       .values(LogDatabase.CrashTable.LAST_PROMPTED_AT to currentTime)
       .run()
 

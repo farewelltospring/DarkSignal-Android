@@ -4,7 +4,6 @@ import android.content.Context
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.keyvalue.AccountValues.UsernameSyncState
 import org.thoughtcrime.securesms.keyvalue.SignalStore
-import org.thoughtcrime.securesms.util.FeatureFlags
 
 /**
  * Displays a reminder message when the local username gets out of sync with
@@ -13,7 +12,7 @@ import org.thoughtcrime.securesms.util.FeatureFlags
 class UsernameOutOfSyncReminder : Reminder(NO_RESOURCE) {
 
   init {
-    val action = if (SignalStore.account().usernameSyncState == UsernameSyncState.USERNAME_AND_LINK_CORRUPTED) {
+    val action = if (SignalStore.account.usernameSyncState == UsernameSyncState.USERNAME_AND_LINK_CORRUPTED) {
       R.id.reminder_action_fix_username_and_link
     } else {
       R.id.reminder_action_fix_username_link
@@ -28,7 +27,7 @@ class UsernameOutOfSyncReminder : Reminder(NO_RESOURCE) {
   }
 
   override fun getText(context: Context): CharSequence {
-    return if (SignalStore.account().usernameSyncState == UsernameSyncState.USERNAME_AND_LINK_CORRUPTED) {
+    return if (SignalStore.account.usernameSyncState == UsernameSyncState.USERNAME_AND_LINK_CORRUPTED) {
       context.getString(R.string.UsernameOutOfSyncReminder__username_and_link_corrupt)
     } else {
       context.getString(R.string.UsernameOutOfSyncReminder__link_corrupt)
@@ -42,14 +41,10 @@ class UsernameOutOfSyncReminder : Reminder(NO_RESOURCE) {
   companion object {
     @JvmStatic
     fun isEligible(): Boolean {
-      return if (FeatureFlags.usernames()) {
-        when (SignalStore.account().usernameSyncState) {
-          UsernameSyncState.USERNAME_AND_LINK_CORRUPTED -> true
-          UsernameSyncState.LINK_CORRUPTED -> true
-          UsernameSyncState.IN_SYNC -> false
-        }
-      } else {
-        false
+      return when (SignalStore.account.usernameSyncState) {
+        UsernameSyncState.USERNAME_AND_LINK_CORRUPTED -> true
+        UsernameSyncState.LINK_CORRUPTED -> true
+        UsernameSyncState.IN_SYNC -> false
       }
     }
   }

@@ -10,8 +10,12 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.text.SpannableStringBuilder
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.core.graphics.drawable.toBitmap
+import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestManager
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -32,6 +36,7 @@ import org.signal.paging.PagingConfig
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.ShortcutLauncherActivity
 import org.thoughtcrime.securesms.attachments.TombstoneAttachment
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable
 import org.thoughtcrime.securesms.components.emoji.EmojiStrings
 import org.thoughtcrime.securesms.components.reminder.BubbleOptOutReminder
 import org.thoughtcrime.securesms.components.reminder.ExpiredBuildReminder
@@ -67,28 +72,24 @@ import org.thoughtcrime.securesms.database.model.Quote
 import org.thoughtcrime.securesms.database.model.ReactionRecord
 import org.thoughtcrime.securesms.database.model.StickerRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.MultiDeviceViewOnceOpenJob
 import org.thoughtcrime.securesms.jobs.ServiceOutageDetectionJob
 import org.thoughtcrime.securesms.keyboard.KeyboardUtil
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.linkpreview.LinkPreview
 import org.thoughtcrime.securesms.messagerequests.MessageRequestState
-import org.thoughtcrime.securesms.mms.GlideApp
-import org.thoughtcrime.securesms.mms.GlideRequests
 import org.thoughtcrime.securesms.mms.OutgoingMessage
 import org.thoughtcrime.securesms.mms.PartAuthority
 import org.thoughtcrime.securesms.mms.QuoteModel
 import org.thoughtcrime.securesms.mms.Slide
 import org.thoughtcrime.securesms.mms.SlideDeck
-import org.thoughtcrime.securesms.profiles.spoofing.ReviewUtil
+import org.thoughtcrime.securesms.profiles.spoofing.ReviewRecipient
 import org.thoughtcrime.securesms.providers.BlobProvider
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
-import org.thoughtcrime.securesms.search.MessageResult
 import org.thoughtcrime.securesms.sms.MessageSender
 import org.thoughtcrime.securesms.sms.MessageSender.PreUploadResult
-import org.thoughtcrime.securesms.util.BitmapUtil
 import org.thoughtcrime.securesms.util.DrawableUtil
 import org.thoughtcrime.securesms.util.MediaUtil
 import org.thoughtcrime.securesms.util.MessageUtil
@@ -122,7 +123,7 @@ class ConversationRepository(
    */
   fun getKeyboardImageDetails(uri: Uri): Maybe<KeyboardUtil.ImageDetails> {
     return MaybeCompat.fromCallable {
-      KeyboardUtil.getImageDetails(GlideApp.with(applicationContext), uri)
+      KeyboardUtil.getImageDetails(Glide.with(applicationContext), uri)
     }.subscribeOn(Schedulers.io())
   }
 
@@ -226,7 +227,7 @@ class ConversationRepository(
 
       if (preUploadResults.isEmpty()) {
         MessageSender.send(
-          ApplicationDependencies.getApplication(),
+          AppDependencies.application,
           message,
           threadId,
           MessageSender.SendType.SIGNAL,
@@ -236,7 +237,7 @@ class ConversationRepository(
         }
       } else {
         MessageSender.sendPushWithPreUploadedMedia(
-          ApplicationDependencies.getApplication(),
+          AppDependencies.application,
           message,
           preUploadResults,
           threadId
@@ -264,9 +265,9 @@ class ConversationRepository(
     }.subscribeOn(Schedulers.io())
   }
 
-  fun getMessageResultPosition(threadId: Long, messageResult: MessageResult): Single<Int> {
+  fun getMessageResultPosition(threadId: Long, receivedTimestamp: Long): Single<Int> {
     return Single.fromCallable {
-      SignalDatabase.messages.getMessagePositionInConversation(threadId, messageResult.receivedTimestampMs)
+      SignalDatabase.messages.getMessagePositionInConversation(threadId, receivedTimestamp)
     }.subscribeOn(Schedulers.io())
   }
 
@@ -308,7 +309,7 @@ class ConversationRepository(
         ExpiredBuildReminder.isEligible() -> ExpiredBuildReminder(applicationContext)
         UnauthorizedReminder.isEligible(applicationContext) -> UnauthorizedReminder()
         ServiceOutageReminder.isEligible(applicationContext) -> {
-          ApplicationDependencies.getJobManager().add(ServiceOutageDetectionJob())
+          AppDependencies.jobManager.add(ServiceOutageDetectionJob())
           ServiceOutageReminder()
         }
 
@@ -320,7 +321,7 @@ class ConversationRepository(
           GroupsV1MigrationSuggestionsReminder(groupRecord.gv1MigrationSuggestions)
         }
 
-        isInBubble && !SignalStore.tooltips().hasSeenBubbleOptOutTooltip() && Build.VERSION.SDK_INT > 29 -> {
+        isInBubble && !SignalStore.tooltips.hasSeenBubbleOptOutTooltip() && Build.VERSION.SDK_INT > 29 -> {
           BubbleOptOutReminder()
         }
 
@@ -342,7 +343,7 @@ class ConversationRepository(
         emptyList()
       }
 
-      val records = ApplicationDependencies.getProtocolStore().aci().identities().getIdentityRecords(recipients)
+      val records = AppDependencies.protocolStore.aci().identities().getIdentityRecords(recipients)
       val isVerified = recipient.registered == RecipientTable.RegisteredState.REGISTERED &&
         Recipient.self().isRegistered &&
         records.isVerified &&
@@ -355,7 +356,7 @@ class ConversationRepository(
   fun resetVerifiedStatusToDefault(unverifiedIdentities: List<IdentityRecord>): Completable {
     return Completable.fromCallable {
       ReentrantSessionLock.INSTANCE.acquire().use {
-        val identityStore = ApplicationDependencies.getProtocolStore().aci().identities()
+        val identityStore = AppDependencies.protocolStore.aci().identities()
         for ((recipientId, identityKey) in unverifiedIdentities) {
           identityStore.setVerified(recipientId, identityKey, VerifiedStatus.DEFAULT)
         }
@@ -363,25 +364,40 @@ class ConversationRepository(
     }.subscribeOn(Schedulers.io())
   }
 
+  fun dismissRequestReviewState(threadRecipientId: RecipientId) {
+    SignalExecutors.BOUNDED_IO.execute {
+      SignalDatabase.nameCollisions.markCollisionsForThreadRecipientDismissed(threadRecipientId)
+    }
+  }
+
   fun getRequestReviewState(recipient: Recipient, group: GroupRecord?, messageRequest: MessageRequestState): Single<RequestReviewState> {
     return Single.fromCallable {
-      if (group == null && messageRequest != MessageRequestState.INDIVIDUAL) {
+      if (group == null && messageRequest.state != MessageRequestState.State.INDIVIDUAL) {
         return@fromCallable RequestReviewState()
       }
 
-      if (group == null && ReviewUtil.isRecipientReviewSuggested(recipient.id)) {
-        return@fromCallable RequestReviewState(individualReviewState = IndividualReviewState(recipient))
+      if (group == null) {
+        val recipientsToReview = SignalDatabase.nameCollisions.getCollisionsForThreadRecipientId(recipient.id)
+        if (recipientsToReview.isNotEmpty()) {
+          return@fromCallable RequestReviewState(
+            individualReviewState = IndividualReviewState(
+              target = recipient,
+              firstDuplicate = recipientsToReview.first().recipient
+            )
+          )
+        }
       }
 
       if (group != null && group.isV2Group) {
         val groupId = group.id.requireV2()
-        val duplicateRecipients: List<Recipient> = ReviewUtil.getDuplicatedRecipients(groupId).map { it.recipient }
+        val duplicateRecipients: List<ReviewRecipient> = SignalDatabase.nameCollisions.getCollisionsForThreadRecipientId(group.recipientId)
 
         if (duplicateRecipients.isNotEmpty()) {
           return@fromCallable RequestReviewState(
             groupReviewState = GroupReviewState(
               groupId,
-              duplicateRecipients[0],
+              duplicateRecipients[0].recipient,
+              duplicateRecipients[1].recipient,
               duplicateRecipients.size
             )
           )
@@ -406,8 +422,8 @@ class ConversationRepository(
           .createForSingleSessionOnDisk(applicationContext)
 
         attachments.deleteAttachmentFilesForViewOnceMessage(mmsMessageRecord.id)
-        ApplicationDependencies.getViewOnceMessageManager().scheduleIfNecessary()
-        ApplicationDependencies.getJobManager().add(MultiDeviceViewOnceOpenJob(MessageTable.SyncMessageId(mmsMessageRecord.fromRecipient.id, mmsMessageRecord.dateSent)))
+        AppDependencies.viewOnceMessageManager.scheduleIfNecessary()
+        AppDependencies.jobManager.add(MultiDeviceViewOnceOpenJob(MessageTable.SyncMessageId(mmsMessageRecord.fromRecipient.id, mmsMessageRecord.dateSent)))
 
         tempUri
       } catch (e: IOException) {
@@ -470,15 +486,15 @@ class ConversationRepository(
         }
       }
       .filterNot(Util::isEmpty)
-      .joinToString("\n")
+      .joinTo(buffer = SpannableStringBuilder(), separator = "\n")
   }
 
-  fun getRecipientContactPhotoBitmap(context: Context, glideRequests: GlideRequests, recipient: Recipient): Single<ShortcutInfoCompat> {
-    val fallback = recipient.fallbackContactPhoto.asDrawable(context, recipient.avatarColor, false)
+  fun getRecipientContactPhotoBitmap(context: Context, requestManager: RequestManager, recipient: Recipient): Single<ShortcutInfoCompat> {
+    val fallback = FallbackAvatarDrawable(context, recipient.getFallbackAvatar())
 
     return Single
       .create { emitter ->
-        glideRequests
+        requestManager
           .asBitmap()
           .load(recipient.contactPhoto)
           .error(fallback)
@@ -561,13 +577,19 @@ class ConversationRepository(
 
   fun startExpirationTimeout(expirationInfos: List<MessageTable.ExpirationInfo>) {
     SignalDatabase.messages.markExpireStarted(expirationInfos.map { it.id to it.expireStarted })
-    ApplicationDependencies.getExpiringMessageManager().scheduleDeletion(expirationInfos)
+    AppDependencies.expiringMessageManager.scheduleDeletion(expirationInfos)
   }
 
   fun markLastSeen(threadId: Long) {
     SignalExecutors.BOUNDED_IO.execute {
       SignalDatabase.threads.setLastSeen(threadId)
     }
+  }
+
+  fun getEarliestMessageSentDate(threadId: Long): Single<Long> {
+    return Single
+      .fromCallable { SignalDatabase.messages.getEarliestMessageSentDate(threadId) }
+      .subscribeOn(Schedulers.io())
   }
 
   /**
@@ -597,7 +619,7 @@ class ConversationRepository(
    * The result of the Glide load to get a user's contact photo. This can then be transformed into
    * something that the Android system likes via [transformToFinalBitmap]
    */
-  sealed interface ContactPhotoResult {
+  private sealed interface ContactPhotoResult {
 
     companion object {
       private val SHORTCUT_ICON_SIZE = if (Build.VERSION.SDK_INT >= 26) 72.dp else (48 + 16 * 2).dp
@@ -606,7 +628,7 @@ class ConversationRepository(
     class DrawableResult(private val drawable: Drawable) : ContactPhotoResult {
       override fun transformToFinalBitmap(): Single<Bitmap> {
         return Single.create {
-          val bitmap = DrawableUtil.toBitmap(drawable, SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE)
+          val bitmap = DrawableUtil.wrapBitmapForShortcutInfo(drawable.toBitmap(SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE))
           it.setCancellable {
             bitmap.recycle()
           }
@@ -618,7 +640,7 @@ class ConversationRepository(
     class BitmapResult(private val bitmap: Bitmap) : ContactPhotoResult {
       override fun transformToFinalBitmap(): Single<Bitmap> {
         return Single.create {
-          val bitmap = BitmapUtil.createScaledBitmap(bitmap, SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE)
+          val bitmap = DrawableUtil.wrapBitmapForShortcutInfo(bitmap)
           it.setCancellable {
             bitmap.recycle()
           }

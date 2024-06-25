@@ -6,7 +6,6 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
 import org.signal.core.util.Base64
-import org.signal.core.util.LongSerializer
 import org.signal.core.util.logging.Log
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
@@ -17,7 +16,7 @@ import org.thoughtcrime.securesms.crypto.MasterCipher
 import org.thoughtcrime.securesms.crypto.ProfileKeyUtil
 import org.thoughtcrime.securesms.crypto.storage.PreKeyMetadataStore
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.PreKeysSyncJob
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.service.KeyCachingService
@@ -32,7 +31,7 @@ import org.whispersystems.signalservice.api.util.UuidUtil
 import org.whispersystems.signalservice.api.util.toByteArray
 import java.security.SecureRandom
 
-internal class AccountValues internal constructor(store: KeyValueStore) : SignalStoreValues(store) {
+class AccountValues internal constructor(store: KeyValueStore) : SignalStoreValues(store) {
 
   companion object {
     private val TAG = Log.tag(AccountValues::class.java)
@@ -72,6 +71,7 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
     private const val KEY_USERNAME_LINK_ENTROPY = "account.username_link_entropy"
     private const val KEY_USERNAME_LINK_SERVER_ID = "account.username_link_server_id"
     private const val KEY_USERNAME_SYNC_STATE = "phoneNumberPrivacy.usernameSyncState"
+    private const val KEY_USERNAME_SYNC_ERROR_COUNT = "phoneNumberPrivacy.usernameErrorCount"
 
     @VisibleForTesting
     const val KEY_E164 = "account.e164"
@@ -88,11 +88,11 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
 
   init {
     if (!store.containsKey(KEY_ACI)) {
-      migrateFromSharedPrefsV1(ApplicationDependencies.getApplication())
+      migrateFromSharedPrefsV1(AppDependencies.application)
     }
 
     if (!store.containsKey(KEY_ACI_IDENTITY_PUBLIC_KEY)) {
-      migrateFromSharedPrefsV2(ApplicationDependencies.getApplication())
+      migrateFromSharedPrefsV2(AppDependencies.application)
     }
 
     store.getString(KEY_PNI, null)?.let { pni ->
@@ -263,6 +263,30 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
     }
   }
 
+  fun restorePniIdentityKeyFromBackup(publicKey: ByteArray, privateKey: ByteArray) {
+    synchronized(this) {
+      Log.i(TAG, "Setting a new PNI identity key pair.")
+
+      store
+        .beginWrite()
+        .putBlob(KEY_PNI_IDENTITY_PUBLIC_KEY, publicKey)
+        .putBlob(KEY_PNI_IDENTITY_PRIVATE_KEY, privateKey)
+        .commit()
+    }
+  }
+
+  fun restoreAciIdentityKeyFromBackup(publicKey: ByteArray, privateKey: ByteArray) {
+    synchronized(this) {
+      Log.i(TAG, "Setting a new ACI identity key pair.")
+
+      store
+        .beginWrite()
+        .putBlob(KEY_ACI_IDENTITY_PUBLIC_KEY, publicKey)
+        .putBlob(KEY_ACI_IDENTITY_PRIVATE_KEY, privateKey)
+        .commit()
+    }
+  }
+
   /** Only to be used when restoring an identity public key from an old backup */
   fun restoreLegacyIdentityPublicKeyFromBackup(base64: String) {
     Log.w(TAG, "Restoring legacy identity public key from backup.")
@@ -336,7 +360,7 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
 
     putBoolean(KEY_IS_REGISTERED, registered)
 
-    ApplicationDependencies.getIncomingMessageObserver().notifyRegistrationChanged()
+    AppDependencies.incomingMessageObserver.notifyRegistrationChanged()
 
     if (previous != registered) {
       Recipient.self().live().refresh()
@@ -345,6 +369,18 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
     if (previous && !registered) {
       clearLocalCredentials()
     }
+  }
+
+  /**
+   * Function for testing backup/restore
+   */
+  @Deprecated("debug only")
+  fun clearRegistrationButKeepCredentials() {
+    putBoolean(KEY_IS_REGISTERED, false)
+
+    AppDependencies.incomingMessageObserver.notifyRegistrationChanged()
+
+    Recipient.self().live().refresh()
   }
 
   val deviceName: String?
@@ -397,17 +433,14 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
    * There are some cases where our username may fall out of sync with the service. In particular, we may get a new value for our username from
    * storage service but then find that it doesn't match what's on the service.
    */
-  var usernameSyncState: UsernameSyncState by enumValue(
-    KEY_USERNAME_SYNC_STATE,
-    UsernameSyncState.IN_SYNC,
-    object : LongSerializer<UsernameSyncState> {
-      override fun serialize(data: UsernameSyncState): Long {
-        Log.i(TAG, "Marking username sync state as: $data")
-        return data.serialize()
-      }
-      override fun deserialize(data: Long): UsernameSyncState = UsernameSyncState.deserialize(data)
+  var usernameSyncState: UsernameSyncState
+    get() = UsernameSyncState.deserialize(getLong(KEY_USERNAME_SYNC_STATE, UsernameSyncState.IN_SYNC.serialize()))
+    set(value) {
+      Log.i(TAG, "Marking username sync state as: $value")
+      putLong(KEY_USERNAME_SYNC_STATE, value.serialize())
     }
-  )
+
+  var usernameSyncErrorCount: Int by integerValue(KEY_USERNAME_SYNC_ERROR_COUNT, 0)
 
   private fun clearLocalCredentials() {
     putString(KEY_SERVICE_PASSWORD, Util.getSecret(18))
@@ -416,7 +449,7 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
     val self = Recipient.self()
 
     SignalDatabase.recipients.setProfileKey(self.id, newProfileKey)
-    ApplicationDependencies.getGroupsV2Authorization().clear()
+    AppDependencies.groupsV2Authorization.clear()
   }
 
   /** Do not alter. If you need to migrate more stuff, create a new method. */
@@ -520,7 +553,7 @@ internal class AccountValues internal constructor(store: KeyValueStore) : Signal
 
     companion object {
       fun deserialize(value: Long): UsernameSyncState {
-        return values().firstOrNull { it.value == value } ?: throw IllegalArgumentException("Invalud value: $value")
+        return values().firstOrNull { it.value == value } ?: throw IllegalArgumentException("Invalid value: $value")
       }
     }
   }

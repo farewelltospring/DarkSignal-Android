@@ -1,8 +1,8 @@
 package org.whispersystems.signalservice.internal.push.http
 
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
-import okhttp3.internal.http.UnrepeatableRequestBody
 import okio.BufferedSink
 import org.signal.libsignal.protocol.incrementalmac.ChunkSizeChoice
 import org.signal.libsignal.protocol.logging.Log
@@ -22,10 +22,11 @@ class DigestingRequestBody(
   private val outputStreamFactory: OutputStreamFactory,
   private val contentType: String,
   private val contentLength: Long,
+  private val incremental: Boolean,
   private val progressListener: SignalServiceAttachment.ProgressListener?,
   private val cancelationSignal: CancelationSignal?,
   private val contentStart: Long
-) : RequestBody(), UnrepeatableRequestBody {
+) : RequestBody() {
   var attachmentDigest: AttachmentDigest? = null
 
   init {
@@ -34,14 +35,14 @@ class DigestingRequestBody(
   }
 
   override fun contentType(): MediaType? {
-    return MediaType.parse(contentType)
+    return contentType.toMediaTypeOrNull()
   }
 
   @Throws(IOException::class)
   override fun writeTo(sink: BufferedSink) {
     val digestStream = ByteArrayOutputStream()
     val inner = SkippingOutputStream(contentStart, sink.outputStream())
-    val isIncremental = outputStreamFactory is AttachmentCipherOutputStreamFactory
+    val isIncremental = incremental && outputStreamFactory is AttachmentCipherOutputStreamFactory
     val sizeChoice: ChunkSizeChoice = ChunkSizeChoice.inferChunkSize(contentLength.toInt())
     val outputStream: DigestingOutputStream = if (isIncremental) {
       (outputStreamFactory as AttachmentCipherOutputStreamFactory).createIncrementalFor(inner, contentLength, sizeChoice, digestStream)
@@ -82,6 +83,10 @@ class DigestingRequestBody(
 
   override fun contentLength(): Long {
     return if (contentLength > 0) contentLength - contentStart else -1
+  }
+
+  override fun isOneShot(): Boolean {
+    return true
   }
 
   private fun logMessage(actual: Long, expected: Long): String {

@@ -31,7 +31,7 @@ import org.thoughtcrime.securesms.database.EmojiSearchTable;
 import org.thoughtcrime.securesms.database.KeyValueDatabase;
 import org.thoughtcrime.securesms.database.SearchTable;
 import org.thoughtcrime.securesms.database.StickerTable;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.KeyValueDataSet;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.profiles.AvatarHelper;
@@ -98,7 +98,7 @@ public class FullBackupImporter extends FullBackupBase {
   {
     int count = 0;
 
-    SQLiteDatabase keyValueDatabase = KeyValueDatabase.getInstance(ApplicationDependencies.getApplication()).getSqlCipherDatabase();
+    SQLiteDatabase keyValueDatabase = KeyValueDatabase.getInstance(AppDependencies.getApplication()).getSqlCipherDatabase();
 
     db.setForeignKeyConstraintsEnabled(false);
     db.beginTransaction();
@@ -194,26 +194,33 @@ public class FullBackupImporter extends FullBackupBase {
   private static void processAttachment(@NonNull Context context, @NonNull AttachmentSecret attachmentSecret, @NonNull SQLiteDatabase db, @NonNull Attachment attachment, BackupRecordInputStream inputStream)
       throws IOException
   {
-    File                       dataFile = AttachmentTable.newFile(context);
-    Pair<byte[], OutputStream> output   = ModernEncryptingPartOutputStream.createFor(attachmentSecret, dataFile, false);
+    File                       dataFile      = AttachmentTable.newDataFile(context);
+    Pair<byte[], OutputStream> output        = ModernEncryptingPartOutputStream.createFor(attachmentSecret, dataFile, false);
+    boolean                    isLegacyTable = SqlUtil.tableExists(db, "part");
+
+    String dataFileColumnName   = isLegacyTable ? "_data" : AttachmentTable.DATA_FILE;
+    String dataRandomColumnName = isLegacyTable ? "data_random" : AttachmentTable.DATA_RANDOM;
+    String idColumnName         = isLegacyTable ? "_id" : AttachmentTable.ID;
+    String tableName            = isLegacyTable ? "part" : AttachmentTable.TABLE_NAME;
 
     ContentValues contentValues = new ContentValues();
 
     try {
       inputStream.readAttachmentTo(output.second, attachment.length);
 
-      contentValues.put(AttachmentTable.DATA, dataFile.getAbsolutePath());
-      contentValues.put(AttachmentTable.DATA_RANDOM, output.first);
+      contentValues.put(dataFileColumnName, dataFile.getAbsolutePath());
+      contentValues.put(dataRandomColumnName, output.first);
     } catch (BackupRecordInputStream.BadMacException e) {
       Log.w(TAG, "Bad MAC for attachment " + attachment.attachmentId + "! Can't restore it.", e);
       dataFile.delete();
-      contentValues.put(AttachmentTable.DATA, (String) null);
-      contentValues.put(AttachmentTable.DATA_RANDOM, (String) null);
+      contentValues.put(dataFileColumnName, (String) null);
+      contentValues.put(dataRandomColumnName, (String) null);
     }
 
-    db.update(AttachmentTable.TABLE_NAME, contentValues,
-              AttachmentTable.ROW_ID + " = ? AND " + AttachmentTable.UNIQUE_ID + " = ?",
-              new String[] {String.valueOf(attachment.rowId), String.valueOf(attachment.attachmentId)});
+    db.update(tableName,
+              contentValues,
+              idColumnName + " = ?",
+              SqlUtil.buildArgs(attachment.rowId));
   }
 
   private static void processSticker(@NonNull Context context, @NonNull AttachmentSecret attachmentSecret, @NonNull SQLiteDatabase db, @NonNull Sticker sticker, BackupRecordInputStream inputStream)
@@ -280,7 +287,7 @@ public class FullBackupImporter extends FullBackupBase {
       return;
     }
 
-    KeyValueDatabase.getInstance(ApplicationDependencies.getApplication()).writeDataSet(dataSet, Collections.emptyList());
+    KeyValueDatabase.getInstance(AppDependencies.getApplication()).writeDataSet(dataSet, Collections.emptyList());
   }
 
   @SuppressLint("ApplySharedPref")

@@ -16,10 +16,14 @@ import org.signal.libsignal.protocol.InvalidMessageException;
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment;
 import org.thoughtcrime.securesms.database.AttachmentTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
+import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mms.PartUriParser;
 import org.signal.core.util.Base64;
-import org.thoughtcrime.securesms.util.FeatureFlags;
+import org.whispersystems.signalservice.api.backup.BackupKey;
+import org.whispersystems.signalservice.api.backup.MediaId;
 import org.whispersystems.signalservice.api.crypto.AttachmentCipherInputStream;
+import org.whispersystems.signalservice.api.crypto.AttachmentCipherStreamUtil;
+import org.whispersystems.signalservice.internal.crypto.PaddingInputStream;
 
 import java.io.EOFException;
 import java.io.File;
@@ -58,31 +62,42 @@ class PartDataSource implements DataSource {
 
     final boolean hasIncrementalDigest = attachment.getIncrementalDigest() != null;
     final boolean inProgress           = attachment.isInProgress();
-    final String  attachmentKey        = attachment.getKey();
-    final boolean hasData              = attachment.hasData();
-    if (inProgress && !hasData && hasIncrementalDigest && attachmentKey != null && FeatureFlags.instantVideoPlayback()) {
+    final String  attachmentKey        = attachment.remoteKey;
+    final boolean hasData              = attachment.hasData;
+
+    if (inProgress && !hasData && hasIncrementalDigest && attachmentKey != null) {
       final byte[] decode       = Base64.decode(attachmentKey);
-      final File   transferFile = attachmentDatabase.getOrCreateTransferFile(attachment.getAttachmentId());
-      try {
-        this.inputStream = AttachmentCipherInputStream.createForAttachment(transferFile, attachment.getSize(), decode, attachment.getDigest(), attachment.getIncrementalDigest(), attachment.getIncrementalMacChunkSize());
+      if (attachment.transferState == AttachmentTable.TRANSFER_RESTORE_IN_PROGRESS && attachment.archiveMediaId != null) {
+        final File archiveFile = attachmentDatabase.getOrCreateArchiveTransferFile(attachment.attachmentId);
+        try {
+          BackupKey.MediaKeyMaterial mediaKeyMaterial = SignalStore.svr().getOrCreateMasterKey().deriveBackupKey().deriveMediaSecretsFromMediaId(attachment.archiveMediaId);
+          long originalCipherLength = AttachmentCipherStreamUtil.getCiphertextLength(PaddingInputStream.getPaddedSize(attachment.size));
 
-        long skipped = 0;
-        while (skipped < dataSpec.position) {
-          skipped += this.inputStream.read();
+          this.inputStream = AttachmentCipherInputStream.createStreamingForArchivedAttachment(mediaKeyMaterial, archiveFile, originalCipherLength, attachment.size, attachment.remoteDigest, decode, attachment.getIncrementalDigest(), attachment.incrementalMacChunkSize);
+        } catch (InvalidMessageException e) {
+          throw new IOException("Error decrypting attachment stream!", e);
         }
-
-        Log.d(TAG, "Successfully loaded partial attachment file.");
-
-      } catch (InvalidMessageException e) {
-        throw new IOException("Error decrypting attachment stream!", e);
+      } else {
+        final File transferFile = attachmentDatabase.getOrCreateTransferFile(attachment.attachmentId);
+        try {
+          this.inputStream = AttachmentCipherInputStream.createForAttachment(transferFile, attachment.size, decode, attachment.remoteDigest, attachment.getIncrementalDigest(), attachment.incrementalMacChunkSize);
+        } catch (InvalidMessageException e) {
+          throw new IOException("Error decrypting attachment stream!", e);
+        }
       }
+      long skipped = 0;
+      while (skipped < dataSpec.position) {
+        skipped += this.inputStream.read();
+      }
+
+      Log.d(TAG, "Successfully loaded partial attachment file.");
     } else if (!inProgress || hasData) {
       this.inputStream = attachmentDatabase.getAttachmentStream(partUri.getPartId(), dataSpec.position);
 
       Log.d(TAG, "Successfully loaded completed attachment file.");
     } else {
-      throw new IOException("Ineligible " + attachment.getAttachmentId().toString()
-                            + "\nTransfer state: " + attachment.getTransferState()
+      throw new IOException("Ineligible " + attachment.attachmentId.toString()
+                            + "\nTransfer state: " + attachment.transferState
                             + "\nIncremental Digest Present: " + hasIncrementalDigest
                             + "\nAttachment Key Non-Empty: " + (attachmentKey != null && !attachmentKey.isEmpty()));
     }
@@ -91,9 +106,9 @@ class PartDataSource implements DataSource {
       listener.onTransferStart(this, dataSpec, false);
     }
 
-    if (attachment.getSize() - dataSpec.position <= 0) throw new EOFException("No more data");
+    if (attachment.size - dataSpec.position <= 0) throw new EOFException("No more data");
 
-    return attachment.getSize() - dataSpec.position;
+    return attachment.size - dataSpec.position;
   }
 
   @Override

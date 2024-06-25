@@ -4,7 +4,7 @@ import org.signal.core.util.logging.Log
 import org.signal.libsignal.protocol.InvalidMessageException
 import org.thoughtcrime.securesms.database.IdentityTable.VerifiedStatus
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobmanager.Job
 import org.thoughtcrime.securesms.jobmanager.JsonJobData
 import org.thoughtcrime.securesms.keyvalue.SignalStore
@@ -50,7 +50,7 @@ class MultiDeviceContactSyncJob(parameters: Parameters, private val attachmentPo
       throw NotPushRegisteredException()
     }
 
-    if (SignalStore.account().isPrimaryDevice) {
+    if (SignalStore.account.isPrimaryDevice) {
       Log.i(TAG, "Not linked device, aborting...")
       return
     }
@@ -59,7 +59,7 @@ class MultiDeviceContactSyncJob(parameters: Parameters, private val attachmentPo
 
     try {
       val contactsFile: File = BlobProvider.getInstance().forNonAutoEncryptingSingleSessionOnDisk(context)
-      ApplicationDependencies.getSignalServiceMessageReceiver()
+      AppDependencies.signalServiceMessageReceiver
         .retrieveAttachment(contactAttachment, contactsFile, MAX_ATTACHMENT_SIZE)
         .use(this::processContactFile)
     } catch (e: MissingConfigurationException) {
@@ -76,7 +76,11 @@ class MultiDeviceContactSyncJob(parameters: Parameters, private val attachmentPo
 
     var contact: DeviceContact? = deviceContacts.read()
     while (contact != null) {
-      val recipient = Recipient.externalPush(SignalServiceAddress(contact.address.serviceId, contact.address.number.orElse(null)))
+      val recipient = if (contact.aci.isPresent) {
+        Recipient.externalPush(SignalServiceAddress(contact.aci.get(), contact.e164.orElse(null)))
+      } else {
+        Recipient.external(context, contact.e164.get())
+      }
 
       if (recipient.isSelf) {
         contact = deviceContacts.read()
@@ -104,7 +108,7 @@ class MultiDeviceContactSyncJob(parameters: Parameters, private val attachmentPo
         }
 
         if (recipient.serviceId.isPresent) {
-          ApplicationDependencies.getProtocolStore().aci().identities().saveIdentityWithoutSideEffects(
+          AppDependencies.protocolStore.aci().identities().saveIdentityWithoutSideEffects(
             recipient.id,
             recipient.serviceId.get(),
             contact.verified.get().identityKey,
@@ -117,8 +121,6 @@ class MultiDeviceContactSyncJob(parameters: Parameters, private val attachmentPo
           Log.w(TAG, "Missing serviceId for ${recipient.id} -- cannot save identity!")
         }
       }
-
-      recipients.setBlocked(recipient.id, contact.isBlocked)
 
       val threadRecord = threads.getThreadRecord(threads.getThreadIdFor(recipient.id))
       if (threadRecord != null && contact.isArchived != threadRecord.isArchived) {

@@ -48,6 +48,7 @@ open class SignalServiceNetworkAccess(context: Context) {
           BuildConfig.STORAGE_URL.stripProtocol() to BuildConfig.SIGNAL_STORAGE_IPS.toSet(),
           BuildConfig.SIGNAL_CDN_URL.stripProtocol() to BuildConfig.SIGNAL_CDN_IPS.toSet(),
           BuildConfig.SIGNAL_CDN2_URL.stripProtocol() to BuildConfig.SIGNAL_CDN2_IPS.toSet(),
+          BuildConfig.SIGNAL_CDN3_URL.stripProtocol() to BuildConfig.SIGNAL_CDN3_IPS.toSet(),
           BuildConfig.SIGNAL_SFU_URL.stripProtocol() to BuildConfig.SIGNAL_SFU_IPS.toSet(),
           BuildConfig.CONTENT_PROXY_HOST.stripProtocol() to BuildConfig.SIGNAL_CONTENT_PROXY_IPS.toSet(),
           BuildConfig.SIGNAL_CDSI_URL.stripProtocol() to BuildConfig.SIGNAL_CDSI_IPS.toSet(),
@@ -67,7 +68,6 @@ open class SignalServiceNetworkAccess(context: Context) {
     private const val COUNTRY_CODE_IRAN = 98
     private const val COUNTRY_CODE_CUBA = 53
     private const val COUNTRY_CODE_UZBEKISTAN = 998
-    private const val COUNTRY_CODE_UKRAINE = 380
 
     private const val G_HOST = "reflector-nrgwuv7kwq-uc.a.run.app"
     private const val F_SERVICE_HOST = "chat-signal.global.ssl.fastly.net"
@@ -158,6 +158,12 @@ open class SignalServiceNetworkAccess(context: Context) {
     throw AssertionError(e)
   }
 
+  private val backupServerPublicParams: ByteArray = try {
+    Base64.decode(BuildConfig.BACKUP_SERVER_PUBLIC_PARAMS)
+  } catch (e: IOException) {
+    throw AssertionError(e)
+  }
+
   private val baseGHostConfigs: List<HostConfig> = listOf(
     HostConfig("https://www.google.com", G_HOST, GMAIL_CONNECTION_SPEC),
     HostConfig("https://android.clients.google.com", G_HOST, PLAY_CONNECTION_SPEC),
@@ -182,7 +188,8 @@ open class SignalServiceNetworkAccess(context: Context) {
     dns = Optional.of(DNS),
     signalProxy = Optional.empty(),
     zkGroupServerPublicParams = zkGroupServerPublicParams,
-    genericServerPublicParams = genericServerPublicParams
+    genericServerPublicParams = genericServerPublicParams,
+    backupServerPublicParams = backupServerPublicParams
   )
 
   private val censorshipConfiguration: Map<Int, SignalServiceConfiguration> = mapOf(
@@ -200,9 +207,6 @@ open class SignalServiceNetworkAccess(context: Context) {
     ),
     COUNTRY_CODE_UZBEKISTAN to buildGConfiguration(
       listOf(HostConfig("https://www.google.co.uz", G_HOST, GMAIL_CONNECTION_SPEC)) + baseGHostConfigs
-    ),
-    COUNTRY_CODE_UKRAINE to buildGConfiguration(
-      listOf(HostConfig("https://www.google.com.ua", G_HOST, GMAIL_CONNECTION_SPEC)) + baseGHostConfigs
     ),
     COUNTRY_CODE_IRAN to fConfig,
     COUNTRY_CODE_CUBA to fConfig
@@ -232,23 +236,24 @@ open class SignalServiceNetworkAccess(context: Context) {
     signalSvr2Urls = arrayOf(SignalSvr2Url(BuildConfig.SIGNAL_SVR2_URL, serviceTrustStore)),
     networkInterceptors = interceptors,
     dns = Optional.of(DNS),
-    signalProxy = if (SignalStore.proxy().isProxyEnabled) Optional.ofNullable(SignalStore.proxy().proxy) else Optional.empty(),
+    signalProxy = if (SignalStore.proxy.isProxyEnabled) Optional.ofNullable(SignalStore.proxy.proxy) else Optional.empty(),
     zkGroupServerPublicParams = zkGroupServerPublicParams,
-    genericServerPublicParams = genericServerPublicParams
+    genericServerPublicParams = genericServerPublicParams,
+    backupServerPublicParams = backupServerPublicParams
   )
 
   open fun getConfiguration(): SignalServiceConfiguration {
-    return getConfiguration(SignalStore.account().e164)
+    return getConfiguration(SignalStore.account.e164)
   }
 
   open fun getConfiguration(e164: String?): SignalServiceConfiguration {
-    if (e164 == null || SignalStore.proxy().isProxyEnabled) {
+    if (e164 == null || SignalStore.proxy.isProxyEnabled) {
       return uncensoredConfiguration
     }
 
     val countryCode: Int = PhoneNumberUtil.getInstance().parse(e164, null).countryCode
 
-    return when (SignalStore.settings().censorshipCircumventionEnabled) {
+    return when (SignalStore.settings.censorshipCircumventionEnabled) {
       SettingsValues.CensorshipCircumventionEnabled.ENABLED -> {
         censorshipConfiguration[countryCode] ?: defaultCensoredConfiguration
       }
@@ -266,7 +271,7 @@ open class SignalServiceNetworkAccess(context: Context) {
   }
 
   fun isCensored(): Boolean {
-    return isCensored(SignalStore.account().e164)
+    return isCensored(SignalStore.account.e164)
   }
 
   fun isCensored(number: String?): Boolean {
@@ -303,7 +308,8 @@ open class SignalServiceNetworkAccess(context: Context) {
       dns = Optional.of(DNS),
       signalProxy = Optional.empty(),
       zkGroupServerPublicParams = zkGroupServerPublicParams,
-      genericServerPublicParams = genericServerPublicParams
+      genericServerPublicParams = genericServerPublicParams,
+      backupServerPublicParams = backupServerPublicParams
     )
   }
 

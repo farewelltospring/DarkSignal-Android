@@ -15,7 +15,7 @@ import org.thoughtcrime.securesms.database.AttachmentTable;
 import org.thoughtcrime.securesms.database.DatabaseObserver;
 import org.thoughtcrime.securesms.database.MediaTable.Sorting;
 import org.thoughtcrime.securesms.database.SignalDatabase;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.mms.PartAuthority;
 import org.thoughtcrime.securesms.util.AsyncLoader;
 
@@ -43,12 +43,12 @@ public final class PagingMediaLoader extends AsyncLoader<Pair<Cursor, Integer>> 
 
   @Override
   public @Nullable Pair<Cursor, Integer> loadInBackground() {
-    ApplicationDependencies.getDatabaseObserver().registerAttachmentObserver(observer);
+    AppDependencies.getDatabaseObserver().registerAttachmentObserver(observer);
 
     Cursor cursor = SignalDatabase.media().getGalleryMediaForThread(threadId, sorting);
 
     while (cursor.moveToNext()) {
-      AttachmentId attachmentId  = new AttachmentId(cursor.getLong(cursor.getColumnIndexOrThrow(AttachmentTable.ROW_ID)), cursor.getLong(cursor.getColumnIndexOrThrow(AttachmentTable.UNIQUE_ID)));
+      AttachmentId attachmentId  = new AttachmentId(cursor.getLong(cursor.getColumnIndexOrThrow(AttachmentTable.ID)));
       Uri          attachmentUri = PartAuthority.getAttachmentDataUri(attachmentId);
 
       if (attachmentUri.equals(uri)) {
@@ -61,6 +61,6 @@ public final class PagingMediaLoader extends AsyncLoader<Pair<Cursor, Integer>> 
 
   @Override
   protected void onAbandon() {
-    ApplicationDependencies.getDatabaseObserver().unregisterObserver(observer);
+    AppDependencies.getDatabaseObserver().unregisterObserver(observer);
   }
 }

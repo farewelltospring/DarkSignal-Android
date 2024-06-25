@@ -19,7 +19,7 @@ import org.thoughtcrime.securesms.database.documents.IdentityKeyMismatch;
 import org.thoughtcrime.securesms.database.documents.NetworkFailure;
 import org.thoughtcrime.securesms.database.model.MessageId;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.whispersystems.signalservice.api.push.DistributionId;
@@ -34,7 +34,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public final class MessageDetailsRepository {
 
-  private final Context context = ApplicationDependencies.getApplication();
+  private final Context context = AppDependencies.getApplication();
 
   @NonNull LiveData<MessageRecord> getMessageRecord(Long messageId) {
     return new MessageRecordLiveData(new MessageId(messageId));
@@ -65,8 +65,8 @@ public final class MessageDetailsRepository {
         }
       };
 
-      ApplicationDependencies.getDatabaseObserver().registerMessageUpdateObserver(messageObserver);
-      emitter.setCancellable(() -> ApplicationDependencies.getDatabaseObserver().unregisterObserver(messageObserver));
+      AppDependencies.getDatabaseObserver().registerMessageUpdateObserver(messageObserver);
+      emitter.setCancellable(() -> AppDependencies.getDatabaseObserver().unregisterObserver(messageObserver));
 
       messageObserver.onMessageChanged(messageId);
     }).observeOn(Schedulers.io());
@@ -138,7 +138,7 @@ public final class MessageDetailsRepository {
   private @Nullable NetworkFailure getNetworkFailure(MessageRecord messageRecord, Recipient recipient) {
     if (messageRecord.hasNetworkFailures()) {
       for (final NetworkFailure failure : messageRecord.getNetworkFailures()) {
-        if (failure.getRecipientId(context).equals(recipient.getId())) {
+        if (failure.getRecipientId().equals(recipient.getId())) {
           return failure;
         }
       }
@@ -149,7 +149,7 @@ public final class MessageDetailsRepository {
   private @Nullable IdentityKeyMismatch getKeyMismatchFailure(MessageRecord messageRecord, Recipient recipient) {
     if (messageRecord.isIdentityMismatchFailure()) {
       for (final IdentityKeyMismatch mismatch : messageRecord.getIdentityKeyMismatches()) {
-        if (mismatch.getRecipientId(context).equals(recipient.getId())) {
+        if (mismatch.getRecipientId().equals(recipient.getId())) {
           return mismatch;
         }
       }

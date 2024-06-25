@@ -57,9 +57,10 @@ public final class ReactWithAnyEmojiBottomSheetDialogFragment extends FixedRound
   private static final String ARG_SHADOWS    = "arg_shadows";
   private static final String ARG_RECENT_KEY = "arg_recent_key";
   private static final String ARG_EDIT       = "arg_edit";
+  private static final String ARG_DARK       = "arg_dark";
 
   private ReactWithAnyEmojiViewModel viewModel;
-  private Callback                   callback;
+  private Callback                   callback = null;
   private EmojiPageView              emojiPageView;
   private KeyboardPageSearchView     search;
   private View                       tabBar;
@@ -118,6 +119,22 @@ public final class ReactWithAnyEmojiBottomSheetDialogFragment extends FixedRound
     args.putInt(ARG_START_PAGE, -1);
     args.putBoolean(ARG_SHADOWS, false);
     args.putString(ARG_RECENT_KEY, REACTION_STORAGE_KEY);
+    fragment.setArguments(args);
+
+    return fragment;
+  }
+
+  public static ReactWithAnyEmojiBottomSheetDialogFragment createForCallingReactions() {
+    ReactWithAnyEmojiBottomSheetDialogFragment fragment = new ReactWithAnyEmojiBottomSheetDialogFragment();
+    Bundle         args     = new Bundle();
+
+    args.putLong(ARG_MESSAGE_ID, -1);
+    args.putBoolean(ARG_IS_MMS, false);
+    args.putInt(ARG_START_PAGE, -1);
+    args.putBoolean(ARG_SHADOWS, false);
+    args.putString(ARG_RECENT_KEY, REACTION_STORAGE_KEY);
+    args.putBoolean(ARG_EDIT, true);
+    args.putBoolean(ARG_DARK, true);
     fragment.setArguments(args);
 
     return fragment;
@@ -187,7 +204,11 @@ public final class ReactWithAnyEmojiBottomSheetDialogFragment extends FixedRound
     if (requireArguments().getBoolean(ARG_EDIT, false)) {
       View customizeReactions = tabBar.findViewById(R.id.customize_reactions_frame);
       customizeReactions.setVisibility(View.VISIBLE);
-      customizeReactions.setOnClickListener(v -> startActivity(new Intent(requireContext(), EditReactionsActivity.class)));
+      customizeReactions.setOnClickListener(v -> {
+        final Intent intent = new Intent(requireContext(), EditReactionsActivity.class);
+        intent.putExtra(EditReactionsActivity.ARG_FORCE_DARK_MODE, requireArguments().getBoolean(ARG_DARK, false));
+        startActivity(intent);
+      });
     }
 
     container.addView(tabBar);
@@ -229,8 +250,7 @@ public final class ReactWithAnyEmojiBottomSheetDialogFragment extends FixedRound
   @Override
   public void onDismiss(@NonNull DialogInterface dialog) {
     super.onDismiss(dialog);
-
-    callback.onReactWithAnyEmojiDialogDismissed();
+    if (callback != null) callback.onReactWithAnyEmojiDialogDismissed();
   }
 
   private void initializeViewModel() {
@@ -244,7 +264,7 @@ public final class ReactWithAnyEmojiBottomSheetDialogFragment extends FixedRound
   @Override
   public void onEmojiSelected(String emoji) {
     viewModel.onEmojiSelected(emoji);
-    callback.onReactWithAnyEmojiSelected(emoji);
+    if (callback != null) callback.onReactWithAnyEmojiSelected(emoji);
     dismiss();
   }
 

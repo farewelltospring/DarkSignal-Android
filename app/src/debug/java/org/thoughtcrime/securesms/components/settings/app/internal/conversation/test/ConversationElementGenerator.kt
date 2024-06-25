@@ -12,7 +12,7 @@ import org.thoughtcrime.securesms.conversation.v2.data.OutgoingTextOnly
 import org.thoughtcrime.securesms.database.MessageTypes
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.StoryType
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.mms.SlideDeck
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingModel
@@ -117,11 +117,13 @@ class ConversationElementGenerator {
       -1,
       null,
       null,
-      0
+      0,
+      false,
+      null
     )
 
     val conversationMessage = ConversationMessageFactory.createWithUnresolvedData(
-      ApplicationDependencies.getApplication(),
+      AppDependencies.application,
       record,
       Recipient.UNKNOWN
     )

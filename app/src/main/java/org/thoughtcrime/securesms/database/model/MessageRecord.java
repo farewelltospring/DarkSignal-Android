@@ -19,6 +19,7 @@ package org.thoughtcrime.securesms.database.model;
 import android.content.Context;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextUtils;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 
@@ -32,6 +33,7 @@ import androidx.core.content.ContextCompat;
 
 import com.annimon.stream.Stream;
 
+import org.signal.core.util.Base64;
 import org.signal.core.util.StringUtil;
 import org.signal.core.util.logging.Log;
 import org.signal.storageservice.protos.groups.local.DecryptedGroup;
@@ -45,6 +47,7 @@ import org.thoughtcrime.securesms.database.documents.NetworkFailure;
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList;
 import org.thoughtcrime.securesms.database.model.databaseprotos.DecryptedGroupV2Context;
 import org.thoughtcrime.securesms.database.model.databaseprotos.GroupCallUpdateDetails;
+import org.thoughtcrime.securesms.database.model.databaseprotos.MessageExtras;
 import org.thoughtcrime.securesms.database.model.databaseprotos.ProfileChangeDetails;
 import org.thoughtcrime.securesms.database.model.databaseprotos.SessionSwitchoverEvent;
 import org.thoughtcrime.securesms.database.model.databaseprotos.ThreadMergeEvent;
@@ -56,7 +59,6 @@ import org.thoughtcrime.securesms.phonenumbers.PhoneNumberFormatter;
 import org.thoughtcrime.securesms.profiles.ProfileName;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
-import org.signal.core.util.Base64;
 import org.thoughtcrime.securesms.util.DateUtils;
 import org.thoughtcrime.securesms.util.ExpirationUtil;
 import org.thoughtcrime.securesms.util.GroupUtil;
@@ -71,6 +73,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -104,6 +107,7 @@ public abstract class MessageRecord extends DisplayRecord {
   private final long                     receiptTimestamp;
   private final MessageId                originalMessageId;
   private final int                      revisionNumber;
+  private final MessageExtras            messageExtras;
 
   protected Boolean isJumboji = null;
 
@@ -123,7 +127,8 @@ public abstract class MessageRecord extends DisplayRecord {
                 boolean viewed,
                 long receiptTimestamp,
                 @Nullable MessageId originalMessageId,
-                int revisionNumber)
+                int revisionNumber,
+                @Nullable MessageExtras messageExtras)
   {
     super(body, fromRecipient, toRecipient, dateSent, dateReceived,
           threadId, deliveryStatus, hasDeliveryReceipt, type,
@@ -143,6 +148,7 @@ public abstract class MessageRecord extends DisplayRecord {
     this.receiptTimestamp    = receiptTimestamp;
     this.originalMessageId   = originalMessageId;
     this.revisionNumber      = revisionNumber;
+    this.messageExtras       = messageExtras;
   }
 
   public abstract boolean isMms();
@@ -176,7 +182,11 @@ public abstract class MessageRecord extends DisplayRecord {
 
   public @Nullable UpdateDescription getUpdateDisplayBody(@NonNull Context context, @Nullable Consumer<RecipientId> recipientClickHandler) {
     if (isGroupUpdate() && isGroupV2()) {
-      return getGv2ChangeDescription(context, getBody(), recipientClickHandler);
+      if (messageExtras != null) {
+        return getGv2ChangeDescription(context, messageExtras, recipientClickHandler);
+      } else {
+        return getGv2ChangeDescription(context, getBody(), recipientClickHandler);
+      }
     } else if (isGroupUpdate() && isOutgoing()) {
       return staticUpdateDescription(context.getString(R.string.MessageRecord_you_updated_group), R.drawable.ic_update_group_16);
     } else if (isGroupUpdate()) {
@@ -219,7 +229,7 @@ public abstract class MessageRecord extends DisplayRecord {
       if (isOutgoing()) return fromRecipient(getToRecipient(), r -> context.getString(R.string.MessageRecord_you_marked_your_safety_number_with_s_unverified, r.getDisplayName(context)), R.drawable.ic_update_info_16);
       else              return fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_you_marked_your_safety_number_with_s_unverified_from_another_device, r.getDisplayName(context)), R.drawable.ic_update_info_16);
     } else if (isProfileChange()) {
-      return staticUpdateDescription(getProfileChangeDescription(context), R.drawable.ic_update_profile_16);
+      return getProfileChangeDescription(context);
     } else if (isChangeNumber()) {
       return fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_s_changed_their_phone_number, r.getDisplayName(context)), R.drawable.ic_phone_16);
     } else if (isBoostRequest()) {
@@ -252,21 +262,24 @@ public abstract class MessageRecord extends DisplayRecord {
         if (event.e164.isEmpty()) {
           return fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_your_safety_number_with_s_has_changed, r.getDisplayName(context)), R.drawable.ic_update_safety_number_16);
         } else {
-          return fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_s_belongs_to_s, PhoneNumberFormatter.prettyPrint(r.requireE164()), r.getDisplayName(context)), R.drawable.ic_update_info_16);
+          return fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_s_belongs_to_s, PhoneNumberFormatter.prettyPrint(event.e164), r.getDisplayName(context)), R.drawable.ic_update_info_16);
         }
       } catch (IOException e) {
         throw new AssertionError(e);
       }
     } else if (isSmsExportType()) {
-      int messageResource = SignalStore.misc().getSmsExportPhase().isSmsSupported() ? R.string.MessageRecord__you_will_no_longer_be_able_to_send_sms_messages_from_signal_soon
-                                                                                    : R.string.MessageRecord__you_can_no_longer_send_sms_messages_in_signal;
+      int messageResource = R.string.MessageRecord__you_can_no_longer_send_sms_messages_in_signal;
       return fromRecipient(getFromRecipient(), r -> context.getString(messageResource, r.getDisplayName(context)), R.drawable.ic_update_info_16);
     } else if (isPaymentsRequestToActivate()) {
-      return isOutgoing() ? fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_you_sent_request, r.getShortDisplayName(context)), R.drawable.ic_card_activate_payments)
+      return isOutgoing() ? fromRecipient(getToRecipient(), r -> context.getString(R.string.MessageRecord_you_sent_request, r.getShortDisplayName(context)), R.drawable.ic_card_activate_payments)
                           : fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_wants_you_to_activate_payments, r.getShortDisplayName(context)), R.drawable.ic_card_activate_payments);
    } else if (isPaymentsActivated()) {
       return isOutgoing() ? staticUpdateDescription(context.getString(R.string.MessageRecord_you_activated_payments), R.drawable.ic_card_activate_payments)
                           : fromRecipient(getFromRecipient(), r -> context.getString(R.string.MessageRecord_can_accept_payments, r.getShortDisplayName(context)), R.drawable.ic_card_activate_payments);
+    } else if (isReportedSpam()) {
+      return staticUpdateDescription(context.getString(R.string.MessageRecord_reported_as_spam), R.drawable.symbol_spam_16);
+    } else if (isMessageRequestAccepted()) {
+      return staticUpdateDescription(context.getString(R.string.MessageRecord_you_accepted_the_message_request), R.drawable.symbol_thread_16);
     }
 
     return null;
@@ -287,9 +300,21 @@ public abstract class MessageRecord extends DisplayRecord {
     return selfCreatedGroup(change);
   }
 
+  public @Nullable MessageExtras getMessageExtras() {
+    return messageExtras;
+  }
+
   @VisibleForTesting
   @Nullable DecryptedGroupV2Context getDecryptedGroupV2Context() {
     if (!isGroupUpdate() || !isGroupV2()) {
+      return null;
+    }
+
+    if (messageExtras != null && messageExtras.gv2UpdateDescription != null) {
+      return messageExtras.gv2UpdateDescription.gv2ChangeDescription;
+    }
+
+    if (TextUtils.isEmpty(getBody())) {
       return null;
     }
 
@@ -315,6 +340,30 @@ public abstract class MessageRecord extends DisplayRecord {
     try {
       byte[]                         decoded                 = Base64.decode(body);
       DecryptedGroupV2Context        decryptedGroupV2Context = DecryptedGroupV2Context.ADAPTER.decode(decoded);
+      return getGv2ChangeDescription(context, decryptedGroupV2Context, recipientClickHandler);
+    } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+      Log.w(TAG, "GV2 Message update detail could not be read", e);
+      return staticUpdateDescription(context.getString(R.string.MessageRecord_group_updated), R.drawable.ic_update_group_16);
+    }
+  }
+
+  public static @NonNull UpdateDescription getGv2ChangeDescription(@NonNull Context context, @NonNull MessageExtras messageExtras, @Nullable Consumer<RecipientId> recipientClickHandler) {
+    if (messageExtras.gv2UpdateDescription != null) {
+      if (messageExtras.gv2UpdateDescription.groupChangeUpdate != null) {
+        GroupsV2UpdateMessageProducer updateMessageProducer = new GroupsV2UpdateMessageProducer(context, SignalStore.account().getServiceIds(), recipientClickHandler);
+
+        return UpdateDescription.concatWithNewLines(updateMessageProducer.describeChanges(messageExtras.gv2UpdateDescription.groupChangeUpdate.updates));
+      } else if (messageExtras.gv2UpdateDescription.gv2ChangeDescription != null) {
+        return getGv2ChangeDescription(context, messageExtras.gv2UpdateDescription.gv2ChangeDescription, recipientClickHandler);
+      } else {
+        Log.w(TAG, "GV2 Update Description missing group change update!");
+      }
+    }
+    return staticUpdateDescription(context.getString(R.string.MessageRecord_group_updated), R.drawable.ic_update_group_16);
+  }
+
+  public static @NonNull UpdateDescription getGv2ChangeDescription(@NonNull Context context, @NonNull DecryptedGroupV2Context decryptedGroupV2Context, @Nullable Consumer<RecipientId> recipientClickHandler) {
+    try {
       GroupsV2UpdateMessageProducer  updateMessageProducer   = new GroupsV2UpdateMessageProducer(context, SignalStore.account().getServiceIds(), recipientClickHandler);
 
       if (decryptedGroupV2Context.change != null && ((decryptedGroupV2Context.groupState != null && decryptedGroupV2Context.groupState.revision != 0) || decryptedGroupV2Context.previousGroupState != null)) {
@@ -332,7 +381,7 @@ public abstract class MessageRecord extends DisplayRecord {
         }
         return UpdateDescription.concatWithNewLines(newGroupDescriptions);
       }
-    } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+    } catch (IllegalArgumentException | IllegalStateException e) {
       Log.w(TAG, "GV2 Message update detail could not be read", e);
       return staticUpdateDescription(context.getString(R.string.MessageRecord_group_updated), R.drawable.ic_update_group_16);
     }
@@ -392,27 +441,52 @@ public abstract class MessageRecord extends DisplayRecord {
     return UpdateDescription.staticDescription(string, iconResource, lightTint, darkTint);
   }
 
-  private @NonNull String getProfileChangeDescription(@NonNull Context context) {
-    try {
-      byte[]               decoded              = Base64.decode(getBody());
-      ProfileChangeDetails profileChangeDetails = ProfileChangeDetails.ADAPTER.decode(decoded);
+  private @NonNull UpdateDescription getProfileChangeDescription(@NonNull Context context) {
+    ProfileChangeDetails profileChangeDetails = null;
 
+    MessageExtras extras = getMessageExtras();
+    if (extras != null) {
+      profileChangeDetails = extras.profileChangeDetails;
+    } else {
+      try {
+        byte[] decoded = Base64.decode(getBody());
+        profileChangeDetails = ProfileChangeDetails.ADAPTER.decode(decoded);
+      } catch (IOException e) {
+        Log.w(TAG, "Profile name change details could not be read", e);
+      }
+    }
+
+    if (profileChangeDetails != null) {
       if (profileChangeDetails.profileNameChange != null) {
         String displayName  = getFromRecipient().getDisplayName(context);
         String newName      = StringUtil.isolateBidi(ProfileName.fromSerialized(profileChangeDetails.profileNameChange.newValue).toString());
         String previousName = StringUtil.isolateBidi(ProfileName.fromSerialized(profileChangeDetails.profileNameChange.previous).toString());
 
+        String updateMessage;
         if (getFromRecipient().isSystemContact()) {
-          return context.getString(R.string.MessageRecord_changed_their_profile_name_from_to, displayName, previousName, newName);
+          updateMessage = context.getString(R.string.MessageRecord_changed_their_profile_name_from_to, displayName, previousName, newName);
         } else {
-          return context.getString(R.string.MessageRecord_changed_their_profile_name_to, previousName, newName);
+          updateMessage = context.getString(R.string.MessageRecord_changed_their_profile_name_to, previousName, newName);
+        }
+
+        return staticUpdateDescription(updateMessage, R.drawable.ic_update_profile_16);
+      } else if (profileChangeDetails.deprecatedLearnedProfileName != null) {
+        return staticUpdateDescription(context.getString(R.string.MessageRecord_started_this_chat, profileChangeDetails.deprecatedLearnedProfileName.previous), R.drawable.symbol_thread_16);
+      } else if (profileChangeDetails.learnedProfileName != null) {
+        String previouslyKnownAs;
+        if (!Util.isEmpty(profileChangeDetails.learnedProfileName.e164)) {
+          previouslyKnownAs = PhoneNumberFormatter.prettyPrint(profileChangeDetails.learnedProfileName.e164);
+        } else {
+          previouslyKnownAs = profileChangeDetails.learnedProfileName.username;
+        }
+
+        if (!Util.isEmpty(previouslyKnownAs)) {
+          return staticUpdateDescription(context.getString(R.string.MessageRecord_started_this_chat, previouslyKnownAs), R.drawable.symbol_thread_16);
         }
       }
-    } catch (IOException e) {
-      Log.w(TAG, "Profile name change details could not be read", e);
     }
 
-    return context.getString(R.string.MessageRecord_changed_their_profile, getFromRecipient().getDisplayName(context));
+    return staticUpdateDescription(context.getString(R.string.MessageRecord_changed_their_profile, getFromRecipient().getDisplayName(context)), R.drawable.ic_update_profile_16);
   }
 
   private UpdateDescription getGroupMigrationEventDescription(@NonNull Context context) {
@@ -600,7 +674,7 @@ public abstract class MessageRecord extends DisplayRecord {
            isEndSession() || isIdentityUpdate() || isIdentityVerified() || isIdentityDefault() ||
            isProfileChange() || isGroupV1MigrationEvent() || isChatSessionRefresh() || isBadDecryptType() ||
            isChangeNumber() || isBoostRequest() || isThreadMergeEventType() || isSmsExportType() || isSessionSwitchoverEventType() ||
-           isPaymentsRequestToActivate() || isPaymentsActivated();
+           isPaymentsRequestToActivate() || isPaymentsActivated() || isReportedSpam() || isMessageRequestAccepted();
   }
 
   public boolean isMediaPending() {
@@ -654,7 +728,7 @@ public abstract class MessageRecord extends DisplayRecord {
   }
 
   public int hashCode() {
-    return (int)getId();
+    return Objects.hash(id, isMms());
   }
 
   public int getSubscriptionId() {
@@ -747,6 +821,13 @@ public abstract class MessageRecord extends DisplayRecord {
 
   public int getRevisionNumber() {
     return revisionNumber;
+  }
+
+  /**
+   * A message that can be correctly identified and delete sync'd across devices.
+   */
+  public boolean canDeleteSync() {
+    return false;
   }
 
   public static final class InviteAddState {

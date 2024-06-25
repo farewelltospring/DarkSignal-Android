@@ -9,7 +9,10 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
+import androidx.annotation.RequiresApi
 import androidx.core.app.ServiceCompat
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.jobs.ForegroundServiceUtil
@@ -39,7 +42,7 @@ abstract class SafeForegroundService : Service() {
      * @return False if we tried to start the service but failed, otherwise true.
      */
     @CheckReturnValue
-    fun start(context: Context, serviceClass: Class<out SafeForegroundService>): Boolean {
+    fun start(context: Context, serviceClass: Class<out SafeForegroundService>, extras: Bundle = Bundle.EMPTY): Boolean {
       stateLock.withLock {
         val state = currentState(serviceClass)
 
@@ -57,7 +60,10 @@ abstract class SafeForegroundService : Service() {
             try {
               ForegroundServiceUtil.startWhenCapable(
                 context = context,
-                intent = Intent(context, serviceClass).apply { action = ACTION_START }
+                intent = Intent(context, serviceClass).apply {
+                  action = ACTION_START
+                  putExtras(extras)
+                }
               )
               true
             } catch (e: UnableToStartException) {
@@ -79,14 +85,15 @@ abstract class SafeForegroundService : Service() {
      * Safely stops the service by starting it with an action to stop itself.
      * This is done to prevent scenarios where you stop the service while
      * a start is pending, preventing the posting of a foreground notification.
+     * @return true if service was running previously
      */
-    fun stop(context: Context, serviceClass: Class<out SafeForegroundService>) {
+    fun stop(context: Context, serviceClass: Class<out SafeForegroundService>): Boolean {
       stateLock.withLock {
         val state = currentState(serviceClass)
 
         Log.d(TAG, "[stop] Current state: $state")
 
-        when (state) {
+        return when (state) {
           State.STARTING -> {
             Log.d(TAG, "[stop] Stopping service.")
             states[serviceClass] = State.STOPPING
@@ -99,19 +106,26 @@ abstract class SafeForegroundService : Service() {
               Log.w(TAG, "Failed to start service class $serviceClass", e)
               states[serviceClass] = State.STOPPED
             }
+            true
           }
 
           State.STOPPED,
           State.STOPPING -> {
             Log.d(TAG, "[stop] No need to stop the service. Current state: $state")
+            false
           }
 
           State.NEEDS_RESTART -> {
             Log.i(TAG, "[stop] Clearing pending restart.")
             states[serviceClass] = State.STOPPING
+            false
           }
         }
       }
+    }
+
+    fun isStopping(intent: Intent): Boolean {
+      return intent.action == ACTION_STOP
     }
 
     private fun currentState(clazz: Class<out SafeForegroundService>): State {
@@ -129,7 +143,11 @@ abstract class SafeForegroundService : Service() {
 
     Log.d(tag, "[onStartCommand] action: ${intent.action}")
 
-    startForeground(notificationId, getForegroundNotification(intent))
+    if (Build.VERSION.SDK_INT >= 30 && serviceType != 0) {
+      startForeground(notificationId, getForegroundNotification(intent), serviceType)
+    } else {
+      startForeground(notificationId, getForegroundNotification(intent))
+    }
 
     when (val action = intent.action) {
       ACTION_START -> {
@@ -178,6 +196,10 @@ abstract class SafeForegroundService : Service() {
 
   /** Notification ID to use when posting the foreground notification */
   abstract val notificationId: Int
+
+  /** Special service type to use when calling start service if needed */
+  @RequiresApi(30)
+  open val serviceType: Int = 0
 
   /** Notification to post as our foreground notification. */
   abstract fun getForegroundNotification(intent: Intent): Notification

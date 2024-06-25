@@ -15,6 +15,7 @@ import org.signal.core.util.requireNonNullString
 import org.signal.core.util.requireObject
 import org.signal.core.util.requireString
 import org.signal.core.util.select
+import org.signal.core.util.update
 import org.signal.core.util.withinTransaction
 import org.thoughtcrime.securesms.database.model.DistributionListId
 import org.thoughtcrime.securesms.database.model.DistributionListPrivacyData
@@ -88,9 +89,9 @@ class DistributionListTables constructor(context: Context?, databaseHelper: Sign
     val CREATE_TABLE = """
       CREATE TABLE $TABLE_NAME (
         $ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        $NAME TEXT UNIQUE NOT NULL,
+        $NAME TEXT NOT NULL,
         $DISTRIBUTION_ID TEXT UNIQUE NOT NULL,
-        $RECIPIENT_ID INTEGER UNIQUE REFERENCES ${RecipientTable.TABLE_NAME} (${RecipientTable.ID}),
+        $RECIPIENT_ID INTEGER UNIQUE REFERENCES ${RecipientTable.TABLE_NAME} (${RecipientTable.ID}) ON DELETE CASCADE,
         $ALLOWS_REPLIES INTEGER DEFAULT 1,
         $DELETION_TIMESTAMP INTEGER DEFAULT 0,
         $IS_UNKNOWN INTEGER DEFAULT 0,
@@ -106,7 +107,7 @@ class DistributionListTables constructor(context: Context?, databaseHelper: Sign
     val LIST_UI_PROJECTION = arrayOf(ID, NAME, RECIPIENT_ID, ALLOWS_REPLIES, IS_UNKNOWN, PRIVACY_MODE, SEARCH_NAME)
   }
 
-  private object MembershipTable {
+  object MembershipTable {
     const val TABLE_NAME = "distribution_list_member"
 
     const val ID = "_id"
@@ -118,7 +119,7 @@ class DistributionListTables constructor(context: Context?, databaseHelper: Sign
       CREATE TABLE $TABLE_NAME (
         $ID INTEGER PRIMARY KEY AUTOINCREMENT,
         $LIST_ID INTEGER NOT NULL REFERENCES ${ListTable.TABLE_NAME} (${ListTable.ID}) ON DELETE CASCADE,
-        $RECIPIENT_ID INTEGER NOT NULL REFERENCES ${RecipientTable.TABLE_NAME} (${RecipientTable.ID}),
+        $RECIPIENT_ID INTEGER NOT NULL REFERENCES ${RecipientTable.TABLE_NAME} (${RecipientTable.ID}) ON DELETE CASCADE,
         $PRIVACY_MODE INTEGER DEFAULT 0
       )
     """
@@ -524,10 +525,11 @@ class DistributionListTables constructor(context: Context?, databaseHelper: Sign
   }
 
   override fun remapRecipient(oldId: RecipientId, newId: RecipientId) {
-    val values = ContentValues().apply {
-      put(MembershipTable.RECIPIENT_ID, newId.serialize())
-    }
-    writableDatabase.update(MembershipTable.TABLE_NAME, values, "${MembershipTable.RECIPIENT_ID} = ?", SqlUtil.buildArgs(oldId))
+    writableDatabase
+      .update(MembershipTable.TABLE_NAME)
+      .values(MembershipTable.RECIPIENT_ID to newId.serialize())
+      .where("${MembershipTable.RECIPIENT_ID} = ?", oldId)
+      .run(SQLiteDatabase.CONFLICT_REPLACE)
   }
 
   fun deleteList(distributionListId: DistributionListId, deletionTimestamp: Long = System.currentTimeMillis()) {

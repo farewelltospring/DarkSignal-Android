@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.database.helpers
 import android.app.Application
 import android.content.Context
 import net.zetetic.database.sqlcipher.SQLiteDatabase
+import org.signal.core.util.areForeignKeyConstraintsEnabled
 import org.signal.core.util.logging.Log
 import org.signal.core.util.withinTransaction
 import org.thoughtcrime.securesms.database.helpers.migration.SignalDatabaseMigration
@@ -68,6 +69,31 @@ import org.thoughtcrime.securesms.database.helpers.migration.V207_AddChunkSizeCo
 import org.thoughtcrime.securesms.database.helpers.migration.V209_ClearRecipientPniFromAciColumn
 import org.thoughtcrime.securesms.database.helpers.migration.V210_FixPniPossibleColumns
 import org.thoughtcrime.securesms.database.helpers.migration.V211_ReceiptColumnRenames
+import org.thoughtcrime.securesms.database.helpers.migration.V212_RemoveDistributionListUniqueConstraint
+import org.thoughtcrime.securesms.database.helpers.migration.V213_FixUsernameInE164Column
+import org.thoughtcrime.securesms.database.helpers.migration.V214_PhoneNumberSharingColumn
+import org.thoughtcrime.securesms.database.helpers.migration.V215_RemoveAttachmentUniqueId
+import org.thoughtcrime.securesms.database.helpers.migration.V216_PhoneNumberDiscoverable
+import org.thoughtcrime.securesms.database.helpers.migration.V217_MessageTableExtrasColumn
+import org.thoughtcrime.securesms.database.helpers.migration.V218_RecipientPniSignatureVerified
+import org.thoughtcrime.securesms.database.helpers.migration.V219_PniPreKeyStores
+import org.thoughtcrime.securesms.database.helpers.migration.V220_PreKeyConstraints
+import org.thoughtcrime.securesms.database.helpers.migration.V221_AddReadColumnToCallEventsTable
+import org.thoughtcrime.securesms.database.helpers.migration.V222_DataHashRefactor
+import org.thoughtcrime.securesms.database.helpers.migration.V223_AddNicknameAndNoteFieldsToRecipientTable
+import org.thoughtcrime.securesms.database.helpers.migration.V224_AddAttachmentArchiveColumns
+import org.thoughtcrime.securesms.database.helpers.migration.V225_AddLocalUserJoinedStateAndGroupCallActiveState
+import org.thoughtcrime.securesms.database.helpers.migration.V226_AddAttachmentMediaIdIndex
+import org.thoughtcrime.securesms.database.helpers.migration.V227_AddAttachmentArchiveTransferState
+import org.thoughtcrime.securesms.database.helpers.migration.V228_AddNameCollisionTables
+import org.thoughtcrime.securesms.database.helpers.migration.V229_MarkMissedCallEventsNotified
+import org.thoughtcrime.securesms.database.helpers.migration.V230_UnreadCountIndices
+import org.thoughtcrime.securesms.database.helpers.migration.V231_ArchiveThumbnailColumns
+import org.thoughtcrime.securesms.database.helpers.migration.V232_CreateInAppPaymentTable
+import org.thoughtcrime.securesms.database.helpers.migration.V233_FixInAppPaymentTableDefaultNotifiedValue
+import org.thoughtcrime.securesms.database.helpers.migration.V234_ThumbnailRestoreStateColumn
+import org.thoughtcrime.securesms.database.helpers.migration.V235_AttachmentUuidColumn
+import org.thoughtcrime.securesms.database.helpers.migration.V236_FixInAppSubscriberCurrencyIfAble
 
 /**
  * Contains all of the database migrations for [SignalDatabase]. Broken into a separate file for cleanliness.
@@ -75,8 +101,6 @@ import org.thoughtcrime.securesms.database.helpers.migration.V211_ReceiptColumnR
 object SignalDatabaseMigrations {
 
   val TAG: String = Log.tag(SignalDatabaseMigrations.javaClass)
-
-  const val DATABASE_VERSION = 211
 
   private val migrations: List<Pair<Int, SignalDatabaseMigration>> = listOf(
     149 to V149_LegacyMigrations,
@@ -141,23 +165,58 @@ object SignalDatabaseMigrations {
     // 208 was a bad migration that only manipulated data and did not change schema, replaced by 209
     209 to V209_ClearRecipientPniFromAciColumn,
     210 to V210_FixPniPossibleColumns,
-    211 to V211_ReceiptColumnRenames
+    211 to V211_ReceiptColumnRenames,
+    212 to V212_RemoveDistributionListUniqueConstraint,
+    213 to V213_FixUsernameInE164Column,
+    214 to V214_PhoneNumberSharingColumn,
+    215 to V215_RemoveAttachmentUniqueId,
+    216 to V216_PhoneNumberDiscoverable,
+    217 to V217_MessageTableExtrasColumn,
+    218 to V218_RecipientPniSignatureVerified,
+    219 to V219_PniPreKeyStores,
+    220 to V220_PreKeyConstraints,
+    221 to V221_AddReadColumnToCallEventsTable,
+    222 to V222_DataHashRefactor,
+    223 to V223_AddNicknameAndNoteFieldsToRecipientTable,
+    224 to V224_AddAttachmentArchiveColumns,
+    225 to V225_AddLocalUserJoinedStateAndGroupCallActiveState,
+    226 to V226_AddAttachmentMediaIdIndex,
+    227 to V227_AddAttachmentArchiveTransferState,
+    228 to V228_AddNameCollisionTables,
+    229 to V229_MarkMissedCallEventsNotified,
+    230 to V230_UnreadCountIndices,
+    231 to V231_ArchiveThumbnailColumns,
+    232 to V232_CreateInAppPaymentTable,
+    233 to V233_FixInAppPaymentTableDefaultNotifiedValue,
+    234 to V234_ThumbnailRestoreStateColumn,
+    235 to V235_AttachmentUuidColumn,
+    236 to V236_FixInAppSubscriberCurrencyIfAble
   )
+
+  const val DATABASE_VERSION = 236
 
   @JvmStatic
   fun migrate(context: Application, db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    val initialForeignKeyState = db.areForeignKeyConstraintsEnabled()
+
     for (migrationData in migrations) {
       val (version, migration) = migrationData
 
       if (oldVersion < version) {
-        Log.i(TAG, "Running migration for version $version: ${migration.javaClass.simpleName}")
+        Log.i(TAG, "Running migration for version $version: ${migration.javaClass.simpleName}. Foreign keys: ${migration.enableForeignKeys}")
+        val startTime = System.currentTimeMillis()
+
+        db.setForeignKeyConstraintsEnabled(migration.enableForeignKeys)
         db.withinTransaction {
           migration.migrate(context, db, oldVersion, newVersion)
           db.version = version
         }
-        Log.i(TAG, "Successfully completed migration for version $version.")
+
+        Log.i(TAG, "Successfully completed migration for version $version in ${System.currentTimeMillis() - startTime} ms")
       }
     }
+
+    db.setForeignKeyConstraintsEnabled(initialForeignKeyState)
   }
 
   @JvmStatic

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.text.Spannable
 import android.text.SpannableString
+import com.bumptech.glide.Glide
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.signal.core.util.Base64
@@ -29,11 +30,10 @@ import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.MessageRecord
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.keyboard.KeyboardUtil
 import org.thoughtcrime.securesms.mediasend.Media
 import org.thoughtcrime.securesms.mms.GifSlide
-import org.thoughtcrime.securesms.mms.GlideApp
 import org.thoughtcrime.securesms.mms.ImageSlide
 import org.thoughtcrime.securesms.mms.PartAuthority
 import org.thoughtcrime.securesms.mms.QuoteId
@@ -50,7 +50,7 @@ import java.io.IOException
 import java.util.concurrent.Executor
 
 class DraftRepository(
-  private val context: Context = ApplicationDependencies.getApplication(),
+  private val context: Context = AppDependencies.application,
   private val threadTable: ThreadTable = SignalDatabase.threads,
   private val draftTable: DraftTable = SignalDatabase.drafts,
   private val saveDraftsExecutor: Executor = SerialMonoLifoExecutor(SignalExecutors.BOUNDED),
@@ -97,7 +97,7 @@ class DraftRepository(
     }
 
     if (shareMedia != null && shareContentType != null && borderless) {
-      val details = KeyboardUtil.getImageDetails(GlideApp.with(context), shareMedia)
+      val details = KeyboardUtil.getImageDetails(Glide.with(context), shareMedia)
 
       if (details == null || !details.hasTransparency) {
         return ShareOrDraftData.SetMedia(shareMedia, shareMediaType!!, null) to null
