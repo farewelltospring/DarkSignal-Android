@@ -6,7 +6,6 @@
 package org.whispersystems.signalservice.api;
 
 import org.signal.core.util.Base64;
-import org.signal.libsignal.metadata.certificate.SenderCertificate;
 import org.signal.libsignal.protocol.IdentityKey;
 import org.signal.libsignal.protocol.IdentityKeyPair;
 import org.signal.libsignal.protocol.InvalidKeyException;
@@ -72,7 +71,6 @@ import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.push.ServiceId.PNI;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException;
-import org.whispersystems.signalservice.api.push.exceptions.MalformedResponseException;
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.NotFoundException;
 import org.whispersystems.signalservice.api.push.exceptions.ProofRequiredException;
@@ -95,7 +93,6 @@ import org.whispersystems.signalservice.internal.crypto.AttachmentDigest;
 import org.whispersystems.signalservice.internal.crypto.PaddingInputStream;
 import org.whispersystems.signalservice.internal.push.AttachmentPointer;
 import org.whispersystems.signalservice.internal.push.AttachmentUploadForm;
-import org.whispersystems.signalservice.internal.push.AttachmentV2UploadAttributes;
 import org.whispersystems.signalservice.internal.push.BodyRange;
 import org.whispersystems.signalservice.internal.push.CallMessage;
 import org.whispersystems.signalservice.internal.push.Content;
@@ -816,53 +813,11 @@ public class SignalServiceMessageSender {
                                                                  attachment.getCancelationSignal(),
                                                                  attachment.getResumableUploadSpec().orElse(null));
 
-    if (attachment.getResumableUploadSpec().isPresent()) {
-      return uploadAttachmentV4(attachment, attachmentKey, attachmentData);
-    } else {
-      Log.w(TAG, "Using legacy attachment upload endpoint.");
-      return uploadAttachmentV2(attachment, attachmentKey, attachmentData);
-    }
-  }
-
-  private SignalServiceAttachmentPointer uploadAttachmentV2(SignalServiceAttachmentStream attachment, byte[] attachmentKey, PushAttachmentData attachmentData)
-      throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException
-  {
-    AttachmentV2UploadAttributes       v2UploadAttributes = null;
-
-    Log.d(TAG, "Using pipe to retrieve attachment upload attributes...");
-    try {
-      v2UploadAttributes = new AttachmentService.AttachmentAttributesResponseProcessor<>(attachmentService.getAttachmentV2UploadAttributes().blockingGet()).getResultOrThrow();
-    } catch (WebSocketUnavailableException e) {
-      Log.w(TAG, "[uploadAttachmentV2] Pipe unavailable, falling back... (" + e.getClass().getSimpleName() + ": " + e.getMessage() + ")");
-    } catch (IOException e) {
-      Log.w(TAG, "Failed to retrieve attachment upload attributes using pipe. Falling back...");
+    if (attachment.getResumableUploadSpec().isEmpty()) {
+      throw new IllegalStateException("Attachment must have a resumable upload spec.");
     }
 
-    if (v2UploadAttributes == null) {
-      Log.d(TAG, "Not using pipe to retrieve attachment upload attributes...");
-      v2UploadAttributes = socket.getAttachmentV2UploadAttributes();
-    }
-
-    Pair<Long, AttachmentDigest> attachmentIdAndDigest = socket.uploadAttachment(attachmentData, v2UploadAttributes);
-
-    return new SignalServiceAttachmentPointer(0,
-                                              new SignalServiceAttachmentRemoteId.V2(attachmentIdAndDigest.first()),
-                                              attachment.getContentType(),
-                                              attachmentKey,
-                                              Optional.of(Util.toIntExact(attachment.getLength())),
-                                              attachment.getPreview(),
-                                              attachment.getWidth(), attachment.getHeight(),
-                                              Optional.of(attachmentIdAndDigest.second().getDigest()),
-                                              Optional.of(attachmentIdAndDigest.second().getIncrementalDigest()),
-                                              attachmentIdAndDigest.second().getIncrementalMacChunkSize(),
-                                              attachment.getFileName(),
-                                              attachment.getVoiceNote(),
-                                              attachment.isBorderless(),
-                                              attachment.isGif(),
-                                              attachment.getCaption(),
-                                              attachment.getBlurHash(),
-                                              attachment.getUploadTimestamp(),
-                                              attachment.getUuid());
+    return uploadAttachmentV4(attachment, attachmentKey, attachmentData);
   }
 
   public ResumableUploadSpec getResumableUploadSpec() throws IOException {
@@ -2300,32 +2255,46 @@ public class SignalServiceMessageSender {
 
       return Single.error(t);
     }).onErrorResumeNext(t -> {
-      if (t instanceof UntrustedIdentityException) {
-        Log.w(TAG, "[" + timestamp + "] Hit identity mismatch: " + recipient.getIdentifier(), t);
-        return Single.just(SendMessageResult.identityFailure(recipient, ((UntrustedIdentityException) t).getIdentityKey()));
-      } else if (t instanceof UnregisteredUserException) {
-        Log.w(TAG, "[" + timestamp + "] Hit unregistered user: " + recipient.getIdentifier());
-        return Single.just(SendMessageResult.unregisteredFailure(recipient));
-      } else if (t instanceof PushNetworkException) {
-        Log.w(TAG, "[" + timestamp + "] Hit network failure: " + recipient.getIdentifier(), t);
-        return Single.just(SendMessageResult.networkFailure(recipient));
-      } else if (t instanceof ServerRejectedException) {
-        Log.w(TAG, "[" + timestamp + "] Hit server rejection: " + recipient.getIdentifier(), t);
-        return Single.error(t);
-      } else if (t instanceof ProofRequiredException) {
-        Log.w(TAG, "[" + timestamp + "] Hit proof required: " + recipient.getIdentifier(), t);
-        return Single.just(SendMessageResult.proofRequiredFailure(recipient, (ProofRequiredException) t));
-      } else if (t instanceof RateLimitException) {
-        Log.w(TAG, "[" + timestamp + "] Hit rate limit: " + recipient.getIdentifier(), t);
-        return Single.just(SendMessageResult.rateLimitFailure(recipient, (RateLimitException) t));
-      } else if (t instanceof InvalidPreKeyException) {
-        Log.w(TAG, "[" + timestamp + "] Hit invalid prekey: " + recipient.getIdentifier(), t);
-        return Single.just(SendMessageResult.invalidPreKeyFailure(recipient));
-      } else {
-        Log.w(TAG, "[" + timestamp + "] Hit unknown exception: " + recipient.getIdentifier(), t);
-        return Single.error(new IOException(t));
+      try {
+        SendMessageResult result = mapSendErrorToSendResult(t, timestamp, recipient);
+        return Single.just(result);
+      } catch (IOException e) {
+        return Single.error(e);
       }
     });
+  }
+
+  /**
+   * Converts common exceptions thrown during message sending to the appropriate {@link SendMessageResult}.
+   * <p>
+   * Exceptions that cannot be mapped will be rethrown as wrapped {@link IOException}s.
+   */
+  public static @Nonnull SendMessageResult mapSendErrorToSendResult(@Nonnull Throwable t, long timestamp, @Nonnull SignalServiceAddress recipient) throws IOException {
+    if (t instanceof UntrustedIdentityException) {
+      Log.w(TAG, "[" + timestamp + "] Hit identity mismatch: " + recipient.getIdentifier(), t);
+      return SendMessageResult.identityFailure(recipient, ((UntrustedIdentityException) t).getIdentityKey());
+    } else if (t instanceof UnregisteredUserException) {
+      Log.w(TAG, "[" + timestamp + "] Hit unregistered user: " + recipient.getIdentifier());
+      return SendMessageResult.unregisteredFailure(recipient);
+    } else if (t instanceof PushNetworkException) {
+      Log.w(TAG, "[" + timestamp + "] Hit network failure: " + recipient.getIdentifier(), t);
+      return SendMessageResult.networkFailure(recipient);
+    } else if (t instanceof ServerRejectedException) {
+      Log.w(TAG, "[" + timestamp + "] Hit server rejection: " + recipient.getIdentifier(), t);
+      throw (ServerRejectedException) t;
+    } else if (t instanceof ProofRequiredException) {
+      Log.w(TAG, "[" + timestamp + "] Hit proof required: " + recipient.getIdentifier(), t);
+      return SendMessageResult.proofRequiredFailure(recipient, (ProofRequiredException) t);
+    } else if (t instanceof RateLimitException) {
+      Log.w(TAG, "[" + timestamp + "] Hit rate limit: " + recipient.getIdentifier(), t);
+      return SendMessageResult.rateLimitFailure(recipient, (RateLimitException) t);
+    } else if (t instanceof InvalidPreKeyException) {
+      Log.w(TAG, "[" + timestamp + "] Hit invalid prekey: " + recipient.getIdentifier(), t);
+      return SendMessageResult.invalidPreKeyFailure(recipient);
+    } else {
+      Log.w(TAG, "[" + timestamp + "] Hit unknown exception: " + recipient.getIdentifier(), t);
+      throw new IOException(t);
+    }
   }
 
   /**

@@ -145,10 +145,6 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
 
     long startTime = System.currentTimeMillis();
 
-    if (RemoteConfig.internalUser()) {
-      Tracer.getInstance().setMaxBufferSize(35_000);
-    }
-
     super.onCreate();
 
     AppStartup.getInstance().addBlocking("sqlcipher-init", () -> {
@@ -161,12 +157,12 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
                               initializeLogging();
                               Log.i(TAG, "onCreate()");
                             })
+                            .addBlocking("app-dependencies", this::initializeAppDependencies)
                             .addBlocking("anr-detector", this::startAnrDetector)
                             .addBlocking("security-provider", this::initializeSecurityProvider)
                             .addBlocking("crash-handling", this::initializeCrashHandling)
                             .addBlocking("rx-init", this::initializeRx)
                             .addBlocking("event-bus", () -> EventBus.builder().logNoSubscriberMessages(false).installDefaultEventBus())
-                            .addBlocking("app-dependencies", this::initializeAppDependencies)
                             .addBlocking("scrubber", () -> Scrubber.setIdentifierHmacKeyProvider(() -> SignalStore.svr().getOrCreateMasterKey().deriveLoggingKey()))
                             .addBlocking("first-launch", this::initializeFirstEverAppLaunch)
                             .addBlocking("app-migrations", this::initializeApplicationMigrations)
@@ -183,6 +179,7 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
                             .addBlocking("remote-config", RemoteConfig::init)
                             .addBlocking("ring-rtc", this::initializeRingRtc)
                             .addBlocking("glide", () -> SignalGlideModule.setRegisterGlideComponents(new SignalGlideComponents()))
+                            .addBlocking("tracer", this::initializeTracer)
                             .addNonBlocking(() -> RegistrationUtil.maybeMarkRegistrationComplete())
                             .addNonBlocking(() -> Glide.get(this))
                             .addNonBlocking(this::cleanAvatarStorage)
@@ -379,12 +376,12 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
 
       Log.i(TAG, "Setting first install version to " + BuildConfig.CANONICAL_VERSION_CODE);
       TextSecurePreferences.setFirstInstallVersion(this, BuildConfig.CANONICAL_VERSION_CODE);
-    } else if (!TextSecurePreferences.isPasswordDisabled(this) && VersionTracker.getDaysSinceFirstInstalled(this) < 90) {
+    } else if (!SignalStore.settings().getPassphraseDisabled() && VersionTracker.getDaysSinceFirstInstalled(this) < 90) {
       Log.i(TAG, "Detected a new install that doesn't have passphrases disabled -- assuming bad initialization.");
       AppInitialization.onRepairFirstEverAppLaunch(this);
-    } else if (!TextSecurePreferences.isPasswordDisabled(this) && VersionTracker.getDaysSinceFirstInstalled(this) < 912) {
+    } else if (!SignalStore.settings().getPassphraseDisabled() && VersionTracker.getDaysSinceFirstInstalled(this) < 912) {
       Log.i(TAG, "Detected a not-recent install that doesn't have passphrases disabled -- disabling now.");
-      TextSecurePreferences.setPasswordDisabled(this, true);
+      SignalStore.settings().setPassphraseDisabled(true);
     }
   }
 
@@ -420,6 +417,12 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
     KeepMessagesDuration keepMessagesDuration = SignalStore.settings().getKeepMessagesDuration();
     if (keepMessagesDuration != KeepMessagesDuration.FOREVER) {
       AppDependencies.getTrimThreadsByDateManager().scheduleIfNecessary();
+    }
+  }
+
+  private void initializeTracer() {
+    if (RemoteConfig.internalUser()) {
+      Tracer.getInstance().setMaxBufferSize(35_000);
     }
   }
 

@@ -215,6 +215,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import okhttp3.internal.http2.StreamResetException;
 
 /**
  * @author Moxie Marlinspike
@@ -255,7 +256,6 @@ public class PushServiceSocket {
   private static final String GROUP_MESSAGE_PATH        = "/v1/messages/multi_recipient?ts=%s&online=%s&urgent=%s&story=%s";
   private static final String SENDER_ACK_MESSAGE_PATH   = "/v1/messages/%s/%d";
   private static final String UUID_ACK_MESSAGE_PATH     = "/v1/messages/uuid/%s";
-  private static final String ATTACHMENT_V2_PATH        = "/v2/attachments/form/upload";
   private static final String ATTACHMENT_V4_PATH        = "/v4/attachments/form/upload";
 
   private static final String PAYMENTS_AUTH_PATH        = "/v1/payments/auth";
@@ -1544,18 +1544,6 @@ public class PushServiceSocket {
     }
   }
 
-  public AttachmentV2UploadAttributes getAttachmentV2UploadAttributes()
-      throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException
-  {
-    String response = makeServiceRequest(ATTACHMENT_V2_PATH, "GET", null);
-    try {
-      return JsonUtil.fromJson(response, AttachmentV2UploadAttributes.class);
-    } catch (IOException e) {
-      Log.w(TAG, e);
-      throw new MalformedResponseException("Unable to parse entity", e);
-    }
-  }
-
   public AttachmentUploadForm getAttachmentV4UploadAttributes()
       throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException
   {
@@ -1928,6 +1916,9 @@ public class PushServiceSocket {
     } catch (PushNetworkException | NonSuccessfulResponseCodeException e) {
       throw e;
     } catch (IOException e) {
+      if (e instanceof StreamResetException) {
+        throw e;
+      }
       throw new PushNetworkException(e);
     } finally {
       synchronized (connections) {
@@ -2000,6 +1991,9 @@ public class PushServiceSocket {
     } catch (PushNetworkException | NonSuccessfulResponseCodeException e) {
       throw e;
     } catch (IOException e) {
+      if (e instanceof StreamResetException) {
+        throw e;
+      }
       throw new PushNetworkException(e);
     } finally {
       synchronized (connections) {
@@ -2798,7 +2792,6 @@ public class PushServiceSocket {
   private static final ResponseCodeHandler GROUPS_V2_PUT_RESPONSE_HANDLER   = (responseCode, body) -> {
     if (responseCode == 409) throw new GroupExistsException();
   };;
-  private static final ResponseCodeHandler GROUPS_V2_GET_LOGS_HANDLER       = NO_HANDLER;
   private static final ResponseCodeHandler GROUPS_V2_GET_CURRENT_HANDLER    = (responseCode, body) -> {
     switch (responseCode) {
       case 403: throw new NotInGroupException();
@@ -2893,7 +2886,7 @@ public class PushServiceSocket {
                                                 "GET",
                                                 null,
                                                 headers,
-                                                GROUPS_V2_GET_LOGS_HANDLER))
+                                                GROUPS_V2_GET_CURRENT_HANDLER))
     {
 
       if (response.body() == null) {
@@ -3019,11 +3012,14 @@ public class PushServiceSocket {
           Log.e(TAG, "Unable to read response body.", e);
           throw new NonSuccessfulResponseCodeException(409);
         }
-        if (response.pushChallengedRequired()) {
+        if (response.getVerified()) {
+          throw new AlreadyVerifiedException();
+        } else if (response.pushChallengedRequired()) {
           throw new PushChallengeRequiredException();
         } else if (response.captchaRequired()) {
           throw new CaptchaRequiredException();
         } else {
+          Log.i(TAG, "Received 409 in reg session handler that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
           throw new HttpConflictException();
         }
       } else if (responseCode == 502) {
@@ -3059,11 +3055,14 @@ public class PushServiceSocket {
           Log.e(TAG, "Unable to read response body.", e);
           throw new NonSuccessfulResponseCodeException(409);
         }
-        if (response.pushChallengedRequired()) {
+        if (response.getVerified()) {
+          throw new AlreadyVerifiedException();
+        } else if (response.pushChallengedRequired()) {
           throw new PushChallengeRequiredException();
         } else if (response.captchaRequired()) {
           throw new CaptchaRequiredException();
         } else {
+          Log.i(TAG, "Received 409 in for reg code request that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
           throw new HttpConflictException();
         }
       } else if (responseCode == 418) {
@@ -3101,11 +3100,14 @@ public class PushServiceSocket {
             Log.e(TAG, "Unable to read response body.", e);
             throw new NonSuccessfulResponseCodeException(409);
           }
-          if (response.pushChallengedRequired()) {
+          if (response.getVerified()) {
+            throw new AlreadyVerifiedException();
+          } else if (response.pushChallengedRequired()) {
             throw new PushChallengeRequiredException();
           } else if (response.captchaRequired()) {
             throw new CaptchaRequiredException();
           } else {
+            Log.i(TAG, "Received 409 for patching reg session that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
             throw new HttpConflictException();
           }
       }
@@ -3135,6 +3137,7 @@ public class PushServiceSocket {
             // Note: this explicitly requires Verified to be false
             throw new MustRequestNewCodeException();
           } else {
+            Log.i(TAG, "Received 409 for reg code submission that is not verified, with required information: " + String.join(", ", sessionMetadata.getRequestedInformation()));
             throw new HttpConflictException();
           }
         case 440:

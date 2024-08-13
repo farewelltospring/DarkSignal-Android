@@ -1,5 +1,6 @@
 package org.thoughtcrime.securesms.util
 
+import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import org.json.JSONException
@@ -19,6 +20,8 @@ import org.thoughtcrime.securesms.util.RemoteConfig.remoteBoolean
 import org.thoughtcrime.securesms.util.RemoteConfig.remoteValue
 import java.io.IOException
 import java.util.TreeMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KProperty
@@ -48,18 +51,27 @@ object RemoteConfig {
   @VisibleForTesting
   val configsByKey: MutableMap<String, Config<*>> = mutableMapOf()
 
+  @GuardedBy("initLock")
+  @Volatile
+  @VisibleForTesting
+  var initialized: Boolean = false
+  private val initLock: ReentrantLock = ReentrantLock()
+
   @JvmStatic
-  @Synchronized
   fun init() {
-    val current = parseStoredConfig(SignalStore.remoteConfig.currentConfig)
-    val pending = parseStoredConfig(SignalStore.remoteConfig.pendingConfig)
-    val changes = computeChanges(current, pending)
+    initLock.withLock {
+      val current = parseStoredConfig(SignalStore.remoteConfig.currentConfig)
+      val pending = parseStoredConfig(SignalStore.remoteConfig.pendingConfig)
+      val changes = computeChanges(current, pending)
 
-    SignalStore.remoteConfig.currentConfig = mapToJson(pending)
-    REMOTE_VALUES.putAll(pending)
-    triggerFlagChangeListeners(changes)
+      SignalStore.remoteConfig.currentConfig = mapToJson(pending)
+      REMOTE_VALUES.putAll(pending)
+      triggerFlagChangeListeners(changes)
 
-    Log.i(TAG, "init() $REMOTE_VALUES")
+      Log.i(TAG, "init() $REMOTE_VALUES")
+
+      initialized = true
+    }
   }
 
   @JvmStatic
@@ -347,6 +359,15 @@ object RemoteConfig {
     val transformer: (Any?) -> T
   ) {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+      if (!initialized) {
+        Log.w(TAG, "Tried to read $key before initialization. Initializing now.")
+        initLock.withLock {
+          if (!initialized) {
+            init()
+          }
+        }
+      }
+
       return transformer(REMOTE_VALUES[key])
     }
   }
@@ -848,6 +869,15 @@ object RemoteConfig {
     hotSwappable = true
   )
 
+  /** Maximum input size when opening a video to send in bytes  */
+  @JvmStatic
+  @get:JvmName("maxSourceTranscodeVideoSizeBytes")
+  val maxSourceTranscodeVideoSizeBytes: Long by remoteLong(
+    key = "android.media.sourceTranscodeVideo.maxBytes",
+    defaultValue = 500L.mebiBytes.inWholeBytes,
+    hotSwappable = true
+  )
+
   const val PROMPT_FOR_NOTIFICATION_LOGS: String = "android.logs.promptNotifications"
 
   @JvmStatic
@@ -882,7 +912,7 @@ object RemoteConfig {
     hotSwappable = true
   )
 
-  const val CRASH_PROMPT_CONFIG: String = "android.crashPromptConfig"
+  const val CRASH_PROMPT_CONFIG: String = "android.crashPromptConfig.2"
 
   /** Config object for what crashes to prompt about.  */
   val crashPromptConfig: String by remoteString(
@@ -931,7 +961,7 @@ object RemoteConfig {
   @JvmStatic
   @get:JvmName("useActiveCallManager")
   val useActiveCallManager: Boolean by remoteBoolean(
-    key = "android.calling.useActiveCallManager.5",
+    key = "android.calling.useActiveCallManager.6",
     defaultValue = false,
     hotSwappable = false
   )
@@ -1061,6 +1091,15 @@ object RemoteConfig {
     hotSwappable = true
   )
 
+  /** Whether to use the new Banner system instead of the old Reminder system.  */
+  @JvmStatic
+  @get:JvmName("newBannerUi")
+  val newBannerUi: Boolean by remoteBoolean(
+    key = "android.newBannerUi",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
   /** Which phase we're in for the SVR3 migration  */
   val svr3MigrationPhase: Int by remoteInt(
     key = "global.svr3.phase",
@@ -1072,6 +1111,13 @@ object RemoteConfig {
         AppDependencies.jobManager.add(Svr3MirrorJob())
       }
     }
+  )
+
+  /** JSON object representing some details about how we might want to warn the user around connectivity issues. */
+  val connectivityWarningConfig: String by remoteString(
+    key = "android.connectivityWarningConfig",
+    defaultValue = "",
+    hotSwappable = true
   )
 
   // endregion

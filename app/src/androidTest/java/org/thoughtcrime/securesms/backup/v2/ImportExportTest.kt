@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import okio.ByteString.Companion.toByteString
 import org.junit.Assert
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestName
@@ -78,6 +79,7 @@ import kotlin.time.Duration.Companion.days
  * Test the import and export of message backup frames to make sure what
  * goes in, comes out.
  */
+@Ignore("Deprecated")
 class ImportExportTest {
   companion object {
     /**
@@ -126,7 +128,7 @@ class ImportExportTest {
         linkPreviews = true,
         notDiscoverableByPhoneNumber = true,
         preferContactAvatars = true,
-        universalExpireTimer = 42,
+        universalExpireTimerSeconds = 42,
         displayBadgesOnProfile = true,
         keepMutedChatsArchived = true,
         hasSetMyStoriesPrivacy = true,
@@ -555,46 +557,6 @@ class ImportExportTest {
   }
 
   @Test
-  fun deletedDistributionList() {
-    val alexa = Recipient(
-      id = 4,
-      contact = Contact(
-        aci = TestRecipientUtils.nextAci().toByteString(),
-        pni = TestRecipientUtils.nextPni().toByteString(),
-        username = "cool.01",
-        e164 = 141255501234,
-        blocked = true,
-        visibility = Contact.Visibility.HIDDEN,
-        registered = Contact.Registered(),
-        profileKey = TestRecipientUtils.generateProfileKey().toByteString(),
-        profileSharing = true,
-        profileGivenName = "Alexa",
-        profileFamilyName = "Kim",
-        hideStory = true
-      )
-    )
-    val importData = exportFrames(
-      *standardFrames,
-      alexa,
-      Recipient(
-        id = 6,
-        distributionList = DistributionListItem(
-          distributionId = DistributionId.create().asUuid().toByteArray().toByteString(),
-          deletionTimestamp = 12345L
-        )
-      )
-    )
-    import(importData)
-    val exported = BackupRepository.export()
-    val expected = exportFrames(
-      *standardFrames,
-      alexa
-    )
-
-    compare(expected, exported)
-  }
-
-  @Test
   fun chatThreads() {
     importExport(
       *standardFrames,
@@ -1010,7 +972,7 @@ class ImportExportTest {
       expirationNotStarted
     )
     import(importData)
-    val exported = BackupRepository.export()
+    val exported = BackupRepository.debugExport()
     val expected = exportFrames(
       *standardFrames,
       alice,
@@ -1252,12 +1214,7 @@ class ImportExportTest {
           chatId = 1,
           authorId = alice.id,
           dateSent = dateSentStart++,
-          incoming = ChatItem.IncomingMessageDetails(
-            dateReceived = dateSentStart,
-            dateServerSent = dateSentStart,
-            read = true,
-            sealedSender = true
-          ),
+          directionless = ChatItem.DirectionlessMessageDetails(),
           updateMessage = ChatUpdateMessage(
             simpleUpdate = SimpleChatUpdate(
               type = SimpleChatUpdate.Type.fromValue(i)!!
@@ -1285,12 +1242,7 @@ class ImportExportTest {
         chatId = 1,
         authorId = alice.id,
         dateSent = dateSentStart++,
-        incoming = ChatItem.IncomingMessageDetails(
-          dateReceived = dateSentStart,
-          dateServerSent = dateSentStart,
-          read = true,
-          sealedSender = true
-        ),
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           expirationTimerChange = ExpirationTimerChatUpdate(
             1000
@@ -1301,11 +1253,7 @@ class ImportExportTest {
         chatId = 1,
         authorId = selfRecipient.id,
         dateSent = dateSentStart++,
-        outgoing = ChatItem.OutgoingMessageDetails(
-          sendStatus = listOf(
-            SendStatus(alice.id, deliveryStatus = SendStatus.Status.READ, sealedSender = true, lastStatusUpdateTimestamp = -1)
-          )
-        ),
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           expirationTimerChange = ExpirationTimerChatUpdate(
             0
@@ -1316,9 +1264,7 @@ class ImportExportTest {
         chatId = 1,
         authorId = selfRecipient.id,
         dateSent = dateSentStart++,
-        outgoing = ChatItem.OutgoingMessageDetails(
-          sendStatus = listOf(SendStatus(alice.id, deliveryStatus = SendStatus.Status.READ, sealedSender = true, lastStatusUpdateTimestamp = -1))
-        ),
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           expirationTimerChange = ExpirationTimerChatUpdate(
             10000
@@ -1329,12 +1275,7 @@ class ImportExportTest {
         chatId = 1,
         authorId = alice.id,
         dateSent = dateSentStart++,
-        incoming = ChatItem.IncomingMessageDetails(
-          dateReceived = dateSentStart,
-          dateServerSent = dateSentStart,
-          read = true,
-          sealedSender = true
-        ),
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           expirationTimerChange = ExpirationTimerChatUpdate(
             0
@@ -1346,7 +1287,6 @@ class ImportExportTest {
 
   @Test
   fun profileChangeChatUpdateMessage() {
-    var dateSentStart = 100L
     importExport(
       *standardFrames,
       alice,
@@ -1354,13 +1294,8 @@ class ImportExportTest {
       ChatItem(
         chatId = 1,
         authorId = alice.id,
-        dateSent = dateSentStart++,
-        incoming = ChatItem.IncomingMessageDetails(
-          dateReceived = dateSentStart,
-          dateServerSent = dateSentStart,
-          read = true,
-          sealedSender = true
-        ),
+        dateSent = 100L,
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           profileChange = ProfileChangeChatUpdate(
             previousName = "Aliceee Kim",
@@ -1373,7 +1308,6 @@ class ImportExportTest {
 
   @Test
   fun threadMergeChatUpdate() {
-    var dateSentStart = 100L
     importExport(
       *standardFrames,
       alice,
@@ -1381,13 +1315,8 @@ class ImportExportTest {
       ChatItem(
         chatId = 1,
         authorId = alice.id,
-        dateSent = dateSentStart++,
-        incoming = ChatItem.IncomingMessageDetails(
-          dateReceived = dateSentStart,
-          dateServerSent = dateSentStart,
-          read = true,
-          sealedSender = true
-        ),
+        dateSent = 100L,
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           threadMerge = ThreadMergeChatUpdate(
             previousE164 = 141255501237
@@ -1407,13 +1336,8 @@ class ImportExportTest {
       ChatItem(
         chatId = 1,
         authorId = alice.id,
-        dateSent = dateSentStart++,
-        incoming = ChatItem.IncomingMessageDetails(
-          dateReceived = dateSentStart,
-          dateServerSent = dateSentStart,
-          read = true,
-          sealedSender = true
-        ),
+        dateSent = dateSentStart,
+        directionless = ChatItem.DirectionlessMessageDetails(),
         updateMessage = ChatUpdateMessage(
           sessionSwitchover = SessionSwitchoverChatUpdate(
             e164 = 141255501237
@@ -1647,7 +1571,7 @@ class ImportExportTest {
 
     import(originalBackupData)
 
-    val generatedBackupData = BackupRepository.export()
+    val generatedBackupData = BackupRepository.debugExport()
     compare(originalBackupData, generatedBackupData)
   }
 

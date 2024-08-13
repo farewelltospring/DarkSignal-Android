@@ -1,13 +1,14 @@
 package org.thoughtcrime.securesms.components.settings.app.subscription.donate
 
+import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
 import com.google.android.gms.wallet.PaymentData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -114,6 +115,10 @@ class InAppPaymentCheckoutDelegate(
     }
   }
 
+  fun setActivityResult(action: InAppPaymentProcessorAction, inAppPaymentType: InAppPaymentType) {
+    fragment.requireActivity().setResult(Activity.RESULT_OK, Intent().putExtra(CheckoutFlowActivity.RESULT_DATA, CheckoutFlowActivity.Result(action, inAppPaymentType)))
+  }
+
   private fun handleDonationProcessorActionResult(result: InAppPaymentProcessorActionResult) {
     when (result.status) {
       InAppPaymentProcessorActionResult.Status.SUCCESS -> handleSuccessfulDonationProcessorActionResult(result)
@@ -124,6 +129,8 @@ class InAppPaymentCheckoutDelegate(
   }
 
   private fun handleSuccessfulDonationProcessorActionResult(result: InAppPaymentProcessorActionResult) {
+    setActivityResult(result.action, result.inAppPaymentType)
+
     if (result.action == InAppPaymentProcessorAction.CANCEL_SUBSCRIPTION) {
       callback.onSubscriptionCancelled(result.inAppPaymentType)
     } else {
@@ -137,7 +144,7 @@ class InAppPaymentCheckoutDelegate(
         .setTitle(R.string.DonationsErrors__failed_to_cancel_subscription)
         .setMessage(R.string.DonationsErrors__subscription_cancellation_requires_an_internet_connection)
         .setPositiveButton(android.R.string.ok) { _, _ ->
-          fragment.findNavController().popBackStack(R.id.checkout_flow, true)
+          callback.exitCheckoutFlow()
         }
         .show()
     } else {
@@ -283,14 +290,17 @@ class InAppPaymentCheckoutDelegate(
         is DonationError.UserCancelledPaymentError -> {
           Log.d(TAG, "User cancelled out of payment flow.", true)
         }
+
         is DonationError.BadgeRedemptionError.DonationPending -> {
           Log.d(TAG, "User launched an external application.", true)
           errorHandlerCallback?.onUserLaunchedAnExternalApplication()
         }
+
         is DonationError.UserLaunchedExternalApplication -> {
           Log.d(TAG, "Long-running donation is still pending.", true)
           errorHandlerCallback?.navigateToDonationPending(inAppPayment)
         }
+
         else -> {
           Log.d(TAG, "Displaying donation error dialog.", true)
           errorDialog = DonationErrorDialogs.show(
@@ -351,7 +361,7 @@ class InAppPaymentCheckoutDelegate(
         errorDialog = null
         if (!tryAgain) {
           tryAgain = false
-          fragment?.findNavController()?.popBackStack(R.id.checkout_flow, true)
+          errorHandlerCallback?.exitCheckoutFlow()
         }
       }
     }
@@ -360,6 +370,7 @@ class InAppPaymentCheckoutDelegate(
   interface ErrorHandlerCallback {
     fun onUserLaunchedAnExternalApplication()
     fun navigateToDonationPending(inAppPayment: InAppPaymentTable.InAppPayment)
+    fun exitCheckoutFlow()
   }
 
   interface Callback : ErrorHandlerCallback {

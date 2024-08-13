@@ -27,6 +27,7 @@ import androidx.annotation.DimenRes;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
@@ -36,6 +37,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.concurrent.ListenableFuture;
@@ -172,13 +174,8 @@ public class InputPanel extends ConstraintLayout
 
     this.recordLockCancel.setOnClickListener(v -> microphoneRecorderView.cancelAction(true));
 
-    if (SignalStore.settings().isPreferSystemEmoji()) {
-      mediaKeyboard.setVisibility(View.GONE);
-      emojiVisible = false;
-    } else {
-      mediaKeyboard.setVisibility(View.VISIBLE);
-      emojiVisible = true;
-    }
+    mediaKeyboard.setVisibility(View.VISIBLE);
+    emojiVisible = true;
 
     quoteDismiss.setOnClickListener(v -> clearQuote());
 
@@ -408,9 +405,24 @@ public class InputPanel extends ConstraintLayout
     quoteView.setWallpaperEnabled(enabled);
   }
 
+  public void enterEditModeIfPossible(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft, boolean clearQuote) {
+    String currentText = composeText.getText() == null ? "" : composeText.getText().toString();
+    if ((messageToEdit == null && currentText.isEmpty()) || (messageToEdit != null && currentText.equals(messageToEdit.getBody()))) {
+      enterEditMessageMode(requestManager, conversationMessageToEdit, fromDraft, clearQuote);
+    } else {
+      AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getContext());
+      builder.setTitle(R.string.InputPanel__discard_draft);
+      builder.setMessage(R.string.InputPanel__this_action_cant_be_undone);
+      builder.setPositiveButton(R.string.InputPanel__discard, (dialog, which) -> enterEditMessageMode(requestManager, conversationMessageToEdit, fromDraft, clearQuote));
+      builder.setNegativeButton(android.R.string.cancel, null);
+      builder.show();
+    }
+}
+
   public void enterEditMessageMode(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft, boolean clearQuote) {
-    int originalHeight         = composeTextContainer.getMeasuredHeight();
-    SpannableString textToEdit = conversationMessageToEdit.getDisplayBody(getContext());
+    boolean fromEditMessageMode = inEditMessageMode();
+    int originalHeight          = composeTextContainer.getMeasuredHeight();
+    SpannableString textToEdit  = conversationMessageToEdit.getDisplayBody(getContext());
 
     if (!fromDraft) {
       MessageStyler.convertSpoilersToComposeMode(textToEdit);
@@ -426,18 +438,23 @@ public class InputPanel extends ConstraintLayout
     }
 
     this.messageToEdit = conversationMessageToEdit.getMessageRecord();
+
+    updateEditModeUi();
     updateEditModeThumbnail(requestManager);
 
-    int maxWidth = composeContainer.getWidth();
-    if (composeContainer.getLayoutParams() instanceof MarginLayoutParams) {
-      MarginLayoutParams layoutParams = (MarginLayoutParams) composeContainer.getLayoutParams();
-      maxWidth -= layoutParams.leftMargin + layoutParams.rightMargin;
+    int maxWidth = composeContainer.getWidth() - mediaKeyboard.getWidth();
+    if (!fromEditMessageMode) {
+      maxWidth -= editMessageCancel.getWidth();
+      if (editMessageCancel.getLayoutParams() instanceof MarginLayoutParams) {
+        MarginLayoutParams layoutParams = (MarginLayoutParams) editMessageCancel.getLayoutParams();
+        maxWidth -= layoutParams.leftMargin;
+      }
     }
     composeTextContainer.measure(MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), MeasureSpec.UNSPECIFIED);
-    int finalHeight = (inEditMessageMode()) ? composeTextContainer.getMeasuredHeight() : composeTextContainer.getMeasuredHeight() + editMessageTitle.getMeasuredHeight();
+    int finalHeight = composeTextContainer.getMeasuredHeight();
 
     if (editMessageAnimator != null) {
-     editMessageAnimator.cancel();
+      editMessageAnimator.cancel();
     }
     editMessageAnimator = createHeightAnimator(composeTextContainer, originalHeight, finalHeight, new AnimationCompleteListener() {
       @Override
@@ -445,7 +462,6 @@ public class InputPanel extends ConstraintLayout
         ViewGroup.LayoutParams params = composeTextContainer.getLayoutParams();
         params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
         composeTextContainer.setLayoutParams(params);
-        updateEditModeUi();
       }
     });
     editMessageAnimator.start();

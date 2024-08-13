@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.os.BundleCompat
 import androidx.core.os.bundleOf
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.parcelize.Parcelize
 import org.signal.core.ui.BottomSheets
 import org.signal.core.ui.Buttons
@@ -38,8 +39,12 @@ import org.signal.core.ui.Icons
 import org.signal.core.ui.Previews
 import org.signal.core.ui.SignalPreview
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity
 import org.thoughtcrime.securesms.compose.ComposeBottomSheetDialogFragment
 import org.thoughtcrime.securesms.database.model.databaseprotos.InAppPaymentData
+import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.jobs.BackupMessagesJob
+import org.thoughtcrime.securesms.jobs.BackupRestoreMediaJob
 
 /**
  * Notifies the user of an issue with their backup.
@@ -73,14 +78,12 @@ class BackupAlertBottomSheet : ComposeBottomSheetDialogFragment() {
   private fun performPrimaryAction() {
     when (backupAlert) {
       BackupAlert.COULD_NOT_COMPLETE_BACKUP -> {
-        // TODO [message-backups] -- Back up now
+        BackupMessagesJob.enqueue()
+        startActivity(AppSettingsActivity.remoteBackups(requireContext()))
       }
       BackupAlert.PAYMENT_PROCESSING -> Unit
-      BackupAlert.MEDIA_BACKUPS_ARE_OFF -> {
-        // TODO [message-backups] -- Download media now
-      }
-      BackupAlert.MEDIA_WILL_BE_DELETED_TODAY -> {
-        // TODO [message-backups] -- Download media now
+      BackupAlert.MEDIA_BACKUPS_ARE_OFF, BackupAlert.MEDIA_WILL_BE_DELETED_TODAY -> {
+        performFullMediaDownload()
       }
       BackupAlert.DISK_FULL -> Unit
     }
@@ -99,12 +102,28 @@ class BackupAlertBottomSheet : ComposeBottomSheetDialogFragment() {
         // TODO [message-backups] - Silence and remind on last day
       }
       BackupAlert.MEDIA_WILL_BE_DELETED_TODAY -> {
-        // TODO [message-backups] - Silence forever
+        displayLastChanceDialog()
       }
       BackupAlert.DISK_FULL -> Unit
     }
 
     dismissAllowingStateLoss()
+  }
+
+  private fun displayLastChanceDialog() {
+    MaterialAlertDialogBuilder(requireContext())
+      .setTitle(R.string.BackupAlertBottomSheet__media_will_be_deleted)
+      .setMessage(R.string.BackupAlertBottomSheet__the_media_stored_in_your_backup)
+      .setPositiveButton(R.string.BackupAlertBottomSheet__download) { _, _ ->
+        performFullMediaDownload()
+      }
+      .setNegativeButton(R.string.BackupAlertBottomSheet__dont_download, null)
+      .show()
+  }
+
+  private fun performFullMediaDownload() {
+    // TODO [message-backups] -- We need to force this to download everything
+    AppDependencies.jobManager.add(BackupRestoreMediaJob())
   }
 }
 

@@ -10,6 +10,7 @@ import org.signal.donations.PaymentSourceType
 import org.signal.donations.StripeApi
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialPresentation
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialRequestContext
+import org.thoughtcrime.securesms.backup.v2.MessageBackupTier
 import org.thoughtcrime.securesms.badges.Badges
 import org.thoughtcrime.securesms.badges.models.Badge
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository
@@ -69,6 +70,7 @@ class InAppPaymentValues internal constructor(store: KeyValueStore) : SignalStor
     private const val SUBSCRIPTION_CANCELATION_TIMESTAMP = "donation.subscription.cancelation.timestamp"
     private const val SUBSCRIPTION_CANCELATION_WATERMARK = "donation.subscription.cancelation.watermark"
     private const val SHOW_CANT_PROCESS_DIALOG = "show.cant.process.dialog"
+    private const val SHOW_LAST_DAY_TO_DOWNLOAD_MEDIA_DIALOG = "inapppayment.show.last.day.to.download.media.dialog"
 
     /**
      * The current request context for subscription. This should be stored until either
@@ -159,7 +161,8 @@ class InAppPaymentValues internal constructor(store: KeyValueStore) : SignalStor
     SUBSCRIPTION_EOP_STARTED_TO_CONVERT,
     SUBSCRIPTION_EOP_STARTED_TO_REDEEM,
     SUBSCRIPTION_EOP_REDEEMED,
-    SUBSCRIPTION_PAYMENT_SOURCE_TYPE
+    SUBSCRIPTION_PAYMENT_SOURCE_TYPE,
+    SHOW_LAST_DAY_TO_DOWNLOAD_MEDIA_DIALOG
   )
 
   private val recurringDonationCurrencyPublisher: Subject<Currency> by lazy { BehaviorSubject.createDefault(getSubscriptionCurrency(InAppPaymentSubscriberRecord.Type.DONATION)) }
@@ -416,6 +419,9 @@ class InAppPaymentValues internal constructor(store: KeyValueStore) : SignalStor
   @get:JvmName("showCantProcessDialog")
   var showMonthlyDonationCanceledDialog: Boolean by booleanValue(SHOW_CANT_PROCESS_DIALOG, true)
 
+  @get:JvmName("showLastDayToDownloadMediaDialog")
+  var showLastDayToDownloadMediaDialog: Boolean by booleanValue(SHOW_LAST_DAY_TO_DOWNLOAD_MEDIA_DIALOG, false)
+
   /**
    * Denotes that the previous attempt to subscribe failed in some way. Either an
    * automatic renewal failed resulting in an unexpected expiration, or payment failed
@@ -464,6 +470,9 @@ class InAppPaymentValues internal constructor(store: KeyValueStore) : SignalStor
         markDonationManuallyCancelled()
       } else {
         markBackupSubscriptionpManuallyCancelled()
+
+        SignalStore.backup.areBackupsEnabled = false
+        SignalStore.backup.backupTier = null
       }
 
       val subscriber = InAppPaymentsRepository.getSubscriber(subscriberType)
@@ -504,6 +513,9 @@ class InAppPaymentValues internal constructor(store: KeyValueStore) : SignalStor
         }
       } else {
         clearBackupSubscriptionManuallyCancelled()
+
+        SignalStore.backup.areBackupsEnabled = true
+        SignalStore.backup.backupTier = MessageBackupTier.PAID
       }
 
       val subscriber = InAppPaymentsRepository.requireSubscriber(subscriberType)

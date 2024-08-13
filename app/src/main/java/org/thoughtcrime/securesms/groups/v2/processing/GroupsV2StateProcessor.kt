@@ -279,19 +279,26 @@ class GroupsV2StateProcessor private constructor(
   ): InternalUpdateResult {
     var currentLocalState: DecryptedGroup? = groupRecord.map { it.requireV2GroupProperties().decryptedGroup }.orNull()
 
-    val latestRevisionOnly = targetRevision == LATEST && (currentLocalState == null || currentLocalState.revision == RESTORE_PLACEHOLDER_REVISION)
-
-    if (latestRevisionOnly) {
-      Log.i(TAG, "$logPrefix Latest revision or not a member, update to latest directly")
+    if (targetRevision == LATEST && (currentLocalState == null || currentLocalState.revision == RESTORE_PLACEHOLDER_REVISION)) {
+      Log.i(TAG, "$logPrefix Latest revision only, update to latest directly")
       return updateToLatestViaServer(timestamp, currentLocalState, reconstructChange = false)
     }
 
     Log.i(TAG, "$logPrefix Paging from server targetRevision: ${if (targetRevision == LATEST) "latest" else targetRevision}")
 
-    val joinedAtRevision = when (val result = groupsApi.getGroupJoinedAt(groupsV2Authorization.getAuthorizationForToday(serviceIds, groupSecretParams))) {
-      is NetworkResult.Success -> result.result
-      else -> return InternalUpdateResult.from(result.getCause()!!)
+    val joinedAtResult = groupsApi.getGroupJoinedAt(groupsV2Authorization.getAuthorizationForToday(serviceIds, groupSecretParams))
+
+    if (joinedAtResult !is NetworkResult.Success) {
+      val joinedAtFailure = InternalUpdateResult.from(joinedAtResult.getCause()!!)
+      if (joinedAtFailure is InternalUpdateResult.NotAMember) {
+        Log.i(TAG, "$logPrefix Not a member, try to update to latest directly")
+        return updateToLatestViaServer(timestamp, currentLocalState, reconstructChange = currentLocalState != null)
+      } else {
+        return joinedAtFailure
+      }
     }
+
+    val joinedAtRevision = joinedAtResult.result
 
     val sendEndorsementExpiration = groupRecord.map { it.groupSendEndorsementExpiration }.orElse(0L)
 
@@ -318,7 +325,7 @@ class GroupsV2StateProcessor private constructor(
       if (updatedGroupState == null || updatedGroupState == remoteGroupStateDiff.previousGroupState) {
         Log.i(TAG, "$logPrefix Local state is at or later than server revision: ${currentLocalState?.revision ?: "null"}")
 
-        if (currentLocalState != null) {
+        if (currentLocalState != null && applyGroupStateDiffResult.remainingRemoteGroupChanges.isEmpty()) {
           val endorsements = groupOperations.receiveGroupSendEndorsements(serviceIds.aci, currentLocalState, remoteGroupStateDiff.groupSendEndorsementsResponse)
 
           if (endorsements != null) {
@@ -631,6 +638,15 @@ class GroupsV2StateProcessor private constructor(
     fun leaveGroupLocally(serviceIds: ServiceIds) {
       if (!SignalDatabase.groups.isActive(groupId)) {
         Log.w(TAG, "Group $groupId has already been left.")
+
+        val groupRecipient = Recipient.externalGroupExact(groupId)
+        val threadId = SignalDatabase.threads.getThreadIdFor(groupRecipient.id)
+
+        if (threadId != null) {
+          SignalDatabase.drafts.clearDrafts(threadId)
+          SignalDatabase.threads.update(threadId, unarchive = false, allowDeletion = false)
+        }
+
         return
       }
 
@@ -657,6 +673,7 @@ class GroupsV2StateProcessor private constructor(
         val threadId = SignalDatabase.threads.getOrCreateThreadIdFor(groupRecipient)
         val id = SignalDatabase.messages.insertMessageOutbox(leaveMessage, threadId, false, null)
         SignalDatabase.messages.markAsSent(id, true)
+        SignalDatabase.drafts.clearDrafts(threadId)
         SignalDatabase.threads.update(threadId, unarchive = false, allowDeletion = false)
       } catch (e: MmsException) {
         Log.w(TAG, "Failed to insert leave message for $groupId", e)

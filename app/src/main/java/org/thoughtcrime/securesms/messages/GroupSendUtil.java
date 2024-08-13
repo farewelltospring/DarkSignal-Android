@@ -471,7 +471,7 @@ public final class GroupSendUtil {
       List<SignalServiceAddress> legacyTargetAddresses = legacyTargets.stream().map(r -> recipients.getAddress(r.getId())).collect(Collectors.toList());
       List<UnidentifiedAccess>   legacyTargetAccesses  = legacyTargets.stream().map(r -> recipients.getAccess(r.getId())).collect(Collectors.toList());
       List<GroupSendFullToken>   groupSendTokens       = null;
-      boolean                    recipientUpdate       = isRecipientUpdate || allResults.isEmpty();
+      boolean                    recipientUpdate       = isRecipientUpdate || allResults.size() > 0;
 
       if (useGroupSendEndorsements) {
         Instant           expiration        = Instant.ofEpochMilli(groupSendEndorsementExpiration);
@@ -638,13 +638,17 @@ public final class GroupSendUtil {
         SealedSenderAccess sealedSenderAccess = sealedSenderAccesses.get(0);
         SendMessageResult  result;
 
-        if (editMessage != null) {
-          result = messageSender.sendEditMessage(targets.get(0), sealedSenderAccess, contentHint, message, SignalServiceMessageSender.IndividualSendEvents.EMPTY, urgent, editMessage.getTargetSentTimestamp());
-        } else {
-          result = messageSender.sendDataMessage(targets.get(0), sealedSenderAccess, contentHint, message, SignalServiceMessageSender.IndividualSendEvents.EMPTY, urgent, targetRecipient.getNeedsPniSignature());
+        try {
+          if (editMessage != null) {
+            result = messageSender.sendEditMessage(targets.get(0), sealedSenderAccess, contentHint, message, SignalServiceMessageSender.IndividualSendEvents.EMPTY, urgent, editMessage.getTargetSentTimestamp());
+          } else {
+            result = messageSender.sendDataMessage(targets.get(0), sealedSenderAccess, contentHint, message, SignalServiceMessageSender.IndividualSendEvents.EMPTY, urgent, targetRecipient.getNeedsPniSignature());
+          }
+        } catch (IOException e) {
+          result = SignalServiceMessageSender.mapSendErrorToSendResult(e, message.getTimestamp(), targets.get(0));
         }
 
-        if (targetRecipient.getNeedsPniSignature()) {
+        if (result.isSuccess() && targetRecipient.getNeedsPniSignature()) {
           SignalDatabase.pendingPniSignatureMessages().insertIfNecessary(targetRecipients.get(0).getId(), getSentTimestamp(), result);
         }
 

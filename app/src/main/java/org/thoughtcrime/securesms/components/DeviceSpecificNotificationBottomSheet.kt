@@ -40,12 +40,13 @@ class DeviceSpecificNotificationBottomSheet : ComposeBottomSheetDialogFragment()
     @JvmStatic
     fun show(fragmentManager: FragmentManager) {
       if (fragmentManager.findFragmentByTag(BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG) == null) {
-        DeviceSpecificNotificationBottomSheet().apply {
+        val dialog = DeviceSpecificNotificationBottomSheet().apply {
           arguments = bundleOf(
             ARG_LINK to DeviceSpecificNotificationConfig.currentConfig.link,
             ARG_LINK_VERSION to DeviceSpecificNotificationConfig.currentConfig.version
           )
-        }.show(fragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
+        }
+        BottomSheetUtil.show(fragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG, dialog)
         SignalStore.uiHints.lastSupportVersionSeen = DeviceSpecificNotificationConfig.currentConfig.version
       }
     }
@@ -63,7 +64,7 @@ class DeviceSpecificNotificationBottomSheet : ComposeBottomSheetDialogFragment()
 }
 
 @Composable
-fun DeviceSpecificSheet(onContinue: () -> Unit = {}, onDismiss: () -> Unit = {}) {
+private fun DeviceSpecificSheet(onContinue: () -> Unit = {}, onDismiss: () -> Unit = {}) {
   return Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = Modifier.fillMaxWidth().wrapContentSize(Alignment.Center)
@@ -111,7 +112,7 @@ fun DeviceSpecificSheet(onContinue: () -> Unit = {}, onDismiss: () -> Unit = {})
 
 @SignalPreview
 @Composable
-fun DeviceSpecificSheetPreview() {
+private fun DeviceSpecificSheetPreview() {
   Previews.BottomSheetPreview {
     DeviceSpecificSheet()
   }
