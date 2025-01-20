@@ -9,6 +9,8 @@ message BackupInfo {
   uint64 version = 1;
   uint64 backupTimeMs = 2;
   bytes mediaRootBackupKey = 3; // 32-byte random value generated when the backup is uploaded for the first time.
+  string currentAppVersion = 4;
+  string firstAppVersion = 5;
 }
 
 // Frames must follow in the following ordering rules:
@@ -18,9 +20,13 @@ message BackupInfo {
 //    e.g. a Recipient must come before any Chat referencing it.
 // 3. All ChatItems must appear in global Chat rendering order.
 //    (The order in which they were received by the client.)
+// 4. ChatFolders must appear in render order (e.g., left to right for
+//    LTR locales), but can appear anywhere relative to other frames respecting
+//    rule 2 (after Recipients and Chats).
 //
-// Recipients, Chats, StickerPacks, and AdHocCalls can be in any order.
-// (But must respect rule 2.)
+// Recipients, Chats, StickerPacks, AdHocCalls, and NotificationProfiles
+// can be in any order. (But must respect rule 2.)
+//
 // For example, Chats may all be together at the beginning,
 // or may each immediately precede its first ChatItem.
 message Frame {
@@ -31,6 +37,8 @@ message Frame {
     ChatItem chatItem = 4;
     StickerPack stickerPack = 5;
     AdHocCall adHocCall = 6;
+    NotificationProfile notificationProfile = 7;
+    ChatFolder chatFolder = 8;
   }
 }
 
@@ -128,7 +136,7 @@ message Contact {
     UNVERIFIED = 2;
   }
 
-  message Registered { }
+  message Registered {}
   message NotRegistered {
     uint64 unregisteredTimestamp = 1;
   }
@@ -137,6 +145,11 @@ message Contact {
     VISIBLE = 0;
     HIDDEN = 1;
     HIDDEN_MESSAGE_REQUEST = 2;
+  }
+
+  message Name {
+    string given = 1;
+    string family = 2;
   }
 
   optional bytes aci = 1; // should be 16 bytes
@@ -158,6 +171,8 @@ message Contact {
   bool hideStory = 13;
   optional bytes identityKey = 14;
   IdentityState identityState = 15;
+  Name nickname = 16; // absent iff both `given` and `family` are empty
+  string note = 17;
 }
 
 message Group {
@@ -197,7 +212,7 @@ message Group {
   message GroupAttributeBlob {
     oneof content {
       string title = 1;
-      bytes  avatar = 2;
+      bytes avatar = 2;
       uint32 disappearingMessagesDuration = 3;
       string descriptionText = 4;
     }
@@ -365,6 +380,7 @@ message ChatItem {
     PaymentNotification paymentNotification = 16;
     GiftBadge giftBadge = 17;
     ViewOnceMessage viewOnceMessage = 18;
+    DirectStoryReplyMessage directStoryReplyMessage = 19; // group story reply messages are not backed up
   }
 }
 
@@ -429,8 +445,23 @@ message StandardMessage {
 }
 
 message ContactMessage {
-  repeated ContactAttachment contact = 1;
+  ContactAttachment contact = 1;
   repeated Reaction reactions = 2;
+}
+
+message DirectStoryReplyMessage {
+  message TextReply {
+    Text text = 1;
+    FilePointer longText = 2;
+  }
+
+  oneof reply {
+    TextReply textReply = 1;
+    string emoji = 2;
+  }
+
+  repeated Reaction reactions = 3;
+  reserved /*storySentTimestamp*/ 4;
 }
 
 message PaymentNotification {
@@ -478,7 +509,6 @@ message PaymentNotification {
   optional string feeMob = 2; // stored as a decimal string, e.g. 1.00001
   optional string note = 3;
   TransactionDetails transactionDetails = 4;
-
 }
 
 message GiftBadge {
@@ -501,12 +531,12 @@ message ViewOnceMessage {
 
 message ContactAttachment {
   message Name {
-    optional string givenName = 1;
-    optional string familyName = 2;
-    optional string prefix = 3;
-    optional string suffix = 4;
-    optional string middleName = 5;
-    optional string nickname = 6;
+    string givenName = 1;
+    string familyName = 2;
+    string prefix = 3;
+    string suffix = 4;
+    string middleName = 5;
+    string nickname = 6;
   }
 
   message Phone {
@@ -518,9 +548,9 @@ message ContactAttachment {
       CUSTOM = 4;
     }
 
-    optional string value = 1;
-    optional Type type = 2;
-    optional string label = 3;
+    string value = 1;
+    Type type = 2;
+    string label = 3;
   }
 
   message Email {
@@ -532,9 +562,9 @@ message ContactAttachment {
       CUSTOM = 4;
     }
 
-    optional string value = 1;
-    optional Type type = 2;
-    optional string label = 3;
+    string value = 1;
+    Type type = 2;
+    string label = 3;
   }
 
   message PostalAddress {
@@ -545,15 +575,15 @@ message ContactAttachment {
       CUSTOM = 3;
     }
 
-    optional Type type = 1;
-    optional string label = 2;
-    optional string street = 3;
-    optional string pobox = 4;
-    optional string neighborhood = 5;
-    optional string city = 6;
-    optional string region = 7;
-    optional string postcode = 8;
-    optional string country = 9;
+    Type type = 1;
+    string label = 2;
+    string street = 3;
+    string pobox = 4;
+    string neighborhood = 5;
+    string city = 6;
+    string region = 7;
+    string postcode = 8;
+    string country = 9;
   }
 
   optional Name name = 1;
@@ -561,7 +591,7 @@ message ContactAttachment {
   repeated Email email = 4;
   repeated PostalAddress address = 5;
   optional FilePointer avatar = 6;
-  optional string organization = 7;
+  string organization = 7;
 }
 
 message StickerMessage {
@@ -652,7 +682,7 @@ message FilePointer {
 
   oneof locator {
     BackupLocator backupLocator = 1;
-    AttachmentLocator attachmentLocator= 2;
+    AttachmentLocator attachmentLocator = 2;
     InvalidAttachmentLocator invalidAttachmentLocator = 3;
   }
 
@@ -1063,7 +1093,7 @@ message GroupMemberJoinedByLinkUpdate {
 }
 
 // A gv1->gv2 migration occurred.
-message GroupV2MigrationUpdate  {}
+message GroupV2MigrationUpdate {}
 
 // Another user migrated gv1->gv2 but was unable to add
 // the local user and invited them instead.
@@ -1182,4 +1212,49 @@ message ChatStyle {
   }
 
   bool dimWallpaperInDarkMode = 7;
+}
+
+message NotificationProfile {
+  enum DayOfWeek {
+    UNKNOWN = 0;
+    MONDAY = 1;
+    TUESDAY = 2;
+    WEDNESDAY = 3;
+    THURSDAY = 4;
+    FRIDAY = 5;
+    SATURDAY = 6;
+    SUNDAY = 7;
+  }
+
+  string name = 1;
+  optional string emoji = 2;
+  fixed32 color = 3; // 0xAARRGGBB
+  uint64 createdAtMs = 4;
+  bool allowAllCalls = 5;
+  bool allowAllMentions = 6;
+  repeated uint64 allowedMembers = 7; // generated recipient id for allowed groups and contacts
+  bool scheduleEnabled = 8;
+  uint32 scheduleStartTime = 9; // 24-hour clock int, 0000-2359 (e.g., 15, 900, 1130, 2345)
+  uint32 scheduleEndTime = 10; // 24-hour clock int, 0000-2359 (e.g., 15, 900, 1130, 2345)
+  repeated DayOfWeek scheduleDaysEnabled = 11;
+}
+
+message ChatFolder {
+  // Represents the default "All chats" folder record vs all other custom folders
+  enum FolderType {
+    UNKNOWN = 0;
+    ALL = 1;
+    CUSTOM = 2;
+  }
+
+  string name = 1;
+  bool showOnlyUnread = 2;
+  bool showMutedChats = 3;
+  // Folder includes all 1:1 chats, unless excluded
+  bool includeAllIndividualChats = 4;
+  // Folder includes all group chats, unless excluded
+  bool includeAllGroupChats = 5;
+  FolderType folderType = 6;
+  repeated uint64 includedRecipientIds = 7; // generated recipient id of groups, contacts, and/or note to self
+  repeated uint64 excludedRecipientIds = 8; // generated recipient id of groups, contacts, and/or note to self
 }

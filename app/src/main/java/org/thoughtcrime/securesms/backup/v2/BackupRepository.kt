@@ -8,6 +8,7 @@ package org.thoughtcrime.securesms.backup.v2
 import android.database.Cursor
 import android.os.Environment
 import android.os.StatFs
+import androidx.annotation.Discouraged
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,9 +33,6 @@ import org.signal.core.util.requireNonNullString
 import org.signal.core.util.stream.NonClosingOutputStream
 import org.signal.core.util.urlEncode
 import org.signal.core.util.withinTransaction
-import org.signal.libsignal.messagebackup.MessageBackup
-import org.signal.libsignal.messagebackup.MessageBackup.ValidationResult
-import org.signal.libsignal.protocol.ServiceId.Aci
 import org.signal.libsignal.zkgroup.backups.BackupLevel
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
 import org.thoughtcrime.securesms.attachments.Attachment
@@ -45,7 +43,9 @@ import org.thoughtcrime.securesms.backup.v2.importer.ChatItemArchiveImporter
 import org.thoughtcrime.securesms.backup.v2.processor.AccountDataArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.AdHocCallArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.ChatArchiveProcessor
+import org.thoughtcrime.securesms.backup.v2.processor.ChatFolderProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.ChatItemArchiveProcessor
+import org.thoughtcrime.securesms.backup.v2.processor.NotificationProfileProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.RecipientArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.StickerArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.proto.BackupInfo
@@ -106,7 +106,6 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
-import org.signal.libsignal.messagebackup.MessageBackupKey as LibSignalMessageBackupKey
 
 object BackupRepository {
 
@@ -203,6 +202,11 @@ object BackupRepository {
     return alertAfter <= now
   }
 
+  @JvmStatic
+  fun shouldDisplayBackupAlreadyRedeemedIndicator(): Boolean {
+    return !(shouldNotDisplayBackupFailedMessaging() || !SignalStore.backup.hasBackupAlreadyRedeemedError)
+  }
+
   /**
    * Whether the "Backup Failed" row should be displayed in settings.
    * Shown when the initial backup creation has failed
@@ -225,6 +229,10 @@ object BackupRepository {
     }
 
     return SignalStore.backup.hasBackupBeenUploaded && SignalStore.backup.hasBackupFailure
+  }
+
+  fun markBackupAlreadyRedeemedIndicatorClicked() {
+    SignalStore.backup.hasBackupAlreadyRedeemedError = false
   }
 
   /**
@@ -449,6 +457,7 @@ object BackupRepository {
     plaintext: Boolean = false,
     currentTime: Long = System.currentTimeMillis(),
     mediaBackupEnabled: Boolean = SignalStore.backup.backsUpMedia,
+    progressEmitter: ExportProgressListener? = null,
     cancellationSignal: () -> Boolean = { false },
     exportExtras: ((SignalDatabase) -> Unit)? = null
   ) {
@@ -463,7 +472,15 @@ object BackupRepository {
       )
     }
 
-    export(currentTime = currentTime, isLocal = false, writer = writer, mediaBackupEnabled = mediaBackupEnabled, cancellationSignal = cancellationSignal, exportExtras = exportExtras)
+    export(
+      currentTime = currentTime,
+      isLocal = false,
+      writer = writer,
+      progressEmitter = progressEmitter,
+      mediaBackupEnabled = mediaBackupEnabled,
+      cancellationSignal = cancellationSignal,
+      exportExtras = exportExtras
+    )
   }
 
   /**
@@ -496,7 +513,8 @@ object BackupRepository {
       eventTimer.emit("store-db-snapshot")
 
       val exportState = ExportState(backupTime = currentTime, mediaBackupEnabled = mediaBackupEnabled)
-      val selfRecipientId = dbSnapshot.recipientTable.getByAci(signalStoreSnapshot.accountValues.aci!!).get().toLong().let { RecipientId.from(it) }
+      val selfAci = signalStoreSnapshot.accountValues.aci!!
+      val selfRecipientId = dbSnapshot.recipientTable.getByAci(selfAci).get().toLong().let { RecipientId.from(it) }
 
       var frameCount = 0L
 
@@ -505,7 +523,8 @@ object BackupRepository {
           BackupInfo(
             version = VERSION,
             backupTimeMs = exportState.backupTime,
-            mediaRootBackupKey = SignalStore.backup.mediaRootBackupKey.value.toByteString()
+            mediaRootBackupKey = SignalStore.backup.mediaRootBackupKey.value.toByteString(),
+            firstAppVersion = SignalStore.backup.firstAppVersion
           )
         )
         frameCount++
@@ -524,7 +543,7 @@ object BackupRepository {
           }
 
           progressEmitter?.onRecipient()
-          RecipientArchiveProcessor.export(dbSnapshot, signalStoreSnapshot, exportState, selfRecipientId) {
+          RecipientArchiveProcessor.export(dbSnapshot, signalStoreSnapshot, exportState, selfRecipientId, selfAci) {
             writer.write(it)
             eventTimer.emit("recipient")
             frameCount++
@@ -566,7 +585,31 @@ object BackupRepository {
             return@export
           }
 
-          progressEmitter?.onMessage()
+          progressEmitter?.onNotificationProfile()
+          NotificationProfileProcessor.export(dbSnapshot, exportState) { frame ->
+            writer.write(frame)
+            eventTimer.emit("notification-profile")
+            frameCount++
+          }
+          if (cancellationSignal()) {
+            Log.w(TAG, "[export] Cancelled! Stopping")
+            return@export
+          }
+
+          progressEmitter?.onChatFolder()
+          ChatFolderProcessor.export(dbSnapshot, exportState) { frame ->
+            writer.write(frame)
+            eventTimer.emit("chat-folder")
+            frameCount++
+          }
+          if (cancellationSignal()) {
+            Log.w(TAG, "[export] Cancelled! Stopping")
+            return@export
+          }
+
+          val approximateMessageCount = dbSnapshot.messageTable.getApproximateExportableMessageCount(exportState.threadIds)
+          val frameCountStart = frameCount
+          progressEmitter?.onMessage(0, approximateMessageCount)
           ChatItemArchiveProcessor.export(dbSnapshot, exportState, selfRecipientId, cancellationSignal) { frame ->
             writer.write(frame)
             eventTimer.emit("message")
@@ -574,6 +617,7 @@ object BackupRepository {
 
             if (frameCount % 1000 == 0L) {
               Log.d(TAG, "[export] Exported $frameCount frames so far.")
+              progressEmitter?.onMessage(frameCount - frameCountStart, approximateMessageCount)
               if (cancellationSignal()) {
                 Log.w(TAG, "[export] Cancelled! Stopping")
                 return@export
@@ -608,14 +652,21 @@ object BackupRepository {
     }
 
     return frameReader.use { reader ->
-      import(backupKey, reader, selfData, cancellationSignal = { false })
+      import(reader, selfData, cancellationSignal = { false })
     }
   }
 
-  fun import(length: Long, inputStreamFactory: () -> InputStream, selfData: SelfData, plaintext: Boolean = false, cancellationSignal: () -> Boolean = { false }): ImportResult {
-    val backupKey = SignalStore.backup.messageBackupKey
-
-    val frameReader = if (plaintext) {
+  /**
+   * @param backupKey  The key used to encrypt the backup. If `null`, we assume that the file is plaintext.
+   */
+  fun import(
+    length: Long,
+    inputStreamFactory: () -> InputStream,
+    selfData: SelfData,
+    backupKey: MessageBackupKey?,
+    cancellationSignal: () -> Boolean = { false }
+  ): ImportResult {
+    val frameReader = if (backupKey == null) {
       PlainTextBackupReader(inputStreamFactory(), length)
     } else {
       EncryptedBackupReader(
@@ -627,12 +678,11 @@ object BackupRepository {
     }
 
     return frameReader.use { reader ->
-      import(backupKey, reader, selfData, cancellationSignal)
+      import(reader, selfData, cancellationSignal)
     }
   }
 
   private fun import(
-    messageBackupKey: MessageBackupKey,
     frameReader: BackupImportReader,
     selfData: SelfData,
     cancellationSignal: () -> Boolean
@@ -714,10 +764,7 @@ object BackupRepository {
       SignalDatabase.recipients.setProfileKey(selfId, selfData.profileKey)
       SignalDatabase.recipients.setProfileSharing(selfId, true)
 
-      // Add back default All Chats chat folder after clearing data
-      SignalDatabase.chatFolders.insertAllChatFolder()
-
-      val importState = ImportState(messageBackupKey, mediaRootBackupKey)
+      val importState = ImportState(mediaRootBackupKey)
       val chatItemInserter: ChatItemArchiveImporter = ChatItemArchiveProcessor.beginImport(importState)
 
       Log.d(TAG, "[import] Beginning to read frames.")
@@ -755,6 +802,18 @@ object BackupRepository {
             frameCount++
           }
 
+          frame.notificationProfile != null -> {
+            NotificationProfileProcessor.import(frame.notificationProfile, importState)
+            eventTimer.emit("notification-profile")
+            frameCount++
+          }
+
+          frame.chatFolder != null -> {
+            ChatFolderProcessor.import(frame.chatFolder, importState)
+            eventTimer.emit("chat-folder")
+            frameCount++
+          }
+
           frame.chatItem != null -> {
             chatItemInserter.import(frame.chatItem)
             eventTimer.emit("chatItem")
@@ -776,6 +835,11 @@ object BackupRepository {
 
       if (chatItemInserter.flush()) {
         eventTimer.emit("chatItem")
+      }
+
+      if (!importState.importedChatFolders) {
+        // Add back default All Chats chat folder after clearing data if missing
+        SignalDatabase.chatFolders.insertAllChatFolder()
       }
 
       stopwatch.split("frames")
@@ -837,17 +901,12 @@ object BackupRepository {
     AppDependencies.jobManager.addAll(groupJobs)
     stopwatch.split("group-jobs")
 
+    SignalStore.backup.firstAppVersion = header.firstAppVersion
+
     Log.d(TAG, "[import] Finished! ${eventTimer.stop().summary}")
     stopwatch.stop(TAG)
 
     return ImportResult.Success(backupTime = header.backupTimeMs)
-  }
-
-  fun validate(length: Long, inputStreamFactory: () -> InputStream, selfData: SelfData): ValidationResult {
-    val accountEntropyPool = SignalStore.account.accountEntropyPool.value
-    val key = LibSignalMessageBackupKey(accountEntropyPool, Aci.parseFromBinary(selfData.aci.toByteArray()))
-
-    return MessageBackup.validate(key, MessageBackup.Purpose.REMOTE_BACKUP, inputStreamFactory, length)
   }
 
   fun listRemoteMediaObjects(limit: Int, cursor: String? = null): NetworkResult<ArchiveGetMediaItemsResponse> {
@@ -918,12 +977,7 @@ object BackupRepository {
       }
   }
 
-  /**
-   * A simple test method that just hits various network endpoints. Only useful for the playground.
-   *
-   * @return True if successful, otherwise false.
-   */
-  fun uploadBackupFile(backupStream: InputStream, backupStreamLength: Long): NetworkResult<Unit> {
+  fun getResumableMessagesBackupUploadSpec(): NetworkResult<ResumableMessagesBackupUploadSpec> {
     return initBackupAndFetchAuth()
       .then { credential ->
         SignalNetwork.archive.getMessageBackupUploadForm(SignalStore.account.requireAci(), credential.messageBackupAccess)
@@ -932,8 +986,29 @@ object BackupRepository {
       .then { form ->
         SignalNetwork.archive.getBackupResumableUploadUrl(form)
           .also { Log.i(TAG, "ResumableUploadUrlResult: $it") }
-          .map { form to it }
+          .map { ResumableMessagesBackupUploadSpec(attachmentUploadForm = form, resumableUri = it) }
       }
+  }
+
+  fun uploadBackupFile(
+    resumableSpec: ResumableMessagesBackupUploadSpec,
+    backupStream: InputStream,
+    backupStreamLength: Long,
+    progressListener: ProgressListener? = null
+  ): NetworkResult<Unit> {
+    val (form, resumableUploadUrl) = resumableSpec
+    return SignalNetwork.archive.uploadBackupFile(form, resumableUploadUrl, backupStream, backupStreamLength, progressListener)
+      .also { Log.i(TAG, "UploadBackupFileResult: $it") }
+  }
+
+  /**
+   * A simple test method that just hits various network endpoints. Only useful for the playground.
+   *
+   * @return True if successful, otherwise false.
+   */
+  @Discouraged("This will upload the entire backup file on every execution.")
+  fun debugUploadBackupFile(backupStream: InputStream, backupStreamLength: Long): NetworkResult<Unit> {
+    return getResumableMessagesBackupUploadSpec()
       .then { formAndUploadUrl ->
         val (form, resumableUploadUrl) = formAndUploadUrl
         SignalNetwork.archive.uploadBackupFile(form, resumableUploadUrl, backupStream, backupStreamLength)
@@ -1420,7 +1495,9 @@ object BackupRepository {
     fun onThread()
     fun onCall()
     fun onSticker()
-    fun onMessage()
+    fun onNotificationProfile()
+    fun onChatFolder()
+    fun onMessage(currentProgress: Long, approximateCount: Long)
     fun onAttachment(currentProgress: Long, totalCount: Long)
   }
 
@@ -1428,6 +1505,11 @@ object BackupRepository {
     MESSAGE, MEDIA
   }
 }
+
+data class ResumableMessagesBackupUploadSpec(
+  val attachmentUploadForm: AttachmentUploadForm,
+  val resumableUri: String
+)
 
 data class ArchivedMediaObject(val mediaId: String, val cdn: Int)
 
@@ -1437,15 +1519,25 @@ class ExportState(val backupTime: Long, val mediaBackupEnabled: Boolean) {
   val localToRemoteCustomChatColors: MutableMap<Long, Int> = hashMapOf()
 }
 
-class ImportState(val messageBackupKey: MessageBackupKey, val mediaRootBackupKey: MediaRootBackupKey) {
+class ImportState(val mediaRootBackupKey: MediaRootBackupKey) {
   val remoteToLocalRecipientId: MutableMap<Long, RecipientId> = hashMapOf()
   val chatIdToLocalThreadId: MutableMap<Long, Long> = hashMapOf()
   val chatIdToLocalRecipientId: MutableMap<Long, RecipientId> = hashMapOf()
   val chatIdToBackupRecipientId: MutableMap<Long, Long> = hashMapOf()
   val remoteToLocalColorId: MutableMap<Long, Long> = hashMapOf()
+  val recipientIdToLocalThreadId: MutableMap<RecipientId, Long> = hashMapOf()
+  val recipientIdToIsGroup: MutableMap<RecipientId, Boolean> = hashMapOf()
+
+  private var chatFolderPosition: Int = 0
+  val importedChatFolders: Boolean
+    get() = chatFolderPosition > 0
 
   fun requireLocalRecipientId(remoteId: Long): RecipientId {
     return remoteToLocalRecipientId[remoteId] ?: throw IllegalArgumentException("There is no local recipientId for remote recipientId $remoteId!")
+  }
+
+  fun getNextChatFolderPosition(): Int {
+    return chatFolderPosition++
   }
 }
 

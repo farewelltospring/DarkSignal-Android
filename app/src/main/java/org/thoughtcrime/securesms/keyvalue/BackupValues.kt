@@ -7,6 +7,7 @@ import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.backup.RestoreState
 import org.thoughtcrime.securesms.backup.v2.BackupFrequency
 import org.thoughtcrime.securesms.backup.v2.MessageBackupTier
+import org.thoughtcrime.securesms.jobmanager.impl.RestoreAttachmentConstraintObserver
 import org.thoughtcrime.securesms.keyvalue.protos.ArchiveUploadProgressState
 import org.thoughtcrime.securesms.util.Util
 import org.whispersystems.signalservice.api.archive.ArchiveServiceCredential
@@ -38,6 +39,7 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
     private const val KEY_LATEST_BACKUP_TIER = "backup.latestBackupTier"
     private const val KEY_LAST_CHECK_IN_MILLIS = "backup.lastCheckInMilliseconds"
     private const val KEY_LAST_CHECK_IN_SNOOZE_MILLIS = "backup.lastCheckInSnoozeMilliseconds"
+    private const val KEY_FIRST_APP_VERSION = "backup.firstAppVersion"
 
     private const val KEY_NEXT_BACKUP_TIME = "backup.nextBackupTime"
     private const val KEY_LAST_BACKUP_TIME = "backup.lastBackupTime"
@@ -48,6 +50,7 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
     private const val KEY_CDN_MEDIA_PATH = "backup.cdn.mediaPath"
 
     private const val KEY_BACKUP_OVER_CELLULAR = "backup.useCellular"
+    private const val KEY_RESTORE_OVER_CELLULAR = "backup.restore.useCellular"
     private const val KEY_OPTIMIZE_STORAGE = "backup.optimizeStorage"
     private const val KEY_BACKUPS_INITIALIZED = "backup.initialized"
 
@@ -61,6 +64,7 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
     private const val KEY_BACKUP_FAIL_ACKNOWLEDGED_SNOOZE_COUNT = "backup.failed.acknowledged.snooze.count"
     private const val KEY_BACKUP_FAIL_SHEET_SNOOZE_TIME = "backup.failed.sheet.snooze"
     private const val KEY_BACKUP_FAIL_SPACE_REMAINING = "backup.failed.space.remaining"
+    private const val KEY_BACKUP_ALREADY_REDEEMED = "backup.already.redeemed"
 
     private const val KEY_USER_MANUALLY_SKIPPED_MEDIA_RESTORE = "backup.user.manually.skipped.media.restore"
 
@@ -81,6 +85,13 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
   var restoreState: RestoreState by enumValue(KEY_RESTORE_STATE, RestoreState.NONE, RestoreState.serializer)
   var optimizeStorage: Boolean by booleanValue(KEY_OPTIMIZE_STORAGE, false)
   var backupWithCellular: Boolean by booleanValue(KEY_BACKUP_OVER_CELLULAR, false)
+
+  var restoreWithCellular: Boolean
+    get() = getBoolean(KEY_RESTORE_OVER_CELLULAR, false)
+    set(value) {
+      putBoolean(KEY_RESTORE_OVER_CELLULAR, value)
+      RestoreAttachmentConstraintObserver.onChange()
+    }
 
   var nextBackupTime: Long by longValue(KEY_NEXT_BACKUP_TIME, -1)
   var lastBackupTime: Long
@@ -109,6 +120,11 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
    * Cleared when the system performs a check-in or the user subscribes to backups.
    */
   var lastCheckInSnoozeMillis: Long by longValue(KEY_LAST_CHECK_IN_SNOOZE_MILLIS, 0)
+
+  /**
+   * The first app version to make a backup. Persisted across backup/restores to help indicate backup age.
+   */
+  var firstAppVersion: String by stringValue(KEY_FIRST_APP_VERSION, "")
 
   /**
    * Key used to backup messages.
@@ -199,6 +215,8 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
   val hasBackupFailure: Boolean get() = getBoolean(KEY_BACKUP_FAIL, false)
   val nextBackupFailureSnoozeTime: Duration get() = getLong(KEY_BACKUP_FAIL_ACKNOWLEDGED_SNOOZE_TIME, 0L).milliseconds
   val nextBackupFailureSheetSnoozeTime: Duration get() = getLong(KEY_BACKUP_FAIL_SHEET_SNOOZE_TIME, getNextBackupFailureSheetSnoozeTime(lastBackupTime.milliseconds).inWholeMilliseconds).milliseconds
+
+  var hasBackupAlreadyRedeemedError: Boolean by booleanValue(KEY_BACKUP_ALREADY_REDEEMED, false)
 
   /**
    * Denotes how many bytes are still available on the disk for writing. Used to display

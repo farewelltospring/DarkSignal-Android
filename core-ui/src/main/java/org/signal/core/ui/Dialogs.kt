@@ -76,8 +76,9 @@ object Dialogs {
     body: String,
     confirm: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit = {},
     onDismissRequest: () -> Unit = onDismiss,
+    onDeny: () -> Unit = {},
     modifier: Modifier = Modifier,
     dismiss: String = NoDismiss,
     confirmColor: Color = Color.Unspecified,
@@ -104,7 +105,13 @@ object Dialogs {
       },
       dismissButton = if (dismiss.isNotEmpty()) {
         {
-          TextButton(onClick = onDismiss) {
+          TextButton(
+            onClick =
+            {
+              onDismiss()
+              onDeny()
+            }
+          ) {
             Text(text = dismiss, color = dismissColor)
           }
         }
@@ -162,6 +169,52 @@ object Dialogs {
       },
       modifier = Modifier
         .size(200.dp)
+    )
+  }
+
+  /**
+   * Customizable progress spinner that can be dismissed while showing [message]
+   * and [caption] below the spinner to let users know an action is completing
+   */
+  @Composable
+  fun IndeterminateProgressDialog(message: String, caption: String = "", dismiss: String, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+      onDismissRequest = {},
+      confirmButton = {},
+      dismissButton = {
+        TextButton(
+          onClick = onDismiss,
+          modifier = Modifier.fillMaxWidth(),
+          content = { Text(text = dismiss) }
+        )
+      },
+      text = {
+        Column(
+          verticalArrangement = Arrangement.Center,
+          horizontalAlignment = Alignment.CenterHorizontally,
+          modifier = Modifier.fillMaxWidth().fillMaxHeight()
+        ) {
+          Spacer(modifier = Modifier.size(32.dp))
+          CircularProgressIndicator()
+          Spacer(modifier = Modifier.size(12.dp))
+          Text(
+            text = message,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          if (caption.isNotEmpty()) {
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+              text = caption,
+              textAlign = TextAlign.Center,
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+          }
+        }
+      },
+      modifier = Modifier.size(200.dp, 250.dp)
     )
   }
 
@@ -279,4 +332,10 @@ private fun IndeterminateProgressDialogPreview() {
 @Composable
 private fun IndeterminateProgressDialogMessagePreview() {
   Dialogs.IndeterminateProgressDialog("Completing...")
+}
+
+@Preview
+@Composable
+private fun IndeterminateProgressDialogCancellablePreview() {
+  Dialogs.IndeterminateProgressDialog("Completing...", "Do not close app", "Cancel") {}
 }

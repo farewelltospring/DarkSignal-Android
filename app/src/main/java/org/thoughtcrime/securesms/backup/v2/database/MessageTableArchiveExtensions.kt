@@ -13,7 +13,6 @@ import org.thoughtcrime.securesms.backup.v2.exporters.ChatItemArchiveExporter
 import org.thoughtcrime.securesms.backup.v2.importer.ChatItemArchiveImporter
 import org.thoughtcrime.securesms.database.GroupTable
 import org.thoughtcrime.securesms.database.MessageTable
-import org.thoughtcrime.securesms.database.MessageTypes
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.recipients.RecipientId
 
@@ -60,7 +59,8 @@ fun MessageTable.getMessagesForBackup(db: SignalDatabase, backupTime: Long, medi
       ${MessageTable.MISMATCHED_IDENTITIES},
       ${MessageTable.TYPE},
       ${MessageTable.MESSAGE_EXTRAS},
-      ${MessageTable.VIEW_ONCE}
+      ${MessageTable.VIEW_ONCE},
+      ${MessageTable.PARENT_STORY_ID}
     )
     """.trimMargin()
   )
@@ -68,6 +68,7 @@ fun MessageTable.getMessagesForBackup(db: SignalDatabase, backupTime: Long, medi
 
   // Unfortunately we have some bad legacy data where the from_recipient_id is a group.
   // This cleans it up. Reminder, this is only a snapshot of the data.
+  val cleanupStartTime = System.currentTimeMillis()
   db.rawWritableDatabase.execSQL(
     """
       UPDATE ${MessageTable.TABLE_NAME}
@@ -78,16 +79,7 @@ fun MessageTable.getMessagesForBackup(db: SignalDatabase, backupTime: Long, medi
       )
     """
   )
-
-  // If someone re-registers with a new phone number, previous outgoing messages will no longer be associated with self.
-  // This cleans it up by changing the from to be the current self id for all outgoing messages.
-  db.rawWritableDatabase.execSQL(
-    """
-      UPDATE ${MessageTable.TABLE_NAME}
-      SET ${MessageTable.FROM_RECIPIENT_ID} = ${selfRecipientId.toLong()}
-      WHERE (${MessageTable.TYPE} & ${MessageTypes.BASE_TYPE_MASK}) IN (${MessageTypes.OUTGOING_MESSAGE_TYPES.joinToString(",")}) 
-    """
-  )
+  Log.d(TAG, "Cleanup took ${System.currentTimeMillis() - cleanupStartTime} ms")
 
   return ChatItemArchiveExporter(
     db = db,
@@ -132,7 +124,8 @@ fun MessageTable.getMessagesForBackup(db: SignalDatabase, backupTime: Long, medi
           MessageTable.MISMATCHED_IDENTITIES,
           MessageTable.TYPE,
           MessageTable.MESSAGE_EXTRAS,
-          MessageTable.VIEW_ONCE
+          MessageTable.VIEW_ONCE,
+          MessageTable.PARENT_STORY_ID
         )
         .from("${MessageTable.TABLE_NAME} INDEXED BY $dateReceivedIndex")
         .where("${MessageTable.STORY_TYPE} = 0 AND ${MessageTable.DATE_RECEIVED} >= $lastSeenReceivedTime")

@@ -202,18 +202,22 @@ public class WebRtcCallActivity extends BaseActivity implements SafetyNumberChan
 
     lifecycleDisposable.add(controlsAndInfo);
 
-    logIntent(callIntent);
+    if (savedInstanceState == null) {
+      logIntent(callIntent);
 
-    if (callIntent.getAction() == CallIntent.Action.ANSWER_VIDEO) {
-      enableVideoIfAvailable = true;
-    } else if (callIntent.getAction() == CallIntent.Action.ANSWER_AUDIO || callIntent.isStartedFromFullScreen()) {
-      enableVideoIfAvailable = false;
+      if (callIntent.getAction() == CallIntent.Action.ANSWER_VIDEO) {
+        enableVideoIfAvailable = true;
+      } else if (callIntent.getAction() == CallIntent.Action.ANSWER_AUDIO || callIntent.isStartedFromFullScreen()) {
+        enableVideoIfAvailable = false;
+      } else {
+        enableVideoIfAvailable = callIntent.shouldEnableVideoIfAvailable();
+        callIntent.setShouldEnableVideoIfAvailable(false);
+      }
+
+      processIntent(callIntent);
     } else {
-      enableVideoIfAvailable = callIntent.shouldEnableVideoIfAvailable();
-      callIntent.setShouldEnableVideoIfAvailable(false);
+      Log.d(TAG, "Activity likely rotated, not processing intent");
     }
-
-    processIntent(callIntent);
 
     registerSystemPipChangeListeners();
 
@@ -265,7 +269,6 @@ public class WebRtcCallActivity extends BaseActivity implements SafetyNumberChan
   public void onResume() {
     Log.i(TAG, "onResume()");
     super.onResume();
-    EventBus.getDefault().register(this);
 
     initializeScreenshotSecurity();
 
@@ -311,7 +314,9 @@ public class WebRtcCallActivity extends BaseActivity implements SafetyNumberChan
     Log.i(TAG, "onPause");
     super.onPause();
 
-    EventBus.getDefault().unregister(this);
+    if (!isInPipMode() || isFinishing()) {
+      EventBus.getDefault().unregister(this);
+    }
 
     if (!callPermissionsDialogController.isAskingForPermission() && !viewModel.isCallStarting() && !isChangingConfigurations()) {
       CallParticipantsState state = viewModel.getCallParticipantsStateSnapshot();

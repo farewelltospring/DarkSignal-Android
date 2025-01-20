@@ -8,7 +8,6 @@ import android.net.Uri
 import android.text.TextUtils
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.contentValuesOf
-import app.cash.exhaustive.Exhaustive
 import okio.ByteString.Companion.toByteString
 import org.signal.core.util.Base64
 import org.signal.core.util.Bitmask
@@ -2134,67 +2133,6 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
   }
 
   /**
-   * @return True if setting the phone number resulted in changed recipientId, otherwise false.
-   */
-  fun setPhoneNumber(id: RecipientId, e164: String): Boolean {
-    val db = writableDatabase
-
-    db.beginTransaction()
-    return try {
-      setPhoneNumberOrThrow(id, e164)
-      db.setTransactionSuccessful()
-      false
-    } catch (e: SQLiteConstraintException) {
-      Log.w(TAG, "[setPhoneNumber] Hit a conflict when trying to update $id. Possibly merging.")
-
-      val existing: RecipientRecord = getRecord(id)
-      val newId = getAndPossiblyMerge(existing.aci, e164)
-      Log.w(TAG, "[setPhoneNumber] Resulting id: $newId")
-
-      db.setTransactionSuccessful()
-      newId != existing.id
-    } finally {
-      db.endTransaction()
-    }
-  }
-
-  private fun removePhoneNumber(recipientId: RecipientId) {
-    val values = ContentValues().apply {
-      putNull(E164)
-      putNull(PNI_COLUMN)
-    }
-
-    if (update(recipientId, values)) {
-      rotateStorageId(recipientId)
-    }
-  }
-
-  /**
-   * Should only use if you are confident that this will not result in any contact merging.
-   */
-  @Throws(SQLiteConstraintException::class)
-  fun setPhoneNumberOrThrow(id: RecipientId, e164: String) {
-    val contentValues = ContentValues(1).apply {
-      put(E164, e164)
-    }
-    if (update(id, contentValues)) {
-      rotateStorageId(id)
-      AppDependencies.databaseObserver.notifyRecipientChanged(id)
-      StorageSyncHelper.scheduleSyncForDataChange()
-    }
-  }
-
-  @Throws(SQLiteConstraintException::class)
-  fun setPhoneNumberOrThrowSilent(id: RecipientId, e164: String) {
-    val contentValues = ContentValues(1).apply {
-      put(E164, e164)
-    }
-    if (update(id, contentValues)) {
-      rotateStorageId(id)
-    }
-  }
-
-  /**
    * Associates the provided IDs together. The assumption here is that all of the IDs correspond to the local user and have been verified.
    */
   fun linkIdsForSelf(aci: ACI, pni: PNI, e164: String) {
@@ -2531,7 +2469,6 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     var changedNumberId: RecipientId? = null
 
     for (operation in changeSet.operations) {
-      @Exhaustive
       when (operation) {
         is PnpOperation.RemoveE164,
         is PnpOperation.RemovePni,
@@ -2568,7 +2505,6 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
   fun writePnpChangeSetToDisk(changeSet: PnpChangeSet, inputPni: PNI?, pniVerified: Boolean): RecipientId {
     var hadThreadMerge = false
     for (operation in changeSet.operations) {
-      @Exhaustive
       when (operation) {
         is PnpOperation.RemoveE164 -> {
           writableDatabase
@@ -3298,7 +3234,7 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
   fun getSystemContacts(): List<RecipientId> {
     val results: MutableList<RecipientId> = LinkedList()
 
-    readableDatabase.query(TABLE_NAME, ID_PROJECTION, "$SYSTEM_JOINED_NAME IS NOT NULL AND $SYSTEM_JOINED_NAME != \"\"", null, null, null, null).use { cursor ->
+    readableDatabase.query(TABLE_NAME, ID_PROJECTION, "$SYSTEM_JOINED_NAME IS NOT NULL AND $SYSTEM_JOINED_NAME != \'\'", null, null, null, null).use { cursor ->
       while (cursor != null && cursor.moveToNext()) {
         results.add(RecipientId.from(cursor.getLong(cursor.getColumnIndexOrThrow(ID))))
       }
@@ -3340,7 +3276,7 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
 
     db.beginTransaction()
     try {
-      db.query(TABLE_NAME, arrayOf(ID, "color", CHAT_COLORS, CUSTOM_CHAT_COLORS_ID, SYSTEM_JOINED_NAME), "$SYSTEM_JOINED_NAME IS NOT NULL AND $SYSTEM_JOINED_NAME != \"\"", null, null, null, null).use { cursor ->
+      db.query(TABLE_NAME, arrayOf(ID, "color", CHAT_COLORS, CUSTOM_CHAT_COLORS_ID, SYSTEM_JOINED_NAME), "$SYSTEM_JOINED_NAME IS NOT NULL AND $SYSTEM_JOINED_NAME != \'\'", null, null, null, null).use { cursor ->
         while (cursor != null && cursor.moveToNext()) {
           val id = cursor.requireLong(ID)
           val serializedColor = cursor.requireString("color")
@@ -4049,6 +3985,13 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
         return GetOrInsertResult(RecipientId.from(id), true)
       }
     }
+  }
+
+  /**
+   * Exposes the merge functionality for the sake of an app migration.
+   */
+  fun mergeForMigration(primaryId: RecipientId, secondaryId: RecipientId) {
+    merge(primaryId, secondaryId, pniVerified = true)
   }
 
   /**

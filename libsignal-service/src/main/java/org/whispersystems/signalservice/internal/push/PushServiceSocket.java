@@ -84,7 +84,7 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.SignedPreKeyEntity;
 import org.whispersystems.signalservice.api.push.exceptions.AlreadyVerifiedException;
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException;
-import org.whispersystems.signalservice.api.push.exceptions.CaptchaRequiredException;
+import org.whispersystems.signalservice.api.push.exceptions.ChallengeRequiredException;
 import org.whispersystems.signalservice.api.push.exceptions.ConflictException;
 import org.whispersystems.signalservice.api.push.exceptions.ContactManifestMismatchException;
 import org.whispersystems.signalservice.api.push.exceptions.DeprecatedVersionException;
@@ -103,7 +103,6 @@ import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulRespons
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResumableUploadResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.NotFoundException;
 import org.whispersystems.signalservice.api.push.exceptions.ProofRequiredException;
-import org.whispersystems.signalservice.api.push.exceptions.PushChallengeRequiredException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.push.exceptions.RangeException;
 import org.whispersystems.signalservice.api.push.exceptions.RateLimitException;
@@ -2004,6 +2003,10 @@ public class PushServiceSocket {
   }
 
   public void uploadBackupFile(AttachmentUploadForm uploadForm, String resumableUploadUrl, InputStream data, long dataLength) throws IOException {
+    uploadBackupFile(uploadForm, resumableUploadUrl, data, dataLength, null);
+  }
+
+  public void uploadBackupFile(AttachmentUploadForm uploadForm, String resumableUploadUrl, InputStream data, long dataLength, ProgressListener progressListener) throws IOException {
     if (uploadForm.cdn == 2) {
       uploadToCdn2(resumableUploadUrl, data, "application/octet-stream", dataLength, false, new NoCipherOutputStreamFactory(), null, null);
     } else {
@@ -3151,10 +3154,8 @@ public class PushServiceSocket {
         }
         if (response.getVerified()) {
           throw new AlreadyVerifiedException();
-        } else if (response.pushChallengedRequired()) {
-          throw new PushChallengeRequiredException();
-        } else if (response.captchaRequired()) {
-          throw new CaptchaRequiredException();
+        } else if (response.pushChallengedRequired() || response.captchaRequired()) {
+          throw new ChallengeRequiredException(response);
         } else {
           Log.i(TAG, "Received 409 in reg session handler that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
           throw new HttpConflictException();
@@ -3194,10 +3195,8 @@ public class PushServiceSocket {
         }
         if (response.getVerified()) {
           throw new AlreadyVerifiedException();
-        } else if (response.pushChallengedRequired()) {
-          throw new PushChallengeRequiredException();
-        } else if (response.captchaRequired()) {
-          throw new CaptchaRequiredException();
+        } else if (response.pushChallengedRequired() || response.captchaRequired()) {
+          throw new ChallengeRequiredException(response);
         } else {
           Log.i(TAG, "Received 409 in for reg code request that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
           throw new HttpConflictException();
@@ -3239,10 +3238,8 @@ public class PushServiceSocket {
           }
           if (response.getVerified()) {
             throw new AlreadyVerifiedException();
-          } else if (response.pushChallengedRequired()) {
-            throw new PushChallengeRequiredException();
-          } else if (response.captchaRequired()) {
-            throw new CaptchaRequiredException();
+          } else if (response.pushChallengedRequired() || response.captchaRequired()) {
+            throw new ChallengeRequiredException(response);
           } else {
             Log.i(TAG, "Received 409 for patching reg session that is not verified, with required information: " + String.join(", ", response.getRequestedInformation()));
             throw new HttpConflictException();

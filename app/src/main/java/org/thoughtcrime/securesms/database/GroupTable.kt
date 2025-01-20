@@ -30,6 +30,7 @@ import org.signal.core.util.requireLong
 import org.signal.core.util.requireNonNullString
 import org.signal.core.util.requireString
 import org.signal.core.util.select
+import org.signal.core.util.toInt
 import org.signal.core.util.update
 import org.signal.core.util.withinTransaction
 import org.signal.libsignal.zkgroup.InvalidInputException
@@ -508,6 +509,13 @@ class GroupTable(context: Context?, databaseHelper: SignalDatabase?) : DatabaseT
   fun getGroups(): Reader {
     val cursor = readableDatabase.query(joinedGroupSelect())
     return Reader(cursor)
+  }
+
+  fun getInactiveGroups(): Reader {
+    val query = SqlUtil.buildQuery("$TABLE_NAME.$ACTIVE = ?", false.toInt())
+    val select = "${joinedGroupSelect()} WHERE ${query.where}"
+
+    return Reader(readableDatabase.query(select, query.whereArgs))
   }
 
   fun getActiveGroupCount(): Int {
@@ -1112,7 +1120,7 @@ class GroupTable(context: Context?, databaseHelper: SignalDatabase?) : DatabaseT
           recipientId = RecipientId.from(cursor.requireNonNullString(RECIPIENT_ID)),
           title = cursor.requireString(TITLE),
           serializedMembers = cursor.requireString(MEMBER_GROUP_CONCAT),
-          serializedUnmigratedV1Members = cursor.requireString(UNMIGRATED_V1_MEMBERS),
+          serializedUnmigratedV1Members = null,
           avatarId = cursor.requireLong(AVATAR_ID),
           avatarKey = cursor.requireBlob(AVATAR_KEY),
           avatarContentType = cursor.requireString(AVATAR_CONTENT_TYPE),
@@ -1395,7 +1403,7 @@ class GroupTable(context: Context?, databaseHelper: SignalDatabase?) : DatabaseT
       ""
     } else {
       val glob = buildCaseInsensitiveGlobPattern(titleSearchQuery)
-      ", ($TITLE GLOB \"$glob\") as $TITLE_SEARCH_RANK"
+      ", ($TITLE GLOB '$glob') as $TITLE_SEARCH_RANK"
     }
 
     return """
