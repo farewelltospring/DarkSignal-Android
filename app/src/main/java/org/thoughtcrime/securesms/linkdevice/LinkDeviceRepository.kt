@@ -254,6 +254,7 @@ object LinkDeviceRepository {
         append = { tempBackupFile.appendBytes(it) },
         messageBackupKey = ephemeralMessageBackupKey,
         mediaBackupEnabled = false,
+        forTransfer = true,
         cancellationSignal = cancellationSignal
       )
     } catch (e: Exception) {
@@ -268,7 +269,7 @@ object LinkDeviceRepository {
       return LinkUploadArchiveResult.BackupCreationCancelled
     }
 
-    when (val result = ArchiveValidator.validate(tempBackupFile, ephemeralMessageBackupKey)) {
+    when (val result = ArchiveValidator.validate(tempBackupFile, ephemeralMessageBackupKey, forTransfer = true)) {
       ArchiveValidator.ValidationResult.Success -> {
         Log.d(TAG, "[createAndUploadArchive] Successfully passed validation.")
       }
@@ -276,8 +277,12 @@ object LinkDeviceRepository {
         Log.w(TAG, "[createAndUploadArchive] Failed to read the file during validation!", result.exception)
         return LinkUploadArchiveResult.BackupCreationFailure(result.exception)
       }
-      is ArchiveValidator.ValidationResult.ValidationError -> {
-        Log.w(TAG, "[createAndUploadArchive] The backup file fails validation!", result.exception)
+      is ArchiveValidator.ValidationResult.MessageValidationError -> {
+        Log.w(TAG, "[createAndUploadArchive] The backup file fails validation! Details: ${result.messageDetails}", result.exception)
+        return LinkUploadArchiveResult.BackupCreationFailure(result.exception)
+      }
+      is ArchiveValidator.ValidationResult.RecipientDuplicateE164Error -> {
+        Log.w(TAG, "[createAndUploadArchive] The backup file fails validation with a duplicate recipient! Details: ${result.details}", result.exception)
         return LinkUploadArchiveResult.BackupCreationFailure(result.exception)
       }
     }

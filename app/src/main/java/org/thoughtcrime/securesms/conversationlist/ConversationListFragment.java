@@ -1023,7 +1023,6 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     lifecycleDisposable.add(viewModel.getMegaphoneState().subscribe(this::onMegaphoneChanged));
     lifecycleDisposable.add(viewModel.getConversationsState().subscribe(this::onConversationListChanged));
     lifecycleDisposable.add(viewModel.getHasNoConversations().subscribe(this::updateEmptyState));
-    lifecycleDisposable.add(viewModel.getNotificationProfiles().subscribe(profiles -> requireCallback().updateNotificationProfileStatus(profiles)));
     lifecycleDisposable.add(viewModel.getWebSocketState().subscribe(pipeState -> requireCallback().updateProxyStatus(pipeState)));
     lifecycleDisposable.add(viewModel.getChatFolderState().subscribe(this::onChatFoldersChanged));
 
@@ -1157,7 +1156,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     SimpleTask.run(getViewLifecycleOwner().getLifecycle(), () -> {
       stopwatch.split("task-start");
 
-      List<MarkedMessageInfo> messageIds = SignalDatabase.threads().setRead(ids, false);
+      List<MarkedMessageInfo> messageIds = SignalDatabase.threads().setRead(ids);
       stopwatch.split("db");
 
       AppDependencies.getMessageNotifier().updateNotification(context);
@@ -1904,7 +1903,7 @@ public class ConversationListFragment extends MainFragment implements ActionMode
             canvas.translate(itemView.getLeft() + gutter + extra,
                              itemView.getTop() + (itemView.getBottom() - itemView.getTop() - archiveDrawable.getIntrinsicHeight()) / 2f);
           } else {
-            canvas.translate(itemView.getRight() - gutter - extra,
+            canvas.translate(itemView.getRight() - gutter - extra - archiveDrawable.getIntrinsicWidth(),
                              itemView.getTop() + (itemView.getBottom() - itemView.getTop() - archiveDrawable.getIntrinsicHeight()) / 2f);
           }
 
@@ -2034,8 +2033,6 @@ public class ConversationListFragment extends MainFragment implements ActionMode
     @NonNull View getUnreadPaymentsDot();
 
     @NonNull Stub<Toolbar> getBasicToolbar();
-
-    void updateNotificationProfileStatus(@NonNull List<NotificationProfile> notificationProfiles);
 
     void updateProxyStatus(@NonNull WebSocketConnectionState state);
 

@@ -10,6 +10,7 @@
   <!-- Removed by excludeNonTranslatables <string name="install_url" translatable="false">https://signal.org/install</string> -->
   <!-- Removed by excludeNonTranslatables <string name="donate_url" translatable="false">https://signal.org/donate</string> -->
   <!-- Removed by excludeNonTranslatables <string name="backup_support_url" translatable="false">https://support.signal.org/hc/articles/360007059752</string> -->
+  <!-- Removed by excludeNonTranslatables <string name="backup_failed_support_url" translatable="false">https://support.signal.org/hc/articles/8768161836954</string> -->
   <!-- Removed by excludeNonTranslatables <string name="transfer_support_url" translatable="false">https://support.signal.org/hc/articles/360007059752</string> -->
   <!-- Removed by excludeNonTranslatables <string name="support_center_url" translatable="false">https://support.signal.org/</string> -->
   <!-- Removed by excludeNonTranslatables <string name="terms_and_privacy_policy_url" translatable="false">https://signal.org/legal</string> -->
@@ -573,6 +574,14 @@
     <plurals name="ConversationFragment_saving_n_attachments_to_sd_card">
         <item quantity="other">Menyimpan %1$d lampiran ke storan…</item>
     </plurals>
+    <!-- Dialog title asking to save media to your phone\'s storage -->
+    <string name="ConversationFragment__save_to_phone">Simpan ke telefon?</string>
+    <!-- Dialog message explaining that media will be saved to your phone and can potentially be accessed by other phones. -->
+    <plurals name="ConversationFragment__this_media_will_be_saved">
+        <item quantity="other">Media ini akan disimpan ke storan telefon anda. Aplikasi lain mungkin boleh mengaksesnya berdasarkan tetapan kebenaran telefon anda.</item>
+    </plurals>
+    <!-- Checkbox shown in dialog to not show the dialog again in future cases -->
+    <string name="ConversationFragment_dont_show_again">Jangan tunjukkan lagi</string>
     <string name="ConversationFragment_pending">Menunggu…</string>
     <!-- Describes how the message was sent when looking at a message detail. Previously, messages could be through other means like SMS -->
     <string name="ConversationFragment_push">Data (Signal)</string>
@@ -899,8 +908,14 @@
     <string name="DateUtils_tomorrow">Esok</string>
     <!-- Used in the context: Tonight at 9:00pm for example. Specifically this is after 7pm -->
     <string name="DateUtils_tonight">Malam ini</string>
-    <!-- Used when showing the time a device was linked. %1$s is replaced with the date while %2$s is replaced with the time. e.g. Jan 15 at 9:00pm -->
-    <string name="DateUtils_date_at">%1$s pada %2$s</string>
+    <!-- Used when showing the time a device was linked. %1$s is replaced with the date while %2$s is replaced with the time. e.g. on Jan 15 at 9:00pm -->
+    <plurals name="DateUtils_date_time_at">
+        <item quantity="other">pada %1$s jam %2$s</item>
+    </plurals>
+    <!-- Used when showing the time a device was linked. e.g. at 9:00pm -->
+    <plurals name="DateUtils_time_at">
+        <item quantity="other">pada %1$s</item>
+    </plurals>
 
     <!-- Scheduled Messages -->
     <!-- Title for dialog that shows all the users scheduled messages for a chat -->
@@ -947,7 +962,7 @@
 
     <!-- LinkDeviceFragment -->
     <!-- Description for how Signal will work with a linked device (eg desktop, iPad) -->
-    <string name="LinkDeviceFragment__use_signal_on_desktop_ipad">Gunakan Signal pada Desktop atau iPad. Mesej anda akan disegerakkan ke peranti terpaut anda.</string>
+    <string name="LinkDeviceFragment__use_signal_on_desktop_ipad">Gunakan akaun Signal ini pada desktop atau iPad.</string>
     <!-- Button prompting users to link a new device to their account -->
     <string name="LinkDeviceFragment__link_a_new_device">Pautkan peranti baharu</string>
     <!-- Text explaining that on linked devices, messages will be encrypted where %s will be replaced with an image-->
@@ -987,6 +1002,21 @@
     <string name="LinkDeviceFragment__tap_continue_and_enter_phone">Ketik teruskan dan masukkan kunci telefon anda untuk mengesahkan. Jangan masukkan PIN Signal anda.</string>
     <!-- Button that dismisses the bottom sheet -->
     <string name="LinkDeviceFragment__continue">Teruskan</string>
+    <!-- Option on button to contact support -->
+    <string name="LinkDeviceFragment__contact_support">Hubungi sokongan</string>
+    <!-- Title of dialog asking users if they want to submit debug logs when contacting support -->
+    <string name="LinkDeviceFragment__submit_debug_log">Hantar log nyahpepijat?</string>
+    <!-- Body of dialog explaining what debug logs are and that they are optional to submit -->
+    <string name="LinkDeviceFragment__your_debug_logs">Log nyahpepijat anda akan membantu kami menyelesaikan masalah anda dengan lebih pantas. Menghantar log anda adalah pilihan,</string>
+    <!-- Button option to submit debug log when contacting support -->
+    <string name="LinkDeviceFragment__submit_with_debug">Hantar dengan Log Nyahpepijat</string>
+    <!-- Button option to not submit debug log when contacting support -->
+    <string name="LinkDeviceFragment__submit_without_debug">Hantar tanpa Log Nyahpepijat</string>
+    <!-- Button option to dismiss dialog -->
+    <string name="LinkDeviceFragment__cancel">Batal</string>
+    <!-- Email subject when contacting support on a linked device syncing issue -->
+    <string name="LinkDeviceFragment__link_sync_failure_support_email">Android Link&amp;Sync Export Failed</string>
+  <!-- Removed by excludeNonTranslatables <string name="LinkDeviceFragment__link_sync_failure_support_email_filter" translatable="false">Android Link&amp;Sync Export Failed</string> -->
     <!-- Title of a dialog letting the user know that syncing messages to their linked device failed -->
     <string name="LinkDeviceFragment__sync_failure_title">Penyegerakan mesej gagal</string>
     <!-- Body of a dialog letting the user know that syncing messages to their linked device failed -->
@@ -1003,13 +1033,13 @@
     <!-- Option in context menu to edit the name of a linked device -->
     <string name="LinkDeviceFragment__edit_name">Edit nama</string>
     <!-- Toast shown when the process of linking a device has been cancelled -->
-    <string name="LinkDeviceFragment__linking_cancelled">Linking cancelled</string>
+    <string name="LinkDeviceFragment__linking_cancelled">Pemautan dibatalkan</string>
     <!-- Message shown in progress dialog telling users to avoid closing the app while messages are being synced -->
-    <string name="LinkDeviceFragment__do_not_close">Do not close app</string>
+    <string name="LinkDeviceFragment__do_not_close">Jangan tutup aplikasi</string>
     <!-- Dialog title shown when a device is unlinked -->
-    <string name="LinkDeviceFragment__device_unlinked">Device unlinked</string>
+    <string name="LinkDeviceFragment__device_unlinked">Peranti dinyahpautkan</string>
     <!-- Dialog body shown when a device is unlinked where %1$s is the date and time the device was originally linked (eg Jan 15 at 9:00pm) -->
-    <string name="LinkDeviceFragment__the_device_that_was">The device that was linked on %1$s is no longer linked.</string>
+    <string name="LinkDeviceFragment__the_device_that_was">Peranti yang dipautkan pada %1$s tidak dipautkan lagi.</string>
     <!-- Button to dismiss dialog -->
     <string name="LinkDeviceFragment__ok">OK</string>
 
@@ -1051,7 +1081,7 @@
     <!-- Option in bottom sheet to transfer message history -->
     <string name="LinkDeviceSyncBottomSheet_transfer">Pindahkan sejarah mesej</string>
     <!-- Description in bottom sheet of what transferring message history will do -->
-    <string name="LinkDeviceSyncBottomSheet_transfer_your_text">Pindahkan mesej teks dan media terkini ke peranti yang dipautkan</string>
+    <string name="LinkDeviceSyncBottomSheet_transfer_your_text">Pindahkan mesej teks anda dan media dari 45 hari yang lalu dengan mudah</string>
     <!-- Option in bottom sheet to not transfer message history -->
     <string name="LinkDeviceSyncBottomSheet_dont_transfer">Jangan pindahkan</string>
     <!-- Description in bottom sheet of what not transferring history will do -->
@@ -1372,6 +1402,14 @@
     <string name="RemoteRestoreActivity__couldnt_transfer">Tidak dapat menyelesaikan pemindahan</string>
     <!-- Dialog message displayed when remote restore failed -->
     <string name="RemoteRestoreActivity__error_occurred">Ralat berlaku dan akaun anda tidak dapat dipindahkan. Cuba lagi dengan memilih kaedah pemindahan anda.</string>
+    <!-- Dialog title displayed when remote restore failed because of an outdated backup version. -->
+    <string name="RemoteRestoreActivity__couldnt_restore">Tidak dapat memulihkan sandaran ini</string>
+    <!-- Dialog message explaining that an update to Signal is required to restore the backup. -->
+    <string name="RemoteRestoreActivity__update_latest">Versi Signal ini tidak dapat memulihkan sandaran anda. Kemas kini kepada versi terkini dan cuba lagi.</string>
+    <!-- Text on button that when pressed will redirect them to update Signal -->
+    <string name="RemoteRestoreActivity__update_signal">Kemas Kini Signal</string>
+    <!-- Text label button to dismiss the dialog -->
+    <string name="RemoteRestoreActivity__not_now">Bukan sekarang</string>
 
     <!-- GroupMentionSettingDialog -->
     <string name="GroupMentionSettingDialog_notify_me_for_mentions">Maklumkan saya untuk Sebutan</string>
@@ -1622,7 +1660,7 @@
     <!-- Message body of megaphone telling users that a device was linked to their account. %1$s is the time it was linked -->
     <string name="NewLinkedDeviceMegaphone__a_new_device_was_linked">Peranti baharu telah dipautkan ke akaun anda pada %1$s.</string>
     <!-- Button shown on megaphone that will redirect to the linked devices screen -->
-    <string name="NewLinkedDeviceMegaphone__view_device">View device</string>
+    <string name="NewLinkedDeviceMegaphone__view_device">Lihat peranti</string>
     <!-- Button shown on megaphone to acknowledge and dismiss the megaphone -->
     <string name="NewLinkedDeviceMegaphone__ok">OK</string>
 
@@ -1847,6 +1885,7 @@
 
     <!-- GV2 group link deny -->
     <string name="MessageRecord_your_request_to_join_the_group_has_been_denied_by_an_admin">Permintaan anda untuk menyertai kumpulan telah ditolak oleh pentadbir.</string>
+    <string name="MessageRecord_you_denied_a_request_to_join_the_group_from_s">Anda telah menolak permintaan untuk menyertai kumpulan daripada %1$s.</string>
     <string name="MessageRecord_s_denied_a_request_to_join_the_group_from_s">%1$s telah menolak permintaan untuk menyertai kumpulan daripada %2$s.</string>
     <string name="MessageRecord_a_request_to_join_the_group_from_s_has_been_denied">Permintaan untuk menyertai kumpulan daripada %1$s telah ditolak.</string>
     <string name="MessageRecord_you_canceled_your_request_to_join_the_group">Anda telah membatalkan permintaan anda untuk menyertai kumpulan.</string>
@@ -1891,12 +1930,16 @@
     <string name="MessageRecord_s_is_in_the_call_s">%1$s dalam panggilan · %2$s</string>
     <!-- Chat log text for an ongoing group call only the local user has joined with a placeholder for formatted time -->
     <string name="MessageRecord_you_are_in_the_call_s1">Anda dalam panggilan · %1$s</string>
+    <!-- Chat log text for an ongoing group call with you and another participant where %1$s is the short display name of the other user and %2$s is the formatted time -->
+    <string name="MessageRecord_s_and_you_are_in_the_call_s1">%1$s dan anda berada dalam panggilan · %2$s</string>
     <!-- Chat log text for an ongoing group call with two participants with two placeholders for the short display name of the users that joined and a placeholder for formatted time -->
     <string name="MessageRecord_s_and_s_are_in_the_call_s1">%1$s dan %2$s sedang dalam panggilan · %3$s</string>
     <!-- Chat log text for an ongoing group call that has one participant -->
     <string name="MessageRecord_s_is_in_the_call">%1$s dalam panggilan</string>
     <!-- Chat log text for an ongoing group call only the local user has joined -->
     <string name="MessageRecord_you_are_in_the_call">Anda dalam panggilan</string>
+    <!-- Chat log text for an ongoing group call with you and another participant where %1$s is the short display name of the other user -->
+    <string name="MessageRecord_s_and_you_are_in_the_call">%1$s dan anda berada dalam panggilan</string>
     <!-- Chat log text for an ongoing group call with two participants with two placeholders, each for the short display name of the users that joined -->
     <string name="MessageRecord_s_and_s_are_in_the_call">%1$s dan %2$s sedang dalam panggilan ini</string>
     <!-- Chat log text for a group call that ended within the last 5 minutes -->
@@ -2019,7 +2062,7 @@
     <string name="DeviceProvisioningActivity_sorry_you_have_too_many_devices_linked_already">Maaf, anda mempunyai terlalu banyak peranti dipautkan, cuba alih keluar beberapa</string>
     <string name="DeviceActivity_sorry_this_is_not_a_valid_device_link_qr_code">Maaf, ini bukan kod QR pautan peranti yang sah.</string>
     <string name="DeviceProvisioningActivity_link_a_signal_device">Memautkan satu peranti Signal?</string>
-    <string name="DeviceProvisioningActivity_it_looks_like_youre_trying_to_link_a_signal_device_using_a_3rd_party_scanner">Nampaknya anda cuba memautkan satu peranti Signal dengan menggunakan pengimbas pihak ke-3. Untuk perlindungan anda, sila imbas kod semula dalam Signal.</string>
+    <string name="DeviceProvisioningActivity_to_link_a_desktop_or_ipad_to_this_signal_account">Untuk memautkan desktop atau iPad ke akaun Signal ini, pergi ke Peranti Dipautkan, kemudian ketik \"Pautkan Peranti Baharu\" dan imbas semula kod QR. Pastikan anda hanya mengimbas kod QR yang diberikan secara terus oleh Signal.</string>
 
     <string name="DeviceActivity_signal_needs_the_camera_permission_in_order_to_scan_a_qr_code">Signal memerlukan kebenaran Kamera untuk mengimbas kod QR, tetapi telah ditolak secara kekal. Sila terus ke menu tetapan aplikasi, pilih \"Kebenaran\", dan dayakan \"Kamera\".</string>
     <string name="DeviceActivity_unable_to_scan_a_qr_code_without_the_camera_permission">Tidak dapat mengimbas kod QR tanpa kebenaran Kamera</string>
@@ -2348,6 +2391,13 @@
     <!-- An accessibility label for screen readers on a view that can be expanded -->
     <string name="CallOverflowPopupWindow__expand_snackbar_accessibility_label">Kembangkan untuk melihat tangan yang diangkat</string>
 
+    <!-- Toolbar title of country picker selection page -->
+    <string name="CountryCodeFragment__your_country">Negara anda</string>
+    <!-- Hint text in search bar to either enter in a country name or number -->
+    <string name="CountryCodeFragment__search_by">Cari mengikut nama atau nombor</string>
+    <!-- Text shown when displaying a list of countries that indicates an unknown country    -->
+    <string name="CountryCodeFragment__unknown_country">Negara Tidak Diketahui</string>
+
     <!-- AboutSheet -->
     <!-- Displayed in a sheet row and allows user to open signal connection explanation on tap -->
     <string name="AboutSheet__signal_connection">Hubungan Signal</string>
@@ -2425,6 +2475,12 @@
     <string name="RegistrationActivity_additional_verification_required">Pengesahan tambahan diperlukan</string>
     <!-- Dialog message shown when we need to verify sms and carrier rates may apply. -->
     <string name="RegistrationActivity_a_verification_code_will_be_sent_to_this_number">Kod pengesahan akan dihantar ke nombor ini. Kadar pembawa mungkin dikenakan.</string>
+    <!-- Text explaining to users that they will be receiving a verification for their phone number and that carrier rates could apply -->
+    <string name="RegistrationActivity_you_will_receive_a_verification_code">Anda akan terima satu kod pengesahan. Kadar caj telekomunikasi mungkin dikenakan.</string>
+    <!-- Hint text to select a country -->
+    <string name="RegistrationActivity_select_a_country">Pilih negara</string>
+    <!-- Hint text explaining that this is where the country code should go -->
+    <string name="RegistrationActivity_default_country_code">0</string>
     <string name="RegistrationActivity_you_will_receive_a_call_to_verify_this_number">Anda akan menerima panggilan untuk mengesahkan nombor ini.</string>
     <string name="RegistrationActivity_edit_number">Edit nombor</string>
     <string name="RegistrationActivity_missing_google_play_services">Kehilangan Perkhidmatan Google Play</string>
@@ -2876,7 +2932,7 @@
     <!-- Notification channel name for other notifications related to messages. Will appear in the system notification settings as the title of this notification channel. -->
     <string name="NotificationChannel_additional_message_notifications">Pemberitahuan mesej tambahan</string>
     <!-- Notification channel name for notifications sent when a device has been linked -->
-    <string name="NotificationChannel_new_linked_device">New linked device</string>
+    <string name="NotificationChannel_new_linked_device">Peranti terpaut baharu</string>
 
     <!-- ProfileEditNameFragment -->
 
@@ -2940,10 +2996,7 @@
     <!-- Status update label used while the device is transcoding video as a prerequisite to uploading -->
     <string name="TransferControlView__processing">Memproses…</string>
     <!-- Status update label used while the device is transmitting data over the network. Will take the form of "1.0 MB/2.0 MB" -->
-    <string name="TransferControlView__download_progress">%1$1.1f MB/%2$2.1f MB</string>
-    <!-- Attachment file size label for not-yet-downloaded images and video. Will take the form of "1.0 MB" -->
-    <string name="TransferControlView__filesize">%1$1.1f MB</string>
-
+    <string name="TransferControlView__download_progress_s_s">%1$s/%2$s</string>
 
     <!-- UnauthorizedReminder -->
     <!-- Message shown in a reminder banner when the user\'s device is no longer registered -->
@@ -3605,6 +3658,8 @@
     <string name="preferences__language">Bahasa</string>
     <string name="preferences__signal_messages_and_calls">Panggilan dan mesej Signal</string>
     <string name="preferences__advanced_pin_settings">Tetapan PIN lanjutan</string>
+    <!-- Title of toolbar for the advanced pin settings screen -->
+    <string name="preferences__advanced_pin_settings_title">Tetapan PIN lanjutan</string>
     <string name="preferences__free_private_messages_and_calls">Mesej dan panggilan sulit percuma kepada pengguna Signal</string>
     <string name="preferences__submit_debug_log">Menghantar log debug</string>
     <string name="preferences__delete_account">Padam akaun</string>
@@ -3707,6 +3762,7 @@
     <string name="preferences_connection_failed">Sambungan gagal</string>
     <string name="preferences_couldnt_connect_to_the_proxy">Tidak dapat menyambung ke proksi. Periksa alamat proksi dan cuba lagi.</string>
     <string name="preferences_you_are_connected_to_the_proxy">Anda telah disambungkan ke proksi. Anda boleh mematikan proksi pada bila-bila masa dari Tetapan.</string>
+    <!-- Title of alert dialog after a successful connection to the proxy -->
     <string name="preferences_success">Berjaya</string>
     <string name="preferences_failed_to_connect">Gagal untuk menyambung</string>
     <string name="preferences_enter_proxy_address">Masukkan alamat proksi</string>
@@ -4301,6 +4357,7 @@
     <string name="BackupDialog_copied_to_clipboard">Disalin ke papan klip</string>
     <string name="BackupDialog_no_file_picker_available">Pemilih fail tidak tersedia.</string>
     <string name="BackupDialog_enter_backup_passphrase_to_verify">Masukkan frasa laluan sandaran anda untuk mengesahkan</string>
+    <!-- Confirmation button text on an alert dialog to verify whether the entered backup phrase was correct -->
     <string name="BackupDialog_verify">Sahkan</string>
     <string name="BackupDialog_you_successfully_entered_your_backup_passphrase">Anda berjaya memasukkan frasa laluan sandaran anda</string>
     <string name="BackupDialog_passphrase_was_not_correct">Frasa laluan tidak betul</string>
@@ -4325,6 +4382,7 @@
     <string name="RegistrationActivity_code_support_subject">Pendaftaran Signal - Kod Pengesahan untuk Android</string>
     <string name="RegistrationActivity_incorrect_code">Kod salah</string>
     <string name="BackupUtil_never">Tidak pernah</string>
+    <!-- Subtext below last backup time when we do not know when the last backup was -->
     <string name="BackupUtil_unknown">Tidak diketahui</string>
     <!-- Phone number heading displayed as a screen title -->
     <string name="preferences_app_protection__phone_number">Nombor telefon</string>
@@ -4509,6 +4567,7 @@
     <string name="DeviceTransferSetup__try_turning_wifi_off_and_on_on_both_devices">Cuba matikan dan hidupkan Wi-Fi pada kedua-dua peranti.</string>
     <string name="DeviceTransferSetup__make_sure_both_devices_are_in_transfer_mode">Pastikan kedua-dua peranti dalam mod pemindahan.</string>
     <string name="DeviceTransferSetup__go_to_support_page">Pergi ke halaman sokongan</string>
+    <!-- Button text when a device transfer could not occur and to try again -->
     <string name="DeviceTransferSetup__try_again">Cuba lagi</string>
     <string name="DeviceTransferSetup__waiting_for_other_device">Menunggu peranti lain</string>
     <string name="DeviceTransferSetup__tap_continue_on_your_other_device_to_start_the_transfer">Ketik Teruskan pada peranti anda yang lain untuk memulakan pemindahan.</string>
@@ -4924,7 +4983,7 @@
     <!-- String alerting user that backup failed -->
     <string name="AppSettingsFragment__couldnt_complete_backup">Tidak dapat melengkapkan sandaran</string>
     <!-- String alerting user that backup redemption -->
-    <string name="AppSettingsFragment__couldnt_redeem_your_backups_subscription">Couldn\'t redeem your backups subscription</string>
+    <string name="AppSettingsFragment__couldnt_redeem_your_backups_subscription">Tidak dapat menebus langganan sandaran anda</string>
     <!-- String displayed telling user to invite their friends to Signal -->
     <string name="AppSettingsFragment__invite_your_friends">Jemput rakan anda</string>
     <!-- String displayed in a toast when we successfully copy the donations subscriber id to the clipboard -->
@@ -5002,10 +5061,11 @@
     <string name="ChangeNumberEnterPhoneNumberFragment__you_must_specify_your_old_phone_number">Anda mesti nyatakan nombor telefon lama anda</string>
     <string name="ChangeNumberEnterPhoneNumberFragment__you_must_specify_your_new_number_country_code">Anda mesti nyatakan kod negara nombor baharu anda</string>
     <string name="ChangeNumberEnterPhoneNumberFragment__you_must_specify_your_new_phone_number">Anda mesti menyatakan nombor telefon baharu anda</string>
-    <string name="ChangeNumberEnterPhoneNumberFragment__your_new_phone_number_can_not_be_same_as_your_old_phone_number">Your new phone number can not be same as your old phone number</string>
+    <string name="ChangeNumberEnterPhoneNumberFragment__your_new_phone_number_can_not_be_same_as_your_old_phone_number">Nombor telefon baharu anda tidak boleh sama dengan nombor telefon lama anda</string>
 
     <!-- ChangeNumberVerifyFragment -->
     <string name="ChangeNumberVerifyFragment__change_number">Tukar Nombor</string>
+    <!-- Text shown when verifying a new phone number where %1$s is the number being changed -->
     <string name="ChangeNumberVerifyFragment__verifying_s">Mengesahkan %1$s</string>
     <string name="ChangeNumberVerifyFragment__captcha_required">Captcha diperlukan</string>
 
@@ -5374,6 +5434,7 @@
     <string name="ConversationSettingsFragment__permissions">Kebenaran</string>
     <string name="ConversationSettingsFragment__requests_and_invites">Permintaan &amp; jemputan</string>
     <string name="ConversationSettingsFragment__group_link">Pautan kumpulan</string>
+    <!-- Option in conversation settings to add a user as a contact -->
     <string name="ConversationSettingsFragment__add_as_a_contact">Tambah sebagai kenalan</string>
     <string name="ConversationSettingsFragment__unmute">Nyahredam</string>
     <!-- The subtitle for a settings item that describes how long the user\'s chat is muted. If a chat is muted, you will not receive notifications unless @mentioned. The placeholder represents a time (e.g. 10pm, March 4, etc). -->
@@ -5486,6 +5547,7 @@
     <string name="ShareInterstitialActivity__share">Kongsi</string>
 
     <!-- DSLSettingsToolbar -->
+    <!-- Content description describing the back arrow on toolbars -->
     <string name="DSLSettingsToolbar__navigate_up">Navigasi ke atas</string>
     <string name="MultiselectForwardFragment__forward_to">Ajukan kepada</string>
     <!-- Displayed when sharing content to people via the fragment -->
@@ -5496,6 +5558,7 @@
     <string name="MultiselectForwardFragment__videos_will_be_trimmed">Video akan dipotong kepada klip 30s dan dihantar sebagai beberapa Cerita.</string>
     <!-- Displayed when user selects a video that cannot be sent as a story -->
     <string name="MultiselectForwardFragment__videos_sent_to_stories_cant">Video yang dihantar ke Cerita tidak boleh melebihi 30s.</string>
+    <!-- Body in alert dialog telling users that messages are now sent immediately -->
     <string name="MultiselectForwardFragment__forwarded_messages_are_now">Mesej dimajukan kini dihantar serta-merta.</string>
     <plurals name="MultiselectForwardFragment_send_d_messages">
         <item quantity="other">Hantar %1$d mesej</item>
@@ -5581,7 +5644,7 @@
     <!-- The title of a dialog notifying that the user scanned a QR code that could be used to link a Signal device. -->
     <string name="MediaCaptureFragment_device_link_dialog_title">Paut peranti?</string>
     <!-- The body of a dialog notifying that the user scanned a QR code that could be used to link a Signal device. -->
-    <string name="MediaCaptureFragment_device_link_dialog_body">Nampaknya anda cuba memautkan peranti Signal. Ketik teruskan dan imbas kod sekali lagi untuk memautkannya.</string>
+    <string name="MediaCaptureFragment_it_looks_like_youre_trying">Nampaknya anda sedang cuba memautkan peranti Signal. Ketik teruskan, kemudian ketik \"Pautkan Peranti Baharu\" dan imbas semula kod QR.</string>
     <!-- The label of a dialog asking the user if they would like to continue to the linked device settings screen. -->
     <string name="MediaCaptureFragment_device_link_dialog_continue">Teruskan</string>
 
@@ -5676,6 +5739,7 @@
 
     <string name="MySupportPreference__s_per_month">%1$s/bulan</string>
     <string name="MySupportPreference__renews_s">Memperbaharui %1$s</string>
+    <!-- Subtitle shown when processing a donation transaction -->
     <string name="MySupportPreference__processing_transaction">Memproses transaksi…</string>
     <!-- Displayed on "My Support" screen when user badge failed to be added to their account -->
     <string name="MySupportPreference__couldnt_add_badge_s">Tidak dapat menambah lencana. %1$s</string>
@@ -5686,6 +5750,8 @@
     <string name="MySupportPreference__your_bank_transfer_of_s">Pindahan bank anda sebanyak %1$s belum selesai. Pindahan bank boleh mengambil masa 1 hingga 14 hari perniagaan untuk diselesaikan.  </string>
     <!-- Displayed in the pending help dialog, used to launch user to more details about bank transfers -->
     <string name="MySupportPreference__learn_more">Ketahui lebih lanjut</string>
+    <!-- Displayed when a subscription refresh is being performed -->
+    <string name="MySupportPreference__checking_subscription">Menyemak langganan…</string>
 
     <!-- Title of dialog telling user they need to update signal as it expired -->
     <string name="UpdateSignalExpiredDialog__title">Kemas Kini Signal</string>
@@ -6086,7 +6152,7 @@
     <string name="StoriesLandingItem__info">Maklumat</string>
     <!-- Label when a story is pending sending -->
     <string name="StoriesLandingItem__sending">Menghantar…</string>
-    <!-- Label when multiple stories are pending sending -->
+    <!-- Label when multiple stories are pending sending where %1$d is the number of stories being sent -->
     <string name="StoriesLandingItem__sending_d">Menghantar %1$d…</string>
     <!-- Label when a story fails to send due to networking -->
     <string name="StoriesLandingItem__send_failed">Penghantaran gagal</string>
@@ -7371,7 +7437,9 @@
     <!-- Sheet title for generic backup error -->
     <string name="BackupAlertBottomSheet__couldnt_complete_backup">Tidak dapat melengkapkan sandaran</string>
     <!-- Sheet body for generic backup error. Placeholder is days since last backup. -->
-    <string name="BackupAlertBottomSheet__your_device_hasnt">Peranti anda belum melengkapkan sandaran selama %1$d hari. Pastikan peranti anda disambungkan ke wi-fi dan ketik \"Sandarkan sekarang.\" </string>
+    <plurals name="BackupAlertBottomSheet__your_device_hasnt">
+        <item quantity="other">Peranti anda belum melengkapkan sandaran selama %1$d hari. Pastikan peranti anda disambungkan ke Wi-Fi dan ketik \"Sandarkan sekarang.\"</item>
+    </plurals>
     <!-- Clickable text to learn more about the content of this bottom sheet -->
     <string name="BackupAlertBottomSheet__learn_more">Ketahui lebih lanjut</string>
     <!-- Secondary action button text when user does not have enough free space to download their backup. -->
@@ -7409,17 +7477,17 @@
     <!-- Dialog title when a backup fails to be created -->
     <string name="BackupAlertBottomSheet__backup_failed">Sandaran gagal</string>
     <!-- Dialog title when a backup redemption fails -->
-    <string name="BackupAlertBottomSheet__couldnt_redeem_your_backups_subscription">Couldn\'t redeem your backups subscription</string>
+    <string name="BackupAlertBottomSheet__couldnt_redeem_your_backups_subscription">Tidak dapat menebus langganan sandaran anda</string>
     <!-- Dialog text for when a backup fails to be created and ways to fix it -->
     <string name="BackupAlertBottomSheet__an_error_occurred">Ralat telah berlaku dan sandaran anda tidak dapat diselesaikan. Pastikan anda menggunakan versi terkini Signal dan cuba lagi. Jika masalah ini berterusan, hubungi sokongan.</string>
     <!-- Dialog action button that will allow you to check for any Signal version updates -->
     <string name="BackupAlertBottomSheet__check_for_update">Semak kemas kini</string>
     <!-- Backup redemption error sheet text line 1 -->
-    <string name="BackupAlertBottomSheet__too_many_devices_have_tried">Too many devices have tried to redeem your subscription this month. You may have:</string>
+    <string name="BackupAlertBottomSheet__too_many_devices_have_tried">Terlalu banyak peranti telah cuba menebus langganan anda bulan ini. Anda mungkin telah:</string>
     <!-- Backup redemption error sheet bullet point 1 -->
-    <string name="BackupAlertBottomSheet__reregistered_your_signal_account">Re-registered your Signal account too many times.</string>
+    <string name="BackupAlertBottomSheet__reregistered_your_signal_account">Mendaftar semula akaun Signal anda terlalu banyak kali.</string>
     <!-- Backup redemption error sheet bullet point 2 -->
-    <string name="BackupAlertBottomSheet__have_too_many_devices_using_the_same_subscription">Have too many devices using the same subscription.</string>
+    <string name="BackupAlertBottomSheet__have_too_many_devices_using_the_same_subscription">Mempunyai terlalu banyak peranti menggunakan langganan yang sama.</string>
 
     <!-- BackupStatus -->
     <!-- Status title when user does not have enough free space to download their media. Placeholder is required disk space. -->
@@ -7866,6 +7934,26 @@
     <string name="EnterBackupKey_learn_more">Ketahui lebih lanjut</string>
     <!-- Backup key not known bottom sheet button to skip backup key entry and resume normal reregistration -->
     <string name="EnterBackupKey_skip_and_dont_restore">Langkau dan jangan pulihkan</string>
+    <!-- Dialog title shown when entered AEP doesn\'t work to register with provided e164 -->
+    <string name="EnterBackupKey_incorrect_backup_key_title">Kunci sandaran salah</string>
+    <!-- Dialog message shown when entered AEP doesn\'t work to register with provided e164 -->
+    <string name="EnterBackupKey_incorrect_backup_key_message">Pastikan anda mendaftar dengan nombor telefon dan kunci sandaran 64 aksara yang sama, yang anda simpan semasa mendayakan sandaran Signal. Sandaran tidak boleh dipulihkan tanpa kunci ini.</string>
+    <!-- Dialog positive button text to try entering their backup key again -->
+    <string name="EnterBackupKey_try_again">Cuba lagi</string>
+    <!-- Dialog negative button text to get help with backup key -->
+    <string name="EnterBackupKey_backup_key_help">Bantuan kunci sandaran</string>
+    <!-- Text field error text when the backup key provided has been confirmed invalid -->
+    <string name="EnterBackupKey_incorrect_backup_key_error">Kunci sandaran salah</string>
+    <!-- Text field error text when the backup key is too long -->
+    <string name="EnterBackupKey_too_long_error">Terlalu panjang (%1$d/%2$d)</string>
+    <!-- Text field error when the backup key is invalid -->
+    <string name="EnterBackupKey_invalid_backup_key_error">Kunci sandaran tidak sah</string>
+    <!-- Dialog title shown during registration and trying to restore a remote backup -->
+    <string name="EnterBackupKey_backup_not_found">Sandaran tidak ditemui</string>
+    <!-- Dialog message shown during registration and trying to restore a remote backup -->
+    <string name="EnterBackupKey_backup_key_you_entered_is_correct_but_no_backup">Kunci sandaran yang anda masukkan adalah betul, tetapi tiada sandaran yang dikaitkan dengannya. Jika anda masih mempunyai telefon lama anda, pastikan sandaran diaktifkan dan telah selesai dibuat, kemudian cuba lagi.</string>
+    <!-- Dialog button shown during registration and trying to restore a remote backup to instead skip said backup process -->
+    <string name="EnterBackupKey_skip_restore">Langkau pemulihan</string>
 
     <!-- Title for restore via qr screen -->
     <string name="RestoreViaQr_title">Imbas kod ini dengan telefon lama anda</string>

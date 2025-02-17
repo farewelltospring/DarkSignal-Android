@@ -12,6 +12,7 @@ import androidx.annotation.Discouraged
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.greenrobot.eventbus.EventBus
 import org.signal.core.util.Base64
@@ -66,15 +67,20 @@ import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.GroupId
+import org.thoughtcrime.securesms.jobmanager.Job
+import org.thoughtcrime.securesms.jobs.AvatarGroupsV2DownloadJob
 import org.thoughtcrime.securesms.jobs.RequestGroupV2InfoJob
 import org.thoughtcrime.securesms.jobs.RestoreAttachmentJob
+import org.thoughtcrime.securesms.keyvalue.BackupValues.ArchiveServiceCredentials
 import org.thoughtcrime.securesms.keyvalue.KeyValueStore
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.keyvalue.isDecisionPending
 import org.thoughtcrime.securesms.net.SignalNetwork
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.RemoteConfig
 import org.thoughtcrime.securesms.util.toMillis
+import org.whispersystems.signalservice.api.AccountEntropyPool
 import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.StatusCodeErrorAction
 import org.whispersystems.signalservice.api.archive.ArchiveGetMediaItemsResponse
@@ -82,6 +88,7 @@ import org.whispersystems.signalservice.api.archive.ArchiveMediaRequest
 import org.whispersystems.signalservice.api.archive.ArchiveMediaResponse
 import org.whispersystems.signalservice.api.archive.ArchiveServiceAccess
 import org.whispersystems.signalservice.api.archive.ArchiveServiceAccessPair
+import org.whispersystems.signalservice.api.archive.ArchiveServiceCredential
 import org.whispersystems.signalservice.api.archive.DeleteArchivedMediaRequest
 import org.whispersystems.signalservice.api.archive.GetArchiveCdnCredentialsResponse
 import org.whispersystems.signalservice.api.backup.MediaName
@@ -457,6 +464,7 @@ object BackupRepository {
     plaintext: Boolean = false,
     currentTime: Long = System.currentTimeMillis(),
     mediaBackupEnabled: Boolean = SignalStore.backup.backsUpMedia,
+    forTransfer: Boolean = false,
     progressEmitter: ExportProgressListener? = null,
     cancellationSignal: () -> Boolean = { false },
     exportExtras: ((SignalDatabase) -> Unit)? = null
@@ -478,6 +486,7 @@ object BackupRepository {
       writer = writer,
       progressEmitter = progressEmitter,
       mediaBackupEnabled = mediaBackupEnabled,
+      forTransfer = forTransfer,
       cancellationSignal = cancellationSignal,
       exportExtras = exportExtras
     )
@@ -497,6 +506,7 @@ object BackupRepository {
     isLocal: Boolean,
     writer: BackupExportWriter,
     mediaBackupEnabled: Boolean = SignalStore.backup.backsUpMedia,
+    forTransfer: Boolean = false,
     progressEmitter: ExportProgressListener? = null,
     cancellationSignal: () -> Boolean = { false },
     exportExtras: ((SignalDatabase) -> Unit)? = null
@@ -512,7 +522,7 @@ object BackupRepository {
       val signalStoreSnapshot: SignalStore = createSignalStoreSnapshot(keyValueDbName)
       eventTimer.emit("store-db-snapshot")
 
-      val exportState = ExportState(backupTime = currentTime, mediaBackupEnabled = mediaBackupEnabled)
+      val exportState = ExportState(backupTime = currentTime, mediaBackupEnabled = mediaBackupEnabled, forTransfer = forTransfer)
       val selfAci = signalStoreSnapshot.accountValues.aci!!
       val selfRecipientId = dbSnapshot.recipientTable.getByAci(selfAci).get().toLong().let { RecipientId.from(it) }
 
@@ -693,11 +703,14 @@ object BackupRepository {
     val header = frameReader.getHeader()
     if (header == null) {
       Log.e(TAG, "[import] Backup is missing header!")
+      SignalStore.backup.hasInvalidBackupVersion = false
       return ImportResult.Failure
     } else if (header.version > VERSION) {
       Log.e(TAG, "[import] Backup version is newer than we understand: ${header.version}")
+      SignalStore.backup.hasInvalidBackupVersion = true
       return ImportResult.Failure
     }
+    SignalStore.backup.hasInvalidBackupVersion = false
 
     try {
       // Removing all the data from the various tables is *very* expensive (i.e. can take *several* minutes) if we don't do some pre-work.
@@ -749,6 +762,7 @@ object BackupRepository {
       RecipientId.clearCache()
       AppDependencies.recipientCache.clear()
       AppDependencies.recipientCache.clearSelf()
+      SignalDatabase.threads.clearCache()
 
       stopwatch.split("drop-data")
 
@@ -885,18 +899,21 @@ object BackupRepository {
 
     AppDependencies.recipientCache.clear()
     AppDependencies.recipientCache.warmUp()
+    SignalDatabase.threads.clearCache()
 
     val groupJobs = SignalDatabase.groups.getGroups().use { groups ->
+      val jobs = mutableListOf<Job>()
       groups
         .asSequence()
-        .mapNotNull { group ->
-          if (group.id.isV2) {
-            RequestGroupV2InfoJob(group.id as GroupId.V2)
-          } else {
-            null
+        .filter { it.id.isV2 }
+        .forEach { group ->
+          jobs.add(RequestGroupV2InfoJob(group.id as GroupId.V2))
+          val avatarKey = group.requireV2GroupProperties().avatarKey
+          if (avatarKey.isNotEmpty()) {
+            jobs.add(AvatarGroupsV2DownloadJob(group.id.requireV2(), avatarKey))
           }
         }
-        .toList()
+      jobs
     }
     AppDependencies.jobManager.addAll(groupJobs)
     stopwatch.split("group-jobs")
@@ -1308,6 +1325,42 @@ object BackupRepository {
     return SignalStore.backup.backupTier
   }
 
+  fun verifyBackupKeyAssociatedWithAccount(aci: ACI, aep: AccountEntropyPool): MessageBackupTier? {
+    val currentTime = System.currentTimeMillis()
+    val messageBackupKey = aep.deriveMessageBackupKey()
+
+    val result: NetworkResult<MessageBackupTier> = SignalNetwork.archive.getServiceCredentials(currentTime)
+      .then { result ->
+        val credential: ArchiveServiceCredential? = ArchiveServiceCredentials(result.messageCredentials.associateBy { it.redemptionTime }).getForCurrentTime(currentTime.milliseconds)
+
+        if (credential == null) {
+          NetworkResult.ApplicationError(NullPointerException("No credential available for current time."))
+        } else {
+          NetworkResult.Success(
+            ArchiveServiceAccess(
+              credential = credential,
+              backupKey = messageBackupKey
+            )
+          )
+        }
+      }
+      .map { messageAccess ->
+        val zkCredential = SignalNetwork.archive.getZkCredential(aci, messageAccess)
+        if (zkCredential.backupLevel == BackupLevel.PAID) {
+          MessageBackupTier.PAID
+        } else {
+          MessageBackupTier.FREE
+        }
+      }
+
+    return if (result is NetworkResult.Success) {
+      result.result
+    } else {
+      Log.i(TAG, "Unable to verify backup key", result.getCause())
+      null
+    }
+  }
+
   /**
    * Retrieves media-specific cdn path, preferring cached value if available.
    *
@@ -1450,8 +1503,7 @@ object BackupRepository {
 
   private fun isPreRestoreDuringRegistration(): Boolean {
     return !SignalStore.registration.isRegistrationComplete &&
-      !SignalStore.registration.hasCompletedRestore() &&
-      !SignalStore.registration.hasSkippedTransferOrRestore() &&
+      SignalStore.registration.restoreDecisionState.isDecisionPending &&
       RemoteConfig.restoreAfterRegistration
   }
 
@@ -1513,10 +1565,18 @@ data class ResumableMessagesBackupUploadSpec(
 
 data class ArchivedMediaObject(val mediaId: String, val cdn: Int)
 
-class ExportState(val backupTime: Long, val mediaBackupEnabled: Boolean) {
+class ExportState(
+  val backupTime: Long,
+  val mediaBackupEnabled: Boolean,
+  val forTransfer: Boolean
+) {
   val recipientIds: MutableSet<Long> = hashSetOf()
   val threadIds: MutableSet<Long> = hashSetOf()
-  val localToRemoteCustomChatColors: MutableMap<Long, Int> = hashMapOf()
+  val contactRecipientIds: MutableSet<Long> = hashSetOf()
+  val groupRecipientIds: MutableSet<Long> = hashSetOf()
+  val threadIdToRecipientId: MutableMap<Long, Long> = hashMapOf()
+  val recipientIdToAci: MutableMap<Long, ByteString> = hashMapOf()
+  val aciToRecipientId: MutableMap<String, Long> = hashMapOf()
 }
 
 class ImportState(val mediaRootBackupKey: MediaRootBackupKey) {
