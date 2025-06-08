@@ -281,20 +281,19 @@ public class BackupsPreferenceFragment extends Fragment {
       BackupFrequencyV1 frequency = SignalStore.settings().getBackupFrequency();
       int hour = timePickerFragment.getHour();
       int minute = timePickerFragment.getMinute();
-      handleNewBackupScheduleSetting(frequency, hour, minute);
+      applyNewBackupScheduleSetting(frequency, hour, minute);
       updateTimeLabel();
     });
     timePickerFragment.show(getChildFragmentManager(), "TIME_PICKER");
   }
 
   private void pickFrequency() {
-    // User should select the backup frequency first, and then the time of day to do the backups.
     final BackupFrequencyPickerDialogFragment frequencyPickerDialogFragment = new BackupFrequencyPickerDialogFragment(SignalStore.settings().getBackupFrequency());
     frequencyPickerDialogFragment.setOnPositiveButtonClickListener((unused1, unused2) -> {
       BackupFrequencyV1 frequency = frequencyPickerDialogFragment.getValue();
       int hour = SignalStore.settings().getBackupHour();
       int minute = SignalStore.settings().getBackupMinute();
-      handleNewBackupScheduleSetting(frequency, hour, minute);
+      applyNewBackupScheduleSetting(frequency, hour, minute);
       updateDateLabel();
     });
     frequencyPickerDialogFragment.show(getChildFragmentManager(), "FREQUENCY_PICKER");
@@ -303,10 +302,12 @@ public class BackupsPreferenceFragment extends Fragment {
   /** Update the settings on disk and then schedule a backup.
    *
    * <p>This method should be called when the user presses the buttons to set a new backup schedule with the given parameters. */
-  private void handleNewBackupScheduleSetting(BackupFrequencyV1 frequency, int hour, int minute) {
+  private void applyNewBackupScheduleSetting(BackupFrequencyV1 frequency, int hour, int minute) {
     Log.i(TAG, "Setting backup schedule: " + frequency.name() + " at" + hour + "h" + minute + "m");
     SignalStore.settings().setBackupSchedule(frequency, hour, minute);
-    if (frequency != BackupFrequencyV1.NEVER) {
+    if (frequency == BackupFrequencyV1.NEVER) {
+      LocalBackupListener.unschedule(requireContext());
+    } else {
       // Schedule the next backup using the newly set frequency, but relative to the time of the
       // last backup. This should only kick off a new backup to be created immediately if the
       // last backup was long enough ago (or doesn't exist at all).

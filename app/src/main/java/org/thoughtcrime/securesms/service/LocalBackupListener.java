@@ -44,6 +44,12 @@ public class LocalBackupListener extends PersistentAlarmManagerListener {
     }
   }
 
+  /** Cancels any future backup scheduled with AlarmManager and attempts to cancel any ongoing backup job. */
+  public static void unschedule(Context context) {
+    new LocalBackupListener().cancel(context);
+    LocalBackupJob.cancelRunningJobs();
+  }
+
   public static long setNextBackupTimeToIntervalFromNow(@NonNull Context context) {
     BackupFrequencyV1 freq = SignalStore.settings().getBackupFrequency();
 
