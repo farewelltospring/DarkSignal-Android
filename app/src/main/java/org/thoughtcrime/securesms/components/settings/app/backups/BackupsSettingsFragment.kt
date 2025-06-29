@@ -131,7 +131,7 @@ private fun BackupsSettingsContent(
         item {
           Column(modifier = Modifier.padding(horizontal = dimensionResource(id = org.signal.core.ui.R.dimen.gutter))) {
             Text(
-              text = "INTERNAL ONLY",
+              text = "ALPHA ONLY",
               style = MaterialTheme.typography.titleMedium
             )
             Text(
@@ -169,7 +169,7 @@ private fun BackupsSettingsContent(
             OtherWaysToBackUpHeading()
           }
 
-          is BackupState.ActiveFree, is BackupState.ActivePaid -> {
+          is BackupState.ActiveFree, is BackupState.ActivePaid, is BackupState.Canceled -> {
             ActiveBackupsRow(
               backupState = backupsSettingsState.backupState,
               onBackupsRowClick = onBackupsRowClick,
@@ -205,15 +205,6 @@ private fun BackupsSettingsContent(
           is BackupState.Pending -> {
             PendingBackupRow(
               onBackupsRowClick = onBackupsRowClick
-            )
-
-            OtherWaysToBackUpHeading()
-          }
-
-          is BackupState.Canceled -> {
-            ActiveBackupsRow(
-              backupState = backupsSettingsState.backupState,
-              lastBackupAt = backupsSettingsState.lastBackupAt
             )
 
             OtherWaysToBackUpHeading()
@@ -421,13 +412,25 @@ private fun ActiveBackupsRow(
 
         when (val type = backupState.messageBackupsType) {
           is MessageBackupsType.Paid -> {
-            Text(
-              text = stringResource(
+            val body = if (backupState is BackupState.Canceled) {
+              stringResource(R.string.BackupsSettingsFragment__subscription_canceled)
+            } else {
+              stringResource(
                 R.string.BackupsSettingsFragment_s_month_renews_s,
                 FiatMoneyUtil.format(LocalContext.current.resources, type.pricePerMonth),
                 DateUtils.formatDateWithYear(Locale.getDefault(), backupState.renewalTime.inWholeMilliseconds)
-              ),
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+
+            val color = if (backupState is BackupState.Canceled) {
+              MaterialTheme.colorScheme.error
+            } else {
+              MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Text(
+              text = body,
+              color = color,
               style = MaterialTheme.typography.bodyMedium
             )
           }
@@ -443,14 +446,20 @@ private fun ActiveBackupsRow(
           }
         }
 
+        val lastBackupString = if (lastBackupAt.inWholeMilliseconds > 0) {
+          DateUtils.getDatelessRelativeTimeSpanFormattedDate(
+            LocalContext.current,
+            Locale.getDefault(),
+            lastBackupAt.inWholeMilliseconds
+          ).value
+        } else {
+          stringResource(R.string.RemoteBackupsSettingsFragment__never)
+        }
+
         Text(
           text = stringResource(
             R.string.BackupsSettingsFragment_last_backup_s,
-            DateUtils.getDatelessRelativeTimeSpanFormattedDate(
-              LocalContext.current,
-              Locale.getDefault(),
-              lastBackupAt.inWholeMilliseconds
-            ).value
+            lastBackupString
           ),
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           style = MaterialTheme.typography.bodyMedium
