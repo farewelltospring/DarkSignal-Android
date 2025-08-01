@@ -117,6 +117,14 @@ object LinkDeviceRepository {
       return false
     }
 
+    if (uri.scheme != "sgnl") {
+      return false
+    }
+
+    if (uri.host != "linkdevice") {
+      return false
+    }
+
     val ephemeralId: String? = uri.getQueryParameter("uuid")
     val publicKeyEncoded: String? = uri.getQueryParameter("pub_key")
     return ephemeralId.isNotNullOrBlank() && publicKeyEncoded.isNotNullOrBlank()
@@ -172,7 +180,7 @@ object LinkDeviceRepository {
 
     return when (deviceLinkResult) {
       is NetworkResult.Success -> {
-        SignalStore.account.hasLinkedDevices = true
+        SignalStore.account.isMultiDevice = true
         LinkDeviceResult.Success(verificationCodeResult.tokenIdentifier)
       }
       is NetworkResult.ApplicationError -> throw deviceLinkResult.throwable

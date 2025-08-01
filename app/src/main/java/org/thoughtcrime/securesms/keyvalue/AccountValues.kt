@@ -17,6 +17,7 @@ import org.thoughtcrime.securesms.crypto.ProfileKeyUtil
 import org.thoughtcrime.securesms.crypto.storage.PreKeyMetadataStore
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.jobmanager.impl.RegisteredConstraint
 import org.thoughtcrime.securesms.jobs.PreKeysSyncJob
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.service.KeyCachingService
@@ -133,12 +134,22 @@ class AccountValues internal constructor(store: KeyValueStore, context: Context)
           return AccountEntropyPool(it)
         }
 
-        Log.i(TAG, "Generating Account Entropy Pool (AEP)...")
+        Log.i(TAG, "Generating Account Entropy Pool (AEP)...", Throwable(), true)
         val newAep = LibSignalAccountEntropyPool.generate()
         putString(KEY_ACCOUNT_ENTROPY_POOL, newAep)
         return AccountEntropyPool(newAep)
       }
     }
+
+  fun rotateAccountEntropyPool(aep: AccountEntropyPool) {
+    AEP_LOCK.withLock {
+      Log.i(TAG, "Rotating Account Entropy Pool (AEP)...", Throwable(), true)
+      store
+        .beginWrite()
+        .putString(KEY_ACCOUNT_ENTROPY_POOL, aep.value)
+        .commit()
+    }
+  }
 
   fun restoreAccountEntropyPool(aep: AccountEntropyPool) {
     AEP_LOCK.withLock {
@@ -176,6 +187,7 @@ class AccountValues internal constructor(store: KeyValueStore, context: Context)
 
   fun setAci(aci: ACI) {
     putString(KEY_ACI, aci.toString())
+    RegisteredConstraint.Observer.notifyListeners()
   }
 
   /** The local user's [PNI]. */
@@ -441,6 +453,8 @@ class AccountValues internal constructor(store: KeyValueStore, context: Context)
     } else if (!registered) {
       registeredAtTimestamp = -1
     }
+
+    RegisteredConstraint.Observer.notifyListeners()
   }
 
   /**
@@ -531,10 +545,10 @@ class AccountValues internal constructor(store: KeyValueStore, context: Context)
   }
 
   /**
-   * Whether or not the user has linked devices.
+   * Whether or not the user is a multi-device account (has linked devices or is a linked device).
    */
-  @get:JvmName("hasLinkedDevices")
-  var hasLinkedDevices by booleanValue(KEY_HAS_LINKED_DEVICES, false)
+  @get:JvmName("isMultiDevice")
+  var isMultiDevice by booleanValue(KEY_HAS_LINKED_DEVICES, false)
 
   /** Do not alter. If you need to migrate more stuff, create a new method. */
   private fun migrateFromSharedPrefsV1(context: Context) {
