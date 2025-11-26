@@ -7,12 +7,15 @@ package org.thoughtcrime.securesms.backup.v2.stream
 
 import org.signal.core.util.stream.MacOutputStream
 import org.signal.core.util.writeVarInt32
+import org.signal.libsignal.messagebackup.BackupForwardSecrecyToken
+import org.thoughtcrime.securesms.backup.v2.proto.BackupInfo
 import org.thoughtcrime.securesms.backup.v2.proto.Frame
-import org.whispersystems.signalservice.api.backup.BackupKey
+import org.thoughtcrime.securesms.backup.v2.stream.EncryptedBackupReader.Companion.createForSignalBackup
+import org.thoughtcrime.securesms.util.Util
+import org.whispersystems.signalservice.api.backup.MessageBackupKey
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
 import java.io.IOException
 import java.io.OutputStream
-import java.util.zip.GZIPOutputStream
 import javax.crypto.Cipher
 import javax.crypto.CipherOutputStream
 import javax.crypto.Mac
@@ -25,35 +28,103 @@ import javax.crypto.spec.SecretKeySpec
  * are gzipped, that gzipped data is encrypted, and then an HMAC of the encrypted data is appended
  * to the end of the [outputStream].
  */
-class EncryptedBackupWriter(
-  key: BackupKey,
+class EncryptedBackupWriter private constructor(
+  key: MessageBackupKey,
   aci: ACI,
+  forwardSecrecyToken: BackupForwardSecrecyToken?,
+  forwardSecrecyMetadata: ByteArray?,
   private val outputStream: OutputStream,
   private val append: (ByteArray) -> Unit
 ) : BackupExportWriter {
 
-  private val mainStream: GZIPOutputStream
+  private val mainStream: PaddedGzipOutputStream
   private val macStream: MacOutputStream
 
+  companion object {
+    val MAGIC_NUMBER = "SBACKUP".toByteArray(Charsets.UTF_8) + 0x01
+
+    /**
+     * Create a writer for a backup from the archive CDN.
+     * The key difference is that we require forward secrecy data.
+     */
+    fun createForSignalBackup(
+      key: MessageBackupKey,
+      aci: ACI,
+      forwardSecrecyToken: BackupForwardSecrecyToken,
+      forwardSecrecyMetadata: ByteArray,
+      outputStream: OutputStream,
+      append: (ByteArray) -> Unit
+    ): EncryptedBackupWriter {
+      return EncryptedBackupWriter(
+        key = key,
+        aci = aci,
+        forwardSecrecyToken = forwardSecrecyToken,
+        forwardSecrecyMetadata = forwardSecrecyMetadata,
+        outputStream = outputStream,
+        append = append
+      )
+    }
+
+    /**
+     * Create a writer for a local backup or for a transfer to a linked device. Basically everything that isn't [createForSignalBackup].
+     * The key difference is that we don't require forward secrecy data.
+     */
+    fun createForLocalOrLinking(
+      key: MessageBackupKey,
+      aci: ACI,
+      outputStream: OutputStream,
+      append: (ByteArray) -> Unit
+    ): EncryptedBackupWriter {
+      return EncryptedBackupWriter(
+        key = key,
+        aci = aci,
+        forwardSecrecyToken = null,
+        forwardSecrecyMetadata = null,
+        outputStream = outputStream,
+        append = append
+      )
+    }
+  }
+
   init {
-    val keyMaterial = key.deriveSecrets(aci)
+    check(
+      (forwardSecrecyToken != null && forwardSecrecyMetadata != null) ||
+        (forwardSecrecyToken == null && forwardSecrecyMetadata == null)
+    )
+
+    if (forwardSecrecyMetadata != null) {
+      outputStream.write(MAGIC_NUMBER)
+      outputStream.writeVarInt32(forwardSecrecyMetadata.size)
+      outputStream.write(forwardSecrecyMetadata)
+      outputStream.flush()
+    }
+
+    val keyMaterial = key.deriveBackupSecrets(aci, forwardSecrecyToken)
+
+    val iv: ByteArray = Util.getSecretBytes(16)
+    outputStream.write(iv)
+    outputStream.flush()
 
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding").apply {
-      init(Cipher.ENCRYPT_MODE, SecretKeySpec(keyMaterial.cipherKey, "AES"), IvParameterSpec(keyMaterial.iv))
+      init(Cipher.ENCRYPT_MODE, SecretKeySpec(keyMaterial.aesKey, "AES"), IvParameterSpec(iv))
     }
 
     val mac = Mac.getInstance("HmacSHA256").apply {
       init(SecretKeySpec(keyMaterial.macKey, "HmacSHA256"))
+      update(iv)
     }
 
     macStream = MacOutputStream(outputStream, mac)
+    val cipherStream = CipherOutputStream(macStream, cipher)
 
-    mainStream = GZIPOutputStream(
-      CipherOutputStream(
-        macStream,
-        cipher
-      )
-    )
+    mainStream = PaddedGzipOutputStream(cipherStream)
+  }
+
+  override fun write(header: BackupInfo) {
+    val headerBytes = header.encode()
+
+    mainStream.writeVarInt32(headerBytes.size)
+    mainStream.write(headerBytes)
   }
 
   @Throws(IOException::class)

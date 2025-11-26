@@ -35,18 +35,17 @@ public class EmojiEditText extends AppCompatEditText {
   }
 
   public EmojiEditText(Context context, AttributeSet attrs) {
-    this(context, attrs, R.attr.editTextStyle);
+    this(context, attrs, androidx.appcompat.R.attr.editTextStyle);
   }
 
   public EmojiEditText(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
 
     TypedArray a           = context.getTheme().obtainStyledAttributes(attrs, R.styleable.EmojiTextView, 0, 0);
-    boolean    forceCustom = a.getBoolean(R.styleable.EmojiTextView_emoji_forceCustom, false);
     boolean    jumboEmoji  = a.getBoolean(R.styleable.EmojiTextView_emoji_forceJumbo, false);
     a.recycle();
 
-    if (!isInEditMode() && (forceCustom || !SignalStore.settings().isPreferSystemEmoji())) {
+    if (!isInEditMode() && !SignalStore.settings().isPreferSystemEmoji()) {
       setFilters(appendEmojiFilter(this.getFilters(), jumboEmoji));
       setEmojiCompatEnabled(false);
     }
@@ -117,16 +116,12 @@ public class EmojiEditText extends AppCompatEditText {
       ClipData clipData = ServiceUtil.getClipboardManager(getContext()).getPrimaryClip();
 
       if (clipData != null) {
-        CharSequence label        = clipData.getDescription().getLabel();
-        CharSequence pendingPaste = getTextFromClipData(clipData);
+        CharSequence label = clipData.getDescription().getLabel();
 
         if (TextUtils.equals(Util.COPY_LABEL, label) && shouldPersistSignalStylingWhenPasting()) {
           return super.onTextContextMenuItem(id);
-        } else if (Build.VERSION.SDK_INT >= 23) {
+        } else {
           return super.onTextContextMenuItem(android.R.id.pasteAsPlainText);
-        } else if (pendingPaste != null) {
-          Util.copyToClipboard(getContext(), pendingPaste.toString());
-          return super.onTextContextMenuItem(id);
         }
       }
     } else if (id == android.R.id.copy || id == android.R.id.cut) {

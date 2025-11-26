@@ -29,14 +29,19 @@ import org.thoughtcrime.securesms.crypto.AttachmentSecret;
 import org.thoughtcrime.securesms.crypto.ClassicDecryptingPartInputStream;
 import org.thoughtcrime.securesms.crypto.ModernDecryptingPartInputStream;
 import org.thoughtcrime.securesms.database.AttachmentTable;
+import org.thoughtcrime.securesms.database.BackupMediaSnapshotTable;
 import org.thoughtcrime.securesms.database.EmojiSearchTable;
 import org.thoughtcrime.securesms.database.GroupReceiptTable;
 import org.thoughtcrime.securesms.database.KeyValueDatabase;
+import org.thoughtcrime.securesms.database.KyberPreKeyTable;
+import org.thoughtcrime.securesms.database.LastResortKeyTupleTable;
 import org.thoughtcrime.securesms.database.MentionTable;
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.OneTimePreKeyTable;
 import org.thoughtcrime.securesms.database.PendingRetryReceiptTable;
 import org.thoughtcrime.securesms.database.ReactionTable;
+import org.thoughtcrime.securesms.database.RemappedRecordTables;
+import org.thoughtcrime.securesms.database.RemoteMegaphoneTable;
 import org.thoughtcrime.securesms.database.SearchTable;
 import org.thoughtcrime.securesms.database.SenderKeyTable;
 import org.thoughtcrime.securesms.database.SenderKeySharedTable;
@@ -44,7 +49,7 @@ import org.thoughtcrime.securesms.database.SessionTable;
 import org.thoughtcrime.securesms.database.SignedPreKeyTable;
 import org.thoughtcrime.securesms.database.StickerTable;
 import org.thoughtcrime.securesms.database.model.AvatarPickerDatabase;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.KeyValueDataSet;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.profiles.AvatarHelper;
@@ -86,13 +91,19 @@ public class FullBackupExporter extends FullBackupBase {
   private static final Set<String> TABLE_CONTENT_BLOCKLIST = SetUtil.newHashSet(
       SignedPreKeyTable.TABLE_NAME,
       OneTimePreKeyTable.TABLE_NAME,
+      KyberPreKeyTable.TABLE_NAME,
+      LastResortKeyTupleTable.TABLE_NAME,
       SessionTable.TABLE_NAME,
       SearchTable.FTS_TABLE_NAME,
       EmojiSearchTable.TABLE_NAME,
       SenderKeyTable.TABLE_NAME,
       SenderKeySharedTable.TABLE_NAME,
       PendingRetryReceiptTable.TABLE_NAME,
-      AvatarPickerDatabase.TABLE_NAME
+      AvatarPickerDatabase.TABLE_NAME,
+      RemappedRecordTables.Recipients.TABLE_NAME,
+      RemappedRecordTables.Threads.TABLE_NAME,
+      RemoteMegaphoneTable.TABLE_NAME,
+      BackupMediaSnapshotTable.TABLE_NAME
   );
 
   public static BackupEvent export(@NonNull Context context,
@@ -232,7 +243,7 @@ public class FullBackupExporter extends FullBackupBase {
 
     count += TextSecurePreferences.getPreferencesToSaveToBackupCount(context);
 
-    KeyValueDataSet dataSet = KeyValueDatabase.getInstance(ApplicationDependencies.getApplication())
+    KeyValueDataSet dataSet = KeyValueDatabase.getInstance(AppDependencies.getApplication())
                                               .getDataSet();
     for (String key : SignalStore.getKeysToIncludeInBackup()) {
       if (dataSet.containsKey(key)) {
@@ -480,7 +491,7 @@ public class FullBackupExporter extends FullBackupBase {
                                    long estimatedCount)
       throws IOException
   {
-    long rowId = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable._ID));
+    long rowId = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable.ID));
     long size  = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable.FILE_LENGTH));
 
     String data   = cursor.getString(cursor.getColumnIndexOrThrow(StickerTable.FILE_PATH));
@@ -533,7 +544,7 @@ public class FullBackupExporter extends FullBackupBase {
                                      long estimatedCount,
                                      BackupCancellationSignal cancellationSignal) throws IOException
   {
-    KeyValueDataSet dataSet = KeyValueDatabase.getInstance(ApplicationDependencies.getApplication())
+    KeyValueDataSet dataSet = KeyValueDatabase.getInstance(AppDependencies.getApplication())
                                               .getDataSet();
 
     for (String key : keysToIncludeInBackup) {
@@ -588,11 +599,11 @@ public class FullBackupExporter extends FullBackupBase {
     long expiresAt     = expireStarted + expiresIn;
     long timeRemaining = expiresAt - System.currentTimeMillis();
 
-    if (expireStarted > 0 && timeRemaining <= EXPIRATION_BACKUP_THRESHOLD) {
-      return false;
+    if (latestRevisionId > 0 && latestRevisionId != id ) {
+      return isForNonExpiringMessage(db, latestRevisionId);
     }
 
-    if (latestRevisionId > 0 && latestRevisionId != id && !isForNonExpiringMessage(db, latestRevisionId)) {
+    if (expireStarted > 0 && timeRemaining <= EXPIRATION_BACKUP_THRESHOLD) {
       return false;
     }
 

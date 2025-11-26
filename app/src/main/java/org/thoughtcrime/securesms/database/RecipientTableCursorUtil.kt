@@ -9,7 +9,6 @@ import android.content.Context
 import android.database.Cursor
 import com.google.protobuf.InvalidProtocolBufferException
 import org.signal.core.util.Base64
-import org.signal.core.util.Bitmask
 import org.signal.core.util.logging.Log
 import org.signal.core.util.optionalBlob
 import org.signal.core.util.optionalBoolean
@@ -23,12 +22,13 @@ import org.signal.core.util.requireLong
 import org.signal.core.util.requireString
 import org.signal.libsignal.zkgroup.InvalidInputException
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential
+import org.signal.libsignal.zkgroup.profiles.ProfileKey
 import org.thoughtcrime.securesms.badges.Badges
 import org.thoughtcrime.securesms.badges.models.Badge
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
 import org.thoughtcrime.securesms.conversation.colors.ChatColors
+import org.thoughtcrime.securesms.crypto.ProfileKeyUtil
 import org.thoughtcrime.securesms.database.IdentityTable.VerifiedStatus
-import org.thoughtcrime.securesms.database.RecipientTable.Capabilities
 import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState
 import org.thoughtcrime.securesms.database.model.DistributionListId
 import org.thoughtcrime.securesms.database.model.RecipientRecord
@@ -49,7 +49,6 @@ import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaperFactory
 import org.whispersystems.signalservice.api.push.ServiceId
 import java.io.IOException
-import java.util.Arrays
 
 object RecipientTableCursorUtil {
 
@@ -62,21 +61,19 @@ object RecipientTableCursorUtil {
   fun getRecord(context: Context, cursor: Cursor, idColumnName: String): RecipientRecord {
     val profileKeyString = cursor.requireString(RecipientTable.PROFILE_KEY)
     val expiringProfileKeyCredentialString = cursor.requireString(RecipientTable.EXPIRING_PROFILE_KEY_CREDENTIAL)
-    var profileKey: ByteArray? = null
+    var profileKey: ProfileKey? = null
     var expiringProfileKeyCredential: ExpiringProfileKeyCredential? = null
 
     if (profileKeyString != null) {
-      try {
-        profileKey = Base64.decode(profileKeyString)
-      } catch (e: IOException) {
-        Log.w(TAG, e)
-      }
+      profileKey = ProfileKeyUtil.profileKeyOrNull(profileKeyString)
 
-      if (expiringProfileKeyCredentialString != null) {
+      if (profileKey == null) {
+        Log.w(TAG, "Profile key present in db but is invalid, ignoring on read")
+      } else if (expiringProfileKeyCredentialString != null) {
         try {
           val columnDataBytes = Base64.decode(expiringProfileKeyCredentialString)
           val columnData = ExpiringProfileKeyCredentialColumnData.ADAPTER.decode(columnDataBytes)
-          if (Arrays.equals(columnData.profileKey.toByteArray(), profileKey)) {
+          if (columnData.profileKey.toByteArray().contentEquals(profileKey.serialize())) {
             expiringProfileKeyCredential = ExpiringProfileKeyCredential(columnData.expiringProfileKeyCredential.toByteArray())
           } else {
             Log.i(TAG, "Out of date profile key credential data ignored on read")
@@ -135,8 +132,9 @@ object RecipientTableCursorUtil {
       messageRingtone = Util.uri(cursor.requireString(RecipientTable.MESSAGE_RINGTONE)),
       callRingtone = Util.uri(cursor.requireString(RecipientTable.CALL_RINGTONE)),
       expireMessages = cursor.requireInt(RecipientTable.MESSAGE_EXPIRATION_TIME),
+      expireTimerVersion = cursor.requireInt(RecipientTable.MESSAGE_EXPIRATION_TIME_VERSION),
       registered = RegisteredState.fromId(cursor.requireInt(RecipientTable.REGISTERED)),
-      profileKey = profileKey,
+      profileKey = profileKey?.serialize(),
       expiringProfileKeyCredential = expiringProfileKeyCredential,
       systemProfileName = ProfileName.fromParts(cursor.requireString(RecipientTable.SYSTEM_GIVEN_NAME), cursor.requireString(RecipientTable.SYSTEM_FAMILY_NAME)),
       systemDisplayName = cursor.requireString(RecipientTable.SYSTEM_JOINED_NAME),
@@ -149,7 +147,7 @@ object RecipientTableCursorUtil {
       profileSharing = cursor.requireBoolean(RecipientTable.PROFILE_SHARING),
       lastProfileFetch = cursor.requireLong(RecipientTable.LAST_PROFILE_FETCH),
       notificationChannel = cursor.requireString(RecipientTable.NOTIFICATION_CHANNEL),
-      unidentifiedAccessMode = RecipientTable.UnidentifiedAccessMode.fromMode(cursor.requireInt(RecipientTable.SEALED_SENDER_MODE)),
+      sealedSenderAccessMode = RecipientTable.SealedSenderAccessMode.fromMode(cursor.requireInt(RecipientTable.SEALED_SENDER_MODE)),
       capabilities = readCapabilities(cursor),
       storageId = Base64.decodeNullableOrThrow(cursor.requireString(RecipientTable.STORAGE_SERVICE_ID)),
       mentionSetting = RecipientTable.MentionSetting.fromId(cursor.requireInt(RecipientTable.MENTION_SETTING)),
@@ -165,22 +163,16 @@ object RecipientTableCursorUtil {
       needsPniSignature = cursor.requireBoolean(RecipientTable.NEEDS_PNI_SIGNATURE),
       hiddenState = Recipient.HiddenState.deserialize(cursor.requireInt(RecipientTable.HIDDEN)),
       callLinkRoomId = cursor.requireString(RecipientTable.CALL_LINK_ROOM_ID)?.let { CallLinkRoomId.DatabaseSerializer.deserialize(it) },
-      phoneNumberSharing = cursor.requireInt(RecipientTable.PHONE_NUMBER_SHARING).let { RecipientTable.PhoneNumberSharingState.fromId(it) }
+      phoneNumberSharing = cursor.requireInt(RecipientTable.PHONE_NUMBER_SHARING).let { RecipientTable.PhoneNumberSharingState.fromId(it) },
+      nickname = ProfileName.fromParts(cursor.requireString(RecipientTable.NICKNAME_GIVEN_NAME), cursor.requireString(RecipientTable.NICKNAME_FAMILY_NAME)),
+      note = cursor.requireString(RecipientTable.NOTE)
     )
   }
 
   fun readCapabilities(cursor: Cursor): RecipientRecord.Capabilities {
     val capabilities = cursor.requireLong(RecipientTable.CAPABILITIES)
     return RecipientRecord.Capabilities(
-      rawBits = capabilities,
-      groupsV1MigrationCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.GROUPS_V1_MIGRATION, Capabilities.BIT_LENGTH).toInt()),
-      senderKeyCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.SENDER_KEY, Capabilities.BIT_LENGTH).toInt()),
-      announcementGroupCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.ANNOUNCEMENT_GROUPS, Capabilities.BIT_LENGTH).toInt()),
-      changeNumberCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.CHANGE_NUMBER, Capabilities.BIT_LENGTH).toInt()),
-      storiesCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.STORIES, Capabilities.BIT_LENGTH).toInt()),
-      giftBadgesCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.GIFT_BADGES, Capabilities.BIT_LENGTH).toInt()),
-      pnpCapability = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.PNP, Capabilities.BIT_LENGTH).toInt()),
-      paymentActivation = Recipient.Capability.deserialize(Bitmask.read(capabilities, Capabilities.PAYMENT_ACTIVATION, Capabilities.BIT_LENGTH).toInt())
+      rawBits = capabilities
     )
   }
 

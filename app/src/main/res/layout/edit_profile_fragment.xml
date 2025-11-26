@@ -12,8 +12,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:animateLayoutChanges="true">
+            android:layout_height="wrap_content">
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
@@ -23,7 +22,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:navigationIcon="@drawable/ic_arrow_left_24"
+                app:navigationIcon="@drawable/symbol_arrow_start_24"
                 app:title="@string/CreateProfileActivity__profile"
                 app:titleTextAppearance="@style/Signal.Text.TitleLarge" />
 
@@ -266,7 +265,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="24dp"
                     android:textAlignment="viewStart"
-                    app:emoji_forceCustom="true"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/manage_profile_about_icon"
@@ -305,7 +303,6 @@
                     android:layout_marginStart="24dp"
                     android:text="@string/ManageProfileFragment_badges"
                     android:textAlignment="viewStart"
-                    app:emoji_forceCustom="true"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/manage_profile_badges_icon"
@@ -339,7 +336,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/manage_profile_badges_container"
                 app:layout_constraintVertical_bias="1.0" />
 
-            <org.thoughtcrime.securesms.util.views.LearnMoreTextView
+            <TextView
                 android:id="@+id/username_info_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -402,6 +399,7 @@
                     android:layout_marginStart="16dp"
                     android:layout_marginTop="30dp"
                     android:src="@drawable/symbol_share_android_24"
+                    app:tint="@color/signal_colorOnPrimaryContainer"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 

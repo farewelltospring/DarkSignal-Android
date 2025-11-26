@@ -11,6 +11,7 @@ import org.signal.svr2.proto.DeleteRequest
 import org.signal.svr2.proto.ExposeRequest
 import org.signal.svr2.proto.Request
 import org.signal.svr2.proto.RestoreRequest
+import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.crypto.InvalidCiphertextException
 import org.whispersystems.signalservice.api.kbs.MasterKey
 import org.whispersystems.signalservice.api.kbs.PinHashUtil
@@ -20,13 +21,15 @@ import org.whispersystems.signalservice.api.svr.SecureValueRecovery.DeleteRespon
 import org.whispersystems.signalservice.api.svr.SecureValueRecovery.InvalidRequestException
 import org.whispersystems.signalservice.api.svr.SecureValueRecovery.PinChangeSession
 import org.whispersystems.signalservice.api.svr.SecureValueRecovery.RestoreResponse
+import org.whispersystems.signalservice.api.svr.SecureValueRecovery.SvrVersion
+import org.whispersystems.signalservice.api.websocket.SignalWebSocket
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration
+import org.whispersystems.signalservice.internal.get
 import org.whispersystems.signalservice.internal.push.AuthCredentials
-import org.whispersystems.signalservice.internal.push.PushServiceSocket
 import org.whispersystems.signalservice.internal.util.Hex
 import org.whispersystems.signalservice.internal.util.JsonUtil
+import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 import java.io.IOException
-import kotlin.jvm.Throws
 import org.signal.svr2.proto.BackupResponse as ProtoBackupResponse
 import org.signal.svr2.proto.ExposeResponse as ProtoExposeResponse
 import org.signal.svr2.proto.RestoreResponse as ProtoRestoreResponse
@@ -37,12 +40,14 @@ import org.signal.svr2.proto.RestoreResponse as ProtoRestoreResponse
 class SecureValueRecoveryV2(
   private val serviceConfiguration: SignalServiceConfiguration,
   private val mrEnclave: String,
-  private val pushServiceSocket: PushServiceSocket
+  private val authWebSocket: SignalWebSocket.AuthenticatedWebSocket
 ) : SecureValueRecovery {
 
   companion object {
     private val TAG = SecureValueRecoveryV2::class.java.simpleName
   }
+
+  override val svrVersion: SvrVersion = SvrVersion.SVR2
 
   override fun setPin(userPin: String, masterKey: MasterKey): PinChangeSession {
     return Svr2PinChangeSession(userPin, masterKey)
@@ -58,7 +63,7 @@ class SecureValueRecoveryV2(
     }
   }
 
-  override fun restoreDataPreRegistration(authorization: AuthCredentials, userPin: String): RestoreResponse {
+  override fun restoreDataPreRegistration(authorization: AuthCredentials, shareSet: ByteArray?, userPin: String): RestoreResponse {
     return restoreData({ authorization }, userPin)
   }
 
@@ -78,7 +83,11 @@ class SecureValueRecoveryV2(
       DeleteResponse.Success
     } catch (e: NonSuccessfulResponseCodeException) {
       Log.w(TAG, "[Delete] Failed with a non-successful response code exception!", e)
-      DeleteResponse.ApplicationError(e)
+      if (e.code == 404) {
+        DeleteResponse.EnclaveNotFound
+      } else {
+        DeleteResponse.ApplicationError(e)
+      }
     } catch (e: IOException) {
       Log.w(TAG, "[Delete] Failed with a network exception!", e)
       DeleteResponse.NetworkError(e)
@@ -90,7 +99,8 @@ class SecureValueRecoveryV2(
 
   @Throws(IOException::class)
   override fun authorization(): AuthCredentials {
-    return pushServiceSocket.svr2Authorization
+    val request = WebSocketRequestMessage.get("/v2/svr/auth")
+    return NetworkResult.fromWebSocketRequest(authWebSocket, request, AuthCredentials::class).successOrThrow()
   }
 
   override fun toString(): String {
@@ -143,7 +153,11 @@ class SecureValueRecoveryV2(
       }
     } catch (e: NonSuccessfulResponseCodeException) {
       Log.w(TAG, "[Restore] Failed with a non-successful response code exception!", e)
-      RestoreResponse.ApplicationError(e)
+      if (e.code == 404) {
+        RestoreResponse.EnclaveNotFound
+      } else {
+        RestoreResponse.ApplicationError(e)
+      }
     } catch (e: IOException) {
       Log.w(TAG, "[Restore] Failed with a network exception!", e)
       RestoreResponse.NetworkError(e)
@@ -206,7 +220,11 @@ class SecureValueRecoveryV2(
         }
       } catch (e: NonSuccessfulResponseCodeException) {
         Log.w(TAG, "[Set] Failed with a non-successful response code exception!", e)
-        BackupResponse.ApplicationError(e)
+        if (e.code == 404) {
+          BackupResponse.EnclaveNotFound
+        } else {
+          BackupResponse.ApplicationError(e)
+        }
       } catch (e: IOException) {
         Log.w(TAG, "[Set] Failed with a network exception!", e)
         BackupResponse.NetworkError(e)
@@ -250,7 +268,7 @@ class SecureValueRecoveryV2(
         .let { response ->
           when (response.expose?.status) {
             ProtoExposeResponse.Status.OK -> {
-              BackupResponse.Success(masterKey, authorization)
+              BackupResponse.Success(masterKey, authorization, SvrVersion.SVR2)
             }
             ProtoExposeResponse.Status.ERROR -> {
               BackupResponse.ExposeFailure

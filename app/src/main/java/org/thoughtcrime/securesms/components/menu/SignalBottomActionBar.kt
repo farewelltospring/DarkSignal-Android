@@ -5,11 +5,29 @@ import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.util.ViewUtil
@@ -20,9 +38,10 @@ import org.thoughtcrime.securesms.util.ViewUtil
  *
  * Overflow items are rendered in a [SignalContextMenu].
  */
-class SignalBottomActionBar(context: Context, attributeSet: AttributeSet) : LinearLayout(context, attributeSet) {
+class SignalBottomActionBar(context: Context, attributeSet: AttributeSet?) : LinearLayout(context, attributeSet) {
 
   val items: MutableList<ActionItem> = mutableListOf()
+  private var defaultBottomMargin: Int = 0
 
   val enterAnimation: Animation by lazy {
     AnimationUtils.loadAnimation(context, R.anim.slide_fade_from_bottom).apply {
@@ -44,6 +63,12 @@ class SignalBottomActionBar(context: Context, attributeSet: AttributeSet) : Line
     elevation = 20f
   }
 
+  override fun onAttachedToWindow() {
+    super.onAttachedToWindow()
+
+    defaultBottomMargin = (layoutParams as? MarginLayoutParams)?.bottomMargin ?: 0
+  }
+
   fun setItems(items: List<ActionItem>) {
     this.items.clear()
     this.items.addAll(items)
@@ -56,6 +81,15 @@ class SignalBottomActionBar(context: Context, attributeSet: AttributeSet) : Line
     if (w != oldw) {
       present(items)
     }
+  }
+
+  override fun onApplyWindowInsets(insets: WindowInsets?): WindowInsets? {
+    if (insets != null) {
+      val navigationBarInset = insets.systemWindowInsetBottom
+      val layoutParams = layoutParams as? MarginLayoutParams
+      layoutParams?.bottomMargin = defaultBottomMargin + navigationBarInset
+    }
+    return super.onApplyWindowInsets(insets)
   }
 
   private fun present(items: List<ActionItem>) {
@@ -116,5 +150,57 @@ class SignalBottomActionBar(context: Context, attributeSet: AttributeSet) : Line
     icon.setImageResource(item.iconRes)
     title.text = item.title
     view.setOnClickListener { item.action.run() }
+  }
+}
+
+@Composable
+fun SignalBottomActionBar(
+  visible: Boolean = true,
+  items: List<ActionItem>,
+  modifier: Modifier = Modifier
+) {
+  val slideAnimationOffset = with(LocalDensity.current) { 40.dp.roundToPx() }
+
+  val enterAnimation = slideInVertically(
+    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+    initialOffsetY = { slideAnimationOffset }
+  ) + fadeIn(
+    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+  )
+
+  val exitAnimation = slideOutVertically(
+    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+    targetOffsetY = { slideAnimationOffset }
+  ) + fadeOut(
+    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+  )
+
+  AnimatedVisibility(
+    visible = visible,
+    enter = enterAnimation,
+    exit = exitAnimation,
+    modifier = modifier
+      .fillMaxWidth()
+      .padding(horizontal = 20.dp, vertical = 16.dp)
+      .wrapContentHeight()
+  ) {
+    AndroidView(
+      factory = { context ->
+        SignalBottomActionBar(context, null)
+          .apply {
+            elevation = 0f
+            setItems(items)
+          }
+      },
+      update = { view ->
+        view.setItems(items)
+      },
+      modifier = Modifier
+        .padding(4.dp) // prevent shadow clipping during visibility animations
+        .shadow(
+          elevation = 4.dp,
+          shape = RoundedCornerShape(18.dp)
+        )
+    )
   }
 }

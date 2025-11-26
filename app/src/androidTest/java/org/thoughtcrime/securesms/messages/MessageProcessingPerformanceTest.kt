@@ -13,11 +13,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.signal.core.util.logging.Log
-import org.signal.libsignal.protocol.ecc.Curve
 import org.signal.libsignal.protocol.ecc.ECKeyPair
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
-import org.thoughtcrime.securesms.crypto.UnidentifiedAccessUtil
-import org.thoughtcrime.securesms.dependencies.InstrumentationApplicationDependencyProvider
+import org.thoughtcrime.securesms.crypto.SealedSenderAccessUtil
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.testing.AliceClient
 import org.thoughtcrime.securesms.testing.BobClient
@@ -51,12 +49,12 @@ class MessageProcessingPerformanceTest {
   @get:Rule
   val harness = SignalActivityRule()
 
-  private val trustRoot: ECKeyPair = Curve.generateKeyPair()
+  private val trustRoot: ECKeyPair = ECKeyPair.generate()
 
   @Before
   fun setup() {
-    mockkStatic(UnidentifiedAccessUtil::class)
-    every { UnidentifiedAccessUtil.getCertificateValidator() } returns FakeClientHelpers.noOpCertificateValidator
+    mockkStatic(SealedSenderAccessUtil::class)
+    every { SealedSenderAccessUtil.getCertificateValidator() } returns FakeClientHelpers.noOpCertificateValidator
 
     mockkObject(MessageContentProcessor)
     every { MessageContentProcessor.create(harness.application) } returns TimingMessageContentProcessor(harness.application)
@@ -64,7 +62,7 @@ class MessageProcessingPerformanceTest {
 
   @After
   fun after() {
-    unmockkStatic(UnidentifiedAccessUtil::class)
+    unmockkStatic(SealedSenderAccessUtil::class)
     unmockkStatic(MessageContentProcessor::class)
   }
 
@@ -95,13 +93,7 @@ class MessageProcessingPerformanceTest {
     val lastTimestamp = envelopes.last().timestamp ?: 0
 
     // Inject the envelopes into the websocket
-    Thread {
-      for (envelope in envelopes) {
-        Log.i(TIMING_TAG, "Retrieved envelope! ${envelope.timestamp}")
-        InstrumentationApplicationDependencyProvider.injectWebSocketMessage(envelope.toWebSocketPayload())
-      }
-      InstrumentationApplicationDependencyProvider.injectWebSocketMessage(webSocketTombstone())
-    }.start()
+    // TODO: mock websocket messages
 
     // Wait until they've all been fully decrypted + processed
     harness

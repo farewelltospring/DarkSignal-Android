@@ -24,7 +24,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Previews
 import org.thoughtcrime.securesms.R
 
 /**
@@ -166,17 +165,17 @@ fun QrCodeBadge(
 @Preview(name = "Dark Theme", group = "ShortName", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PreviewWithCodeShort() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       Column {
         QrCodeBadge(
-          data = QrCodeState.Present(QrCodeData.forData("https://signal.org", 64)),
+          data = QrCodeState.Present(QrCodeData.forData("https://signal.org")),
           colorScheme = UsernameQrCodeColorScheme.Blue,
           username = "parker.42",
           usernameCopyable = false
         )
         QrCodeBadge(
-          data = QrCodeState.Present(QrCodeData.forData("https://signal.org", 64)),
+          data = QrCodeState.Present(QrCodeData.forData("https://signal.org")),
           colorScheme = UsernameQrCodeColorScheme.Blue,
           username = "parker.42",
           usernameCopyable = true
@@ -189,18 +188,18 @@ private fun PreviewWithCodeShort() {
 @Preview(group = "LongName")
 @Composable
 private fun PreviewWithCodeLong() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       Column {
         QrCodeBadge(
-          data = QrCodeState.Present(QrCodeData.forData("https://signal.org", 64)),
+          data = QrCodeState.Present(QrCodeData.forData("https://signal.org")),
           colorScheme = UsernameQrCodeColorScheme.Blue,
           username = "TheAmazingSpiderMan.42",
           usernameCopyable = false
         )
         Spacer(modifier = Modifier.height(8.dp))
         QrCodeBadge(
-          data = QrCodeState.Present(QrCodeData.forData("https://signal.org", 64)),
+          data = QrCodeState.Present(QrCodeData.forData("https://signal.org")),
           colorScheme = UsernameQrCodeColorScheme.Blue,
           username = "TheAmazingSpiderMan.42",
           usernameCopyable = true
@@ -213,7 +212,7 @@ private fun PreviewWithCodeLong() {
 @Preview(group = "Colors", heightDp = 1500)
 @Composable
 private fun PreviewAllColorsP1() {
-  SignalTheme(isDarkMode = false) {
+  Previews.Preview {
     Surface {
       Column {
         SampleCode(colorScheme = UsernameQrCodeColorScheme.Blue)
@@ -231,7 +230,7 @@ private fun PreviewAllColorsP1() {
 @Preview(group = "Colors", heightDp = 1500)
 @Composable
 private fun PreviewAllColorsP2() {
-  SignalTheme(isDarkMode = false) {
+  Previews.Preview {
     Surface {
       Column {
         SampleCode(colorScheme = UsernameQrCodeColorScheme.Pink)
@@ -249,7 +248,7 @@ private fun PreviewAllColorsP2() {
 @Composable
 private fun SampleCode(colorScheme: UsernameQrCodeColorScheme) {
   QrCodeBadge(
-    data = QrCodeState.Present(QrCodeData.forData("https://signal.me/#eu/asdfasdfasdfasdfasdfasdfasdfasdfasdf", 64)),
+    data = QrCodeState.Present(QrCodeData.forData("https://signal.me/#eu/asdfasdfasdfasdfasdfasdfasdfasdfasdf")),
     colorScheme = colorScheme,
     username = "parker.42"
   )
@@ -259,7 +258,7 @@ private fun SampleCode(colorScheme: UsernameQrCodeColorScheme) {
 @Preview(name = "Dark Theme", group = "Loading", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PreviewLoading() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       QrCodeBadge(
         data = QrCodeState.Loading,
@@ -274,7 +273,7 @@ private fun PreviewLoading() {
 @Preview(name = "Dark Theme", group = "NotSet", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PreviewNotSet() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       QrCodeBadge(
         data = QrCodeState.NotSet,

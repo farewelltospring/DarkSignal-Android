@@ -112,6 +112,12 @@ public class EmojiPageView extends RecyclerView implements VariationSelectorList
     addItemDecoration(new EmojiItemDecoration(allowVariations, drawable));
   }
 
+  @Override
+  public boolean dispatchTouchEvent(MotionEvent ev) {
+    getParent().requestDisallowInterceptTouchEvent(true);
+    return super.dispatchTouchEvent(ev);
+  }
+
   public void presentForEmojiKeyboard() {
     setPadding(getPaddingLeft(),
                getPaddingTop(),
@@ -135,7 +141,7 @@ public class EmojiPageView extends RecyclerView implements VariationSelectorList
 
   @Override
   protected void onVisibilityChanged(@NonNull View changedView, int visibility) {
-    if (visibility != VISIBLE) {
+    if (visibility != VISIBLE && popup != null) {
       popup.dismiss();
     }
   }

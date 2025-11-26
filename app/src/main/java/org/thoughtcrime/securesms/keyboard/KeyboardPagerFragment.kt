@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import org.thoughtcrime.securesms.R
@@ -23,6 +25,10 @@ import kotlin.reflect.KClass
 
 class KeyboardPagerFragment : Fragment(), InputAwareConstraintLayout.InputFragment {
 
+  companion object {
+    val ARG_SET_NAV_COLOR = "args.setNavColor"
+  }
+
   private lateinit var emojiButton: View
   private lateinit var stickerButton: View
   private lateinit var gifButton: View
@@ -30,6 +36,9 @@ class KeyboardPagerFragment : Fragment(), InputAwareConstraintLayout.InputFragme
 
   private val fragments: MutableMap<KClass<*>, Fragment> = mutableMapOf()
   private var currentFragment: Fragment? = null
+
+  private val shouldSetNavColor: Boolean
+    get() = arguments?.getBoolean(ARG_SET_NAV_COLOR) ?: true
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
     return themedInflate(R.layout.keyboard_pager_fragment, inflater, container)
@@ -57,10 +66,14 @@ class KeyboardPagerFragment : Fragment(), InputAwareConstraintLayout.InputFragme
   }
 
   override fun onHiddenChanged(hidden: Boolean) {
-    if (hidden) {
-      WindowUtil.setNavigationBarColor(requireActivity(), ThemeUtil.getThemedColor(requireContext(), android.R.attr.navigationBarColor))
-    } else {
-      WindowUtil.setNavigationBarColor(requireActivity(), ThemeUtil.getThemedColor(requireContext(), R.attr.mediaKeyboardBottomBarBackgroundColor))
+    if (shouldSetNavColor) {
+      getWindow()?.let { window ->
+        if (hidden) {
+          WindowUtil.setNavigationBarColor(requireContext(), window, ThemeUtil.getThemedColor(requireContext(), android.R.attr.navigationBarColor))
+        } else {
+          WindowUtil.setNavigationBarColor(requireContext(), window, ThemeUtil.getThemedColor(requireContext(), R.attr.mediaKeyboardBottomBarBackgroundColor))
+        }
+      }
     }
   }
 
@@ -68,6 +81,19 @@ class KeyboardPagerFragment : Fragment(), InputAwareConstraintLayout.InputFragme
   override fun onActivityCreated(savedInstanceState: Bundle?) {
     super.onActivityCreated(savedInstanceState)
     viewModel.page().value?.let(this::onPageSelected)
+  }
+
+  private fun getWindow(): Window? {
+    var parent: Fragment? = parentFragment
+    while (parent != null) {
+      if (parent is DialogFragment) {
+        return parent.dialog?.window
+      }
+
+      parent = parent.parentFragment
+    }
+
+    return activity?.window
   }
 
   private fun onPageSelected(page: KeyboardPage) {

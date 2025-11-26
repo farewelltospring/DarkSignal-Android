@@ -8,29 +8,26 @@ import org.signal.core.util.Result
 import org.signal.core.util.Result.Companion.failure
 import org.signal.core.util.Result.Companion.success
 import org.signal.core.util.logging.Log
+import org.signal.libsignal.net.RequestResult
 import org.signal.libsignal.usernames.BaseUsernameException
 import org.signal.libsignal.usernames.Username
 import org.thoughtcrime.securesms.components.settings.app.usernamelinks.main.UsernameLinkResetResult
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.keyvalue.AccountValues
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.net.SignalNetwork
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.storage.StorageSyncHelper
 import org.thoughtcrime.securesms.util.NetworkUtil
 import org.thoughtcrime.securesms.util.UsernameUtil
+import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.SignalServiceAccountManager
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
 import org.whispersystems.signalservice.api.push.UsernameLinkComponents
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
-import org.whispersystems.signalservice.api.push.exceptions.UsernameIsNotAssociatedWithAnAccountException
-import org.whispersystems.signalservice.api.push.exceptions.UsernameIsNotReservedException
-import org.whispersystems.signalservice.api.push.exceptions.UsernameMalformedException
-import org.whispersystems.signalservice.api.push.exceptions.UsernameTakenException
 import org.whispersystems.signalservice.api.util.Usernames
 import org.whispersystems.signalservice.api.util.UuidUtil
 import org.whispersystems.signalservice.api.util.toByteArray
-import java.io.IOException
 import java.util.UUID
 
 /**
@@ -87,7 +84,7 @@ object UsernameRepository {
   private const val BASE_URL = "https://signal.me/#eu/"
   private const val USERNAME_SYNC_ERROR_THRESHOLD = 3
 
-  private val accountManager: SignalServiceAccountManager get() = ApplicationDependencies.getSignalServiceAccountManager()
+  private val accountManager: SignalServiceAccountManager get() = AppDependencies.signalServiceAccountManager
 
   /**
    * Given a nickname, this will temporarily reserve a matching discriminator that can later be confirmed via [confirmUsernameAndCreateNewLink].
@@ -129,17 +126,17 @@ object UsernameRepository {
   @WorkerThread
   @JvmStatic
   fun reclaimUsernameIfNecessary(): UsernameReclaimResult {
-    if (!SignalStore.misc().needsUsernameRestore()) {
+    if (!SignalStore.misc.needsUsernameRestore) {
       Log.d(TAG, "[reclaimUsernameIfNecessary] No need to restore username. Skipping.")
       return UsernameReclaimResult.SUCCESS
     }
 
-    val username = SignalStore.account().username
-    val link = SignalStore.account().usernameLink
+    val username = SignalStore.account.username
+    val link = SignalStore.account.usernameLink
 
     if (username == null || link == null) {
       Log.d(TAG, "[reclaimUsernameIfNecessary] No username or link to restore. Skipping.")
-      SignalStore.misc().setNeedsUsernameRestore(false)
+      SignalStore.misc.needsUsernameRestore = false
       return UsernameReclaimResult.SUCCESS
     }
 
@@ -148,13 +145,13 @@ object UsernameRepository {
     when (result) {
       UsernameReclaimResult.SUCCESS -> {
         Log.i(TAG, "[reclaimUsernameIfNecessary] Successfully reclaimed username and link.")
-        SignalStore.misc().setNeedsUsernameRestore(false)
+        SignalStore.misc.needsUsernameRestore = false
       }
 
       UsernameReclaimResult.PERMANENT_ERROR -> {
         Log.w(TAG, "[reclaimUsernameIfNecessary] Permanently failed to reclaim username and link. User will see an error.")
-        SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.USERNAME_AND_LINK_CORRUPTED
-        SignalStore.misc().setNeedsUsernameRestore(false)
+        SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.USERNAME_AND_LINK_CORRUPTED
+        SignalStore.misc.needsUsernameRestore = false
       }
 
       UsernameReclaimResult.NETWORK_ERROR -> {
@@ -179,12 +176,12 @@ object UsernameRepository {
    * Creates or rotates the username link for the local user.
    */
   fun createOrResetUsernameLink(): Single<UsernameLinkResetResult> {
-    if (!NetworkUtil.isConnected(ApplicationDependencies.getApplication())) {
+    if (!NetworkUtil.isConnected(AppDependencies.application)) {
       Log.w(TAG, "[createOrResetUsernameLink] No network! Not making any changes.")
       return Single.just(UsernameLinkResetResult.NetworkUnavailable)
     }
 
-    val usernameString = SignalStore.account().username
+    val usernameString = SignalStore.account.username
     if (usernameString.isNullOrBlank()) {
       Log.w(TAG, "[createOrResetUsernameLink] No username set! Cannot rotate the link!")
       return Single.just(UsernameLinkResetResult.UnexpectedError)
@@ -199,26 +196,30 @@ object UsernameRepository {
 
     return Single
       .fromCallable {
-        try {
-          SignalStore.account().usernameLink = null
+        SignalStore.account.usernameLink = null
 
-          Log.d(TAG, "[createOrResetUsernameLink] Creating username link...")
-          val components = accountManager.createUsernameLink(username)
-          SignalStore.account().usernameLink = components
+        Log.d(TAG, "[createOrResetUsernameLink] Creating username link...")
 
-          if (SignalStore.account().usernameSyncState == AccountValues.UsernameSyncState.LINK_CORRUPTED) {
-            SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
-            SignalStore.account().usernameSyncErrorCount = 0
+        val usernameLink = username.generateLink()
+        when (val result = SignalNetwork.account.createUsernameLink(usernameLink)) {
+          is NetworkResult.Success -> {
+            SignalStore.account.usernameLink = result.result
+
+            if (SignalStore.account.usernameSyncState == AccountValues.UsernameSyncState.LINK_CORRUPTED) {
+              SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
+              SignalStore.account.usernameSyncErrorCount = 0
+            }
+
+            SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
+            StorageSyncHelper.scheduleSyncForDataChange()
+            Log.d(TAG, "[createOrResetUsernameLink] Username link created.")
+
+            UsernameLinkResetResult.Success(result.result)
           }
-
-          SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
-          StorageSyncHelper.scheduleSyncForDataChange()
-          Log.d(TAG, "[createOrResetUsernameLink] Username link created.")
-
-          UsernameLinkResetResult.Success(components)
-        } catch (e: IOException) {
-          Log.w(TAG, "[createOrResetUsernameLink] Failed to rotate the username!", e)
-          UsernameLinkResetResult.NetworkError
+          else -> {
+            Log.w(TAG, "[createOrResetUsernameLink] Failed to rotate the username!", result.getCause())
+            UsernameLinkResetResult.NetworkError
+          }
         }
       }
       .subscribeOn(Schedulers.io())
@@ -233,53 +234,67 @@ object UsernameRepository {
 
     return Single
       .fromCallable {
-        var username: Username? = null
-
-        try {
-          val encryptedUsername: ByteArray = accountManager.getEncryptedUsernameFromLinkServerId(components.serverId)
-          val link = Username.UsernameLink(components.entropy, encryptedUsername)
-
-          username = Username.fromLink(link)
-
-          val aci = accountManager.getAciByUsername(username)
-
-          UsernameLinkConversionResult.Success(username, aci)
-        } catch (e: IOException) {
-          Log.w(TAG, "[convertLinkToUsername] Failed to lookup user.", e)
-
-          if (e is NonSuccessfulResponseCodeException) {
-            when (e.code) {
-              404 -> UsernameLinkConversionResult.NotFound(username)
+        val encryptedUsername = when (val result = SignalNetwork.username.getEncryptedUsernameFromLinkServerId(components.serverId)) {
+          is NetworkResult.Success -> result.result
+          is NetworkResult.StatusCodeError -> {
+            return@fromCallable when (result.code) {
+              404 -> UsernameLinkConversionResult.NotFound(null)
               422 -> UsernameLinkConversionResult.Invalid
               else -> UsernameLinkConversionResult.NetworkError
             }
-          } else {
-            UsernameLinkConversionResult.NetworkError
           }
+          is NetworkResult.NetworkError -> return@fromCallable UsernameLinkConversionResult.NetworkError
+          is NetworkResult.ApplicationError -> throw result.throwable
+        }
+
+        val link = Username.UsernameLink(components.entropy, encryptedUsername)
+        val username: Username = try {
+          Username.fromLink(link)
         } catch (e: BaseUsernameException) {
           Log.w(TAG, "[convertLinkToUsername] Bad username conversion.", e)
-          UsernameLinkConversionResult.Invalid
+          return@fromCallable UsernameLinkConversionResult.Invalid
+        }
+
+        when (val result = SignalNetwork.username.getAciByUsername(username)) {
+          is RequestResult.Success -> {
+            result.result?.let {
+              UsernameLinkConversionResult.Success(username, it)
+            } ?: UsernameLinkConversionResult.NotFound(username)
+          }
+          is RequestResult.RetryableNetworkError -> {
+            UsernameLinkConversionResult.NetworkError
+          }
+          is RequestResult.NonSuccess -> {
+            throw AssertionError()
+          }
+          is RequestResult.ApplicationError -> throw result.cause
         }
       }
       .subscribeOn(Schedulers.io())
   }
 
   @JvmStatic
-  fun fetchAciForUsername(username: String): Single<UsernameAciFetchResult> {
-    return Single.fromCallable {
-      try {
-        val aci: ACI = ApplicationDependencies.getSignalServiceAccountManager().getAciByUsername(Username(username))
-        UsernameAciFetchResult.Success(aci)
-      } catch (e: UsernameIsNotAssociatedWithAnAccountException) {
-        Log.w(TAG, "[fetchAciFromUsername] Failed to get ACI for username hash", e)
-        UsernameAciFetchResult.NotFound
-      } catch (e: BaseUsernameException) {
-        Log.w(TAG, "[fetchAciFromUsername] Invalid username", e)
-        UsernameAciFetchResult.NotFound
-      } catch (e: IOException) {
-        Log.w(TAG, "[fetchAciFromUsername] Hit network error while trying to resolve ACI from username", e)
+  fun fetchAciForUsername(usernameString: String): UsernameAciFetchResult {
+    val username = try {
+      Username(usernameString)
+    } catch (e: BaseUsernameException) {
+      Log.w(TAG, "[fetchAciFromUsername] Invalid username", e)
+      return UsernameAciFetchResult.NotFound
+    }
+
+    return when (val result = SignalNetwork.username.getAciByUsername(username)) {
+      is RequestResult.Success -> {
+        result.result?.let {
+          UsernameAciFetchResult.Success(it)
+        } ?: UsernameAciFetchResult.NotFound
+      }
+      is RequestResult.NonSuccess -> {
+        throw AssertionError()
+      }
+      is RequestResult.RetryableNetworkError -> {
         UsernameAciFetchResult.NetworkError
       }
+      is RequestResult.ApplicationError -> throw result.cause
     }
   }
 
@@ -310,78 +325,100 @@ object UsernameRepository {
     return BASE_URL + base64
   }
 
+  fun isValidLink(url: String): Boolean {
+    return parseLink(url) != null
+  }
+
   @JvmStatic
   fun onUsernameConsistencyValidated() {
-    SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
+    SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
 
-    if (SignalStore.account().usernameSyncErrorCount > 0) {
-      Log.i(TAG, "Username consistency validated. There were previously ${SignalStore.account().usernameSyncErrorCount} error(s).")
-      SignalStore.account().usernameSyncErrorCount = 0
+    if (SignalStore.account.usernameSyncErrorCount > 0) {
+      Log.i(TAG, "Username consistency validated. There were previously ${SignalStore.account.usernameSyncErrorCount} error(s).")
+      SignalStore.account.usernameSyncErrorCount = 0
     }
   }
 
   @JvmStatic
   fun onUsernameMismatchDetected() {
-    SignalStore.account().usernameSyncErrorCount++
+    SignalStore.account.usernameSyncErrorCount++
 
-    if (SignalStore.account().usernameSyncErrorCount >= USERNAME_SYNC_ERROR_THRESHOLD) {
-      Log.w(TAG, "We've now seen ${SignalStore.account().usernameSyncErrorCount} mismatches in a row. Marking username and link as corrupted.")
-      SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.USERNAME_AND_LINK_CORRUPTED
-      SignalStore.account().usernameSyncErrorCount = 0
+    if (SignalStore.account.usernameSyncErrorCount >= USERNAME_SYNC_ERROR_THRESHOLD) {
+      Log.w(TAG, "We've now seen ${SignalStore.account.usernameSyncErrorCount} mismatches in a row. Marking username and link as corrupted.")
+      SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.USERNAME_AND_LINK_CORRUPTED
+      SignalStore.account.usernameSyncErrorCount = 0
     } else {
-      Log.w(TAG, "Username mismatch reported. At ${SignalStore.account().usernameSyncErrorCount} / $USERNAME_SYNC_ERROR_THRESHOLD tries.")
+      Log.w(TAG, "Username mismatch reported. At ${SignalStore.account.usernameSyncErrorCount} / $USERNAME_SYNC_ERROR_THRESHOLD tries.")
     }
   }
 
   @JvmStatic
   fun onUsernameLinkMismatchDetected() {
-    SignalStore.account().usernameSyncErrorCount++
+    SignalStore.account.usernameSyncErrorCount++
 
-    if (SignalStore.account().usernameSyncErrorCount >= USERNAME_SYNC_ERROR_THRESHOLD) {
-      Log.w(TAG, "We've now seen ${SignalStore.account().usernameSyncErrorCount} mismatches in a row. Marking link as corrupted.")
-      SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.LINK_CORRUPTED
-      SignalStore.account().usernameLink = null
-      SignalStore.account().usernameSyncErrorCount = 0
+    if (SignalStore.account.usernameSyncErrorCount >= USERNAME_SYNC_ERROR_THRESHOLD) {
+      Log.w(TAG, "We've now seen ${SignalStore.account.usernameSyncErrorCount} mismatches in a row. Marking link as corrupted.")
+      SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.LINK_CORRUPTED
+      SignalStore.account.usernameLink = null
+      SignalStore.account.usernameSyncErrorCount = 0
       StorageSyncHelper.scheduleSyncForDataChange()
     } else {
-      Log.w(TAG, "Link mismatch reported. At ${SignalStore.account().usernameSyncErrorCount} / $USERNAME_SYNC_ERROR_THRESHOLD tries.")
+      Log.w(TAG, "Link mismatch reported. At ${SignalStore.account.usernameSyncErrorCount} / $USERNAME_SYNC_ERROR_THRESHOLD tries.")
     }
   }
 
   @WorkerThread
   private fun reserveUsernameInternal(nickname: String, discriminator: String?): Result<UsernameState.Reserved, UsernameSetResult> {
-    return try {
-      val candidates: List<Username> = if (discriminator == null) {
+    val candidates: List<Username> = try {
+      if (discriminator == null) {
         Username.candidatesFrom(nickname, UsernameUtil.MIN_NICKNAME_LENGTH, UsernameUtil.MAX_NICKNAME_LENGTH)
       } else {
         listOf(Username("$nickname${Usernames.DELIMITER}$discriminator"))
       }
-
-      val hashes: List<String> = candidates
-        .map { Base64.encodeUrlSafeWithoutPadding(it.hash) }
-
-      val response = accountManager.reserveUsername(hashes)
-
-      val hashIndex = hashes.indexOf(response.usernameHash)
-      if (hashIndex == -1) {
-        Log.w(TAG, "[reserveUsername] The response hash could not be found in our set of hashes.")
-        return failure(UsernameSetResult.CANDIDATE_GENERATION_ERROR)
-      }
-
-      Log.i(TAG, "[reserveUsername] Successfully reserved username.")
-      success(UsernameState.Reserved(candidates[hashIndex]))
     } catch (e: BaseUsernameException) {
       Log.w(TAG, "[reserveUsername] An error occurred while generating candidates.")
-      failure(UsernameSetResult.CANDIDATE_GENERATION_ERROR)
-    } catch (e: UsernameTakenException) {
-      Log.w(TAG, "[reserveUsername] Username taken.")
-      failure(UsernameSetResult.USERNAME_UNAVAILABLE)
-    } catch (e: UsernameMalformedException) {
-      Log.w(TAG, "[reserveUsername] Username malformed.")
-      failure(UsernameSetResult.USERNAME_INVALID)
-    } catch (e: IOException) {
-      Log.w(TAG, "[reserveUsername] Generic network exception.", e)
-      failure(UsernameSetResult.NETWORK_ERROR)
+      return failure(UsernameSetResult.CANDIDATE_GENERATION_ERROR)
+    }
+
+    val hashes: List<String> = candidates
+      .map { Base64.encodeUrlSafeWithoutPadding(it.hash) }
+
+    return when (val result = SignalNetwork.account.reserveUsername(hashes)) {
+      is NetworkResult.Success -> {
+        val hashIndex = hashes.indexOf(result.result.usernameHash)
+        if (hashIndex == -1) {
+          Log.w(TAG, "[reserveUsername] The response hash could not be found in our set of hashes.")
+          return failure(UsernameSetResult.CANDIDATE_GENERATION_ERROR)
+        }
+
+        Log.i(TAG, "[reserveUsername] Successfully reserved username.")
+        success(UsernameState.Reserved(candidates[hashIndex]))
+      }
+      is NetworkResult.StatusCodeError -> {
+        when (result.code) {
+          409 -> {
+            Log.w(TAG, "[reserveUsername] Username taken.")
+            failure(UsernameSetResult.USERNAME_UNAVAILABLE)
+          }
+          422 -> {
+            Log.w(TAG, "[reserveUsername] Username malformed.")
+            failure(UsernameSetResult.USERNAME_INVALID)
+          }
+          429 -> {
+            Log.w(TAG, "[reserveUsername] Rate limit exceeded.")
+            failure(UsernameSetResult.RATE_LIMIT_ERROR)
+          }
+          else -> {
+            Log.w(TAG, "[reserveUsername] Generic network exception.", result.exception)
+            failure(UsernameSetResult.NETWORK_ERROR)
+          }
+        }
+      }
+      is NetworkResult.NetworkError -> {
+        Log.w(TAG, "[reserveUsername] Generic network exception.", result.exception)
+        failure(UsernameSetResult.NETWORK_ERROR)
+      }
+      is NetworkResult.ApplicationError -> throw result.throwable
     }
   }
 
@@ -389,30 +426,32 @@ object UsernameRepository {
   private fun updateUsernameDisplayForCurrentLinkInternal(updatedUsername: Username): UsernameSetResult {
     Log.i(TAG, "[updateUsernameDisplayForCurrentLink] Beginning username update...")
 
-    if (!NetworkUtil.isConnected(ApplicationDependencies.getApplication())) {
+    if (!NetworkUtil.isConnected(AppDependencies.application)) {
       Log.w(TAG, "[deleteUsernameInternal] No network connection! Not attempting the request.")
       return UsernameSetResult.NETWORK_ERROR
     }
 
-    return try {
-      val oldUsernameLink = SignalStore.account().usernameLink ?: return UsernameSetResult.USERNAME_INVALID
-      val newUsernameLink = updatedUsername.generateLink(oldUsernameLink.entropy)
-      val usernameLinkComponents = accountManager.updateUsernameLink(newUsernameLink)
+    val oldUsernameLink = SignalStore.account.usernameLink ?: return UsernameSetResult.USERNAME_INVALID
+    val newUsernameLink = updatedUsername.generateLink(oldUsernameLink.entropy)
 
-      SignalStore.account().username = updatedUsername.username
-      SignalStore.account().usernameLink = usernameLinkComponents
-      SignalDatabase.recipients.setUsername(Recipient.self().id, updatedUsername.username)
-      SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
-      SignalStore.account().usernameSyncErrorCount = 0
+    return when (val result = SignalNetwork.account.updateUsernameLink(newUsernameLink)) {
+      is NetworkResult.Success -> {
+        SignalStore.account.username = updatedUsername.username
+        SignalStore.account.usernameLink = result.result
+        SignalDatabase.recipients.setUsername(Recipient.self().id, updatedUsername.username)
+        SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
+        SignalStore.account.usernameSyncErrorCount = 0
 
-      SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
-      StorageSyncHelper.scheduleSyncForDataChange()
-      Log.i(TAG, "[updateUsernameDisplayForCurrentLink] Successfully updated username.")
+        SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
+        StorageSyncHelper.scheduleSyncForDataChange()
+        Log.i(TAG, "[updateUsernameDisplayForCurrentLink] Successfully updated username.")
 
-      UsernameSetResult.SUCCESS
-    } catch (e: IOException) {
-      Log.w(TAG, "[updateUsernameDisplayForCurrentLink] Generic network exception.", e)
-      UsernameSetResult.NETWORK_ERROR
+        UsernameSetResult.SUCCESS
+      }
+      else -> {
+        Log.w(TAG, "[updateUsernameDisplayForCurrentLink] Generic network exception.", result.getCause())
+        UsernameSetResult.NETWORK_ERROR
+      }
     }
   }
 
@@ -420,96 +459,149 @@ object UsernameRepository {
   private fun confirmUsernameAndCreateNewLinkInternal(username: Username): UsernameSetResult {
     Log.i(TAG, "[confirmUsernameAndCreateNewLink] Beginning username confirmation...")
 
-    if (!NetworkUtil.isConnected(ApplicationDependencies.getApplication())) {
+    if (!NetworkUtil.isConnected(AppDependencies.application)) {
       Log.w(TAG, "[confirmUsernameAndCreateNewLink] No network connection! Not attempting the request.")
       return UsernameSetResult.NETWORK_ERROR
     }
 
-    return try {
-      val linkComponents: UsernameLinkComponents = accountManager.confirmUsernameAndCreateNewLink(username)
+    val link = username.generateLink()
 
-      SignalStore.account().username = username.username
-      SignalStore.account().usernameLink = linkComponents
-      SignalDatabase.recipients.setUsername(Recipient.self().id, username.username)
-      SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
-      SignalStore.account().usernameSyncErrorCount = 0
+    return when (val result = SignalNetwork.account.confirmUsername(username, link)) {
+      is NetworkResult.Success -> {
+        SignalStore.account.username = username.username
+        SignalStore.account.usernameLink = UsernameLinkComponents(link.entropy, result.result)
+        SignalDatabase.recipients.setUsername(Recipient.self().id, username.username)
+        SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
+        SignalStore.account.usernameSyncErrorCount = 0
 
-      SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
-      StorageSyncHelper.scheduleSyncForDataChange()
-      Log.i(TAG, "[confirmUsernameAndCreateNewLink] Successfully confirmed username.")
+        SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
+        StorageSyncHelper.scheduleSyncForDataChange()
+        Log.i(TAG, "[confirmUsernameAndCreateNewLink] Successfully confirmed username.")
 
-      UsernameSetResult.SUCCESS
-    } catch (e: UsernameTakenException) {
-      Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username gone.")
-      UsernameSetResult.USERNAME_UNAVAILABLE
-    } catch (e: UsernameIsNotReservedException) {
-      Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username was not reserved.")
-      UsernameSetResult.USERNAME_INVALID
-    } catch (e: BaseUsernameException) {
-      Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username was not reserved.")
-      UsernameSetResult.USERNAME_INVALID
-    } catch (e: IOException) {
-      Log.w(TAG, "[confirmUsernameAndCreateNewLink] Generic network exception.", e)
-      UsernameSetResult.NETWORK_ERROR
+        UsernameSetResult.SUCCESS
+      }
+
+      is NetworkResult.StatusCodeError -> {
+        when (result.code) {
+          409 -> {
+            Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username was not reserved.")
+            UsernameSetResult.USERNAME_INVALID
+          }
+
+          410 -> {
+            Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username gone.")
+            UsernameSetResult.USERNAME_UNAVAILABLE
+          }
+
+          else -> {
+            Log.w(TAG, "[confirmUsernameAndCreateNewLink] Generic network exception.", result.exception)
+            UsernameSetResult.NETWORK_ERROR
+          }
+        }
+      }
+
+      is NetworkResult.NetworkError -> {
+        Log.w(TAG, "[confirmUsernameAndCreateNewLink] Generic network exception.", result.exception)
+        UsernameSetResult.NETWORK_ERROR
+      }
+
+      is NetworkResult.ApplicationError -> {
+        if (result.throwable is BaseUsernameException) {
+          Log.w(TAG, "[confirmUsernameAndCreateNewLink] Username was not reserved.")
+          UsernameSetResult.USERNAME_INVALID
+        } else {
+          throw result.throwable
+        }
+      }
     }
   }
 
   @WorkerThread
   private fun deleteUsernameInternal(): UsernameDeleteResult {
-    if (!NetworkUtil.isConnected(ApplicationDependencies.getApplication())) {
+    if (!NetworkUtil.isConnected(AppDependencies.application)) {
       Log.w(TAG, "[deleteUsernameInternal] No network connection! Not attempting the request.")
       return UsernameDeleteResult.NETWORK_ERROR
     }
 
-    return try {
-      accountManager.deleteUsername()
-      SignalDatabase.recipients.setUsername(Recipient.self().id, null)
-      SignalStore.account().username = null
-      SignalStore.account().usernameLink = null
-      SignalStore.account().usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
-      SignalStore.account().usernameSyncErrorCount = 0
-      SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
-      StorageSyncHelper.scheduleSyncForDataChange()
-      Log.i(TAG, "[deleteUsername] Successfully deleted the username.")
-      UsernameDeleteResult.SUCCESS
-    } catch (e: IOException) {
-      Log.w(TAG, "[deleteUsername] Generic network exception.", e)
-      UsernameDeleteResult.NETWORK_ERROR
+    return when (val result = SignalNetwork.account.deleteUsername()) {
+      is NetworkResult.Success -> {
+        SignalDatabase.recipients.setUsername(Recipient.self().id, null)
+        SignalStore.account.username = null
+        SignalStore.account.usernameLink = null
+        SignalStore.account.usernameSyncState = AccountValues.UsernameSyncState.IN_SYNC
+        SignalStore.account.usernameSyncErrorCount = 0
+        SignalDatabase.recipients.markNeedsSync(Recipient.self().id)
+        StorageSyncHelper.scheduleSyncForDataChange()
+        Log.i(TAG, "[deleteUsername] Successfully deleted the username.")
+        UsernameDeleteResult.SUCCESS
+      }
+      else -> {
+        Log.w(TAG, "[deleteUsername] Generic network exception.", result.getCause())
+        UsernameDeleteResult.NETWORK_ERROR
+      }
     }
   }
 
   @WorkerThread
   @JvmStatic
   private fun reclaimUsernameIfNecessaryInternal(username: Username, usernameLinkComponents: UsernameLinkComponents): UsernameReclaimResult {
-    try {
-      accountManager.reclaimUsernameAndLink(username, usernameLinkComponents)
-    } catch (e: UsernameTakenException) {
-      Log.w(TAG, "[reclaimUsername] Username gone.")
-      return UsernameReclaimResult.PERMANENT_ERROR
-    } catch (e: UsernameIsNotReservedException) {
-      Log.w(TAG, "[reclaimUsername] Username was not reserved.")
-      return UsernameReclaimResult.PERMANENT_ERROR
-    } catch (e: BaseUsernameException) {
-      Log.w(TAG, "[reclaimUsername] Invalid username.")
-      return UsernameReclaimResult.PERMANENT_ERROR
-    } catch (e: IOException) {
-      Log.w(TAG, "[reclaimUsername] Network error.", e)
-      return UsernameReclaimResult.NETWORK_ERROR
-    }
+    val link = username.generateLink(usernameLinkComponents.entropy)
 
-    return UsernameReclaimResult.SUCCESS
+    return when (val result = SignalNetwork.account.confirmUsername(username, link)) {
+      is NetworkResult.Success -> UsernameReclaimResult.SUCCESS
+      is NetworkResult.StatusCodeError -> {
+        when (result.code) {
+          409 -> {
+            Log.w(TAG, "[reclaimUsername] Username was not reserved.")
+            UsernameReclaimResult.PERMANENT_ERROR
+          }
+
+          410 -> {
+            Log.w(TAG, "[reclaimUsername] Username gone.")
+            UsernameReclaimResult.PERMANENT_ERROR
+          }
+
+          else -> {
+            Log.w(TAG, "[reclaimUsername] Network error.", result.exception)
+            UsernameReclaimResult.NETWORK_ERROR
+          }
+        }
+      }
+
+      is NetworkResult.NetworkError -> {
+        Log.w(TAG, "[reclaimUsername] Network error.", result.exception)
+        UsernameReclaimResult.NETWORK_ERROR
+      }
+
+      is NetworkResult.ApplicationError -> {
+        if (result.throwable is BaseUsernameException) {
+          Log.w(TAG, "[reclaimUsername] Invalid username.")
+          UsernameReclaimResult.PERMANENT_ERROR
+        } else {
+          throw result.throwable
+        }
+      }
+    }
   }
 
   enum class UsernameSetResult {
-    SUCCESS, USERNAME_UNAVAILABLE, USERNAME_INVALID, NETWORK_ERROR, CANDIDATE_GENERATION_ERROR
+    SUCCESS,
+    USERNAME_UNAVAILABLE,
+    USERNAME_INVALID,
+    NETWORK_ERROR,
+    CANDIDATE_GENERATION_ERROR,
+    RATE_LIMIT_ERROR
   }
 
   enum class UsernameReclaimResult {
-    SUCCESS, PERMANENT_ERROR, NETWORK_ERROR
+    SUCCESS,
+    PERMANENT_ERROR,
+    NETWORK_ERROR
   }
 
   enum class UsernameDeleteResult {
-    SUCCESS, NETWORK_ERROR
+    SUCCESS,
+    NETWORK_ERROR
   }
 
   internal interface Callback<E> {

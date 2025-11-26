@@ -13,14 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navGraphViewModels
-import org.signal.core.ui.Rows
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.NightPreview
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Rows
+import org.signal.core.ui.compose.Scaffolds
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.compose.ComposeFragment
 
@@ -48,12 +47,12 @@ class InternalConversationSpringboardFragment : ComposeFragment() {
   }
 }
 
-@Preview
+@NightPreview
 @Composable
 private fun ContentPreview() {
   val hasWallpaper = remember { mutableStateOf(false) }
 
-  SignalTheme(isDarkMode = true) {
+  Previews.Preview {
     Content(onBackPressed = {}, onLaunchTestFragment = {}, hasWallpaper = hasWallpaper)
   }
 }
@@ -67,7 +66,7 @@ private fun Content(
   Scaffolds.Settings(
     title = "Conversation Test Springboard",
     onNavigationClick = onBackPressed,
-    navigationIconPainter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.symbol_arrow_left_24))
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24)
   ) {
     Column(modifier = Modifier.padding(it)) {
       Rows.TextRow(

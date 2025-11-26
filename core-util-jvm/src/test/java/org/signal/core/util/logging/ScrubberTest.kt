@@ -75,6 +75,22 @@ class ScrubberTest(private val input: String, private val expected: String) {
           "Longest number E164:<90596>"
         ),
         arrayOf(
+          "An E164 number KEEP_E164::+15551234567",
+          "An E164 number KEEP_E164::+1********67"
+        ),
+        arrayOf(
+          "A UK number KEEP_E164::+447700900000",
+          "A UK number KEEP_E164::+4*********00"
+        ),
+        arrayOf(
+          "A Japanese number KEEP_E164::08011112222",
+          "A Japanese number KEEP_E164::08*******22"
+        ),
+        arrayOf(
+          "A Japanese number (KEEP_E164::08011112222)",
+          "A Japanese number (KEEP_E164::08*******22)"
+        ),
+        arrayOf(
           "One more than longest number +1234567890123456",
           "One more than longest number E164:<78d5b>6"
         ),
@@ -91,6 +107,10 @@ class ScrubberTest(private val input: String, private val expected: String) {
           "A short email a...@..."
         ),
         arrayOf(
+          "This is not an email Success(result=org.whispersystems.signalservice.api.archive.ArchiveMediaResponse@1ea5e6)",
+          "This is not an email Success(result=org.whispersystems.signalservice.api.archive.ArchiveMediaResponse@1ea5e6)"
+        ),
+        arrayOf(
           "A email with multiple parts before the @ d.c+b.a@mulitpart.domain.com and a multipart domain",
           "A email with multiple parts before the @ d...@... and a multipart domain"
         ),
@@ -104,19 +124,19 @@ class ScrubberTest(private val input: String, private val expected: String) {
         ),
         arrayOf(
           "__textsecure_group__!000102030405060708090a0b0c0d0e0f",
-          "__...group...0f"
+          "GV1::***e0f"
         ),
         arrayOf(
           "A group id __textsecure_group__!000102030405060708090a0b0c0d0e1a surrounded with text",
-          "A group id __...group...1a surrounded with text"
+          "A group id GV1::***e1a surrounded with text"
         ),
         arrayOf(
           "__signal_group__v2__!0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-          "__...group_v2...ef"
+          "GV2::***def"
         ),
         arrayOf(
           "A group v2 id __signal_group__v2__!23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01 surrounded with text",
-          "A group v2 id __...group_v2...01 surrounded with text"
+          "A group v2 id GV2::***f01 surrounded with text"
         ),
         arrayOf(
           "a37cb654-c9e0-4c1e-93df-3d11ca3c97f4",
@@ -140,7 +160,7 @@ class ScrubberTest(private val input: String, private val expected: String) {
         ),
         arrayOf(
           "All patterns in a row __textsecure_group__!abcdefg1234567890 +123456789012345 abc@def.com a37cb654-c9e0-4c1e-93df-3d11ca3c97f4 nl.motorsport.com 192.168.1.1 with text after",
-          "All patterns in a row __...group...90 E164:<78d5b> a...@... ********-****-****-****-*********7f4 ***.com ...ipv4... with text after"
+          "All patterns in a row GV1::***890 E164:<78d5b> a...@... ********-****-****-****-*********7f4 ***.com ...ipv4... with text after"
         ),
         arrayOf(
           "java.net.UnknownServiceException: CLEARTEXT communication to nl.motorsport.com not permitted by network security policy",
@@ -187,6 +207,14 @@ class ScrubberTest(private val input: String, private val expected: String) {
           "Not a Call Link Root Key (Missing Quartet) BCAF-FGHK-MNPQ-RSTX-ZRQH-BCDF-STXZ"
         ),
         arrayOf(
+          "A Call Link Room ID 905db82618b907f9ceaf8f12cb65f061ffc187f7df747cb3f38d5281f7c686be",
+          "A Call Link Room ID *************************************************************6be"
+        ),
+        arrayOf(
+          "Not a Call Link Room ID 905db82618b907f9ceaf8f12cb65f061ffc187f7df747cb3f38d5281f7c686b",
+          "Not a Call Link Room ID 905db82618b907f9ceaf8f12cb65f061ffc187f7df747cb3f38d5281f7c686b"
+        ),
+        arrayOf(
           "2345:0425:2CA1:0000:0000:0567:5673:23b5",
           "...ipv6..."
         ),
@@ -221,6 +249,22 @@ class ScrubberTest(private val input: String, private val expected: String) {
         arrayOf(
           "Recipient::123",
           "Recipient::123"
+        ),
+        arrayOf(
+          "url with text before https://example.com/v1/endpoint;asdf123%20$[]?asdf&asdf#asdf and stuff afterwards",
+          "url with text before https://***.com/*** and stuff afterwards"
+        ),
+        arrayOf(
+          "https://signal.org/v1/endpoint",
+          "https://signal.org/v1/endpoint"
+        ),
+        arrayOf(
+          "https://cdn3.signal.org/v1/endpoint",
+          "https://***.org/***"
+        ),
+        arrayOf(
+          "https://debuglogs.org/android/7.47.2/2b5ccf4e3e58e44f12b3c92cfd5b526a2432f1dd0f81c8f89dededb176f1122d",
+          "https://debuglogs.org/android/7.47.2/2b5ccf4e3e58e44f12b3c92cfd5b526a2432f1dd0f81c8f89dededb176f1122d"
         )
       )
     }

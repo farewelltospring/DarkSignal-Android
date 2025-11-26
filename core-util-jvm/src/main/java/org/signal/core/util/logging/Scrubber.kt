@@ -7,6 +7,7 @@ package org.signal.core.util.logging
 
 import org.signal.core.util.CryptoUtil
 import org.signal.core.util.Hex
+import org.signal.core.util.isNotNullOrBlank
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -22,20 +23,18 @@ object Scrubber {
    * Supposedly, the shortest international phone numbers in use contain seven digits.
    * Handles URL encoded +, %2B
    */
-  private val E164_PATTERN = Pattern.compile("(\\+|%2B)(\\d{7,15})")
-  private val E164_ZERO_PATTERN = Pattern.compile("\\b0(\\d{10})\\b")
+  private val E164_PATTERN = Pattern.compile("(KEEP_E164::)?(\\+|%2B)(\\d{7,15})")
+  private val E164_ZERO_PATTERN = Pattern.compile("\\b(KEEP_E164::)?0(\\d{10})\\b")
 
   /** The second group will be censored.*/
-  private val CRUDE_EMAIL_PATTERN = Pattern.compile("\\b([^\\s/])([^\\s/]*@[^\\s]+)")
+  private val CRUDE_EMAIL_PATTERN = Pattern.compile("\\b([^\\s/,()])([^\\s/,()]*@[^\\s]+\\.[^\\s]+)")
   private const val EMAIL_CENSOR = "...@..."
 
   /** The middle group will be censored. */
-  private val GROUP_ID_V1_PATTERN = Pattern.compile("(__)(textsecure_group__![^\\s]+)([^\\s]{2})")
-  private const val GROUP_ID_V1_CENSOR = "...group..."
+  private val GROUP_ID_V1_PATTERN = Pattern.compile("(__textsecure_group__!)([^\\s]+)([^\\s]{3})")
 
   /** The middle group will be censored. */
-  private val GROUP_ID_V2_PATTERN = Pattern.compile("(__)(signal_group__v2__![^\\s]+)([^\\s]{2})")
-  private const val GROUP_ID_V2_CENSOR = "...group_v2..."
+  private val GROUP_ID_V2_PATTERN = Pattern.compile("(__signal_group__v2__!)([^\\s]+)([^\\s]{3})")
 
   /** The middle group will be censored. */
   private val UUID_PATTERN = Pattern.compile("(JOB::)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{9})([0-9a-f]{3})", Pattern.CASE_INSENSITIVE)
@@ -61,9 +60,9 @@ object Scrubber {
   private val IPV6_PATTERN = Pattern.compile("([0-9a-fA-F]{0,4}:){3,7}([0-9a-fA-F]){0,4}")
   private const val IPV6_CENSOR = "...ipv6..."
 
-  /** The domain name except for TLD will be censored. */
-  private val DOMAIN_PATTERN = Pattern.compile("([a-z0-9]+\\.)+([a-z0-9\\-]*[a-z\\-][a-z0-9\\-]*)", Pattern.CASE_INSENSITIVE)
-  private const val DOMAIN_CENSOR = "***."
+  /** The domain name and path except for TLD will be censored. */
+  private val URL_PATTERN = Pattern.compile("([a-z0-9]+\\.)+([a-z0-9\\-]*[a-z\\-][a-z0-9\\-]*)(/[/a-z0-9\\-_.~:@?&=#%+\\[\\]!$()*,;]*)?", Pattern.CASE_INSENSITIVE)
+  private const val URL_CENSOR = "***"
   private val TOP_100_TLDS: Set<String> = setOf(
     "com", "net", "org", "jp", "de", "uk", "fr", "br", "it", "ru", "es", "me", "gov", "pl", "ca", "au", "cn", "co", "in",
     "nl", "edu", "info", "eu", "ch", "id", "at", "kr", "cz", "mx", "be", "tv", "se", "tr", "tw", "al", "ua", "ir", "vn",
@@ -76,6 +75,8 @@ object Scrubber {
   /** Base16 Call Link Key Pattern */
   private val CALL_LINK_PATTERN = Pattern.compile("([bBcCdDfFgGhHkKmMnNpPqQrRsStTxXzZ]{4})(-[bBcCdDfFgGhHkKmMnNpPqQrRsStTxXzZ]{4}){7}")
   private const val CALL_LINK_CENSOR_SUFFIX = "-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"
+
+  private val CALL_LINK_ROOM_ID_PATTERN = Pattern.compile("([^/])([0-9a-f]{61})([0-9a-f]{3})")
 
   @JvmStatic
   @Volatile
@@ -95,25 +96,38 @@ object Scrubber {
       .scrubGroupsV2()
       .scrubPnis()
       .scrubUuids()
-      .scrubDomains()
+      .scrubUrls()
       .scrubIpv4()
       .scrubIpv6()
       .scrubCallLinkKeys()
+      .scrubCallLinkRoomIds()
   }
 
   private fun CharSequence.scrubE164(): CharSequence {
     return scrub(this, E164_PATTERN) { matcher, output ->
-      output
-        .append("E164:")
-        .append(hash(matcher.group(2)))
+      if (matcher.group(1) != null && matcher.group(1)!!.isNotEmpty()) {
+        output
+          .append("KEEP_E164::")
+          .append((matcher.group(2) + matcher.group(3)).censorMiddle(2, 2))
+      } else {
+        output
+          .append("E164:")
+          .append(hash(matcher.group(3)))
+      }
     }
   }
 
   private fun CharSequence.scrubE164Zero(): CharSequence {
     return scrub(this, E164_ZERO_PATTERN) { matcher, output ->
-      output
-        .append("E164:")
-        .append(hash(matcher.group(1)))
+      if (matcher.group(1) != null && matcher.group(1)!!.isNotEmpty()) {
+        output
+          .append("KEEP_E164::")
+          .append(("0" + matcher.group(2)).censorMiddle(2, 2))
+      } else {
+        output
+          .append("E164:")
+          .append(hash(matcher.group(2)))
+      }
     }
   }
 
@@ -128,8 +142,7 @@ object Scrubber {
   private fun CharSequence.scrubGroupsV1(): CharSequence {
     return scrub(this, GROUP_ID_V1_PATTERN) { matcher, output ->
       output
-        .append(matcher.group(1))
-        .append(GROUP_ID_V1_CENSOR)
+        .append("GV1::***")
         .append(matcher.group(3))
     }
   }
@@ -137,8 +150,7 @@ object Scrubber {
   private fun CharSequence.scrubGroupsV2(): CharSequence {
     return scrub(this, GROUP_ID_V2_PATTERN) { matcher, output ->
       output
-        .append(matcher.group(1))
-        .append(GROUP_ID_V2_CENSOR)
+        .append("GV2::***")
         .append(matcher.group(3))
     }
   }
@@ -166,13 +178,26 @@ object Scrubber {
     }
   }
 
-  private fun CharSequence.scrubDomains(): CharSequence {
-    return scrub(this, DOMAIN_PATTERN) { matcher, output ->
+  private fun CharSequence.scrubUrls(): CharSequence {
+    return scrub(this, URL_PATTERN) { matcher, output ->
       val match: String = matcher.group(0)!!
-      if (matcher.groupCount() == 2 && TOP_100_TLDS.contains(matcher.group(2)!!.lowercase()) && !match.endsWith("signal.org")) {
+
+      if (
+        (matcher.groupCount() == 2 || matcher.groupCount() == 3) &&
+        TOP_100_TLDS.contains(matcher.group(2)!!.lowercase()) &&
+        !(matcher.group(1).endsWith("signal.") && matcher.group(2) == "org" && !match.contains("cdn")) &&
+        !(matcher.group(1).endsWith("debuglogs.") && matcher.group(2) == "org")
+      ) {
         output
-          .append(DOMAIN_CENSOR)
+          .append(URL_CENSOR)
+          .append(".")
           .append(matcher.group(2))
+          .run {
+            if (matcher.groupCount() == 3 && matcher.group(3).isNotNullOrBlank()) {
+              append("/")
+              append(URL_CENSOR)
+            }
+          }
       } else {
         output.append(match)
       }
@@ -194,6 +219,24 @@ object Scrubber {
         .append(match)
         .append(CALL_LINK_CENSOR_SUFFIX)
     }
+  }
+
+  private fun CharSequence.scrubCallLinkRoomIds(): CharSequence {
+    return scrub(this, CALL_LINK_ROOM_ID_PATTERN) { matcher, output ->
+      output
+        .append(matcher.group(1))
+        .append("*************************************************************")
+        .append(matcher.group(3))
+    }
+  }
+
+  private fun String.censorMiddle(leading: Int, trailing: Int): String {
+    val totalKept = leading + trailing
+    if (this.length < totalKept) {
+      return "*".repeat(this.length)
+    }
+    val middle = "*".repeat(this.length - totalKept)
+    return this.take(leading) + middle + this.takeLast(trailing)
   }
 
   private fun scrub(input: CharSequence, pattern: Pattern, processMatch: MatchProcessor): CharSequence {

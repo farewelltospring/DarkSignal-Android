@@ -2,22 +2,23 @@ package org.thoughtcrime.securesms.jobmanager;
 
 import android.content.Context;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.jobmanager.impl.BackoffUtil;
-import org.thoughtcrime.securesms.util.FeatureFlags;
+import org.thoughtcrime.securesms.util.RemoteConfig;
 
+import java.lang.annotation.Retention;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static androidx.annotation.VisibleForTesting.PACKAGE_PRIVATE;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
  * A durable unit of work.
@@ -41,6 +42,7 @@ public abstract class Job {
   private long lastRunAttemptTime;
   private long nextBackoffInterval;
 
+  private volatile boolean cascadingFailure;
   private volatile boolean canceled;
 
   protected Context context;
@@ -105,9 +107,19 @@ public abstract class Job {
     this.canceled = true;
   }
 
+  /** Indicates that this job is failing because a job earlier in the chain failed. */
+  final void markCascadingFailure() {
+    this.cascadingFailure = true;
+  }
+
+  /** Whether or not this job is failing because a job earlier in the chain failed. */
+  protected boolean isCascadingFailure() {
+    return this.cascadingFailure;
+  }
+
   /** Provides a default exponential backoff given the current run attempt. */
   protected final long defaultBackoff() {
-    return BackoffUtil.exponentialBackoff(runAttempt + 1, FeatureFlags.getDefaultMaxBackoff());
+    return BackoffUtil.exponentialBackoff(runAttempt + 1, RemoteConfig.getDefaultMaxBackoff());
   }
 
 
@@ -218,12 +230,10 @@ public abstract class Job {
       return resultType == ResultType.SUCCESS;
     }
 
-    @VisibleForTesting(otherwise = PACKAGE_PRIVATE)
     public boolean isRetry() {
       return resultType == ResultType.RETRY;
     }
 
-    @VisibleForTesting(otherwise = PACKAGE_PRIVATE)
     public boolean isFailure() {
       return resultType == ResultType.FAILURE;
     }
@@ -268,9 +278,14 @@ public abstract class Job {
     public static final long   IMMORTAL            = -1;
     public static final int    UNLIMITED           = -1;
 
+    @Retention(SOURCE)
+    @IntDef({ PRIORITY_DEFAULT, PRIORITY_LOW, PRIORITY_LOWER, PRIORITY_HIGH})
+    public @interface Priority{}
     public static final int PRIORITY_DEFAULT = 0;
     public static final int PRIORITY_HIGH = 1;
     public static final int PRIORITY_LOW = -1;
+    /** One step lower than {@link #PRIORITY_LOW} */
+    public static final int PRIORITY_LOWER = -2;
 
     private final String       id;
     private final long         createTime;
@@ -282,7 +297,9 @@ public abstract class Job {
     private final List<String> constraintKeys;
     private final byte[]       inputData;
     private final boolean      memoryOnly;
-    private final int          priority;
+    private final int          globalPriority;
+    private final int          queuePriority;
+    private final long         initialDelay;
 
     private Parameters(@NonNull String id,
                        long createTime,
@@ -294,7 +311,9 @@ public abstract class Job {
                        @NonNull List<String> constraintKeys,
                        @Nullable byte[] inputData,
                        boolean memoryOnly,
-                       int priority)
+                       int globalPriority,
+                       int queuePriority,
+                       long initialDelay)
     {
       this.id                     = id;
       this.createTime             = createTime;
@@ -306,7 +325,9 @@ public abstract class Job {
       this.constraintKeys         = constraintKeys;
       this.inputData              = inputData;
       this.memoryOnly             = memoryOnly;
-      this.priority               = priority;
+      this.globalPriority         = globalPriority;
+      this.queuePriority          = queuePriority;
+      this.initialDelay           = initialDelay;
     }
 
     @NonNull String getId() {
@@ -349,12 +370,20 @@ public abstract class Job {
       return memoryOnly;
     }
 
-    int getPriority() {
-      return priority;
+    int getGlobalPriority() {
+      return globalPriority;
+    }
+
+    int getQueuePriority() {
+      return queuePriority;
+    }
+
+    long getInitialDelay() {
+      return initialDelay;
     }
 
     public Builder toBuilder() {
-      return new Builder(id, createTime, lifespan, maxAttempts, maxInstancesForFactory, maxInstancesForQueue, queue, constraintKeys, inputData, memoryOnly, priority);
+      return new Builder(id, createTime, lifespan, maxAttempts, maxInstancesForFactory, maxInstancesForQueue, queue, constraintKeys, inputData, memoryOnly, globalPriority, queuePriority, initialDelay);
     }
 
 
@@ -369,14 +398,16 @@ public abstract class Job {
       private List<String> constraintKeys;
       private byte[]       inputData;
       private boolean      memoryOnly;
-      private int          priority;
+      private int          globalPriority;
+      private int          queuePriority;
+      private long         initialDelay;
 
       public Builder() {
         this(UUID.randomUUID().toString());
       }
 
       Builder(@NonNull String id) {
-        this(id, System.currentTimeMillis(), IMMORTAL, 1, UNLIMITED, UNLIMITED, null, new LinkedList<>(), null, false, Parameters.PRIORITY_DEFAULT);
+        this(id, System.currentTimeMillis(), IMMORTAL, 1, UNLIMITED, UNLIMITED, null, new LinkedList<>(), null, false, Parameters.PRIORITY_DEFAULT, Parameters.PRIORITY_DEFAULT, 0);
       }
 
       private Builder(@NonNull String id,
@@ -389,7 +420,9 @@ public abstract class Job {
                       @NonNull List<String> constraintKeys,
                       @Nullable byte[] inputData,
                       boolean memoryOnly,
-                      int priority)
+                      int globalPriority,
+                      int queuePriority,
+                      long initialDelay)
       {
         this.id                     = id;
         this.createTime             = createTime;
@@ -401,7 +434,9 @@ public abstract class Job {
         this.constraintKeys         = constraintKeys;
         this.inputData              = inputData;
         this.memoryOnly             = memoryOnly;
-        this.priority               = priority;
+        this.globalPriority         = globalPriority;
+        this.queuePriority          = queuePriority;
+        this.initialDelay           = initialDelay;
       }
 
       /** Should only be invoked by {@link JobController} */
@@ -496,7 +531,7 @@ public abstract class Job {
       }
 
       /**
-       * Sets the job's priority. Higher numbers are higher priority. Use the constants {@link Parameters#PRIORITY_HIGH}, {@link Parameters#PRIORITY_LOW},
+       * Sets the job's global priority. Higher numbers are higher priority. Use the constants {@link Parameters#PRIORITY_HIGH}, {@link Parameters#PRIORITY_LOW},
        * and {@link Parameters#PRIORITY_DEFAULT}. Defaults to {@link Parameters#PRIORITY_DEFAULT}.
        *
        * Priority determines the order jobs are run. In general, higher priority jobs run first. When deciding which job to run within a queue, we will always
@@ -510,8 +545,25 @@ public abstract class Job {
        * of this, as it provides the potential for lower-priority jobs to be extremely delayed if higher-priority jobs are being consistently enqueued at the
        * same time.
        */
-      public @NonNull Builder setPriority(int priority) {
-        this.priority = priority;
+      public @NonNull Builder setGlobalPriority(@Priority int priority) {
+        this.globalPriority = priority;
+        return this;
+      }
+
+      /**
+       * Sets the job's queue priority. Higher numbers are higher priority. Use the constants {@link Parameters#PRIORITY_HIGH}, {@link Parameters#PRIORITY_LOW},
+       * and {@link Parameters#PRIORITY_DEFAULT}. Defaults to {@link Parameters#PRIORITY_DEFAULT}.
+       *
+       * Queue priority determines the order jobs are run within a queue. It's a secondary attribute to {@link #setGlobalPriority(int)}. When deciding which job
+       * to run within a queue, if two jobs have equal global priorities, we will always run the oldest job that has the highest queue priority. For example,
+       * if the highest queue priority in the queue is {@link Parameters#PRIORITY_DEFAULT} (and all global priorities are equal), then we'll run the oldest job
+       * with that queue priority, ignoring lower-priority jobs.
+       *
+       * Outside of picking the "most eligible job" within a queue, the queue priority is not used. It is ignored when choosing which job to run amongst
+       * multiple queues. If you'd like to influence that, see {@link #setGlobalPriority(int)}.
+       */
+      public @NonNull Builder setQueuePriority(@Priority int priority) {
+        this.queuePriority = priority;
         return this;
       }
 
@@ -524,8 +576,16 @@ public abstract class Job {
         return this;
       }
 
+      /**
+       * Specifies a delay (in milliseconds) before the job runs. Default is 0.
+       */
+      public @NonNull Builder setInitialDelay(long initialDelay) {
+        this.initialDelay = initialDelay;
+        return this;
+      }
+
       public @NonNull Parameters build() {
-        return new Parameters(id, createTime, lifespan, maxAttempts, maxInstancesForFactory, maxInstancesForQueue, queue, constraintKeys, inputData, memoryOnly, priority);
+        return new Parameters(id, createTime, lifespan, maxAttempts, maxInstancesForFactory, maxInstancesForQueue, queue, constraintKeys, inputData, memoryOnly, globalPriority, queuePriority, initialDelay);
       }
     }
   }

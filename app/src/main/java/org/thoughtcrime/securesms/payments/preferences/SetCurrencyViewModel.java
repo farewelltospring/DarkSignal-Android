@@ -10,13 +10,12 @@ import androidx.lifecycle.ViewModelProvider;
 import com.annimon.stream.Stream;
 
 import org.signal.core.util.logging.Log;
-import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.BuildConfig;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.components.settings.SettingHeader;
 import org.thoughtcrime.securesms.components.settings.SettingProgress;
 import org.thoughtcrime.securesms.components.settings.SingleSelectSetting;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.payments.currency.CurrencyExchange;
 import org.thoughtcrime.securesms.payments.currency.CurrencyExchangeRepository;
@@ -32,6 +31,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import kotlin.Pair;
+
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -43,10 +44,10 @@ public final class SetCurrencyViewModel extends ViewModel {
   private final LiveData<CurrencyListState> list;
 
   public SetCurrencyViewModel(@NonNull CurrencyExchangeRepository currencyExchangeRepository) {
-    this.store = new Store<>(new SetCurrencyState(SignalStore.paymentsValues().currentCurrency()));
+    this.store = new Store<>(new SetCurrencyState(SignalStore.payments().currentCurrency()));
     this.list  = Transformations.map(this.store.getStateLiveData(), this::createListState);
 
-    this.store.update(SignalStore.paymentsValues().liveCurrentCurrency(), (currency, state) -> state.updateCurrentCurrency(currency));
+    this.store.update(SignalStore.payments().liveCurrentCurrency(), (currency, state) -> state.updateCurrentCurrency(currency));
 
     currencyExchangeRepository.getCurrencyExchange(new AsynchronousCallback.WorkerThread<CurrencyExchange, Throwable>() {
       @Override
@@ -63,7 +64,7 @@ public final class SetCurrencyViewModel extends ViewModel {
   }
 
   public void select(@NonNull Currency selection) {
-    SignalStore.paymentsValues().setCurrentCurrency(selection);
+    SignalStore.payments().setCurrentCurrency(selection);
   }
 
   public LiveData<CurrencyListState> getCurrencyListState() {
@@ -95,11 +96,11 @@ public final class SetCurrencyViewModel extends ViewModel {
   private int findSelectedIndex(MappingModelList items) {
     return Stream.of(items)
                  .mapIndexed(Pair::new)
-                 .filter(p -> p.second() instanceof SingleSelectSetting.Item)
-                 .map(p -> new Pair<>(p.first(), (SingleSelectSetting.Item) p.second()))
-                 .filter(pair -> pair.second().isSelected())
+                 .filter(p -> p.getSecond() instanceof SingleSelectSetting.Item)
+                 .map(p -> new Pair<>(p.getFirst(), (SingleSelectSetting.Item) p.getSecond()))
+                 .filter(pair -> pair.getSecond().isSelected())
                  .findFirst()
-                 .map(Pair::first)
+                 .map(Pair::getFirst)
                  .orElse(-1);
   }
 
@@ -206,7 +207,7 @@ public final class SetCurrencyViewModel extends ViewModel {
     @Override
     public @NonNull <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
       //noinspection ConstantConditions
-      return modelClass.cast(new SetCurrencyViewModel(new CurrencyExchangeRepository(ApplicationDependencies.getPayments())));
+      return modelClass.cast(new SetCurrencyViewModel(new CurrencyExchangeRepository(AppDependencies.getPayments())));
     }
   }
 }

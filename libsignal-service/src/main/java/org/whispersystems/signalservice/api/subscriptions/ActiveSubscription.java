@@ -19,7 +19,8 @@ public final class ActiveSubscription {
 
   public enum Processor {
     STRIPE("STRIPE"),
-    BRAINTREE("BRAINTREE");
+    BRAINTREE("BRAINTREE"),
+    GOOGLE_PLAY_BILLING("GOOGLE_PLAY_BILLING");
 
     private final String code;
 
@@ -42,7 +43,36 @@ public final class ActiveSubscription {
     }
   }
 
-  private enum Status {
+  /**
+   * As per API documentation
+   */
+  public enum PaymentMethod {
+    UNKNOWN("UNKNOWN"),
+    CARD("CARD"),
+    PAYPAL("PAYPAL"),
+    SEPA_DEBIT("SEPA_DEBIT"),
+    IDEAL("IDEAL"),
+    GOOGLE_PLAY_BILLING("GOOGLE_PLAY_BILLING"),
+    APPLE_APP_STORE("APPLE_APP_STORE");
+
+    private String code;
+
+    PaymentMethod(String code) {
+      this.code = code;
+    }
+
+    static PaymentMethod fromCode(String code) {
+      for (PaymentMethod method : PaymentMethod.values()) {
+        if (Objects.equals(method.code, code)) {
+          return method;
+        }
+      }
+
+      return PaymentMethod.UNKNOWN;
+    }
+  }
+
+  public enum Status {
     /**
      * The subscription is currently in a trial period and it's safe to provision your product for your customer.
      * The subscription transitions automatically to active when the first payment is made.
@@ -93,7 +123,7 @@ public final class ActiveSubscription {
       this.status = status;
     }
 
-    private static Status getStatus(String status) {
+    public static Status getStatus(String status) {
       for (Status s : Status.values()) {
         if (Objects.equals(status, s.status)) {
           return s;
@@ -136,7 +166,7 @@ public final class ActiveSubscription {
   }
 
   public boolean isInProgress() {
-    return activeSubscription != null && !isActive() && (!activeSubscription.isFailedPayment() || activeSubscription.isPastDue());
+    return activeSubscription != null && !isActive() && (!isFailedPayment() || isPastDue()) && !isCanceled();
   }
 
   public boolean isPastDue() {
@@ -147,18 +177,29 @@ public final class ActiveSubscription {
     return chargeFailure != null || (activeSubscription != null && !isActive() && activeSubscription.isFailedPayment());
   }
 
+  public boolean isCanceled() {
+    return activeSubscription != null && activeSubscription.isCanceled();
+  }
+
+  /**
+   * Backups-specific call that gives us a value that should align with autoRenew from the GPB payment.
+   */
+  public boolean willCancelAtPeriodEnd() {
+    return activeSubscription == null || activeSubscription.willCancelAtPeriodEnd;
+  }
+
   public static final class Subscription {
-    private final int        level;
-    private final String     currency;
-    private final BigDecimal amount;
-    private final long       endOfCurrentPeriod;
-    private final boolean    isActive;
-    private final long       billingCycleAnchor;
-    private final boolean    willCancelAtPeriodEnd;
-    private final String     status;
-    private final Processor  processor;
-    private final String     paymentMethod;
-    private final boolean    paymentPending;
+    private final int           level;
+    private final String        currency;
+    private final BigDecimal    amount;
+    private final long          endOfCurrentPeriod;
+    private final boolean       isActive;
+    private final long          billingCycleAnchor;
+    private final boolean       willCancelAtPeriodEnd;
+    private final String        status;
+    private final Processor     processor;
+    private final PaymentMethod paymentMethod;
+    private final boolean       paymentPending;
 
     @JsonCreator
     public Subscription(@JsonProperty("level") int level,
@@ -182,7 +223,7 @@ public final class ActiveSubscription {
       this.willCancelAtPeriodEnd = willCancelAtPeriodEnd;
       this.status                = status;
       this.processor             = Processor.fromCode(processor);
-      this.paymentMethod         = paymentMethod;
+      this.paymentMethod         = PaymentMethod.fromCode(paymentMethod);
       this.paymentPending        = paymentPending;
     }
 
@@ -238,7 +279,7 @@ public final class ActiveSubscription {
       return processor;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
       return paymentMethod;
     }
 

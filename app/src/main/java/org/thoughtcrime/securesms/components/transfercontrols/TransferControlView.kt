@@ -17,9 +17,12 @@ import androidx.core.view.updateLayoutParams
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.signal.core.util.ByteSize
+import org.signal.core.util.bytes
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.attachments.Attachment
+import org.thoughtcrime.securesms.attachments.DatabaseAttachment
 import org.thoughtcrime.securesms.components.RecyclerViewParentTransitionController
 import org.thoughtcrime.securesms.database.AttachmentTable
 import org.thoughtcrime.securesms.databinding.TransferControlsViewBinding
@@ -39,6 +42,8 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
 
   private var state = TransferControlViewState()
   private val progressUpdateDebouncer: ThrottledDebouncer = ThrottledDebouncer(100)
+
+  private var mode: Mode = Mode.GONE
 
   init {
     tag = uuid
@@ -69,6 +74,10 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
     state = newState
   }
 
+  fun isGone(): Boolean {
+    return mode == Mode.GONE
+  }
+
   private fun applyState(currentState: TransferControlViewState) {
     val mode = deriveMode(currentState)
     verboseLog("New state applying, mode = $mode")
@@ -91,6 +100,7 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
       Mode.RETRY_UPLOADING -> displayRetry(currentState, true)
       Mode.GONE -> displayChildrenAsGone()
     }
+    this.mode = mode
   }
 
   private fun deriveMode(currentState: TransferControlViewState): Mode {
@@ -108,7 +118,7 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
       if (currentState.slides.size == 1) {
         val slide = currentState.slides.first()
         if (slide.hasVideo()) {
-          if (currentState.isOutgoing) {
+          if (currentState.isUpload) {
             return when (slide.transferState) {
               AttachmentTable.TRANSFER_PROGRESS_STARTED -> {
                 Mode.UPLOADING_SINGLE_ITEM
@@ -146,7 +156,7 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
             }
           }
         } else {
-          return if (currentState.isOutgoing) {
+          return if (currentState.isUpload) {
             when (slide.transferState) {
               AttachmentTable.TRANSFER_PROGRESS_FAILED -> {
                 Mode.RETRY_UPLOADING
@@ -179,7 +189,7 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
       } else {
         when (getTransferState(currentState.slides)) {
           AttachmentTable.TRANSFER_PROGRESS_STARTED -> {
-            return if (currentState.isOutgoing) {
+            return if (currentState.isUpload) {
               Mode.UPLOADING_GALLERY
             } else {
               Mode.DOWNLOADING_GALLERY
@@ -195,7 +205,7 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
           }
 
           AttachmentTable.TRANSFER_PROGRESS_FAILED -> {
-            return if (currentState.isOutgoing) {
+            return if (currentState.isUpload) {
               Mode.RETRY_UPLOADING
             } else {
               Mode.RETRY_DOWNLOADING
@@ -521,6 +531,8 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
         val existingEvent = mutableMap[attachment]
         if (existingEvent == null || updateEvent.completed > existingEvent.completed) {
           mutableMap[attachment] = updateEvent
+        } else if (updateEvent.completed < 0.bytes) {
+          mutableMap.remove(attachment)
         }
         verboseLog("onEventAsync compression update")
         return@updateState it.copy(compressionProgress = mutableMap.toMap())
@@ -530,6 +542,8 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
         val existingEvent = mutableMap[attachment]
         if (existingEvent == null || updateEvent.completed > existingEvent.completed) {
           mutableMap[attachment] = updateEvent
+        } else if (updateEvent.completed < 0.bytes) {
+          mutableMap.remove(attachment)
         }
         verboseLog("onEventAsync network update")
         return@updateState it.copy(networkProgress = mutableMap.toMap())
@@ -544,27 +558,29 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
       val isNewSlideSet = !isUpdateToExistingSet(state, slides)
       val networkProgress: MutableMap<Attachment, Progress> = if (isNewSlideSet) HashMap() else state.networkProgress.toMutableMap()
       if (isNewSlideSet) {
-        slides.forEach { networkProgress[it.asAttachment()] = Progress(0L, it.fileSize) }
+        slides.forEach { networkProgress[it.asAttachment()] = Progress(0.bytes, it.fileSize.bytes) }
       }
       val compressionProgress: MutableMap<Attachment, Progress> = if (isNewSlideSet) HashMap() else state.compressionProgress.toMutableMap()
       var allStreamableOrDone = true
       for (slide in slides) {
         val attachment = slide.asAttachment()
         if (attachment.transferState == AttachmentTable.TRANSFER_PROGRESS_DONE) {
-          networkProgress[attachment] = Progress(attachment.size, attachment.size)
+          networkProgress[attachment] = Progress(attachment.size.bytes, attachment.size.bytes)
         } else if (!MediaUtil.isInstantVideoSupported(slide)) {
           allStreamableOrDone = false
         }
       }
       val playableWhileDownloading = allStreamableOrDone
-      val isOutgoing = slides.any { it.asAttachment().uploadTimestamp == 0L }
+      val isUpload = slides.all {
+        (it.asAttachment() as? DatabaseAttachment)?.hasData == true
+      }
 
       val result = state.copy(
         slides = slides,
         networkProgress = networkProgress,
         compressionProgress = compressionProgress,
         playableWhileDownloading = playableWhileDownloading,
-        isOutgoing = isOutgoing
+        isUpload = isUpload
       )
       verboseLog("New state calculated and being returned for new slides: ${slidesAsListOfTimestamps(slides)}\n$result")
       return@updateState result
@@ -645,12 +661,12 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
 
   private fun isCompressing(state: TransferControlViewState): Boolean {
     val total = state.compressionProgress.sumTotal()
-    return total > 0 && state.compressionProgress.sumCompleted() / total < 0.99f
+    return total > 0.bytes && state.compressionProgress.sumCompleted().percentageOf(total) < 0.99f
   }
 
   private fun calculateProgress(state: TransferControlViewState): Float {
-    val totalCompressionProgress: Float = state.compressionProgress.values.map { it.completed.toFloat() / it.total }.sum()
-    val totalDownloadProgress: Float = state.networkProgress.values.map { it.completed.toFloat() / it.total }.sum()
+    val totalCompressionProgress: Float = state.compressionProgress.values.map { it.completed.percentageOf(it.total) }.sum()
+    val totalDownloadProgress: Float = state.networkProgress.values.map { it.completed.percentageOf(it.total) }.sum()
     val weightedProgress = UPLOAD_TASK_WEIGHT * totalDownloadProgress + COMPRESSION_TASK_WEIGHT * totalCompressionProgress
     val weightedTotal = (UPLOAD_TASK_WEIGHT * state.networkProgress.size + COMPRESSION_TASK_WEIGHT * state.compressionProgress.size).toFloat()
     return weightedProgress / weightedTotal
@@ -665,38 +681,38 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
         val remainingSlides = currentState.slides.filterNot { it.transferState == AttachmentTable.TRANSFER_PROGRESS_DONE }
         val downloadCount = remainingSlides.size
         binding.primaryDetailsText.text = context.resources.getQuantityString(R.plurals.TransferControlView_n_items, downloadCount, downloadCount)
-        val mebibyteCount = (currentState.networkProgress.sumTotal() - currentState.networkProgress.sumCompleted()) / MEBIBYTE
-        binding.secondaryDetailsText.text = context.getString(R.string.TransferControlView__filesize, mebibyteCount)
+        val size = currentState.networkProgress.sumTotal() - currentState.networkProgress.sumCompleted()
+        binding.secondaryDetailsText.text = size.toUnitString()
       }
 
       Mode.PENDING_GALLERY_CONTAINS_PLAYABLE -> {
         binding.secondaryDetailsText.updateLayoutParams {
           width = ViewGroup.LayoutParams.WRAP_CONTENT
         }
-        val mebibyteCount = (currentState.networkProgress.sumTotal() - currentState.networkProgress.sumCompleted()) / MEBIBYTE
-        binding.secondaryDetailsText.text = context.getString(R.string.TransferControlView__filesize, mebibyteCount)
+        val size = currentState.networkProgress.sumTotal() - currentState.networkProgress.sumCompleted()
+        binding.secondaryDetailsText.text = size.toUnitString()
       }
 
       Mode.PENDING_SINGLE_ITEM, Mode.PENDING_VIDEO_PLAYABLE -> {
         binding.secondaryDetailsText.updateLayoutParams {
           width = ViewGroup.LayoutParams.WRAP_CONTENT
         }
-        val mebibyteCount = (currentState.slides.sumOf { it.asAttachment().size }) / MEBIBYTE
-        binding.secondaryDetailsText.text = context.getString(R.string.TransferControlView__filesize, mebibyteCount)
+        val size: ByteSize = (currentState.slides.sumOf { it.asAttachment().size }).bytes
+        binding.secondaryDetailsText.text = size.toUnitString()
       }
 
       Mode.DOWNLOADING_GALLERY, Mode.DOWNLOADING_SINGLE_ITEM, Mode.DOWNLOADING_VIDEO_PLAYABLE, Mode.UPLOADING_GALLERY, Mode.UPLOADING_SINGLE_ITEM -> {
-        if (currentState.networkProgress.sumCompleted() == 0L || isCompressing(currentState)) {
+        if (currentState.isUpload && (currentState.networkProgress.sumCompleted() == 0.bytes || isCompressing(currentState))) {
           binding.secondaryDetailsText.updateLayoutParams {
             width = ViewGroup.LayoutParams.WRAP_CONTENT
           }
           binding.secondaryDetailsText.text = context.getString(R.string.TransferControlView__processing)
         } else {
-          val progressMiB = currentState.networkProgress.sumCompleted() / MEBIBYTE
-          val totalMiB = currentState.networkProgress.sumTotal() / MEBIBYTE
-          val completedLabel = context.resources.getString(R.string.TransferControlView__download_progress, totalMiB, totalMiB)
+          val progressMiB = currentState.networkProgress.sumCompleted().toUnitString()
+          val totalMiB = currentState.networkProgress.sumTotal().toUnitString()
+          val completedLabel = context.resources.getString(R.string.TransferControlView__download_progress_s_s, totalMiB, totalMiB)
           val desiredWidth = StaticLayout.getDesiredWidth(completedLabel, binding.secondaryDetailsText.paint)
-          binding.secondaryDetailsText.text = context.resources.getString(R.string.TransferControlView__download_progress, progressMiB, totalMiB)
+          binding.secondaryDetailsText.text = context.resources.getString(R.string.TransferControlView__download_progress_s_s, progressMiB, totalMiB)
           val roundedWidth = ceil(desiredWidth.toDouble()).roundToInt() + binding.secondaryDetailsText.compoundPaddingLeft + binding.secondaryDetailsText.compoundPaddingRight
           binding.secondaryDetailsText.updateLayoutParams {
             width = roundedWidth
@@ -731,7 +747,6 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
     private const val SECONDARY_TEXT_OFFSET_DP = 6
     private const val RETRY_SECONDARY_TEXT_OFFSET_DP = 6
     private const val PRIMARY_TEXT_OFFSET_DP = 4
-    private const val MEBIBYTE = 1048576f
 
     /**
      * A weighting compared to [UPLOAD_TASK_WEIGHT]
@@ -761,20 +776,20 @@ class TransferControlView @JvmOverloads constructor(context: Context, attrs: Att
     }
   }
 
-  data class Progress(val completed: Long, val total: Long) {
+  data class Progress(val completed: ByteSize, val total: ByteSize) {
     companion object {
       fun fromEvent(event: PartProgressEvent): Progress {
-        return Progress(event.progress, event.total)
+        return Progress(event.progress.bytes, event.total.bytes)
       }
     }
   }
 
-  private fun Map<Attachment, Progress>.sumCompleted(): Long {
-    return this.values.sumOf { it.completed }
+  private fun Map<Attachment, Progress>.sumCompleted(): ByteSize {
+    return this.values.sumOf { it.completed.inWholeBytes }.bytes
   }
 
-  private fun Map<Attachment, Progress>.sumTotal(): Long {
-    return this.values.sumOf { it.total }
+  private fun Map<Attachment, Progress>.sumTotal(): ByteSize {
+    return this.values.sumOf { it.total.inWholeBytes }.bytes
   }
 
   enum class Mode {

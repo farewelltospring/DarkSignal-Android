@@ -3,8 +3,10 @@ package org.thoughtcrime.securesms.service.webrtc.state
 import com.annimon.stream.OptionalLong
 import org.signal.ringrtc.CallId
 import org.signal.ringrtc.GroupCall
+import org.signal.ringrtc.GroupCall.GroupCallEndReason
 import org.thoughtcrime.securesms.events.CallParticipant
 import org.thoughtcrime.securesms.events.CallParticipantId
+import org.thoughtcrime.securesms.events.GroupCallSpeechEvent
 import org.thoughtcrime.securesms.events.WebRtcViewModel
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
@@ -22,7 +24,6 @@ data class CallInfoState(
   var callRecipient: Recipient = Recipient.UNKNOWN,
   var callConnectedTime: Long = -1,
   @get:JvmName("getRemoteCallParticipantsMap") var remoteParticipants: MutableMap<CallParticipantId, CallParticipant> = mutableMapOf(),
-  var localParticipant: CallParticipant? = null,
   var peerMap: MutableMap<Int, RemotePeer> = mutableMapOf(),
   var activePeer: RemotePeer? = null,
   var groupCall: GroupCall? = null,
@@ -31,7 +32,9 @@ data class CallInfoState(
   var remoteDevicesCount: OptionalLong = OptionalLong.empty(),
   var participantLimit: Long? = null,
   var pendingParticipants: PendingParticipantCollection = PendingParticipantCollection(),
-  var callLinkDisconnectReason: CallLinkDisconnectReason? = null
+  var callLinkDisconnectReason: CallLinkDisconnectReason? = null,
+  var groupCallEndReason: GroupCallEndReason? = null,
+  var groupCallSpeechEvent: GroupCallSpeechEvent? = null
 ) {
 
   val remoteCallParticipants: List<CallParticipant>

@@ -18,6 +18,7 @@ import com.pnikosis.materialishprogress.ProgressWheel;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.signal.core.util.ByteSize;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.attachments.Attachment;
@@ -122,16 +123,16 @@ public class ViewOnceMessageView extends LinearLayout {
       if (messageRecord.isViewed()) {
         iconColor = openedIconColor;
         text.setText(R.string.RevealableMessageView_viewed);
-        icon.setImageResource(R.drawable.ic_viewed_once_24);
+        icon.setImageResource(R.drawable.symbol_view_once_dash_24);
       } else {
         iconColor = unopenedIconColor;
         text.setText(R.string.RevealableMessageView_media);
-        icon.setImageResource(R.drawable.ic_view_once_24);
+        icon.setImageResource(R.drawable.symbol_view_once_24);
       }
     } else if (ViewOnceUtil.isViewable(messageRecord)) {
       iconColor = unopenedIconColor;
       text.setText(getDescriptionId(messageRecord));
-      icon.setImageResource(R.drawable.ic_view_once_24);
+      icon.setImageResource(R.drawable.symbol_view_once_24);
     } else if (networkInProgress(messageRecord)) {
       iconColor = unopenedIconColor;
       text.setText("");
@@ -140,11 +141,11 @@ public class ViewOnceMessageView extends LinearLayout {
     } else if (requiresTapToDownload(messageRecord)) {
       iconColor = unopenedIconColor;
       text.setText(formatFileSize(messageRecord));
-      icon.setImageResource(R.drawable.ic_arrow_down_circle_outline_24);
+      icon.setImageResource(R.drawable.symbol_arrow_circle_down_24);
     } else {
       iconColor = openedIconColor;
       text.setText(R.string.RevealableMessageView_viewed);
-      icon.setImageResource(R.drawable.ic_viewed_once_24);
+      icon.setImageResource(R.drawable.symbol_view_once_dash_24);
     }
 
     text.setTextColor(textColor);
@@ -176,7 +177,7 @@ public class ViewOnceMessageView extends LinearLayout {
     if (messageRecord.getSlideDeck().getThumbnailSlide() == null) return "";
 
     long size = messageRecord.getSlideDeck().getThumbnailSlide().getFileSize();
-    return Util.getPrettyFileSize(size);
+    return new ByteSize(size).toUnitString(2);
   }
 
   private static @StringRes int getDescriptionId(@NonNull MmsMessageRecord messageRecord) {

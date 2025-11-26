@@ -23,7 +23,7 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
       store.update { it.copy(emojiVersion = version) }
     }
 
-    val pendingOneTimeDonation: Observable<Boolean> = SignalStore.donationsValues().observablePendingOneTimeDonation
+    val pendingOneTimeDonation: Observable<Boolean> = SignalStore.inAppPayments.observablePendingOneTimeDonation
       .distinctUntilChanged()
       .map { it.isPresent }
 
@@ -44,6 +44,11 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
+  fun setShowMediaArchiveStateHint(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.SHOW_ARCHIVE_STATE_HINT, enabled)
+    refresh()
+  }
+
   fun setDisableStorageService(enabled: Boolean) {
     preferenceDataStore.putBoolean(InternalValues.DISABLE_STORAGE_SERVICE, enabled)
     refresh()
@@ -51,11 +56,6 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
 
   fun setGv2ForceInvites(enabled: Boolean) {
     preferenceDataStore.putBoolean(InternalValues.GV2_FORCE_INVITES, enabled)
-    refresh()
-  }
-
-  fun setGv2IgnoreServerChanges(enabled: Boolean) {
-    preferenceDataStore.putBoolean(InternalValues.GV2_IGNORE_SERVER_CHANGES, enabled)
     refresh()
   }
 
@@ -75,7 +75,7 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
   }
 
   fun resetPnpInitializedState() {
-    SignalStore.misc().setPniInitializedDevices(false)
+    SignalStore.misc.hasPniInitializedDevices = false
     refresh()
   }
 
@@ -99,11 +99,6 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
-  fun setInternalCallingAudioProcessingMethod(method: CallManager.AudioProcessingMethod) {
-    preferenceDataStore.putInt(InternalValues.CALLING_AUDIO_PROCESSING_METHOD, method.ordinal)
-    refresh()
-  }
-
   fun setInternalCallingDataMode(dataMode: CallManager.DataMode) {
     preferenceDataStore.putInt(InternalValues.CALLING_DATA_MODE, dataMode.ordinal)
     refresh()
@@ -114,13 +109,43 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     refresh()
   }
 
-  fun setInternalCallingDisableLBRed(enabled: Boolean) {
-    preferenceDataStore.putBoolean(InternalValues.CALLING_DISABLE_LBRED, enabled)
+  fun setInternalCallingSetAudioConfig(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_SET_AUDIO_CONFIG, enabled)
+    refresh()
+  }
+
+  fun setInternalCallingUseOboeAdm(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_USE_OBOE_ADM, enabled)
+    refresh()
+  }
+
+  fun setInternalCallingUseSoftwareAec(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_USE_SOFTWARE_AEC, enabled)
+    refresh()
+  }
+
+  fun setInternalCallingUseSoftwareNs(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_USE_SOFTWARE_NS, enabled)
+    refresh()
+  }
+
+  fun setInternalCallingUseInputLowLatency(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_USE_INPUT_LOW_LATENCY, enabled)
+    refresh()
+  }
+
+  fun setInternalCallingUseInputVoiceComm(enabled: Boolean) {
+    preferenceDataStore.putBoolean(InternalValues.CALLING_USE_INPUT_VOICE_COMM, enabled)
     refresh()
   }
 
   fun setUseConversationItemV2Media(enabled: Boolean) {
-    SignalStore.internalValues().setUseConversationItemV2Media(enabled)
+    SignalStore.internal.useConversationItemV2Media = enabled
+    refresh()
+  }
+
+  fun setHevcEncoding(enabled: Boolean) {
+    SignalStore.internal.hevcEncoding = enabled
     refresh()
   }
 
@@ -136,40 +161,61 @@ class InternalSettingsViewModel(private val repository: InternalSettingsReposito
     repository.addRemoteMegaphone(RemoteMegaphoneRecord.ActionId.DONATE_FOR_FRIEND)
   }
 
+  fun enqueueSubscriptionRedemption() {
+    repository.enqueueSubscriptionRedemption()
+  }
+
   fun refresh() {
     store.update { getState().copy(emojiVersion = it.emojiVersion) }
   }
 
   private fun getState() = InternalSettingsState(
-    seeMoreUserDetails = SignalStore.internalValues().recipientDetails(),
-    shakeToReport = SignalStore.internalValues().shakeToReport(),
-    gv2forceInvites = SignalStore.internalValues().gv2ForceInvites(),
-    gv2ignoreServerChanges = SignalStore.internalValues().gv2IgnoreServerChanges(),
-    gv2ignoreP2PChanges = SignalStore.internalValues().gv2IgnoreP2PChanges(),
-    allowCensorshipSetting = SignalStore.internalValues().allowChangingCensorshipSetting(),
-    forceWebsocketMode = SignalStore.internalValues().isWebsocketModeForced,
-    callingServer = SignalStore.internalValues().groupCallingServer(),
-    callingAudioProcessingMethod = SignalStore.internalValues().callingAudioProcessingMethod(),
-    callingDataMode = SignalStore.internalValues().callingDataMode(),
-    callingDisableTelecom = SignalStore.internalValues().callingDisableTelecom(),
-    callingDisableLBRed = SignalStore.internalValues().callingDisableLBRed(),
-    useBuiltInEmojiSet = SignalStore.internalValues().forceBuiltInEmoji(),
+    seeMoreUserDetails = SignalStore.internal.recipientDetails,
+    shakeToReport = SignalStore.internal.shakeToReport,
+    showArchiveStateHint = SignalStore.internal.showArchiveStateHint,
+    gv2forceInvites = SignalStore.internal.gv2ForceInvites,
+    gv2ignoreP2PChanges = SignalStore.internal.gv2IgnoreP2PChanges,
+    allowCensorshipSetting = SignalStore.internal.allowChangingCensorshipSetting,
+    forceWebsocketMode = SignalStore.internal.isWebsocketModeForced,
+    callingServer = SignalStore.internal.groupCallingServer,
+    callingDataMode = SignalStore.internal.callingDataMode,
+    callingDisableTelecom = SignalStore.internal.callingDisableTelecom,
+    callingSetAudioConfig = SignalStore.internal.callingSetAudioConfig,
+    callingUseOboeAdm = SignalStore.internal.callingUseOboeAdm,
+    callingUseSoftwareAec = SignalStore.internal.callingUseSoftwareAec,
+    callingUseSoftwareNs = SignalStore.internal.callingUseSoftwareNs,
+    callingUseInputLowLatency = SignalStore.internal.callingUseInputLowLatency,
+    callingUseInputVoiceComm = SignalStore.internal.callingUseInputVoiceComm,
+    useBuiltInEmojiSet = SignalStore.internal.forceBuiltInEmoji,
     emojiVersion = null,
-    removeSenderKeyMinimium = SignalStore.internalValues().removeSenderKeyMinimum(),
-    delayResends = SignalStore.internalValues().delayResends(),
-    disableStorageService = SignalStore.internalValues().storageServiceDisabled(),
-    canClearOnboardingState = SignalStore.storyValues().hasDownloadedOnboardingStory && Stories.isFeatureEnabled(),
-    pnpInitialized = SignalStore.misc().hasPniInitializedDevices(),
-    useConversationItemV2ForMedia = SignalStore.internalValues().useConversationItemV2Media(),
-    hasPendingOneTimeDonation = SignalStore.donationsValues().getPendingOneTimeDonation() != null
+    removeSenderKeyMinimium = SignalStore.internal.removeSenderKeyMinimum,
+    delayResends = SignalStore.internal.delayResends,
+    disableStorageService = SignalStore.internal.storageServiceDisabled,
+    canClearOnboardingState = SignalStore.story.hasDownloadedOnboardingStory && Stories.isFeatureEnabled(),
+    pnpInitialized = SignalStore.misc.hasPniInitializedDevices,
+    useConversationItemV2ForMedia = SignalStore.internal.useConversationItemV2Media,
+    hasPendingOneTimeDonation = SignalStore.inAppPayments.getPendingOneTimeDonation() != null,
+    hevcEncoding = SignalStore.internal.hevcEncoding,
+    newCallingUi = SignalStore.internal.newCallingUi,
+    forceSplitPane = SignalStore.internal.forceSplitPane
   )
 
   fun onClearOnboardingState() {
-    SignalStore.storyValues().hasDownloadedOnboardingStory = false
-    SignalStore.storyValues().userHasViewedOnboardingStory = false
+    SignalStore.story.hasDownloadedOnboardingStory = false
+    SignalStore.story.userHasViewedOnboardingStory = false
     Stories.onStorySettingsChanged(Recipient.self().id)
     refresh()
     StoryOnboardingDownloadJob.enqueueIfNeeded()
+  }
+
+  fun setUseNewCallingUi(newCallingUi: Boolean) {
+    SignalStore.internal.newCallingUi = newCallingUi
+    refresh()
+  }
+
+  fun setForceSplitPane(forceSplitPane: Boolean) {
+    SignalStore.internal.forceSplitPane = forceSplitPane
+    refresh()
   }
 
   class Factory(private val repository: InternalSettingsRepository) : ViewModelProvider.Factory {

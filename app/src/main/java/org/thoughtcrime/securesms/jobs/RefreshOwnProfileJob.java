@@ -9,44 +9,41 @@ import org.signal.core.util.Base64;
 import org.signal.core.util.logging.Log;
 import org.signal.libsignal.usernames.BaseUsernameException;
 import org.signal.libsignal.usernames.Username;
+import org.signal.libsignal.zkgroup.VerificationFailedException;
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential;
 import org.signal.libsignal.zkgroup.profiles.ProfileKey;
 import org.thoughtcrime.securesms.badges.BadgeRepository;
 import org.thoughtcrime.securesms.badges.Badges;
 import org.thoughtcrime.securesms.badges.models.Badge;
+import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository;
 import org.thoughtcrime.securesms.crypto.ProfileKeyUtil;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
-import org.thoughtcrime.securesms.keyvalue.AccountValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
+import org.thoughtcrime.securesms.net.SignalNetwork;
 import org.thoughtcrime.securesms.profiles.ProfileName;
 import org.thoughtcrime.securesms.profiles.manage.UsernameRepository;
 import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.storage.StorageSyncHelper;
-import org.thoughtcrime.securesms.subscription.Subscriber;
-import org.thoughtcrime.securesms.util.FeatureFlags;
 import org.thoughtcrime.securesms.util.ProfileUtil;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.Util;
+import org.whispersystems.signalservice.api.NetworkResultUtil;
 import org.whispersystems.signalservice.api.crypto.InvalidCiphertextException;
 import org.whispersystems.signalservice.api.crypto.ProfileCipher;
 import org.whispersystems.signalservice.api.profiles.ProfileAndCredential;
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile;
 import org.whispersystems.signalservice.api.push.UsernameLinkComponents;
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.subscriptions.ActiveSubscription;
 import org.whispersystems.signalservice.api.util.ExpiringProfileCredentialUtil;
 import org.whispersystems.signalservice.internal.ServiceResponse;
-import org.whispersystems.signalservice.internal.push.ReserveUsernameResponse;
 import org.whispersystems.signalservice.internal.push.WhoAmIResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -111,18 +108,27 @@ public class RefreshOwnProfileJob extends BaseJob {
       return;
     }
 
-    if (SignalStore.svr().hasPin() && !SignalStore.svr().hasOptedOut() && SignalStore.storageService().getLastSyncTime() == 0) {
-      Log.i(TAG, "Registered with PIN but haven't completed storage sync yet.");
+    if ((SignalStore.svr().hasPin() || SignalStore.account().restoredAccountEntropyPool()) && !SignalStore.svr().hasOptedOut() && SignalStore.storageService().getLastSyncTime() == 0) {
+      Log.i(TAG, "Registered with PIN or AEP but haven't completed storage sync yet.");
       return;
     }
 
-    if (!SignalStore.registrationValues().hasUploadedProfile() && SignalStore.account().isPrimaryDevice()) {
+    if (!SignalStore.registration().hasUploadedProfile() && SignalStore.account().isPrimaryDevice()) {
       Log.i(TAG, "Registered but haven't uploaded profile yet.");
       return;
     }
 
-    Recipient            self                 = Recipient.self();
-    ProfileAndCredential profileAndCredential = ProfileUtil.retrieveProfileSync(context, self, getRequestType(self), false);
+    Recipient self = Recipient.self();
+
+    ProfileAndCredential profileAndCredential;
+    try {
+      profileAndCredential = ProfileUtil.retrieveProfileSync(context, self, getRequestType(self), false);
+    } catch (IllegalStateException e) {
+      Log.w(TAG, "Unexpected exception result from profile fetch. Skipping.");
+      return;
+    }
+
+
     SignalServiceProfile profile              = profileAndCredential.getProfile();
 
     if (Util.isEmpty(profile.getName()) &&
@@ -134,7 +140,7 @@ public class RefreshOwnProfileJob extends BaseJob {
 
       if (!self.getProfileName().isEmpty()) {
         Log.w(TAG, "We have a name locally. Scheduling a profile upload.");
-        ApplicationDependencies.getJobManager().add(new ProfileUploadJob());
+        AppDependencies.getJobManager().add(new ProfileUploadJob());
       } else {
         Log.w(TAG, "We don't have a name locally, either!");
       }
@@ -153,11 +159,11 @@ public class RefreshOwnProfileJob extends BaseJob {
     profileAndCredential.getExpiringProfileKeyCredential()
                         .ifPresent(expiringProfileKeyCredential -> setExpiringProfileKeyCredential(self, ProfileKeyUtil.getSelfProfileKey(), expiringProfileKeyCredential));
 
+    SignalStore.registration().setHasDownloadedProfile(true);
+
     StoryOnboardingDownloadJob.Companion.enqueueIfNeeded();
 
-    if (FeatureFlags.usernames()) {
-      checkUsernameIsInSync();
-    }
+    checkUsernameIsInSync();
   }
 
   private void setExpiringProfileKeyCredential(@NonNull Recipient recipient,
@@ -216,7 +222,7 @@ public class RefreshOwnProfileJob extends BaseJob {
 
   private static void setProfileAvatar(@Nullable String avatar) {
     Log.d(TAG, "Saving " + (!Util.isEmpty(avatar) ? "non-" : "") + "empty avatar.");
-    ApplicationDependencies.getJobManager().add(new RetrieveProfileAvatarJob(Recipient.self(), avatar));
+    AppDependencies.getJobManager().add(new RetrieveProfileAvatarJob(Recipient.self(), avatar));
   }
 
   private void setProfileCapabilities(@Nullable SignalServiceProfile.Capabilities capabilities) {
@@ -224,19 +230,21 @@ public class RefreshOwnProfileJob extends BaseJob {
       return;
     }
 
+    Recipient selfSnapshot = Recipient.self();
+
     SignalDatabase.recipients().setCapabilities(Recipient.self().getId(), capabilities);
   }
 
   private void ensureUnidentifiedAccessCorrect(@Nullable String unidentifiedAccessVerifier, boolean universalUnidentifiedAccess) {
     if (unidentifiedAccessVerifier == null) {
       Log.w(TAG, "No unidentified access is set remotely! Refreshing attributes.");
-      ApplicationDependencies.getJobManager().add(new RefreshAttributesJob());
+      AppDependencies.getJobManager().add(new RefreshAttributesJob());
       return;
     }
 
     if (TextSecurePreferences.isUniversalUnidentifiedAccess(context) != universalUnidentifiedAccess) {
       Log.w(TAG, "The universal access flag doesn't match our local value (local: " + TextSecurePreferences.isUniversalUnidentifiedAccess(context) + ", remote: " + universalUnidentifiedAccess + ")! Refreshing attributes.");
-      ApplicationDependencies.getJobManager().add(new RefreshAttributesJob());
+      AppDependencies.getJobManager().add(new RefreshAttributesJob());
       return;
     }
 
@@ -253,7 +261,7 @@ public class RefreshOwnProfileJob extends BaseJob {
 
     if (!verified) {
       Log.w(TAG, "Unidentified access failed to verify! Refreshing attributes.");
-      ApplicationDependencies.getJobManager().add(new RefreshAttributesJob());
+      AppDependencies.getJobManager().add(new RefreshAttributesJob());
     }
   }
 
@@ -290,10 +298,10 @@ public class RefreshOwnProfileJob extends BaseJob {
   }
 
   private void syncWithStorageServiceThenUploadProfile() {
-    ApplicationDependencies.getJobManager()
-                           .startChain(new StorageSyncJob())
-                           .then(new ProfileUploadJob())
-                           .enqueue();
+    AppDependencies.getJobManager()
+                   .startChain(StorageSyncJob.forRemoteChange())
+                   .then(new ProfileUploadJob())
+                   .enqueue();
   }
 
   private static void checkUsernameIsInSync() {
@@ -302,7 +310,7 @@ public class RefreshOwnProfileJob extends BaseJob {
     try {
       String localUsername = SignalStore.account().getUsername();
 
-      WhoAmIResponse whoAmIResponse     = ApplicationDependencies.getSignalServiceAccountManager().getWhoAmI();
+      WhoAmIResponse whoAmIResponse     = AppDependencies.getSignalServiceAccountManager().getWhoAmI();
       String         remoteUsernameHash = whoAmIResponse.getUsernameHash();
       String         localUsernameHash  = localUsername != null ? Base64.encodeUrlSafeWithoutPadding(new Username(localUsername).getHash()) : null;
 
@@ -328,7 +336,7 @@ public class RefreshOwnProfileJob extends BaseJob {
       UsernameLinkComponents localUsernameLink = SignalStore.account().getUsernameLink();
 
       if (localUsernameLink != null) {
-        byte[]                remoteEncryptedUsername = ApplicationDependencies.getSignalServiceAccountManager().getEncryptedUsernameFromLinkServerId(localUsernameLink.getServerId());
+        byte[]                remoteEncryptedUsername = NetworkResultUtil.toBasicLegacy(SignalNetwork.username().getEncryptedUsernameFromLinkServerId(localUsernameLink.getServerId()));
         Username.UsernameLink combinedLink            = new Username.UsernameLink(localUsernameLink.getEntropy(), remoteEncryptedUsername);
         Username              remoteUsername          = Username.fromLink(combinedLink);
 
@@ -387,16 +395,16 @@ public class RefreshOwnProfileJob extends BaseJob {
                                             .get();
 
       Log.d(TAG, "Marking subscription badge as expired, should notify next time the conversation list is open.", true);
-      SignalStore.donationsValues().setExpiredBadge(mostRecentExpiration);
+      SignalStore.inAppPayments().setExpiredBadge(mostRecentExpiration);
 
-      if (!SignalStore.donationsValues().isUserManuallyCancelled()) {
+      if (!InAppPaymentsRepository.isUserManuallyCancelled(InAppPaymentSubscriberRecord.Type.DONATION)) {
         Log.d(TAG, "Detected an unexpected subscription expiry.", true);
-        Subscriber subscriber = SignalStore.donationsValues().getSubscriber();
+        InAppPaymentSubscriberRecord subscriber = InAppPaymentsRepository.getSubscriber(InAppPaymentSubscriberRecord.Type.DONATION);
 
         boolean isDueToPaymentFailure = false;
         if (subscriber != null) {
-          ServiceResponse<ActiveSubscription> response = ApplicationDependencies.getDonationsService()
-                                                                                .getSubscription(subscriber.getSubscriberId());
+          ServiceResponse<ActiveSubscription> response = AppDependencies.getDonationsService()
+                                                                        .getSubscription(subscriber.getSubscriberId());
 
           if (response.getResult().isPresent()) {
             ActiveSubscription activeSubscription = response.getResult().get();
@@ -409,6 +417,8 @@ public class RefreshOwnProfileJob extends BaseJob {
               Log.d(TAG, "Active payment contains a charge failure: " + activeSubscription.getChargeFailure().getCode(), true);
             }
           }
+
+          InAppPaymentsRepository.setShouldCancelSubscriptionBeforeNextSubscribeAttempt(subscriber, true);
         }
 
         if (!isDueToPaymentFailure) {
@@ -416,7 +426,6 @@ public class RefreshOwnProfileJob extends BaseJob {
         }
 
         MultiDeviceSubscriptionSyncRequestJob.enqueue();
-        SignalStore.donationsValues().setShouldCancelSubscriptionBeforeNextSubscribeAttempt(true);
       }
     } else if (!remoteHasBoostBadges && localHasBoostBadges) {
       Badge mostRecentExpiration = Recipient.self()
@@ -428,16 +437,16 @@ public class RefreshOwnProfileJob extends BaseJob {
                                             .get();
 
       Log.d(TAG, "Marking boost badge as expired, should notify next time the conversation list is open.", true);
-      SignalStore.donationsValues().setExpiredBadge(mostRecentExpiration);
+      SignalStore.inAppPayments().setExpiredBadge(mostRecentExpiration);
     } else {
-      Badge badge = SignalStore.donationsValues().getExpiredBadge();
+      Badge badge = SignalStore.inAppPayments().getExpiredBadge();
 
       if (badge != null && badge.isSubscription() && remoteHasSubscriptionBadges) {
         Log.d(TAG, "Remote has subscription badges. Clearing local expired subscription badge.", true);
-        SignalStore.donationsValues().setExpiredBadge(null);
+        SignalStore.inAppPayments().setExpiredBadge(null);
       } else if (badge != null && badge.isBoost() && remoteHasBoostBadges) {
         Log.d(TAG, "Remote has boost badges. Clearing local expired boost badge.", true);
-        SignalStore.donationsValues().setExpiredBadge(null);
+        SignalStore.inAppPayments().setExpiredBadge(null);
       }
     }
 
@@ -451,10 +460,10 @@ public class RefreshOwnProfileJob extends BaseJob {
                                             .get();
 
       Log.d(TAG, "Marking gift badge as expired, should notify next time the manage donations screen is open.", true);
-      SignalStore.donationsValues().setExpiredGiftBadge(mostRecentExpiration);
+      SignalStore.inAppPayments().setExpiredGiftBadge(mostRecentExpiration);
     } else if (remoteHasGiftBadges) {
       Log.d(TAG, "We have remote gift badges. Clearing local expired gift badge.", true);
-      SignalStore.donationsValues().setExpiredGiftBadge(null);
+      SignalStore.inAppPayments().setExpiredGiftBadge(null);
     }
 
     boolean userHasVisibleBadges   = badges.stream().anyMatch(SignalServiceProfile.Badge::isVisible);
@@ -463,7 +472,7 @@ public class RefreshOwnProfileJob extends BaseJob {
     List<Badge> appBadges = badges.stream().map(Badges::fromServiceBadge).collect(Collectors.toList());
 
     if (userHasVisibleBadges && userHasInvisibleBadges) {
-      boolean displayBadgesOnProfile = SignalStore.donationsValues().getDisplayBadgesOnProfile();
+      boolean displayBadgesOnProfile = SignalStore.inAppPayments().getDisplayBadgesOnProfile();
       Log.d(TAG, "Detected mixed visibility of badges. Telling the server to mark them all " +
                  (displayBadgesOnProfile ? "" : "not") +
                  " visible.", true);

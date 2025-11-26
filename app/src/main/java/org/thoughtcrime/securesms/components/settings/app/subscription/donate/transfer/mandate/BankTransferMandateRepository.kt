@@ -8,14 +8,20 @@ package org.thoughtcrime.securesms.components.settings.app.subscription.donate.t
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.signal.donations.PaymentSourceType
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import java.util.Locale
 
-class BankTransferMandateRepository {
+object BankTransferMandateRepository {
 
   fun getMandate(paymentSourceType: PaymentSourceType.Stripe): Single<String> {
+    val sourceString = if (paymentSourceType == PaymentSourceType.Stripe.IDEAL) {
+      PaymentSourceType.Stripe.SEPADebit.paymentMethod
+    } else {
+      paymentSourceType.paymentMethod
+    }
+
     return Single
-      .fromCallable { ApplicationDependencies.getDonationsService().getBankMandate(Locale.getDefault(), paymentSourceType.paymentMethod) }
+      .fromCallable { AppDependencies.donationsService.getBankMandate(Locale.getDefault(), sourceString) }
       .flatMap { it.flattenResult() }
       .map { it.mandate }
       .subscribeOn(Schedulers.io())

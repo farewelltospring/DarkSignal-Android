@@ -8,10 +8,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.signal.core.util.concurrent.SignalExecutors;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.notifications.v2.ConversationId;
 import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.util.BubbleUtil;
 
 import java.util.Optional;
 
@@ -19,6 +18,8 @@ public interface MessageNotifier {
   void setVisibleThread(@Nullable ConversationId conversationId);
   @NonNull Optional<ConversationId> getVisibleThread();
   void clearVisibleThread();
+  void setVisibleBubbleThread(@Nullable ConversationId conversationId);
+  void clearVisibleBubbleThread();
   void setLastDesktopActivityTimestamp(long timestamp);
   void notifyMessageDeliveryFailed(@NonNull Context context, @NonNull Recipient recipient, @NonNull ConversationId conversationId);
   void notifyStoryDeliveryFailed(@NonNull Context context, @NonNull Recipient recipient, @NonNull ConversationId conversationId);
@@ -34,7 +35,7 @@ public interface MessageNotifier {
     @Override
     public void onReceive(final Context context, final Intent intent) {
       SignalExecutors.BOUNDED.execute(() -> {
-        ApplicationDependencies.getMessageNotifier().updateNotification(context);
+        AppDependencies.getMessageNotifier().updateNotification(context);
       });
     }
   }

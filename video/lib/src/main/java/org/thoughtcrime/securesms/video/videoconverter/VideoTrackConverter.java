@@ -1,3 +1,8 @@
+/*
+ * Copyright 2024 Signal Messenger, LLC
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 package org.thoughtcrime.securesms.video.videoconverter;
 
 import android.media.MediaCodec;
@@ -9,7 +14,6 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.video.interfaces.MediaInput;
@@ -21,7 +25,6 @@ import org.thoughtcrime.securesms.video.videoconverter.utils.Preconditions;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
 import kotlin.Pair;
@@ -74,7 +77,6 @@ final class VideoTrackConverter {
 
     private Muxer mMuxer;
 
-    @RequiresApi(23)
     static @Nullable VideoTrackConverter create(
             final @NonNull MediaInput input,
             final long timeFrom,
@@ -93,7 +95,6 @@ final class VideoTrackConverter {
     }
 
 
-    @RequiresApi(23)
     private VideoTrackConverter(
             final @NonNull MediaExtractor videoExtractor,
             final int videoInputTrack,
@@ -157,6 +158,7 @@ final class VideoTrackConverter {
         // configure() call to throw an unhelpful exception.
         outputVideoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, videoBitrate);
+        outputVideoFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         outputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, OUTPUT_VIDEO_FRAME_RATE);
         outputVideoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, OUTPUT_VIDEO_IFRAME_INTERVAL);
         if (Build.VERSION.SDK_INT >= 31 && isHdr(inputVideoFormat)) {
@@ -429,17 +431,12 @@ final class VideoTrackConverter {
         }
     }
 
-    String dumpState() {
-        return String.format(Locale.US,
-                "V{"
-                        + "extracted:%d(done:%b) "
-                        + "decoded:%d(done:%b) "
-                        + "encoded:%d(done:%b) "
-                        + "muxing:%b(track:%d)} ",
-                mVideoExtractedFrameCount, mVideoExtractorDone,
-                mVideoDecodedFrameCount, mVideoDecoderDone,
-                mVideoEncodedFrameCount, mVideoEncoderDone,
-                mMuxer != null, mOutputVideoTrack);
+    VideoTrackConverterState dumpState() {
+        return new VideoTrackConverterState(
+            mVideoExtractedFrameCount, mVideoExtractorDone,
+            mVideoDecodedFrameCount, mVideoDecoderDone,
+            mVideoEncodedFrameCount, mVideoEncoderDone,
+            mMuxer != null, mOutputVideoTrack);
     }
 
     void verifyEndState() {
@@ -481,15 +478,15 @@ final class VideoTrackConverter {
                 }
             }
             shader =
-                    "#extension GL_OES_EGL_image_external : require\n" +
-                            "precision mediump float;\n" +      // highp here doesn't seem to matter
-                            "varying vec2 vTextureCoord;\n" +
-                            "uniform samplerExternalOES sTexture;\n" +
-                            "void main() {\n" +
-                            "    gl_FragColor = (texture2D(sTexture, vTextureCoord)\n" +
-                            colorLoop.toString() +
-                            "    ) / " + sum + ";\n" +
-                            "}\n";
+                "#extension GL_OES_EGL_image_external : require\n" +
+                "precision mediump float;\n" +      // highp here doesn't seem to matter
+                "varying vec2 vTextureCoord;\n" +
+                "uniform samplerExternalOES sTexture;\n" +
+                "void main() {\n" +
+                "    gl_FragColor = (texture2D(sTexture, vTextureCoord)\n" +
+                colorLoop +
+                "    ) / " + sum + ";\n" +
+                "}\n";
         }
         Log.i(TAG, shader);
         return shader;
