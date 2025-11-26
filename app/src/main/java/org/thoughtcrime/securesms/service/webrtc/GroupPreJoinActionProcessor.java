@@ -47,11 +47,15 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
 
     byte[]      groupId = currentState.getCallInfoState().getCallRecipient().requireGroupId().getDecodedId();
     GroupCall groupCall = webRtcInteractor.getCallManager().createGroupCall(groupId,
-                                                                            SignalStore.internal().groupCallingServer(),
+                                                                            SignalStore.internal().getGroupCallingServer(),
                                                                             new byte[0],
                                                                             AUDIO_LEVELS_INTERVAL,
-                                                                            RingRtcDynamicConfiguration.getAudioProcessingMethod(),
+                                                                            RingRtcDynamicConfiguration.getAudioConfig(),
                                                                             webRtcInteractor.getGroupCallObserver());
+
+    if (groupCall == null) {
+      return groupCallFailure(currentState, "RingRTC did not create a group call", null);
+    }
 
     try {
       groupCall.setOutgoingAudioMuted(true);
@@ -125,7 +129,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
 
     WebRtcServiceStateBuilder.CallInfoStateBuilder builder = currentState.builder()
                                                                          .changeCallInfoState()
-                                                                         .remoteDevicesCount(peekInfo.getDeviceCount())
+                                                                         .remoteDevicesCount(peekInfo.getDeviceCountExcludingPendingDevices())
                                                                          .participantLimit(peekInfo.getMaxDevices())
                                                                          .clearParticipantMap();
 

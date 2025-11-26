@@ -15,6 +15,8 @@ import org.thoughtcrime.securesms.LoggingFragment
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.ContactFilterView
 import org.thoughtcrime.securesms.contacts.ContactSelectionDisplayMode
+import org.thoughtcrime.securesms.contacts.paged.ChatType
+import org.thoughtcrime.securesms.contacts.selection.ContactSelectionArguments
 import org.thoughtcrime.securesms.groups.SelectionLimits
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.ViewUtil
@@ -45,18 +47,17 @@ class SelectRecipientsFragment : LoggingFragment(), ContactSelectionListFragment
     }
 
     childFragmentManager.addFragmentOnAttachListener { _, fragment ->
-      fragment.arguments = Bundle().apply {
-        putInt(ContactSelectionListFragment.DISPLAY_MODE, getDefaultDisplayMode())
-        putBoolean(ContactSelectionListFragment.REFRESHABLE, false)
-        putBoolean(ContactSelectionListFragment.RECENTS, true)
-        putParcelable(ContactSelectionListFragment.SELECTION_LIMITS, SelectionLimits.NO_LIMITS)
-        putParcelableArrayList(ContactSelectionListFragment.CURRENT_SELECTION, selectionList)
-        putBoolean(ContactSelectionListFragment.HIDE_COUNT, true)
-        putBoolean(ContactSelectionListFragment.DISPLAY_CHIPS, true)
-        putBoolean(ContactSelectionListFragment.CAN_SELECT_SELF, false)
-        putBoolean(ContactSelectionListFragment.RV_CLIP, false)
-        putInt(ContactSelectionListFragment.RV_PADDING_BOTTOM, ViewUtil.dpToPx(60))
-      }
+      fragment.arguments = ContactSelectionArguments(
+        displayMode = getDefaultDisplayMode(),
+        isRefreshable = false,
+        includeRecents = true,
+        selectionLimits = SelectionLimits.NO_LIMITS,
+        currentSelection = selectionList.toSet(),
+        displayChips = true,
+        canSelectSelf = false,
+        recyclerChildClipping = false,
+        recyclerPadBottom = ViewUtil.dpToPx(60)
+      ).toArgumentBundle()
     }
 
     return inflater.inflate(R.layout.fragment_select_recipients_fragment, container, false)
@@ -106,7 +107,7 @@ class SelectRecipientsFragment : LoggingFragment(), ContactSelectionListFragment
       ContactSelectionDisplayMode.FLAG_HIDE_GROUPS_V1
   }
 
-  override fun onBeforeContactSelected(isFromUnknownSearchKey: Boolean, recipientId: Optional<RecipientId>, number: String?, callback: Consumer<Boolean>) {
+  override fun onBeforeContactSelected(isFromUnknownSearchKey: Boolean, recipientId: Optional<RecipientId>, number: String?, chatType: Optional<ChatType>, callback: Consumer<Boolean>) {
     if (recipientId.isPresent) {
       viewModel.select(recipientId.get())
       callback.accept(true)
@@ -116,7 +117,7 @@ class SelectRecipientsFragment : LoggingFragment(), ContactSelectionListFragment
     }
   }
 
-  override fun onContactDeselected(recipientId: Optional<RecipientId>, number: String?) {
+  override fun onContactDeselected(recipientId: Optional<RecipientId>, number: String?, chatType: Optional<ChatType>) {
     if (recipientId.isPresent) {
       viewModel.deselect(recipientId.get())
       updateAddToProfile()

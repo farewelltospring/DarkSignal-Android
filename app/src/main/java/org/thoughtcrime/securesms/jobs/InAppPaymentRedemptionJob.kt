@@ -8,6 +8,7 @@ package org.thoughtcrime.securesms.jobs
 import org.signal.core.util.logging.Log
 import org.signal.donations.InAppPaymentType
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialPresentation
+import org.thoughtcrime.securesms.backup.v2.BackupRepository
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository.requireSubscriberType
 import org.thoughtcrime.securesms.database.InAppPaymentTable
@@ -24,6 +25,7 @@ import org.thoughtcrime.securesms.util.hasGiftBadge
 import org.thoughtcrime.securesms.util.requireGiftBadge
 import org.whispersystems.signalservice.internal.ServiceResponse
 import java.io.IOException
+import kotlin.concurrent.withLock
 
 /**
  * Takes a ReceiptCredentialResponse and submits it to the server for redemption.
@@ -57,12 +59,14 @@ class InAppPaymentRedemptionJob private constructor(
 
     fun create(
       inAppPayment: InAppPaymentTable.InAppPayment? = null,
-      makePrimary: Boolean = false
+      makePrimary: Boolean = false,
+      isFromAuthCheck: Boolean = false
     ): Job {
       return create(
         inAppPayment = inAppPayment,
         giftMessageId = null,
-        makePrimary = makePrimary
+        makePrimary = makePrimary,
+        isFromAuthCheck = isFromAuthCheck
       )
     }
 
@@ -80,13 +84,15 @@ class InAppPaymentRedemptionJob private constructor(
     private fun create(
       inAppPayment: InAppPaymentTable.InAppPayment? = null,
       makePrimary: Boolean = false,
+      isFromAuthCheck: Boolean = false,
       giftMessageId: MessageId? = null
     ): Job {
       return InAppPaymentRedemptionJob(
         jobData = InAppPaymentRedemptionJobData(
           inAppPaymentId = inAppPayment?.id?.rowId,
           giftMessageId = giftMessageId?.id,
-          makePrimary = makePrimary
+          makePrimary = makePrimary,
+          isFromAuthCheck = isFromAuthCheck
         ),
         parameters = Parameters.Builder()
           .addConstraint(NetworkConstraint.KEY)
@@ -124,11 +130,11 @@ class InAppPaymentRedemptionJob private constructor(
           inAppPayment.copy(
             notified = false,
             state = InAppPaymentTable.State.END,
-            data = inAppPayment.data.copy(
-              error = InAppPaymentData.Error(
+            data = inAppPayment.data.newBuilder().error(
+              InAppPaymentData.Error(
                 type = InAppPaymentData.Error.Type.REDEMPTION
               )
-            )
+            ).build()
           )
         )
       }
@@ -136,6 +142,11 @@ class InAppPaymentRedemptionJob private constructor(
   }
 
   override fun onRun() {
+    if (!SignalStore.account.isRegistered) {
+      Log.w(TAG, "User is not registered. Failing.")
+      throw Exception("Unregistered users cannot perform this job.")
+    }
+
     if (jobData.inAppPaymentId != null) {
       onRunForInAppPayment(InAppPaymentTable.InAppPaymentId(jobData.inAppPaymentId))
     } else {
@@ -162,7 +173,7 @@ class InAppPaymentRedemptionJob private constructor(
       .donationsService
       .redeemDonationReceipt(
         receiptCredentialPresentation,
-        SignalStore.donations.getDisplayBadgesOnProfile(),
+        SignalStore.inAppPayments.getDisplayBadgesOnProfile(),
         jobData.makePrimary
       )
 
@@ -180,7 +191,7 @@ class InAppPaymentRedemptionJob private constructor(
     }
 
     if (inAppPayment.type.recurring) {
-      synchronized(inAppPayment.type.requireSubscriberType()) {
+      inAppPayment.type.requireSubscriberType().lock.withLock {
         performInAppPaymentRedemption(inAppPayment)
       }
     } else {
@@ -221,7 +232,7 @@ class InAppPaymentRedemptionJob private constructor(
         .donationsService
         .redeemDonationReceipt(
           receiptCredentialPresentation,
-          SignalStore.donations.getDisplayBadgesOnProfile(),
+          SignalStore.inAppPayments.getDisplayBadgesOnProfile(),
           jobData.makePrimary
         )
     }
@@ -234,6 +245,7 @@ class InAppPaymentRedemptionJob private constructor(
 
       SignalDatabase.inAppPayments.update(
         inAppPayment = inAppPayment.copy(
+          state = InAppPaymentTable.State.END,
           data = inAppPayment.data.copy(
             error = protoError
           )
@@ -241,17 +253,23 @@ class InAppPaymentRedemptionJob private constructor(
       )
     }
 
-    Log.i(TAG, "InAppPayment with ID $inAppPaymentId was successfully redeemed. Response code: ${serviceResponse.status}")
+    Log.i(TAG, "InAppPayment with ID $inAppPaymentId was successfully redeemed. Response code: ${serviceResponse.status}, Will notify: ${jobData.isFromAuthCheck}", true)
+
     SignalDatabase.inAppPayments.update(
       inAppPayment = inAppPayment.copy(
+        notified = !jobData.isFromAuthCheck,
         state = InAppPaymentTable.State.END,
-        data = inAppPayment.data.copy(
+        data = inAppPayment.data.newBuilder().redemption(
           redemption = inAppPayment.data.redemption.copy(
             stage = InAppPaymentData.RedemptionState.Stage.REDEEMED
           )
-        )
+        ).build()
       )
     )
+
+    if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP) {
+      BackupRepository.enablePaidBackupTier()
+    }
   }
 
   private fun <T> verifyServiceResponse(serviceResponse: ServiceResponse<T>, onFatalError: (Int) -> Unit = {}) {

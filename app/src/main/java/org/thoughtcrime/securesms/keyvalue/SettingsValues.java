@@ -47,6 +47,8 @@ public final class SettingsValues extends SignalStoreValues {
   public static final  String BACKUPS_ENABLED                         = "settings.backups.enabled";
   public static final  String BACKUPS_SCHEDULE_HOUR                   = "settings.backups.schedule.hour";
   public static final  String BACKUPS_SCHEDULE_MINUTE                 = "settings.backups.schedule.minute";
+  public static final  String SIGNAL_BACKUPS_SCHEDULE_HOUR            = "settings.signal.backups.schedule.hour";
+  public static final  String SIGNAL_BACKUPS_SCHEDULE_MINUTE          = "settings.signal.backups.schedule.minute";
   public static final  String SMS_DELIVERY_REPORTS_ENABLED            = "settings.sms.delivery.reports.enabled";
   public static final  String WIFI_CALLING_COMPATIBILITY_MODE_ENABLED = "settings.wifi.calling.compatibility.mode.enabled";
   public static final  String MESSAGE_NOTIFICATIONS_ENABLED           = "settings.message.notifications.enabled";
@@ -67,14 +69,33 @@ public final class SettingsValues extends SignalStoreValues {
   private static final String KEEP_MUTED_CHATS_ARCHIVED               = "settings.keepMutedChatsArchived";
   private static final String USE_COMPACT_NAVIGATION_BAR              = "settings.useCompactNavigationBar";
   private static final String THREAD_TRIM_SYNC_TO_LINKED_DEVICES      = "settings.storage.syncThreadTrimDeletes";
+  private static final String PASSPHRASE_DISABLED                     = "settings.passphrase.disabled";
+  private static final String PASSPHRASE_TIMEOUT_ENABLED              = "settings.passphrase.timeout.enabled";
+  private static final String PASSPHRASE_TIMEOUT                      = "settings.passphrase.timeout";
+  private static final String SCREEN_LOCK_ENABLED                     = "settings.screen.lock.enabled";
+  private static final String SCREEN_LOCK_TIMEOUT                     = "settings.screen.lock.timeout";
 
   public static final int BACKUP_DEFAULT_HOUR   = 2;
   public static final int BACKUP_DEFAULT_MINUTE = 0;
 
   private final SingleLiveEvent<String> onConfigurationSettingChanged = new SingleLiveEvent<>();
 
-  SettingsValues(@NonNull KeyValueStore store) {
+  SettingsValues(@NonNull KeyValueStore store, Context context) {
     super(store);
+
+    if (!store.containsKey(SCREEN_LOCK_ENABLED)) {
+      migrateFromSharedPrefsV1(context);
+    }
+  }
+
+  private void migrateFromSharedPrefsV1(@NonNull Context context) {
+    Log.i(TAG, "[V1] Migrating screen lock values from shared prefs.");
+
+    putBoolean(PASSPHRASE_DISABLED, TextSecurePreferences.getBooleanPreference(context, "pref_disable_passphrase", true));
+    putBoolean(PASSPHRASE_TIMEOUT_ENABLED, TextSecurePreferences.getBooleanPreference(context, "pref_timeout_passphrase", false));
+    putInteger(PASSPHRASE_TIMEOUT, TextSecurePreferences.getIntegerPreference(context, "pref_timeout_interval", 5 * 60));
+    putBoolean(SCREEN_LOCK_ENABLED, TextSecurePreferences.getBooleanPreference(context, "pref_android_screen_lock", false));
+    putLong(SCREEN_LOCK_TIMEOUT, TextSecurePreferences.getLongPreference(context, "pref_android_screen_lock_timeout", 0));
   }
 
   @Override
@@ -88,6 +109,9 @@ public final class SettingsValues extends SignalStoreValues {
     if (!store.containsKey(BACKUPS_SCHEDULE_HOUR)) {
       // Initialize backup time to a 5min interval between 1-5am
       setBackupSchedule(new Random().nextInt(5) + 1, new Random().nextInt(12) * 5);
+    }
+    if (!store.containsKey(SIGNAL_BACKUPS_SCHEDULE_HOUR)) {
+      initSignalBackupsSchedule();
     }
   }
 
@@ -121,7 +145,12 @@ public final class SettingsValues extends SignalStoreValues {
                          SENT_MEDIA_QUALITY,
                          KEEP_MUTED_CHATS_ARCHIVED,
                          USE_COMPACT_NAVIGATION_BAR,
-                         THREAD_TRIM_SYNC_TO_LINKED_DEVICES);
+                         THREAD_TRIM_SYNC_TO_LINKED_DEVICES,
+                         PASSPHRASE_DISABLED,
+                         PASSPHRASE_TIMEOUT_ENABLED,
+                         PASSPHRASE_TIMEOUT,
+                         SCREEN_LOCK_ENABLED,
+                         SCREEN_LOCK_TIMEOUT);
   }
 
   public @NonNull LiveData<String> getOnConfigurationSettingChanged() {
@@ -291,9 +320,38 @@ public final class SettingsValues extends SignalStoreValues {
     return getInteger(BACKUPS_SCHEDULE_MINUTE, BACKUP_DEFAULT_MINUTE);
   }
 
+  public int getSignalBackupHour() {
+    int hour = getInteger(SIGNAL_BACKUPS_SCHEDULE_HOUR, -1);
+    if (hour < 0) {
+      initSignalBackupsSchedule();
+      return getInteger(SIGNAL_BACKUPS_SCHEDULE_HOUR, BACKUP_DEFAULT_HOUR);
+    } else {
+      return hour;
+    }
+  }
+
+  public int getSignalBackupMinute() {
+    int minute = getInteger(SIGNAL_BACKUPS_SCHEDULE_MINUTE, -1);
+    if (minute < 0) {
+      initSignalBackupsSchedule();
+      return getInteger(SIGNAL_BACKUPS_SCHEDULE_MINUTE, BACKUP_DEFAULT_MINUTE);
+    } else {
+      return minute;
+    }
+  }
+
   public void setBackupSchedule(int hour, int minute) {
     putInteger(BACKUPS_SCHEDULE_HOUR, hour);
     putInteger(BACKUPS_SCHEDULE_MINUTE, minute);
+  }
+
+  private void initSignalBackupsSchedule() {
+    setSignalBackupSchedule(new Random().nextInt(5) + 1, new Random().nextInt(12) * 5);
+  }
+
+  public void setSignalBackupSchedule(int hour, int minute) {
+    putInteger(SIGNAL_BACKUPS_SCHEDULE_HOUR, hour);
+    putInteger(SIGNAL_BACKUPS_SCHEDULE_MINUTE, minute);
   }
 
   public boolean isSmsDeliveryReportsEnabled() {
@@ -459,6 +517,46 @@ public final class SettingsValues extends SignalStoreValues {
 
   public boolean getUseCompactNavigationBar() {
     return getBoolean(USE_COMPACT_NAVIGATION_BAR, false);
+  }
+
+  public void setPassphraseDisabled(boolean disabled) {
+    putBoolean(PASSPHRASE_DISABLED, disabled);
+  }
+
+  public boolean getPassphraseDisabled() {
+    return getBoolean(PASSPHRASE_DISABLED, true);
+  }
+
+  public void setPassphraseTimeoutEnabled(boolean enabled) {
+    putBoolean(PASSPHRASE_TIMEOUT_ENABLED, enabled);
+  }
+
+  public boolean getPassphraseTimeoutEnabled() {
+    return getBoolean(PASSPHRASE_TIMEOUT_ENABLED, false);
+  }
+
+  public void setPassphraseTimeout(int minutes) {
+    putLong(PASSPHRASE_TIMEOUT, minutes);
+  }
+
+  public int getPassphraseTimeout() {
+    return getInteger(PASSPHRASE_TIMEOUT, 0);
+  }
+
+  public void setScreenLockEnabled(boolean enabled) {
+    putBoolean(SCREEN_LOCK_ENABLED, enabled);
+  }
+
+  public boolean getScreenLockEnabled() {
+    return getBoolean(SCREEN_LOCK_ENABLED, false);
+  }
+
+  public void setScreenLockTimeout(long seconds) {
+    putLong(SCREEN_LOCK_TIMEOUT, seconds);
+  }
+
+  public long getScreenLockTimeout() {
+    return getLong(SCREEN_LOCK_TIMEOUT, 0);
   }
 
   private @Nullable Uri getUri(@NonNull String key) {

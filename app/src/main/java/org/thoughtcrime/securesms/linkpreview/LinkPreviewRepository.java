@@ -17,9 +17,9 @@ import org.signal.core.util.Result;
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.signal.core.util.logging.Log;
 import org.signal.libsignal.protocol.InvalidMessageException;
-import org.signal.libsignal.protocol.util.Pair;
 import org.signal.libsignal.zkgroup.VerificationFailedException;
 import org.signal.libsignal.zkgroup.groups.GroupMasterKey;
+import org.signal.ringrtc.CallLinkEpoch;
 import org.signal.ringrtc.CallLinkRootKey;
 import org.signal.storageservice.protos.groups.local.DecryptedGroupJoinInfo;
 import org.thoughtcrime.securesms.R;
@@ -64,8 +64,11 @@ import org.whispersystems.signalservice.api.util.OptionalUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+
+import kotlin.Pair;
 
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -190,6 +193,17 @@ public class LinkPreviewRepository {
           return;
         }
 
+        if (MediaUtil.isImageType(response.header("Content-Type"))) {
+          // We've been linked directly to an image.
+          okhttp3.HttpUrl imageUrl = response.request().url();
+          // The best we can do for a title is the filename in the URL itself,
+          // but that's no worse than the body of the message.
+          List<String> requestedUrlPathSegments = imageUrl.pathSegments();
+          String       filename                 = requestedUrlPathSegments.get(requestedUrlPathSegments.size() - 1);
+          callback.accept(new Metadata(Optional.of(filename), Optional.empty(), 0, Optional.of(imageUrl.toString())));
+          return;
+        }
+
         String body;
         try {
           body = OkHttpUtil.readAsString(response.body(), FAILSAFE_MAX_TEXT_SIZE);
@@ -274,8 +288,8 @@ public class LinkPreviewRepository {
     SignalExecutors.UNBOUNDED.execute(() -> {
       try {
         Pair<String, String> stickerParams = StickerUrl.parseShareLink(packUrl).orElse(new Pair<>("", ""));
-        String               packIdString  = stickerParams.first();
-        String               packKeyString = stickerParams.second();
+        String               packIdString  = stickerParams.getFirst();
+        String               packKeyString = stickerParams.getSecond();
         byte[]               packIdBytes   = Hex.fromStringCondensed(packIdString);
         byte[]               packKeyBytes  = Hex.fromStringCondensed(packKeyString);
 
@@ -314,15 +328,20 @@ public class LinkPreviewRepository {
                                                         @NonNull String callLinkUrl,
                                                         @NonNull Callback callback) {
 
-    CallLinkRootKey callLinkRootKey = CallLinks.parseUrl(callLinkUrl);
-    if (callLinkRootKey == null) {
+    CallLinks.CallLinkParseResult linkParseResult = CallLinks.parseUrl(callLinkUrl);
+    if (linkParseResult == null) {
       callback.onError(Error.PREVIEW_NOT_AVAILABLE);
       return () -> { };
     }
 
+    CallLinkEpoch epoch = linkParseResult.getEpoch();
+    byte[] epochBytes = epoch != null ? epoch.getBytes() : null;
+
     Disposable disposable = AppDependencies.getSignalCallManager()
                                            .getCallLinkManager()
-                                           .readCallLink(new CallLinkCredentials(callLinkRootKey.getKeyBytes(), null))
+                                           .readCallLink(new CallLinkCredentials(linkParseResult.getRootKey().getKeyBytes(),
+                                                                                 epochBytes,
+                                                                                 null))
                                            .observeOn(Schedulers.io())
                                            .subscribe(
                                                         result -> {
@@ -466,6 +485,7 @@ public class LinkPreviewRepository {
                              false,
                              false,
                              false,
+                             null,
                              null,
                              null,
                              null,

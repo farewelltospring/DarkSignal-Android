@@ -7,7 +7,7 @@ import androidx.annotation.WorkerThread
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import kotlinx.collections.immutable.toImmutableList
-import org.signal.core.util.StringUtil
+import org.signal.core.util.BidiUtil
 import org.signal.core.util.isNotNullOrBlank
 import org.signal.core.util.logging.Log
 import org.signal.core.util.nullIfBlank
@@ -27,7 +27,7 @@ import org.thoughtcrime.securesms.database.RecipientTable.MentionSetting
 import org.thoughtcrime.securesms.database.RecipientTable.MissingRecipientException
 import org.thoughtcrime.securesms.database.RecipientTable.PhoneNumberSharingState
 import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState
-import org.thoughtcrime.securesms.database.RecipientTable.UnidentifiedAccessMode
+import org.thoughtcrime.securesms.database.RecipientTable.SealedSenderAccessMode
 import org.thoughtcrime.securesms.database.RecipientTable.VibrateState
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.DistributionListId
@@ -40,9 +40,9 @@ import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.phonenumbers.NumberUtil
-import org.thoughtcrime.securesms.phonenumbers.PhoneNumberFormatter
 import org.thoughtcrime.securesms.profiles.ProfileName
 import org.thoughtcrime.securesms.service.webrtc.links.CallLinkRoomId
+import org.thoughtcrime.securesms.util.SignalE164Util
 import org.thoughtcrime.securesms.util.UsernameUtil.isValidUsernameForSearch
 import org.thoughtcrime.securesms.util.Util
 import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
@@ -84,7 +84,8 @@ class Recipient(
   private val messageRingtoneUri: Uri? = null,
   private val callRingtoneUri: Uri? = null,
   val expiresInSeconds: Int = 0,
-  private val registeredValue: RegisteredState = RegisteredState.UNKNOWN,
+  val expireTimerVersion: Int = 1,
+  private val registeredValue: RegisteredState = RegisteredState.NOT_REGISTERED,
   val profileKey: ByteArray? = null,
   val expiringProfileKeyCredential: ExpiringProfileKeyCredential? = null,
   private val groupName: String? = null,
@@ -98,7 +99,7 @@ class Recipient(
   val hiddenState: HiddenState = HiddenState.NOT_HIDDEN,
   val lastProfileFetchTime: Long = 0,
   private val notificationChannelValue: String? = null,
-  private val unidentifiedAccessModeValue: UnidentifiedAccessMode = UnidentifiedAccessMode.UNKNOWN,
+  private val sealedSenderAccessModeValue: SealedSenderAccessMode = SealedSenderAccessMode.UNKNOWN,
   private val capabilities: RecipientRecord.Capabilities = RecipientRecord.Capabilities.UNKNOWN,
   val storageId: ByteArray? = null,
   val mentionSetting: MentionSetting = MentionSetting.ALWAYS_NOTIFY,
@@ -181,6 +182,9 @@ class Recipient(
   /** Whether the recipient has been hidden from the contact list. */
   val isHidden: Boolean = hiddenState != HiddenState.NOT_HIDDEN
 
+  /** Whether or not this is an unknown recipient. */
+  val isUnknown: Boolean = id.isUnknown
+
   /** Whether the recipient represents an individual person (as opposed to a group or list). */
   val isIndividual: Boolean
     get() = !isGroup && !isCallLink && !isDistributionList && !isReleaseNotes
@@ -193,28 +197,28 @@ class Recipient(
   val isMmsGroup: Boolean
     get() {
       val groupId = resolved.groupIdValue
-      return groupId != null && groupId.isMms()
+      return groupId != null && groupId.isMms
     }
 
   /** Whether the recipient represents a Signal group. */
   val isPushGroup: Boolean
     get() {
       val groupId = resolved.groupIdValue
-      return groupId != null && groupId.isPush()
+      return groupId != null && groupId.isPush
     }
 
   /** Whether the recipient represents a V1 Signal group. These types of groups were deprecated in 2020. */
   val isPushV1Group: Boolean
     get() {
       val groupId = resolved.groupIdValue
-      return groupId != null && groupId.isV1()
+      return groupId != null && groupId.isV1
     }
 
   /** Whether the recipient represents a V2 Signal group. */
   val isPushV2Group: Boolean
     get() {
       val groupId = resolved.groupIdValue
-      return groupId != null && groupId.isV2()
+      return groupId != null && groupId.isV2
     }
 
   /** Whether the recipient represents a distribution list (a specific list of people to send a story to). */
@@ -253,6 +257,14 @@ class Recipient(
       null
     }
 
+  /**
+   * Whether or not a recipient (either individual or group) has a corresponding avatar
+   */
+  val hasAvatar: Boolean
+    get() {
+      return (isIndividual && profileAvatar != null) || (isGroup && groupAvatarId.orElse(0L) != 0L)
+    }
+
   /** The URI of the ringtone that should be used when receiving a message from this recipient, if set. */
   val messageRingtone: Uri? by lazy {
     if (messageRingtoneUri != null && messageRingtoneUri.scheme != null && messageRingtoneUri.scheme!!.startsWith("file")) {
@@ -282,8 +294,9 @@ class Recipient(
   /** The [ACI]'s of the members if this recipient is a group, otherwise empty. */
   val participantAcis: List<ServiceId>
     get() {
-      check(groupRecord.isPresent)
-      return groupRecord.get().requireV2GroupProperties().getMemberServiceIds().toImmutableList()
+      return groupRecord
+        .map { it.requireV2GroupProperties().getMemberServiceIds().toImmutableList() }
+        .orElse(emptyList<ServiceId>().toImmutableList())
     }
 
   /** The [RegisteredState] of this recipient. Signal groups/lists are always registered. */
@@ -314,17 +327,11 @@ class Recipient(
   /** The notification channel, if both set and supported by the system. Otherwise null. */
   val notificationChannel: String? = if (!NotificationChannels.supported()) null else notificationChannelValue
 
-  /** The user's payment capability. */
-  val paymentActivationCapability: Capability = capabilities.paymentActivation
-
-  /** The user's payment capability. */
-  val deleteSyncCapability: Capability = capabilities.deleteSync
-
   /** The state around whether we can send sealed sender to this user. */
-  val unidentifiedAccessMode: UnidentifiedAccessMode = if (pni.isPresent && pni == serviceId) {
-    UnidentifiedAccessMode.DISABLED
+  val sealedSenderAccessMode: SealedSenderAccessMode = if (pni.isPresent && pni == serviceId) {
+    SealedSenderAccessMode.DISABLED
   } else {
-    unidentifiedAccessModeValue
+    sealedSenderAccessModeValue
   }
 
   /** The wallpaper to render as the chat background, if present. */
@@ -363,8 +370,17 @@ class Recipient(
       }
     }
 
-  /** The badge to feature on a recipient's avatar, if any. */
-  val featuredBadge: Badge? = badges.firstOrNull()
+  /**
+   * The badge to feature on a recipient's avatar, if any.
+   * This value respects the local user's [SignalStore.inAppPayments.getDisplayBadgesOnProfile()] preference.
+   */
+  val featuredBadge: Badge? get() {
+    return if (isSelf && !SignalStore.inAppPayments.getDisplayBadgesOnProfile()) {
+      null
+    } else {
+      badges.firstOrNull()
+    }
+  }
 
   /** A string combining the about emoji + text for displaying various places. */
   val combinedAboutAndEmoji: String? by lazy { listOf(aboutEmoji, about).filter { it.isNotNullOrBlank() }.joinToString(separator = " ").nullIfBlank() }
@@ -374,6 +390,12 @@ class Recipient(
     get() {
       val showOverride = extras.isPresent && extras.get().manuallyShownAvatar()
       return !showOverride && !isSelf && !isProfileSharing && !isSystemContact && !hasGroupsInCommon && isRegistered
+    }
+
+  /** Whether or not the recipient's avatar should be shown in the chat list by default. Even if false, user can still manually choose to show the avatar */
+  val shouldShowAvatarByDefault: Boolean
+    get() {
+      return (isSelf || isProfileSharing || isSystemContact || hasGroupsInCommon) && isRegistered
     }
 
   /** The chat color to use when the "automatic" chat color setting is active, which derives a color from the wallpaper. */
@@ -386,47 +408,47 @@ class Recipient(
 
   /** Convenience method to get a non-null [serviceId] hen you know it is there. */
   fun requireServiceId(): ServiceId {
-    return resolved.aciValue ?: resolved.pniValue ?: throw MissingAddressError(id)
+    return resolved.aciValue ?: resolved.pniValue ?: throw MissingServiceIdError(id)
   }
 
   /** Convenience method to get a non-null [aci] hen you know it is there. */
   fun requireAci(): ACI {
-    return resolved.aciValue ?: throw MissingAddressError(id)
+    return resolved.aciValue ?: throw MissingAciError(id)
   }
 
   /** Convenience method to get a non-null [pni] when you know it is there. */
   fun requirePni(): PNI {
-    return resolved.pniValue ?: throw MissingAddressError(id)
+    return resolved.pniValue ?: throw MissingPniError(id)
   }
 
   /** Convenience method to get a non-null [e164] when you know it is there. */
   fun requireE164(): String {
-    return resolved.e164Value ?: throw MissingAddressError(id)
+    return resolved.e164Value ?: throw MissingE164Error(id)
   }
 
   /** Convenience method to get a non-null [email] when you know it is there. */
   fun requireEmail(): String {
-    return resolved.emailValue ?: throw MissingAddressError(id)
+    return resolved.emailValue ?: throw MissingEmailError(id)
   }
 
   /** Convenience method to get a non-null sms address (either e164 or email) when you know it is there. */
   fun requireSmsAddress(): String {
-    return resolved.e164Value ?: resolved.emailValue ?: throw MissingAddressError(id)
+    return resolved.e164Value ?: resolved.emailValue ?: throw MissingSmsAddressError(id)
   }
 
   /** Convenience method to get a non-null [groupId] when you know it is there. */
   fun requireGroupId(): GroupId {
-    return resolved.groupIdValue ?: throw MissingAddressError(id)
+    return resolved.groupIdValue ?: throw MissingGroupIdError(id)
   }
 
   /** Convenience method to get a non-null distributionListId when you know it is there. */
   fun requireDistributionListId(): DistributionListId {
-    return resolved.distributionListIdValue ?: throw MissingAddressError(id)
+    return resolved.distributionListIdValue ?: throw MissingDistributionIdError(id)
   }
 
   /** Convenience method to get a non-null callLinkRoomId when you know it is there. */
   fun requireCallLinkRoomId(): CallLinkRoomId {
-    return resolved.callLinkRoomId ?: throw MissingAddressError(id)
+    return resolved.callLinkRoomId ?: throw MissingCallLinkRoomIdError(id)
   }
 
   /** Convenience method to get a non-null call conversation ID when you know it is there. */
@@ -500,6 +522,27 @@ class Recipient(
       profileName.toString().isNotNullOrBlank()
   }
 
+  fun isMatch(query: String): Boolean {
+    if (query.isEmpty()) {
+      return true
+    }
+
+    val lowercaseQuery = query.lowercase()
+    val sortName = listOf(
+      nickname.toString(),
+      nickname.givenName,
+      systemProfileName.toString(),
+      systemProfileName.givenName,
+      profileName.toString(),
+      profileName.givenName,
+      username.orElse("")
+    ).firstOrNull { it.isNotNullOrBlank() }?.lowercase()
+
+    return sortName?.contains(lowercaseQuery) == true ||
+      e164.map { it.contains(query) }.orElse(false) ||
+      email.map { it.contains(query) }.orElse(false)
+  }
+
   /** A full-length display name to render for this recipient. */
   fun getDisplayName(context: Context): String {
     var name = getNameFromLocalData(context)
@@ -509,7 +552,7 @@ class Recipient(
     if (Util.isEmpty(name)) {
       name = getUnknownDisplayName(context)
     }
-    return StringUtil.isolateBidi(name)
+    return BidiUtil.isolateBidi(name)
   }
 
   fun hasNonUsernameDisplayName(context: Context): Boolean {
@@ -533,7 +576,7 @@ class Recipient(
     }
 
     if (name.isBlank() && e164Value.isNotNullOrBlank()) {
-      name = PhoneNumberFormatter.prettyPrint(e164Value)
+      name = SignalE164Util.prettyPrint(e164Value)
     }
 
     if (name.isBlank() && emailValue != null) {
@@ -546,33 +589,33 @@ class Recipient(
   /** A display name to use when rendering a mention of this user. */
   fun getMentionDisplayName(context: Context): String {
     var name: String? = if (isSelf) profileName.toString() else getGroupName(context)
-    name = StringUtil.isolateBidi(name)
+    name = BidiUtil.isolateBidi(name)
 
     if (name.isBlank()) {
       name = if (isSelf) getGroupName(context) else nickname.toString()
-      name = StringUtil.isolateBidi(name)
+      name = BidiUtil.isolateBidi(name)
     }
 
     if (name.isBlank()) {
       name = if (isSelf) getGroupName(context) else systemContactName
-      name = StringUtil.isolateBidi(name)
+      name = BidiUtil.isolateBidi(name)
     }
 
     if (name.isBlank()) {
       name = if (isSelf) getGroupName(context) else profileName.toString()
-      name = StringUtil.isolateBidi(name)
+      name = BidiUtil.isolateBidi(name)
     }
 
     if (name.isBlank() && e164Value.isNotNullOrBlank()) {
-      name = PhoneNumberFormatter.prettyPrint(e164Value)
+      name = SignalE164Util.prettyPrint(e164Value)
     }
 
     if (name.isBlank()) {
-      name = StringUtil.isolateBidi(emailValue)
+      name = BidiUtil.isolateBidi(emailValue)
     }
 
     if (name.isBlank()) {
-      name = StringUtil.isolateBidi(context.getString(R.string.Recipient_unknown))
+      name = BidiUtil.isolateBidi(context.getString(R.string.Recipient_unknown))
     }
 
     return name
@@ -592,7 +635,7 @@ class Recipient(
       getDisplayName(context)
     ).firstOrNull { it.isNotNullOrBlank() }
 
-    return StringUtil.isolateBidi(name)
+    return BidiUtil.isolateBidi(name)
   }
 
   private fun getUnknownDisplayName(context: Context): String {
@@ -763,7 +806,7 @@ class Recipient(
       systemProfileName == other.systemProfileName &&
       profileAvatar == other.profileAvatar &&
       notificationChannelValue == other.notificationChannelValue &&
-      unidentifiedAccessModeValue == other.unidentifiedAccessModeValue &&
+      sealedSenderAccessModeValue == other.sealedSenderAccessModeValue &&
       storageId.contentEquals(other.storageId) &&
       mentionSetting == other.mentionSetting &&
       wallpaperValue == other.wallpaperValue &&
@@ -796,7 +839,15 @@ class Recipient(
     return id.hashCode()
   }
 
-  private class MissingAddressError(recipientId: RecipientId) : AssertionError("Missing address for " + recipientId.serialize())
+  private class MissingServiceIdError(recipientId: RecipientId) : AssertionError("Missing ServiceId for " + recipientId.serialize())
+  private class MissingAciError(recipientId: RecipientId) : AssertionError("Missing ACI for " + recipientId.serialize())
+  private class MissingPniError(recipientId: RecipientId) : AssertionError("Missing PNI for " + recipientId.serialize())
+  private class MissingE164Error(recipientId: RecipientId) : AssertionError("Missing E164 for " + recipientId.serialize())
+  private class MissingEmailError(recipientId: RecipientId) : AssertionError("Missing email for " + recipientId.serialize())
+  private class MissingSmsAddressError(recipientId: RecipientId) : AssertionError("Missing sms address for " + recipientId.serialize())
+  private class MissingGroupIdError(recipientId: RecipientId) : AssertionError("Missing groupId for " + recipientId.serialize())
+  private class MissingDistributionIdError(recipientId: RecipientId) : AssertionError("Missing distributionId for " + recipientId.serialize())
+  private class MissingCallLinkRoomIdError(recipientId: RecipientId) : AssertionError("Missing call link for " + recipientId.serialize())
 
   companion object {
     private val TAG = Log.tag(Recipient::class.java)
@@ -879,6 +930,37 @@ class Recipient(
     }
 
     /**
+     * Returns a fully-populated [Recipient] based off of a ServiceId and phone number, creating one
+     * in the database if necessary. We want both piece of information so we're able to associate them
+     * both together, depending on which are available.
+     *
+     * In particular, while we may eventually get the ACI of a user created via a phone number
+     * (through a directory sync), the only way we can store the phone number is by retrieving it from
+     * sent messages and whatnot. So we should store it when available.
+     */
+    @JvmStatic
+    @WorkerThread
+    private fun externalPush(serviceId: ServiceId, e164: String?): Recipient {
+      if (ACI.UNKNOWN == serviceId || PNI.UNKNOWN == serviceId) {
+        throw AssertionError()
+      }
+
+      val recipientId = RecipientId.from(SignalServiceAddress(serviceId, e164))
+      val resolved = resolved(recipientId)
+
+      if (resolved.id != recipientId) {
+        Log.w(TAG, "Resolved $recipientId, but got back a recipient with ${resolved.id}")
+      }
+
+      if (!resolved.isRegistered) {
+        Log.w(TAG, "External push was locally marked unregistered. Marking as registered.")
+        SignalDatabase.recipients.markRegistered(recipientId, serviceId)
+      }
+
+      return resolved
+    }
+
+    /**
      * Create a recipient with a full (ACI, PNI, E164) tuple. It is assumed that the association between the PNI and serviceId is trusted.
      * That means it must be from either storage service (with the verified field set) or a PNI verification message.
      */
@@ -905,39 +987,6 @@ class Recipient(
     }
 
     /**
-     * Returns a fully-populated [Recipient] based off of a ServiceId and phone number, creating one
-     * in the database if necessary. We want both piece of information so we're able to associate them
-     * both together, depending on which are available.
-     *
-     * In particular, while we may eventually get the ACI of a user created via a phone number
-     * (through a directory sync), the only way we can store the phone number is by retrieving it from
-     * sent messages and whatnot. So we should store it when available.
-     */
-    @JvmStatic
-    @WorkerThread
-    fun externalPush(serviceId: ServiceId?, e164: String?): Recipient {
-      if (ACI.UNKNOWN == serviceId || PNI.UNKNOWN == serviceId) {
-        throw AssertionError()
-      }
-
-      val recipientId = RecipientId.from(SignalServiceAddress(serviceId, e164))
-      val resolved = resolved(recipientId)
-
-      if (resolved.id != recipientId) {
-        Log.w(TAG, "Resolved $recipientId, but got back a recipient with ${resolved.id}")
-      }
-
-      if (!resolved.isRegistered && serviceId != null) {
-        Log.w(TAG, "External push was locally marked unregistered. Marking as registered.")
-        SignalDatabase.recipients.markRegistered(recipientId, serviceId)
-      } else if (!resolved.isRegistered) {
-        Log.w(TAG, "External push was locally marked unregistered, but we don't have an ACI, so we can't do anything.", Throwable())
-      }
-
-      return resolved
-    }
-
-    /**
      * A safety wrapper around [.external] for when you know you're using an
      * identifier for a system contact, and therefore always want to prevent interpreting it as a
      * UUID. This will crash if given a UUID.
@@ -946,13 +995,14 @@ class Recipient(
      */
     @JvmStatic
     @WorkerThread
-    fun externalContact(identifier: String): Recipient {
+    fun externalContact(identifier: String): Recipient? {
       val id: RecipientId = if (UuidUtil.isUuid(identifier)) {
         throw AssertionError("UUIDs are not valid system contact identifiers!")
       } else if (NumberUtil.isValidEmail(identifier)) {
         SignalDatabase.recipients.getOrInsertFromEmail(identifier)
       } else {
-        SignalDatabase.recipients.getOrInsertFromE164(identifier)
+        val e164 = SignalE164Util.formatAsE164(identifier) ?: return null
+        SignalDatabase.recipients.getOrInsertFromE164(e164)
       }
 
       return resolved(id)
@@ -1004,10 +1054,13 @@ class Recipient(
      * If the identifier is a UUID of a Signal user, prefer using
      * [.externalPush] or its overload, as this will let us associate
      * the phone number with the recipient.
+     *
+     * Important: If the identifier cannot be considered a valid UUID, groupId, email, or phone number,
+     * this will return null.
      */
     @JvmStatic
     @WorkerThread
-    fun external(context: Context, identifier: String): Recipient {
+    fun external(identifier: String): Recipient? {
       val serviceId = ServiceId.parseOrNull(identifier, logFailures = false)
 
       val id: RecipientId = if (serviceId != null) {
@@ -1019,7 +1072,7 @@ class Recipient(
       } else if (isValidUsernameForSearch(identifier)) {
         throw IllegalArgumentException("Creating a recipient based on username alone is not supported!")
       } else {
-        val e164 = PhoneNumberFormatter.get(context).format(identifier)
+        val e164: String = SignalE164Util.formatAsE164(identifier) ?: return null
         SignalDatabase.recipients.getOrInsertFromE164(e164)
       }
 

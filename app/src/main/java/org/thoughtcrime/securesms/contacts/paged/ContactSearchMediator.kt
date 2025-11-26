@@ -87,6 +87,11 @@ class ContactSearchMediator(
         Log.d(TAG, "onExpandClicked()")
         viewModel.expandSection(expand.sectionKey)
       }
+
+      override fun onChatTypeClicked(view: View, chatTypeRow: ContactSearchData.ChatTypeRow, isSelected: Boolean) {
+        Log.d(TAG, "onChatTypeClicked() chatType $chatTypeRow")
+        toggleChatTypeSelection(view, chatTypeRow, isSelected)
+      }
     },
     longClickCallbacks = ContactSearchAdapter.LongClickCallbacksAdapter(),
     storyContextMenuCallbacks = StoryContextMenuCallbacks(),
@@ -121,6 +126,8 @@ class ContactSearchMediator(
     }
   }
 
+  fun getFilter(): String? = viewModel.getQuery()
+
   fun onConversationFilterRequestChanged(conversationFilterRequest: ConversationFilterRequest) {
     viewModel.setConversationFilterRequest(conversationFilterRequest)
   }
@@ -139,10 +146,6 @@ class ContactSearchMediator(
 
   fun clearSelection() {
     viewModel.clearSelection()
-  }
-
-  fun getSelectedMembersSize(): Int {
-    return viewModel.getSelectedMembersSize()
   }
 
   fun getSelectedContacts(): Set<ContactSearchKey> {
@@ -181,6 +184,16 @@ class ContactSearchMediator(
     return if (isSelected) {
       Log.d(TAG, "toggleSelection(OFF) ${contactSearchData.contactSearchKey}")
       callbacks.onContactDeselected(view, contactSearchData.contactSearchKey)
+      viewModel.setKeysNotSelected(setOf(contactSearchData.contactSearchKey))
+    } else {
+      Log.d(TAG, "toggleSelection(ON) ${contactSearchData.contactSearchKey}")
+      viewModel.setKeysSelected(callbacks.onBeforeContactsSelected(view, setOf(contactSearchData.contactSearchKey)))
+    }
+  }
+
+  private fun toggleChatTypeSelection(view: View, contactSearchData: ContactSearchData, isSelected: Boolean) {
+    return if (isSelected) {
+      Log.d(TAG, "toggleSelection(OFF) ${contactSearchData.contactSearchKey}")
       viewModel.setKeysNotSelected(setOf(contactSearchData.contactSearchKey))
     } else {
       Log.d(TAG, "toggleSelection(ON) ${contactSearchData.contactSearchKey}")

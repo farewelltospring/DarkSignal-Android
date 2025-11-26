@@ -160,9 +160,11 @@ object NotificationFactory {
     val threadsThatNewlyAlerted: MutableSet<ConversationId> = mutableSetOf()
 
     state.conversations.forEach { conversation ->
-      if (conversation.thread == visibleThread && conversation.hasNewNotifications()) {
-        Log.internal().i(TAG, "Thread is visible, notifying in thread. notificationId: ${conversation.notificationId}")
-        notifyInThread(context, conversation.recipient, lastAudibleNotification)
+      if (conversation.thread == visibleThread) {
+        if (conversation.hasNewNotifications()) {
+          Log.internal().i(TAG, "Thread is visible, notifying in thread. notificationId: ${conversation.notificationId}")
+          notifyInThread(context, conversation.recipient, lastAudibleNotification)
+        }
       } else if (notificationConfigurationChanged || conversation.hasNewNotifications() || alertOverrides.contains(conversation.thread) || !conversation.hasSameContent(previousState.getConversation(conversation.thread))) {
         if (conversation.hasNewNotifications()) {
           threadsThatNewlyAlerted += conversation.thread
@@ -225,7 +227,7 @@ object NotificationFactory {
 
     builder.apply {
       setSmallIcon(R.drawable.ic_notification)
-      setColor(ContextCompat.getColor(context, R.color.core_ultramarine))
+      setColor(ContextCompat.getColor(context, R.color.notification_background_ultramarine))
       setCategory(NotificationCompat.CATEGORY_MESSAGE)
       setGroup(DefaultMessageNotifier.NOTIFICATION_GROUP)
       setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -274,7 +276,7 @@ object NotificationFactory {
 
     builder.apply {
       setSmallIcon(R.drawable.ic_notification)
-      setColor(ContextCompat.getColor(context, R.color.core_ultramarine))
+      setColor(ContextCompat.getColor(context, R.color.notification_background_ultramarine))
       setCategory(NotificationCompat.CATEGORY_MESSAGE)
       setGroup(DefaultMessageNotifier.NOTIFICATION_GROUP)
       setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -308,9 +310,11 @@ object NotificationFactory {
   }
 
   private fun notifyInThread(context: Context, recipient: Recipient, lastAudibleNotification: Long) {
-    if (!SignalStore.settings.isMessageNotificationsInChatSoundsEnabled ||
+    if (!NotificationChannels.getInstance().areNotificationsEnabled() ||
+      !SignalStore.settings.isMessageNotificationsInChatSoundsEnabled ||
       ServiceUtil.getAudioManager(context).ringerMode != AudioManager.RINGER_MODE_NORMAL ||
-      (System.currentTimeMillis() - lastAudibleNotification) < DefaultMessageNotifier.MIN_AUDIBLE_PERIOD_MILLIS
+      (System.currentTimeMillis() - lastAudibleNotification) < DefaultMessageNotifier.MIN_AUDIBLE_PERIOD_MILLIS ||
+      InChatNotificationSoundSuppressor.isSuppressed
     ) {
       return
     }
@@ -341,8 +345,8 @@ object NotificationFactory {
     ringtone.play()
   }
 
-  fun notifyMessageDeliveryFailed(context: Context, recipient: Recipient, thread: ConversationId, visibleThread: ConversationId?) {
-    if (thread == visibleThread) {
+  fun notifyMessageDeliveryFailed(context: Context, recipient: Recipient, thread: ConversationId, visibleThread: ConversationId?, visibleBubbleThread: ConversationId?) {
+    if (thread == visibleThread || thread == visibleBubbleThread) {
       notifyInThread(context, recipient, 0)
       return
     }
@@ -458,7 +462,7 @@ object NotificationFactory {
 
     builder.apply {
       setSmallIcon(R.drawable.ic_notification)
-      setColor(ContextCompat.getColor(context, R.color.core_ultramarine))
+      setColor(ContextCompat.getColor(context, R.color.notification_background_ultramarine))
       setCategory(NotificationCompat.CATEGORY_MESSAGE)
       setGroup(DefaultMessageNotifier.NOTIFICATION_GROUP)
       setChannelId(conversation.getChannelId())
@@ -480,7 +484,7 @@ object NotificationFactory {
       notify(notificationId, notification)
       Log.internal().i(TAG, "Posted notification: $notification")
     } catch (e: SecurityException) {
-      Log.i(TAG, "Security exception when posting notification, clearing ringtone")
+      Log.w(TAG, "Security exception when posting notification, clearing ringtone", e)
       if (threadRecipient != null) {
         SignalExecutors.BOUNDED.execute {
           SignalDatabase.recipients.setMessageRingtone(threadRecipient.id, null)

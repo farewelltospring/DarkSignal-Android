@@ -3,22 +3,24 @@ package org.thoughtcrime.securesms.components.settings.app.notifications
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.notifications.DeviceSpecificNotificationConfig
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.SlowNotificationHeuristics
 import org.thoughtcrime.securesms.preferences.widgets.NotificationPrivacyPreference
 import org.thoughtcrime.securesms.util.TextSecurePreferences
-import org.thoughtcrime.securesms.util.livedata.Store
 
 class NotificationsSettingsViewModel(private val sharedPreferences: SharedPreferences) : ViewModel() {
 
-  private val store = Store(getState())
+  private val store = MutableStateFlow(getState())
 
-  val state: LiveData<NotificationsSettingsState> = store.stateLiveData
+  val state: StateFlow<NotificationsSettingsState> = store
 
   init {
     if (NotificationChannels.supported()) {
@@ -120,7 +122,8 @@ class NotificationsSettingsViewModel(private val sharedPreferences: SharedPrefer
       messagePrivacy = SignalStore.settings.messageNotificationsPrivacy.toString(),
       priority = TextSecurePreferences.getNotificationPriority(AppDependencies.application),
       troubleshootNotifications = if (calculateSlowNotifications) {
-        SlowNotificationHeuristics.isPotentiallyCausedByBatteryOptimizations() && (SlowNotificationHeuristics.isHavingDelayedNotifications() || SlowNotificationHeuristics.showPreemptively())
+        (SlowNotificationHeuristics.isBatteryOptimizationsOn() && SlowNotificationHeuristics.isHavingDelayedNotifications()) ||
+          SlowNotificationHeuristics.getDeviceSpecificShowCondition() == DeviceSpecificNotificationConfig.ShowCondition.ALWAYS
       } else if (currentState != null) {
         currentState.messageNotificationsState.troubleshootNotifications
       } else {

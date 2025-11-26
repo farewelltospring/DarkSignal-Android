@@ -9,6 +9,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.os.Parcelable
+import androidx.annotation.CheckResult
 import androidx.core.content.contentValuesOf
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -28,15 +29,16 @@ import org.signal.core.util.requireNonNullBlob
 import org.signal.core.util.requireString
 import org.signal.core.util.select
 import org.signal.core.util.update
-import org.signal.core.util.updateAll
 import org.signal.core.util.withinTransaction
 import org.signal.donations.InAppPaymentType
 import org.thoughtcrime.securesms.database.model.databaseprotos.InAppPaymentData
 import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.jobs.InAppPaymentKeepAliveJob
 import org.thoughtcrime.securesms.util.parcelers.MillisecondDurationParceler
 import org.thoughtcrime.securesms.util.parcelers.NullableSubscriberIdParceler
 import org.whispersystems.signalservice.api.subscriptions.SubscriberId
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -52,7 +54,7 @@ import kotlin.time.Duration.Companion.seconds
 class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : DatabaseTable(context, databaseHelper) {
 
   companion object {
-    private const val TABLE_NAME = "in_app_payment"
+    const val TABLE_NAME = "in_app_payment"
 
     /**
      * Row ID
@@ -134,13 +136,16 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
     endOfPeriod: Duration?,
     inAppPaymentData: InAppPaymentData
   ): InAppPaymentId {
-    val now = System.currentTimeMillis()
+    val now = System.currentTimeMillis().milliseconds
+
+    validateInAppPayment(state, inAppPaymentData)
+
     return writableDatabase.insertInto(TABLE_NAME)
       .values(
         TYPE to type.code,
         STATE to state.code,
-        INSERTED_AT to now,
-        UPDATED_AT to now,
+        INSERTED_AT to now.inWholeMilliseconds,
+        UPDATED_AT to now.inWholeSeconds,
         SUBSCRIBER_ID to subscriberId?.serialize(),
         END_OF_PERIOD to (endOfPeriod?.inWholeSeconds ?: 0L),
         DATA to InAppPaymentData.ADAPTER.encode(inAppPaymentData),
@@ -150,16 +155,66 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
       .let { InAppPaymentId(it) }
   }
 
+  @CheckResult
+  fun moveToTransacting(inAppPaymentId: InAppPaymentId): InAppPayment? {
+    writableDatabase.update(TABLE_NAME)
+      .values(STATE to State.serialize(State.TRANSACTING))
+      .where(ID_WHERE, inAppPaymentId)
+      .run()
+
+    val fresh = getById(inAppPaymentId)
+    if (fresh != null) {
+      AppDependencies.databaseObserver.notifyInAppPaymentsObservers(fresh)
+    }
+
+    return fresh
+  }
+
   fun update(
     inAppPayment: InAppPayment
   ) {
     val updated = inAppPayment.copy(updatedAt = System.currentTimeMillis().milliseconds)
+
+    validateInAppPayment(updated.state, updated.data)
+
     writableDatabase.update(TABLE_NAME)
       .values(InAppPayment.serialize(updated))
       .where(ID_WHERE, inAppPayment.id)
       .run()
 
     AppDependencies.databaseObserver.notifyInAppPaymentsObservers(inAppPayment)
+  }
+
+  fun getOldPendingPayments(type: InAppPaymentType): List<InAppPayment> {
+    val oneDayAgo = System.currentTimeMillis().milliseconds - 24.hours
+    return readableDatabase
+      .select()
+      .from(TABLE_NAME)
+      .where(
+        "$STATE = ? AND $TYPE = ? AND $UPDATED_AT <= ${oneDayAgo.inWholeSeconds}",
+        State.serialize(State.PENDING),
+        InAppPaymentType.serialize(type)
+      )
+      .run()
+      .readToList(mapper = InAppPayment::deserialize)
+  }
+
+  /**
+   * Returns true if the user has submitted a pre-pending recurring donation.
+   * In this state, the user would have had to cancel their subscription or be in the process of trying
+   * to update, so we should not try to run the keep-alive job.
+   */
+  fun hasPrePendingRecurringTransaction(type: InAppPaymentType): Boolean {
+    return readableDatabase
+      .exists(TABLE_NAME)
+      .where(
+        "($STATE = ? OR $STATE = ? OR $STATE = ?) AND $TYPE = ?",
+        State.serialize(State.REQUIRES_ACTION),
+        State.serialize(State.WAITING_FOR_AUTHORIZATION),
+        State.serialize(State.TRANSACTING),
+        InAppPaymentType.serialize(type)
+      )
+      .run()
   }
 
   fun hasWaitingForAuth(): Boolean {
@@ -177,15 +232,41 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
       .readToList { InAppPayment.deserialize(it) }
   }
 
-  fun consumeInAppPaymentsToNotifyUser(): List<InAppPayment> {
+  /**
+   * Retrieves all InAppPayment objects for donations that have been marked NOTIFIED = 0, and then marks them
+   * all as notified.
+   */
+  fun consumeDonationPaymentsToNotifyUser(): List<InAppPayment> {
     return writableDatabase.withinTransaction { db ->
       val payments = db.select()
         .from(TABLE_NAME)
-        .where("$NOTIFIED = ?", 0)
+        .where("$NOTIFIED = ? AND $TYPE != ?", 0, InAppPaymentType.serialize(InAppPaymentType.RECURRING_BACKUP))
         .run()
         .readToList(mapper = { InAppPayment.deserialize(it) })
 
-      db.updateAll(TABLE_NAME).values(NOTIFIED to 1).run()
+      db.update(TABLE_NAME).values(NOTIFIED to 1)
+        .where("$TYPE != ?", InAppPaymentType.serialize(InAppPaymentType.RECURRING_BACKUP))
+        .run()
+
+      payments
+    }
+  }
+
+  /**
+   * Retrieves all InAppPayment objects for backups that have been marked NOTIFIED = 0, and then marks them
+   * all as notified.
+   */
+  fun consumeBackupPaymentsToNotifyUser(): List<InAppPayment> {
+    return writableDatabase.withinTransaction { db ->
+      val payments = db.select()
+        .from(TABLE_NAME)
+        .where("$NOTIFIED = ? AND $TYPE = ?", 0, InAppPaymentType.serialize(InAppPaymentType.RECURRING_BACKUP))
+        .run()
+        .readToList(mapper = { InAppPayment.deserialize(it) })
+
+      db.update(TABLE_NAME).values(NOTIFIED to 1)
+        .where("$TYPE = ?", InAppPaymentType.serialize(InAppPaymentType.RECURRING_BACKUP))
+        .run()
 
       payments
     }
@@ -261,16 +342,9 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
       .run()
   }
 
-  /**
-   * Returns whether there are any pending donations in the database.
-   */
-  fun hasPending(type: InAppPaymentType): Boolean {
+  fun hasPendingBackupRedemption(): Boolean {
     return readableDatabase.exists(TABLE_NAME)
-      .where(
-        "$STATE = ? AND $TYPE = ?",
-        State.serialize(State.PENDING),
-        InAppPaymentType.serialize(type)
-      )
+      .where("$STATE = ? AND $TYPE = ?", State.serialize(State.PENDING), InAppPaymentType.serialize(InAppPaymentType.RECURRING_BACKUP))
       .run()
   }
 
@@ -291,6 +365,20 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
       .limit(1)
       .run()
       .readToSingleObject(InAppPayment.Companion)
+  }
+
+  /**
+   * Validates the given InAppPayment properties and throws an exception if they're invalid.
+   */
+  private fun validateInAppPayment(
+    state: State,
+    inAppPaymentData: InAppPaymentData
+  ) {
+    if (inAppPaymentData.error?.data_ == InAppPaymentKeepAliveJob.KEEP_ALIVE) {
+      check(state == State.PENDING) { "Data has keep-alive error: Expected PENDING state but was $state." }
+    } else if (inAppPaymentData.error != null) {
+      check(state == State.END) { "Data has error: Expected END state but was $state" }
+    }
   }
 
   /**
@@ -337,7 +425,7 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
           ID to data.id.serialize(),
           TYPE to data.type.apply { check(this != InAppPaymentType.UNKNOWN) }.code,
           STATE to data.state.code,
-          INSERTED_AT to data.insertedAt.inWholeSeconds,
+          INSERTED_AT to data.insertedAt.inWholeMilliseconds,
           UPDATED_AT to data.updatedAt.inWholeSeconds,
           NOTIFIED to data.notified,
           SUBSCRIBER_ID to data.subscriberId?.serialize(),
@@ -351,7 +439,7 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
           id = InAppPaymentId(input.requireLong(ID)),
           type = InAppPaymentType.deserialize(input.requireInt(TYPE)),
           state = State.deserialize(input.requireInt(STATE)),
-          insertedAt = input.requireLong(INSERTED_AT).seconds,
+          insertedAt = input.requireLong(INSERTED_AT).milliseconds,
           updatedAt = input.requireLong(UPDATED_AT).seconds,
           notified = input.requireBoolean(NOTIFIED),
           subscriberId = input.requireString(SUBSCRIBER_ID)?.let { SubscriberId.deserialize(it) },
@@ -367,8 +455,11 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
    *
    * ```mermaid
    * flowchart TD
-   *     CREATED -- Auth required --> WAITING_FOR_AUTHORIZATION
-   *     CREATED -- Auth not required --> PENDING
+   *     CREATED --> TRANSACTING
+   *     TRANSACTING -- Auth required --> REQUIRES_ACTION
+   *     TRANSACTING -- Auth not required --> PENDING
+   *     REQUIRES_ACTION -- User completes auth in app --> TRANSACTING
+   *     REQUIRES_ACTION -- User launches external application --> WAITING_FOR_AUTHORIZATION
    *     WAITING_FOR_AUTHORIZATION -- User completes auth --> PENDING
    *     WAITING_FOR_AUTHORIZATION -- User does not complete auth --> END
    *     PENDING --> END
@@ -385,24 +476,39 @@ class InAppPaymentTable(context: Context, databaseHelper: SignalDatabase) : Data
     CREATED(0),
 
     /**
-     * This payment is awaiting the user to return from an external authorization2
+     * This payment is awaiting the user to return from an external authorization
      * such as a 3DS flow or IDEAL confirmation.
      */
     WAITING_FOR_AUTHORIZATION(1),
 
     /**
-     * This payment is authorized and is waiting to be processed.
+     * This payment is transacted and is performing receipt redemption.
      */
     PENDING(2),
 
     /**
      * This payment pipeline has been completed. Check the data to see the state.
      */
-    END(3);
+    END(3),
+
+    /**
+     * Requires user action via 3DS or iDEAL
+     */
+    REQUIRES_ACTION(4),
+
+    /**
+     * User has completed the required action and the transaction should be finished.
+     */
+    REQUIRED_ACTION_COMPLETED(5),
+
+    /**
+     * Performing monetary transaction
+     */
+    TRANSACTING(6);
 
     companion object : Serializer<State, Int> {
       override fun serialize(data: State): Int = data.code
-      override fun deserialize(input: Int): State = State.values().first { it.code == input }
+      override fun deserialize(input: Int): State = entries.first { it.code == input }
     }
   }
 }

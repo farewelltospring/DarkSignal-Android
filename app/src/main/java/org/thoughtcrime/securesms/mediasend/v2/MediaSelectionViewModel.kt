@@ -46,7 +46,6 @@ import org.thoughtcrime.securesms.util.livedata.Store
 import java.util.Collections
 import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * ViewModel which maintains the list of selected media and other shared values.
@@ -108,7 +107,7 @@ class MediaSelectionViewModel(
     store.update {
       it.copy(
         isMeteredConnection = metered,
-        isPreUploadEnabled = shouldPreUpload(metered, it.recipient)
+        isPreUploadEnabled = shouldPreUpload(metered)
       )
     }
   }
@@ -121,13 +120,13 @@ class MediaSelectionViewModel(
       store.update(Recipient.live(recipientSearchKey.recipientId).liveData) { r, s ->
         s.copy(
           recipient = r,
-          isPreUploadEnabled = shouldPreUpload(s.isMeteredConnection, r)
+          isPreUploadEnabled = shouldPreUpload(s.isMeteredConnection)
         )
       }
     }
 
     if (initialMedia.isNotEmpty()) {
-      addMedia(initialMedia)
+      addMedia(initialMedia.toSet())
     }
 
     disposables += selectedMediaSubject
@@ -165,7 +164,7 @@ class MediaSelectionViewModel(
   }
 
   fun addMedia(media: Media) {
-    addMedia(listOf(media))
+    addMedia(setOf(media))
   }
 
   fun isStory(): Boolean {
@@ -176,7 +175,7 @@ class MediaSelectionViewModel(
     return store.state.storySendRequirements
   }
 
-  private fun addMedia(media: List<Media>) {
+  fun addMedia(media: Set<Media>) {
     val newSelectionList: List<Media> = linkedSetOf<Media>().apply {
       addAll(store.state.selectedMedia)
       addAll(media)
@@ -188,11 +187,16 @@ class MediaSelectionViewModel(
         .subscribe { filterResult ->
           if (filterResult.filteredMedia.isNotEmpty()) {
             store.update {
+              val maxDuration = it.calculateMaxVideoDurationUs(getMediaConstraints().getVideoMaxSize())
               val initializedVideoEditorStates = filterResult.filteredMedia.filterNot { media -> it.editorStateMap.containsKey(media.uri) }
                 .filter { media -> MediaUtil.isNonGifVideo(media) }
                 .associate { video: Media ->
                   val duration = video.duration.milliseconds.inWholeMicroseconds
-                  video.uri to VideoTrimData(false, duration, 0, duration)
+                  if (duration < maxDuration) {
+                    video.uri to VideoTrimData(false, duration, 0, duration)
+                  } else {
+                    video.uri to VideoTrimData(true, duration, 0, maxDuration)
+                  }
                 }
               it.copy(
                 selectedMedia = filterResult.filteredMedia,
@@ -260,13 +264,23 @@ class MediaSelectionViewModel(
     lastMediaDrag = Pair(0, 0)
   }
 
+  fun isSelectedMediaEmpty(): Boolean {
+    return store.state.selectedMedia.isEmpty()
+  }
+
   fun removeMedia(media: Media) {
+    removeMedia(setOf(media))
+  }
+
+  fun removeMedia(media: Set<Media>) {
     val snapshot = store.state
     val newMediaList = snapshot.selectedMedia - media
-    val oldFocusIndex = snapshot.selectedMedia.indexOf(media)
     val newFocus = when {
       newMediaList.isEmpty() -> null
-      media == snapshot.focusedMedia -> newMediaList[Util.clamp(oldFocusIndex, 0, newMediaList.size - 1)]
+      snapshot.focusedMedia in media -> {
+        val oldFocusIndex = snapshot.selectedMedia.indexOf(snapshot.focusedMedia)
+        newMediaList[Util.clamp(oldFocusIndex, 0, newMediaList.size - 1)]
+      }
       else -> snapshot.focusedMedia
     }
 
@@ -274,8 +288,8 @@ class MediaSelectionViewModel(
       it.copy(
         selectedMedia = newMediaList,
         focusedMedia = newFocus,
-        editorStateMap = it.editorStateMap - media.uri,
-        cameraFirstCapture = if (media == it.cameraFirstCapture) null else it.cameraFirstCapture
+        editorStateMap = it.editorStateMap - media.map { it.uri },
+        cameraFirstCapture = if (it.cameraFirstCapture in media) null else it.cameraFirstCapture
       )
     }
 
@@ -284,8 +298,9 @@ class MediaSelectionViewModel(
     }
 
     selectedMediaSubject.onNext(newMediaList)
-    repository.deleteBlobs(listOf(media))
+    repository.deleteBlobs(media.toList())
 
+    Log.d(TAG, "User removed ${media.forEach { it.uri }} from message.")
     cancelUpload(media)
   }
 
@@ -330,6 +345,14 @@ class MediaSelectionViewModel(
 
     store.update { it.copy(quality = sentMediaQuality, isPreUploadEnabled = false) }
     repository.uploadRepository.cancelAllUploads()
+
+    store.state.selectedMedia.forEach { mediaItem ->
+      if (MediaUtil.isVideoType(mediaItem.contentType) && MediaConstraints.isVideoTranscodeAvailable()) {
+        val uri = mediaItem.uri
+        val data = store.state.getOrCreateVideoTrimData(uri)
+        onEditVideoDuration(totalDurationUs = data.totalInputDurationUs, startTimeUs = data.startTimeUs, endTimeUs = data.endTimeUs, touchEnabled = true, uri = uri)
+      }
+    }
   }
 
   fun setMessage(text: CharSequence?) {
@@ -340,9 +363,9 @@ class MediaSelectionViewModel(
     store.update { it.copy(viewOnceToggleState = it.viewOnceToggleState.next()) }
   }
 
-  fun onEditVideoDuration(context: Context, totalDurationUs: Long, startTimeUs: Long, endTimeUs: Long, touchEnabled: Boolean) {
+  fun onEditVideoDuration(totalDurationUs: Long, startTimeUs: Long, endTimeUs: Long, touchEnabled: Boolean, uri: Uri? = store.state.focusedMedia?.uri) {
+    if (uri == null) return
     store.update {
-      val uri = it.focusedMedia?.uri ?: return@update it
       val data = it.getOrCreateVideoTrimData(uri)
       val clampedStartTime = max(startTimeUs, 0)
 
@@ -350,27 +373,30 @@ class MediaSelectionViewModel(
       val durationEdited = clampedStartTime > 0 || endTimeUs < totalDurationUs
       val isEntireDuration = startTimeUs == 0L && endTimeUs == totalDurationUs
       val endMoved = !isEntireDuration && data.endTimeUs != endTimeUs
-      val maxVideoDurationUs: Long = if (it.isStory && !MediaConstraints.isVideoTranscodeAvailable()) {
-        Stories.MAX_VIDEO_DURATION_MILLIS
-      } else {
-        it.transcodingPreset.calculateMaxVideoUploadDurationInSeconds(getMediaConstraints().getVideoMaxSize(context)).seconds.inWholeMicroseconds
-      }
+      val maxVideoDurationUs: Long = it.calculateMaxVideoDurationUs(getMediaConstraints().getVideoMaxSize())
       val preserveStartTime = unedited || !endMoved
       val videoTrimData = VideoTrimData(durationEdited, totalDurationUs, clampedStartTime, endTimeUs)
       val updatedData = clampToMaxClipDuration(videoTrimData, maxVideoDurationUs, preserveStartTime)
 
       if (updatedData != videoTrimData) {
-        Log.d(TAG, "Video trim clamped from ${videoTrimData.startTimeUs}, ${videoTrimData.endTimeUs} to ${updatedData.startTimeUs}, ${updatedData.endTimeUs}")
+        Log.d(TAG, "Video attachment trim clamped from ${videoTrimData.startTimeUs}, ${videoTrimData.endTimeUs} to ${updatedData.startTimeUs}, ${updatedData.endTimeUs}")
       }
 
       if (unedited && durationEdited) {
-        Log.d(TAG, "Canceling upload because the duration has been edited for the first time..")
+        Log.d(TAG, "Canceling attachment upload because the duration has been edited for the first time..")
         cancelUpload(MediaBuilder.buildMedia(uri))
       }
-      it.copy(
-        isTouchEnabled = touchEnabled,
-        editorStateMap = it.editorStateMap + (uri to updatedData)
-      )
+
+      if (updatedData != data) {
+        Log.d(TAG, "Updating video attachment trim data for $uri")
+        it.copy(
+          isTouchEnabled = touchEnabled,
+          editorStateMap = it.editorStateMap + (uri to updatedData)
+        )
+      } else {
+        Log.d(TAG, "Preserving video attachment trim data for $uri")
+        it.copy(isTouchEnabled = touchEnabled)
+      }
     }
   }
 
@@ -421,7 +447,7 @@ class MediaSelectionViewModel(
     }
 
     val filteredPreUploadMedia = if (destination is MediaSelectionDestination.SingleRecipient || !Stories.isFeatureEnabled()) {
-      media
+      media.filter { !MediaUtil.isDocumentType(it.contentType) }
     } else {
       media.filter { Stories.MediaTransform.canPreUploadMedia(it) }
     }
@@ -430,11 +456,15 @@ class MediaSelectionViewModel(
   }
 
   private fun cancelUpload(media: Media) {
+    cancelUpload(setOf(media))
+  }
+
+  private fun cancelUpload(media: Set<Media>) {
     repository.uploadRepository.cancelUpload(media)
   }
 
-  private fun shouldPreUpload(metered: Boolean, recipient: Recipient?): Boolean {
-    return !metered && !repository.isLocalSelfSend(recipient)
+  private fun shouldPreUpload(metered: Boolean): Boolean {
+    return !metered
   }
 
   fun onSaveState(outState: Bundle) {

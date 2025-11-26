@@ -196,8 +196,8 @@ public abstract class DisplayRecord {
     return MessageTypes.isChangeNumber(type);
   }
 
-  public boolean isBoostRequest() {
-    return MessageTypes.isBoostRequest(type);
+  public boolean isReleaseChannelDonationRequest() {
+    return MessageTypes.isReleaseChannelDonationRequest(type);
   }
 
   public int getDeliveryStatus() {
@@ -247,5 +247,21 @@ public abstract class DisplayRecord {
 
   public boolean isMessageRequestAccepted() {
     return MessageTypes.isMessageRequestAccepted(type);
+  }
+
+  public boolean isBlocked() {
+    return MessageTypes.isBlocked(type);
+  }
+
+  public boolean isUnblocked() {
+    return MessageTypes.isUnblocked(type);
+  }
+
+  public boolean isUnsupported() {
+    return MessageTypes.isUnsupportedMessageType(type);
+  }
+
+  public boolean isPollTerminate() {
+    return MessageTypes.isPollTerminate(type);
   }
 }

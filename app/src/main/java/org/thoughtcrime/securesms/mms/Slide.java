@@ -92,6 +92,11 @@ public abstract class Slide {
     return attachment.fastPreflightId;
   }
 
+  @Nullable
+  public String getQuoteTargetContentType() {
+    return attachment.quoteTargetContentType;
+  }
+
   public long getFileSize() {
     return attachment.size;
   }
@@ -222,6 +227,7 @@ public abstract class Slide {
                              borderless,
                              gif,
                              quote,
+                             null,
                              caption,
                              stickerLocator,
                              blurHash,
@@ -230,34 +236,7 @@ public abstract class Slide {
   }
 
   public @NonNull Optional<String> getFileType(@NonNull Context context) {
-    Optional<String> fileName = getFileName();
-
-    if (fileName.isPresent()) {
-      String fileType = getFileType(fileName);
-      if (!fileType.isEmpty()) {
-        return Optional.of(fileType);
-      }
-    }
-
-    return Optional.ofNullable(MediaUtil.getExtension(context, getUri()));
-  }
-
-  private static @NonNull String getFileType(Optional<String> fileName) {
-    if (!fileName.isPresent()) return "";
-
-    String[] parts = fileName.get().split("\\.");
-
-    if (parts.length < 2) {
-      return "";
-    }
-
-    String suffix = parts[parts.length - 1];
-
-    if (suffix.length() <= 3) {
-      return suffix;
-    }
-
-    return "";
+    return MediaUtil.getFileType(context, getFileName(), getUri());
   }
 
   @Override
@@ -272,12 +251,13 @@ public abstract class Slide {
            this.hasImage() == that.hasImage()                        &&
            this.hasVideo() == that.hasVideo()                        &&
            this.getTransferState() == that.getTransferState()        &&
-           Util.equals(this.getUri(), that.getUri());
+           Util.equals(this.getUri(), that.getUri())                 &&
+           Util.equals(this.getThumbnailUri(), that.getThumbnailUri());
   }
 
   @Override
   public int hashCode() {
     return Util.hashCode(getContentType(), hasAudio(), hasImage(),
-                         hasVideo(), getUri(), getTransferState());
+                         hasVideo(), getUri(), getTransferState(), getThumbnailUri());
   }
 }

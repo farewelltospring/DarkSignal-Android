@@ -1,17 +1,16 @@
 package org.thoughtcrime.securesms.keyvalue
 
+import android.app.Application
 import androidx.annotation.VisibleForTesting
 import androidx.preference.PreferenceDataStore
-import org.signal.core.util.ResettableLazy
 import org.thoughtcrime.securesms.database.KeyValueDatabase
-import org.thoughtcrime.securesms.dependencies.AppDependencies.application
 
 /**
  * Simple, encrypted key-value store.
  */
-class SignalStore(private val store: KeyValueStore) {
+class SignalStore(context: Application, private val store: KeyValueStore) {
 
-  val accountValues = AccountValues(store)
+  val accountValues = AccountValues(store, context)
   val svrValues = SvrValues(store)
   val registrationValues = RegistrationValues(store)
   val pinValues = PinValues(store)
@@ -22,13 +21,13 @@ class SignalStore(private val store: KeyValueStore) {
   val miscValues = MiscellaneousValues(store)
   val internalValues = InternalValues(store)
   val emojiValues = EmojiValues(store)
-  val settingsValues = SettingsValues(store)
+  val settingsValues = SettingsValues(store, context)
   val certificateValues = CertificateValues(store)
   val phoneNumberPrivacyValues = PhoneNumberPrivacyValues(store)
   val onboardingValues = OnboardingValues(store)
   val wallpaperValues = WallpaperValues(store)
   val paymentsValues = PaymentsValues(store)
-  val donationsValues = DonationsValues(store)
+  val inAppPaymentValues = InAppPaymentValues(store)
   val proxyValues = ProxyValues(store)
   val rateLimitValues = RateLimitValues(store)
   val chatColorsValues = ChatColorsValues(store)
@@ -39,15 +38,22 @@ class SignalStore(private val store: KeyValueStore) {
   val apkUpdateValues = ApkUpdateValues(store)
   val backupValues = BackupValues(store)
 
-  val plainTextValues = PlainTextSharedPrefsDataStore(application)
+  val plainTextValues = PlainTextSharedPrefsDataStore(context)
 
   companion object {
 
-    private var instanceOverride: SignalStore? = null
-    private val _instance = ResettableLazy {
-      instanceOverride ?: SignalStore(KeyValueStore(KeyValueDatabase.getInstance(application)))
+    private var instance: SignalStore? = null
+
+    @JvmStatic
+    fun init(context: Application) {
+      if (instance == null) {
+        synchronized(SignalStore::class.java) {
+          if (instance == null) {
+            instance = SignalStore(context, KeyValueStore(KeyValueDatabase.getInstance(context)))
+          }
+        }
+      }
     }
-    private val instance by _instance
 
     @JvmStatic
     fun onFirstEverAppLaunch() {
@@ -68,7 +74,7 @@ class SignalStore(private val store: KeyValueStore) {
       onboarding.onFirstEverAppLaunch()
       wallpaper.onFirstEverAppLaunch()
       payments.onFirstEverAppLaunch()
-      donations.onFirstEverAppLaunch()
+      inAppPayments.onFirstEverAppLaunch()
       proxy.onFirstEverAppLaunch()
       rateLimit.onFirstEverAppLaunch()
       chatColors.onFirstEverAppLaunch()
@@ -76,6 +82,8 @@ class SignalStore(private val store: KeyValueStore) {
       notificationProfile.onFirstEverAppLaunch()
       releaseChannel.onFirstEverAppLaunch()
       story.onFirstEverAppLaunch()
+      apkUpdate.onFirstEverAppLaunch()
+      backup.onFirstEverAppLaunch()
     }
 
     @JvmStatic
@@ -98,14 +106,16 @@ class SignalStore(private val store: KeyValueStore) {
           onboarding.keysToIncludeInBackup +
           wallpaper.keysToIncludeInBackup +
           payments.keysToIncludeInBackup +
-          donations.keysToIncludeInBackup +
+          inAppPayments.keysToIncludeInBackup +
           proxy.keysToIncludeInBackup +
           rateLimit.keysToIncludeInBackup +
           chatColors.keysToIncludeInBackup +
           imageEditor.keysToIncludeInBackup +
           notificationProfile.keysToIncludeInBackup +
           releaseChannel.keysToIncludeInBackup +
-          story.keysToIncludeInBackup
+          story.keysToIncludeInBackup +
+          apkUpdate.keysToIncludeInBackup +
+          backup.keysToIncludeInBackup
       }
 
     /**
@@ -114,7 +124,7 @@ class SignalStore(private val store: KeyValueStore) {
      */
     @VisibleForTesting
     fun resetCache() {
-      instance.store.resetCache()
+      instance!!.store.resetCache()
     }
 
     /**
@@ -122,144 +132,148 @@ class SignalStore(private val store: KeyValueStore) {
      */
     @JvmStatic
     fun onPostBackupRestore() {
-      instance.store.resetCache()
+      instance!!.store.resetCache()
     }
 
     @JvmStatic
     @get:JvmName("account")
     val account: AccountValues
-      get() = instance.accountValues
+      get() = instance!!.accountValues
 
     @JvmStatic
     @get:JvmName("svr")
     val svr: SvrValues
-      get() = instance.svrValues
+      get() = instance!!.svrValues
 
     @JvmStatic
     @get:JvmName("registration")
     val registration: RegistrationValues
-      get() = instance.registrationValues
+      get() = instance!!.registrationValues
 
     @JvmStatic
     @get:JvmName("pin")
     val pin: PinValues
-      get() = instance.pinValues
+      get() = instance!!.pinValues
 
+    @JvmStatic
+    @get:JvmName("remoteConfig")
     val remoteConfig: RemoteConfigValues
-      get() = instance.remoteConfigValues
+      get() = instance!!.remoteConfigValues
 
     @JvmStatic
     @get:JvmName("storageService")
     val storageService: StorageServiceValues
-      get() = instance.storageServiceValues
+      get() = instance!!.storageServiceValues
 
     @JvmStatic
     @get:JvmName("uiHints")
     val uiHints: UiHintValues
-      get() = instance.uiHintValues
+      get() = instance!!.uiHintValues
 
     @JvmStatic
     @get:JvmName("tooltips")
     val tooltips: TooltipValues
-      get() = instance.tooltipValues
+      get() = instance!!.tooltipValues
 
     @JvmStatic
     @get:JvmName("misc")
     val misc: MiscellaneousValues
-      get() = instance.miscValues
+      get() = instance!!.miscValues
 
     @JvmStatic
     @get:JvmName("internal")
     val internal: InternalValues
-      get() = instance.internalValues
+      get() = instance!!.internalValues
 
     @JvmStatic
     @get:JvmName("emoji")
     val emoji: EmojiValues
-      get() = instance.emojiValues
+      get() = instance!!.emojiValues
 
     @JvmStatic
     @get:JvmName("settings")
     val settings: SettingsValues
-      get() = instance.settingsValues
+      get() = instance!!.settingsValues
 
     @JvmStatic
     @get:JvmName("certificate")
     val certificate: CertificateValues
-      get() = instance.certificateValues
+      get() = instance!!.certificateValues
 
     @JvmStatic
     @get:JvmName("phoneNumberPrivacy")
     val phoneNumberPrivacy: PhoneNumberPrivacyValues
-      get() = instance.phoneNumberPrivacyValues
+      get() = instance!!.phoneNumberPrivacyValues
 
     @JvmStatic
     @get:JvmName("onboarding")
     val onboarding: OnboardingValues
-      get() = instance.onboardingValues
+      get() = instance!!.onboardingValues
 
     @JvmStatic
     @get:JvmName("wallpaper")
     val wallpaper: WallpaperValues
-      get() = instance.wallpaperValues
+      get() = instance!!.wallpaperValues
 
     @JvmStatic
     @get:JvmName("payments")
     val payments: PaymentsValues
-      get() = instance.paymentsValues
+      get() = instance!!.paymentsValues
 
     @JvmStatic
-    @get:JvmName("donations")
-    val donations: DonationsValues
-      get() = instance.donationsValues
+    @get:JvmName("inAppPayments")
+    val inAppPayments: InAppPaymentValues
+      get() = instance!!.inAppPaymentValues
 
     @JvmStatic
     @get:JvmName("proxy")
     val proxy: ProxyValues
-      get() = instance.proxyValues
+      get() = instance!!.proxyValues
 
     @JvmStatic
     @get:JvmName("rateLimit")
     val rateLimit: RateLimitValues
-      get() = instance.rateLimitValues
+      get() = instance!!.rateLimitValues
 
     @JvmStatic
     @get:JvmName("chatColors")
     val chatColors: ChatColorsValues
-      get() = instance.chatColorsValues
+      get() = instance!!.chatColorsValues
 
     val imageEditor: ImageEditorValues
-      get() = instance.imageEditorValues
+      get() = instance!!.imageEditorValues
 
+    @JvmStatic
+    @get:JvmName("notificationProfile")
     val notificationProfile: NotificationProfileValues
-      get() = instance.notificationProfileValues
+      get() = instance!!.notificationProfileValues
 
     @JvmStatic
     @get:JvmName("releaseChannel")
     val releaseChannel: ReleaseChannelValues
-      get() = instance.releaseChannelValues
+      get() = instance!!.releaseChannelValues
 
     @JvmStatic
     @get:JvmName("story")
     val story: StoryValues
-      get() = instance.storyValues
+      get() = instance!!.storyValues
 
     val apkUpdate: ApkUpdateValues
-      get() = instance.apkUpdateValues
+      get() = instance!!.apkUpdateValues
 
     @JvmStatic
     @get:JvmName("backup")
     val backup: BackupValues
-      get() = instance.backupValues
+      get() = instance!!.backupValues
 
     val groupsV2AciAuthorizationCache: GroupsV2AuthorizationSignalStoreCache
-      get() = GroupsV2AuthorizationSignalStoreCache.createAciCache(instance.store)
+      get() = GroupsV2AuthorizationSignalStoreCache.createAciCache(instance!!.store)
 
     val plaintext: PlainTextSharedPrefsDataStore
-      get() = instance.plainTextValues
+      get() = instance!!.plainTextValues
 
     fun getPreferenceDataStore(): PreferenceDataStore {
-      return SignalPreferenceDataStore(instance.store)
+      return SignalPreferenceDataStore(instance!!.store)
     }
 
     /**
@@ -268,30 +282,7 @@ class SignalStore(private val store: KeyValueStore) {
      */
     @JvmStatic
     fun blockUntilAllWritesFinished() {
-      instance.store.blockUntilAllWritesFinished()
-    }
-
-    /**
-     * Allows you to set a custom KeyValueStore to read from. Only for testing!
-     */
-    @VisibleForTesting
-    fun testInject(store: KeyValueStore) {
-      instanceOverride = SignalStore(store)
-      _instance.reset()
-    }
-
-    /**
-     * Allows you to set a custom SignalStore to read from. Only for testing!
-     */
-    @VisibleForTesting
-    fun testInject(store: SignalStore) {
-      instanceOverride = store
-      _instance.reset()
-    }
-
-    fun clearAllDataForBackupRestore() {
-      releaseChannel.clearReleaseChannelRecipientId()
-      account.clearRegistrationButKeepCredentials()
+      instance!!.store.blockUntilAllWritesFinished()
     }
   }
 }

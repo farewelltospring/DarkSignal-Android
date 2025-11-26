@@ -57,6 +57,7 @@ class FallbackAvatarDrawable(
         )
 
         resourceIcon.bounds = iconBounds
+        resourceIcon.setLayoutDirection(layoutDirection)
         resourceIcon
       }
 

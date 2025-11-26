@@ -11,6 +11,7 @@ import androidx.lifecycle.Observer;
 
 import com.bumptech.glide.RequestManager;
 
+import org.signal.ringrtc.CallLinkEpoch;
 import org.signal.ringrtc.CallLinkRootKey;
 import org.thoughtcrime.securesms.components.voice.VoiceNotePlaybackState;
 import org.thoughtcrime.securesms.contactshare.Contact;
@@ -29,6 +30,8 @@ import org.thoughtcrime.securesms.groups.GroupId;
 import org.thoughtcrime.securesms.groups.GroupMigrationMembershipChange;
 import org.thoughtcrime.securesms.linkpreview.LinkPreview;
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory;
+import org.thoughtcrime.securesms.polls.PollRecord;
+import org.thoughtcrime.securesms.polls.PollOption;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.stickers.StickerLocator;
@@ -99,6 +102,11 @@ public interface BindableConversationItem extends Unbindable, GiphyMp4Playable, 
     void onUnregisterVoiceNoteCallbacks(@NonNull Observer<VoiceNotePlaybackState> onPlaybackStartObserver);
     void onVoiceNotePause(@NonNull Uri uri);
     void onVoiceNotePlay(@NonNull Uri uri, long messageId, double position);
+
+    default void onSingleVoiceNotePlay(@NonNull Uri uri, long messageId, double position) {
+      onVoiceNotePlay(uri, messageId, position);
+    }
+
     void onVoiceNoteSeekTo(@NonNull Uri uri, double position);
     void onVoiceNotePlaybackSpeedChanged(@NonNull Uri uri, float speed);
     void onGroupMigrationLearnMoreClicked(@NonNull GroupMigrationMembershipChange membershipChange);
@@ -112,6 +120,7 @@ public interface BindableConversationItem extends Unbindable, GiphyMp4Playable, 
     void onInMemoryMessageClicked(@NonNull InMemoryMessageRecord messageRecord);
     void onViewGroupDescriptionChange(@Nullable GroupId groupId, @NonNull String description, boolean isMessageRequestAccepted);
     void onChangeNumberUpdateContact(@NonNull Recipient recipient);
+    void onChangeProfileNameUpdateContact(@NonNull Recipient recipient);
     void onCallToAction(@NonNull String action);
     void onDonateClicked();
     void onBlockJoinRequest(@NonNull Recipient recipient);
@@ -127,11 +136,17 @@ public interface BindableConversationItem extends Unbindable, GiphyMp4Playable, 
     void goToMediaPreview(ConversationItem parent, View sharedElement, MediaIntentFactory.MediaPreviewArgs args);
     void onEditedIndicatorClicked(@NonNull ConversationMessage conversationMessage);
     void onShowGroupDescriptionClicked(@NonNull String groupName, @NonNull String description, boolean shouldLinkifyWebLinks);
-    void onJoinCallLink(@NonNull CallLinkRootKey callLinkRootKey);
+    void onJoinCallLink(@NonNull CallLinkRootKey callLinkRootKey, @Nullable CallLinkEpoch callLinkEpoch);
     void onShowSafetyTips(boolean forGroup);
     void onReportSpamLearnMoreClicked();
     void onMessageRequestAcceptOptionsClicked();
     void onItemDoubleClick(MultiselectPart multiselectPart);
     void onPaymentTombstoneClicked();
+    void onDisplayMediaNoLongerAvailableSheet();
+    void onShowUnverifiedProfileSheet(boolean forGroup);
+    void onUpdateSignalClicked();
+    void onViewResultsClicked(long pollId);
+    void onViewPollClicked(long messageId);
+    void onToggleVote(@NonNull PollRecord poll, @NonNull PollOption pollOption, Boolean isChecked);
   }
 }

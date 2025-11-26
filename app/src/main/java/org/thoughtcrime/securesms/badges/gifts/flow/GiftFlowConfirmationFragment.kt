@@ -6,8 +6,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.setFragmentResultListener
-import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -15,7 +15,6 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
 import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.getParcelableCompat
-import org.signal.core.util.logging.Log
 import org.signal.core.util.money.FiatMoney
 import org.signal.donations.InAppPaymentType
 import org.thoughtcrime.securesms.MainActivity
@@ -26,8 +25,8 @@ import org.thoughtcrime.securesms.components.emoji.MediaKeyboard
 import org.thoughtcrime.securesms.components.settings.DSLConfiguration
 import org.thoughtcrime.securesms.components.settings.DSLSettingsFragment
 import org.thoughtcrime.securesms.components.settings.DSLSettingsText
-import org.thoughtcrime.securesms.components.settings.app.subscription.donate.DonationCheckoutDelegate
-import org.thoughtcrime.securesms.components.settings.app.subscription.donate.DonationProcessorAction
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.InAppPaymentCheckoutDelegate
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.InAppPaymentProcessorAction
 import org.thoughtcrime.securesms.components.settings.app.subscription.donate.gateway.GatewaySelectorBottomSheet
 import org.thoughtcrime.securesms.components.settings.configure
 import org.thoughtcrime.securesms.components.settings.conversation.preferences.RecipientPreference
@@ -41,6 +40,7 @@ import org.thoughtcrime.securesms.keyboard.emoji.search.EmojiSearchFragment
 import org.thoughtcrime.securesms.payments.FiatMoneyUtil
 import org.thoughtcrime.securesms.payments.currency.CurrencyUtil
 import org.thoughtcrime.securesms.util.Debouncer
+import org.thoughtcrime.securesms.util.activityViewModel
 import org.thoughtcrime.securesms.util.adapter.mapping.MappingAdapter
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
 import java.math.BigDecimal
@@ -56,19 +56,13 @@ class GiftFlowConfirmationFragment :
   EmojiKeyboardPageFragment.Callback,
   EmojiEventListener,
   EmojiSearchFragment.Callback,
-  DonationCheckoutDelegate.Callback {
+  InAppPaymentCheckoutDelegate.Callback {
 
-  companion object {
-    private val TAG = Log.tag(GiftFlowConfirmationFragment::class.java)
+  private val viewModel: GiftFlowViewModel by activityViewModel {
+    GiftFlowViewModel()
   }
 
-  private val viewModel: GiftFlowViewModel by viewModels(
-    ownerProducer = { requireActivity() }
-  )
-
-  private val keyboardPagerViewModel: KeyboardPagerViewModel by viewModels(
-    ownerProducer = { requireActivity() }
-  )
+  private val keyboardPagerViewModel: KeyboardPagerViewModel by activityViewModels()
 
   private lateinit var inputAwareLayout: InputAwareLayout
   private lateinit var emojiKeyboard: MediaKeyboard
@@ -85,7 +79,7 @@ class GiftFlowConfirmationFragment :
     RecipientPreference.register(adapter)
     GiftRowItem.register(adapter)
 
-    val checkoutDelegate = DonationCheckoutDelegate(this, this, viewModel.state.filter { it.inAppPaymentId != null }.map { it.inAppPaymentId!! })
+    val checkoutDelegate = InAppPaymentCheckoutDelegate(this, this, viewModel.state.filter { it.inAppPaymentId != null }.map { it.inAppPaymentId!! })
 
     keyboardPagerViewModel.setOnlyPage(KeyboardPage.EMOJI)
 
@@ -115,10 +109,10 @@ class GiftFlowConfirmationFragment :
 
     val continueButton = requireView().findViewById<MaterialButton>(R.id.continue_button)
     continueButton.setOnClickListener {
-      lifecycleDisposable += viewModel.insertInAppPayment(requireContext()).subscribe { inAppPayment ->
+      lifecycleDisposable += viewModel.insertInAppPayment().subscribe { inAppPayment ->
         findNavController().safeNavigate(
           GiftFlowConfirmationFragmentDirections.actionGiftFlowConfirmationFragmentToGatewaySelectorBottomSheet(
-            inAppPayment
+            inAppPayment.id
           )
         )
       }
@@ -265,9 +259,8 @@ class GiftFlowConfirmationFragment :
   override fun navigateToStripePaymentInProgress(inAppPayment: InAppPaymentTable.InAppPayment) {
     findNavController().safeNavigate(
       GiftFlowConfirmationFragmentDirections.actionGiftFlowConfirmationFragmentToStripePaymentInProgressFragment(
-        DonationProcessorAction.PROCESS_NEW_DONATION,
-        inAppPayment,
-        inAppPayment.type
+        InAppPaymentProcessorAction.PROCESS_NEW_IN_APP_PAYMENT,
+        inAppPayment.id
       )
     )
   }
@@ -275,16 +268,15 @@ class GiftFlowConfirmationFragment :
   override fun navigateToPayPalPaymentInProgress(inAppPayment: InAppPaymentTable.InAppPayment) {
     findNavController().safeNavigate(
       GiftFlowConfirmationFragmentDirections.actionGiftFlowConfirmationFragmentToPaypalPaymentInProgressFragment(
-        DonationProcessorAction.PROCESS_NEW_DONATION,
-        inAppPayment,
-        inAppPayment.type
+        InAppPaymentProcessorAction.PROCESS_NEW_IN_APP_PAYMENT,
+        inAppPayment.id
       )
     )
   }
 
   override fun navigateToCreditCardForm(inAppPayment: InAppPaymentTable.InAppPayment) {
     findNavController().safeNavigate(
-      GiftFlowConfirmationFragmentDirections.actionGiftFlowConfirmationFragmentToCreditCardFragment(inAppPayment)
+      GiftFlowConfirmationFragmentDirections.actionGiftFlowConfirmationFragmentToCreditCardFragment(inAppPayment.id)
     )
   }
 
@@ -313,4 +305,8 @@ class GiftFlowConfirmationFragment :
   override fun onUserLaunchedAnExternalApplication() = error("Not supported for gifts.")
 
   override fun navigateToDonationPending(inAppPayment: InAppPaymentTable.InAppPayment) = error("Not supported for gifts")
+
+  override fun exitCheckoutFlow() {
+    requireActivity().finishAfterTransition()
+  }
 }

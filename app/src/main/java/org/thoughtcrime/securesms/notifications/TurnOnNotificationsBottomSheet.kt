@@ -32,17 +32,18 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.BundleCompat
 import androidx.core.os.bundleOf
-import org.signal.core.ui.BottomSheets
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.BottomSheets
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Previews
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity
 import org.thoughtcrime.securesms.compose.ComposeBottomSheetDialogFragment
+import org.signal.core.ui.R as CoreUiR
 
 private const val PLACEHOLDER = "__TOGGLE_PLACEHOLDER__"
 
@@ -114,10 +115,10 @@ class TurnOnNotificationsBottomSheet private constructor() : ComposeBottomSheetD
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun TurnOnNotificationsSheetContentPreview() {
-  SignalTheme(isDarkMode = false) {
+  Previews.Preview {
     Surface {
       TurnOnNotificationsSheetContent(
         titleRes = R.string.TurnOnNotificationsBottomSheet__turn_on_notifications,
@@ -137,7 +138,7 @@ private fun TurnOnNotificationsSheetContent(
 ) {
   Column(
     modifier = Modifier
-      .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
+      .padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
       .padding(bottom = 32.dp)
   ) {
     BottomSheets.Handle(

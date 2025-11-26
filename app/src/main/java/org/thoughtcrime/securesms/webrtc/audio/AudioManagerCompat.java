@@ -97,11 +97,36 @@ public abstract class AudioManagerCompat {
   }
 
   public boolean isSpeakerphoneOn() {
-    return audioManager.isSpeakerphoneOn();
+    if (Build.VERSION.SDK_INT >= 31) {
+      AudioDeviceInfo audioDeviceInfo = getCommunicationDevice();
+      if (audioDeviceInfo == null) {
+        Log.w(TAG, "isSpeakerphoneOn: Failed to find communication device.");
+        return false;
+      } else {
+        return AudioDeviceMapping.fromPlatformType(audioDeviceInfo.getType())  == SignalAudioManager.AudioDevice.SPEAKER_PHONE;
+      }
+    } else {
+      return audioManager.isSpeakerphoneOn();
+    }
   }
 
   public void setSpeakerphoneOn(boolean on) {
-    audioManager.setSpeakerphoneOn(on);
+    if (Build.VERSION.SDK_INT >= 31) {
+      SignalAudioManager.AudioDevice audioDevice = on ? SignalAudioManager.AudioDevice.SPEAKER_PHONE : SignalAudioManager.AudioDevice.EARPIECE;
+      AudioDeviceInfo                candidate   = getAvailableCommunicationDevices().stream()
+                                                                      .filter(it -> AudioDeviceMapping.fromPlatformType(it.getType()) == audioDevice)
+                                                                      .findFirst()
+                                                                      .orElse(null);
+
+      if (candidate != null) {
+        setCommunicationDevice(candidate);
+      } else {
+        Log.w(TAG, "setSpeakerphoneOn: Failed to find candidate for SignalAudioDevice {" + audioDevice + "}. Falling back on deprecated method.");
+        audioManager.setSpeakerphoneOn(on);
+      }
+    } else {
+      audioManager.setSpeakerphoneOn(on);
+    }
   }
 
   public boolean isMicrophoneMute() {
@@ -147,33 +172,26 @@ public abstract class AudioManagerCompat {
     audioManager.clearCommunicationDevice();
   }
 
-  @RequiresApi(23)
   public void registerAudioDeviceCallback(@NonNull AudioDeviceCallback deviceCallback, @NonNull Handler handler) {
     audioManager.registerAudioDeviceCallback(deviceCallback, handler);
   }
 
-  @RequiresApi(23)
   public void unregisterAudioDeviceCallback(@NonNull AudioDeviceCallback deviceCallback) {
     audioManager.unregisterAudioDeviceCallback(deviceCallback);
   }
 
   @SuppressLint("WrongConstant")
   public boolean isWiredHeadsetOn() {
-    if (Build.VERSION.SDK_INT < 23) {
-      //noinspection deprecation
-      return audioManager.isWiredHeadsetOn();
-    } else {
-      AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
-      for (AudioDeviceInfo device : devices) {
-        final int type = device.getType();
-        if (type == AudioDeviceInfo.TYPE_WIRED_HEADSET) {
-          return true;
-        } else if (type == AudioDeviceInfo.TYPE_USB_DEVICE) {
-          return true;
-        }
+    AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
+    for (AudioDeviceInfo device : devices) {
+      final int type = device.getType();
+      if (type == AudioDeviceInfo.TYPE_WIRED_HEADSET) {
+        return true;
+      } else if (type == AudioDeviceInfo.TYPE_USB_DEVICE) {
+        return true;
       }
-      return false;
     }
+    return false;
   }
 
   public float ringVolumeWithMinimum() {

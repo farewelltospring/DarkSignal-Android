@@ -84,6 +84,7 @@ public final class StreamingTranscoder {
 
   private StreamingTranscoder(@NonNull MediaDataSource dataSource,
                              @Nullable TranscoderOptions options,
+                             String codec,
                              int videoBitrate,
                              int audioBitrate,
                              int shortEdge,
@@ -105,7 +106,7 @@ public final class StreamingTranscoder {
     this.inSize         = dataSource.getSize();
     this.duration       = getDuration(mediaMetadataRetriever);
     this.inputBitRate   = TranscodingQuality.bitRate(inSize, duration);
-    this.targetQuality  = TranscodingQuality.createManuallyForTesting(shortEdge, videoBitrate, audioBitrate, duration);
+    this.targetQuality  = TranscodingQuality.createManuallyForTesting(codec, shortEdge, videoBitrate, audioBitrate, duration);
     this.upperSizeLimit = 0L;
 
     this.transcodeRequired = true;
@@ -116,16 +117,20 @@ public final class StreamingTranscoder {
   @VisibleForTesting
   public static StreamingTranscoder createManuallyForTesting(@NonNull MediaDataSource dataSource,
                                                              @Nullable TranscoderOptions options,
+                                                             @NonNull @MediaConverter.VideoCodec String codec,
                                                              int videoBitrate,
                                                              int audioBitrate,
                                                              int shortEdge,
                                                              boolean allowAudioRemux)
       throws VideoSourceException, IOException
   {
-    return new StreamingTranscoder(dataSource, options, videoBitrate, audioBitrate, shortEdge, allowAudioRemux);
+    return new StreamingTranscoder(dataSource, options, codec, videoBitrate, audioBitrate, shortEdge, allowAudioRemux);
   }
 
-  public void transcode(@NonNull Progress progress,
+  /**
+   * @return The total content size of the MP4 mdat box.
+   */
+  public long transcode(@NonNull Progress progress,
                         @NonNull OutputStream stream,
                         @Nullable TranscoderCancelationSignal cancelationSignal)
       throws IOException, EncodingException
@@ -171,6 +176,7 @@ public final class StreamingTranscoder {
       outStream = new CountingOutputStream(stream);
     }
     converter.setOutput(outStream);
+    converter.setVideoCodec(targetQuality.getCodec());
     converter.setVideoResolution(targetQuality.getOutputResolution());
     converter.setVideoBitrate(targetQuality.getTargetVideoBitRate());
     converter.setAudioBitrate(targetQuality.getTargetAudioBitRate());
@@ -190,7 +196,7 @@ public final class StreamingTranscoder {
       return cancelationSignal != null && cancelationSignal.isCanceled();
     });
 
-    converter.convert();
+    long mdatSize = converter.convert();
 
     long  outSize           = outStream.getCount();
     float encodeDurationSec = (System.currentTimeMillis() - startTime) / 1000f;
@@ -214,6 +220,8 @@ public final class StreamingTranscoder {
     }
 
     stream.flush();
+
+    return mdatSize;
   }
 
   public boolean isTranscodeRequired() {

@@ -23,6 +23,7 @@ import org.thoughtcrime.securesms.groups.ui.GroupChangeFailureReason;
 import org.thoughtcrime.securesms.jobs.MultiDeviceMessageRequestResponseJob;
 import org.thoughtcrime.securesms.jobs.ReportSpamJob;
 import org.thoughtcrime.securesms.jobs.SendViewedReceiptJob;
+import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mms.MmsException;
 import org.thoughtcrime.securesms.mms.OutgoingMessage;
 import org.thoughtcrime.securesms.notifications.MarkReadReceiver;
@@ -34,10 +35,12 @@ import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.whispersystems.signalservice.internal.push.exceptions.GroupPatchNotAcceptedException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -46,7 +49,9 @@ import kotlin.Unit;
 
 public final class MessageRequestRepository {
 
-  private static final String TAG = Log.tag(MessageRequestRepository.class);
+  private static final String TAG                  = Log.tag(MessageRequestRepository.class);
+  private static final int    MIN_GROUPS_THRESHOLD = 2;
+  private static final int    MAX_MEMBER_NAMES     = 4;
 
   private final Context  context;
   private final Executor executor;
@@ -63,24 +68,25 @@ public final class MessageRequestRepository {
     GroupInfo             groupInfo    = GroupInfo.ZERO;
 
     if (groupRecord.isPresent()) {
-      boolean groupHasExistingContacts = false;
+      List<Recipient> recipients = Recipient.resolvedList(groupRecord.get().getMembers());
       if (groupRecord.get().isV2Group()) {
-        List<Recipient> recipients = Recipient.resolvedList(groupRecord.get().getMembers());
-        for (Recipient recipient : recipients) {
-          if ((recipient.isProfileSharing() || recipient.getHasGroupsInCommon()) && !recipient.isSelf()) {
-            groupHasExistingContacts = true;
-            break;
-          }
-        }
+        boolean         groupHasExistingContacts = recipients.stream().filter(r -> !r.isSelf()).anyMatch(r -> r.isProfileSharing() || r.isSystemContact());
+        List<Recipient> membersPreview           = recipients.stream().filter(r -> !r.isSelf()).limit(MAX_MEMBER_NAMES).collect(Collectors.toList());
+        DecryptedGroup  decryptedGroup           = groupRecord.get().requireV2GroupProperties().getDecryptedGroup();
 
-        DecryptedGroup decryptedGroup = groupRecord.get().requireV2GroupProperties().getDecryptedGroup();
-        groupInfo = new GroupInfo(decryptedGroup.members.size(), decryptedGroup.pendingMembers.size(), decryptedGroup.description, groupHasExistingContacts);
+        groupInfo = new GroupInfo(decryptedGroup.members.size(), decryptedGroup.pendingMembers.size(), decryptedGroup.description, groupHasExistingContacts, membersPreview);
       } else {
-        groupInfo = new GroupInfo(groupRecord.get().getMembers().size(), 0, "", false);
+        List<Recipient> membersPreview = recipients.stream().filter(r -> !r.isSelf()).limit(MAX_MEMBER_NAMES).collect(Collectors.toList());
+
+        groupInfo = new GroupInfo(groupRecord.get().getMembers().size(), 0, "", false, membersPreview);
       }
     }
 
     Recipient recipient = Recipient.resolved(recipientId);
+
+    if (sharedGroups.isEmpty() && recipient.getHasGroupsInCommon()) {
+      SignalDatabase.recipients().clearHasGroupsInCommon(recipient.getId());
+    }
 
     return new MessageRequestRecipientInfo(
         recipient,
@@ -138,8 +144,11 @@ public final class MessageRequestRepository {
       } else {
         Recipient.HiddenState hiddenState    = RecipientUtil.getRecipientHiddenState(threadId);
         boolean               reportedAsSpam = reportedAsSpam(threadId);
+        List<String>          sharedGroups   = SignalDatabase.groups().getPushGroupNamesContainingMember(recipient.getId());
 
-        if (hiddenState == Recipient.HiddenState.NOT_HIDDEN) {
+        if (hiddenState == Recipient.HiddenState.NOT_HIDDEN && sharedGroups.size() < MIN_GROUPS_THRESHOLD) {
+          return new MessageRequestState(MessageRequestState.State.INDIVIDUAL_FEW_CONNECTIONS, reportedAsSpam);
+        } else if (hiddenState == Recipient.HiddenState.NOT_HIDDEN) {
           return new MessageRequestState(MessageRequestState.State.INDIVIDUAL, reportedAsSpam);
         } else if (hiddenState == Recipient.HiddenState.HIDDEN) {
           return new MessageRequestState(MessageRequestState.State.NONE_HIDDEN, reportedAsSpam);
@@ -207,7 +216,7 @@ public final class MessageRequestRepository {
 
         SendViewedReceiptJob.enqueue(threadId, recipientId, viewedInfos);
 
-        if (TextSecurePreferences.isMultiDevice(context)) {
+        if (SignalStore.account().isMultiDevice()) {
           AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forAccept(recipientId));
         }
 
@@ -269,7 +278,7 @@ public final class MessageRequestRepository {
         }
       }
 
-      if (TextSecurePreferences.isMultiDevice(context)) {
+      if (SignalStore.account().isMultiDevice()) {
         AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forDelete(recipientId));
       }
 
@@ -307,7 +316,7 @@ public final class MessageRequestRepository {
       }
       Recipient.live(recipientId).refresh();
 
-      if (TextSecurePreferences.isMultiDevice(context)) {
+      if (SignalStore.account().isMultiDevice()) {
         AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forBlock(recipientId));
       }
 
@@ -367,7 +376,7 @@ public final class MessageRequestRepository {
 
       AppDependencies.getJobManager().add(new ReportSpamJob(threadId, System.currentTimeMillis()));
 
-      if (TextSecurePreferences.isMultiDevice(context)) {
+      if (SignalStore.account().isMultiDevice()) {
         AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forBlockAndReportSpam(recipientId));
       }
 
@@ -394,7 +403,7 @@ public final class MessageRequestRepository {
 
       AppDependencies.getJobManager().add(new ReportSpamJob(threadId, System.currentTimeMillis()));
 
-      if (TextSecurePreferences.isMultiDevice(context)) {
+      if (SignalStore.account().isMultiDevice()) {
         AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forReportSpam(recipientId));
       }
 
@@ -419,7 +428,7 @@ public final class MessageRequestRepository {
 
       RecipientUtil.unblock(recipient);
 
-      if (TextSecurePreferences.isMultiDevice(context)) {
+      if (SignalStore.account().isMultiDevice()) {
         AppDependencies.getJobManager().add(MultiDeviceMessageRequestResponseJob.forAccept(recipientId));
       }
 

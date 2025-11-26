@@ -342,7 +342,12 @@ open class MessageContentProcessor(private val context: Context) {
   }
 
   fun processException(messageState: MessageState, exceptionMetadata: ExceptionMetadata, timestamp: Long) {
-    val sender = Recipient.external(context, exceptionMetadata.sender)
+    val sender = Recipient.external(exceptionMetadata.sender)
+
+    if (sender == null) {
+      warn("Failed to create Recipient for identifier: $messageState")
+      return
+    }
 
     if (sender.isBlocked) {
       warn("Ignoring exception content from blocked sender, message state: $messageState")
@@ -441,11 +446,12 @@ open class MessageContentProcessor(private val context: Context) {
       }
 
       content.syncMessage != null -> {
-        TextSecurePreferences.setMultiDevice(context, true)
+        SignalStore.account.isMultiDevice = true
 
         SyncMessageProcessor.process(
           context,
           senderRecipient,
+          threadRecipient,
           envelope,
           content,
           metadata,
@@ -653,7 +659,7 @@ open class MessageContentProcessor(private val context: Context) {
   private fun handleIndividualRetryReceipt(requester: Recipient, messageLogEntry: MessageLogEntry?, envelope: Envelope, metadata: EnvelopeMetadata, decryptionErrorMessage: DecryptionErrorMessage) {
     var archivedSession = false
 
-    if (ServiceId.parseOrNull(envelope.destinationServiceId) is ServiceId.PNI) {
+    if (ServiceId.parseOrNull(envelope.destinationServiceId, envelope.destinationServiceIdBinary) is ServiceId.PNI) {
       warn(envelope.timestamp!!, "[RetryReceipt-I] Destination is our PNI. Ignoring.")
       return
     }

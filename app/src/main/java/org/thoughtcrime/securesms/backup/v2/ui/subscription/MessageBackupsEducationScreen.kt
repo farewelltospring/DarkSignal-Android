@@ -6,7 +6,6 @@
 package org.thoughtcrime.securesms.backup.v2.ui.subscription
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,16 +22,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Previews
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Scaffolds
 import org.thoughtcrime.securesms.R
+import org.thoughtcrime.securesms.components.compose.BetaHeader
+import org.thoughtcrime.securesms.components.compose.TextWithBetaLabel
+import org.signal.core.ui.R as CoreUiR
 
 /**
  * Educational content which allows user to proceed to set up automatic backups
@@ -47,14 +50,15 @@ fun MessageBackupsEducationScreen(
 ) {
   Scaffolds.Settings(
     onNavigationClick = onNavigationClick,
-    navigationIconPainter = painterResource(id = R.drawable.symbol_x_24),
-    title = "Chat backups" // TODO [message-backups] Finalized copy
+    navigationContentDescription = stringResource(android.R.string.cancel),
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_x_24),
+    title = ""
   ) {
     Column(
       modifier = Modifier
         .fillMaxSize()
         .padding(it)
-        .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
+        .padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
     ) {
       LazyColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -63,26 +67,30 @@ fun MessageBackupsEducationScreen(
           .weight(1f)
       ) {
         item {
+          BetaHeader()
+        }
+
+        item {
           Image(
-            painter = painterResource(id = R.drawable.ic_signal_logo_large), // TODO [message-backups] Final image asset
+            painter = painterResource(id = R.drawable.image_signal_backups),
             contentDescription = null,
             modifier = Modifier
-              .padding(top = 48.dp)
-              .size(88.dp)
+              .padding(top = 24.dp)
+              .size(80.dp)
           )
         }
 
         item {
-          Text(
-            text = "Chat Backups", // TODO [message-backups] Finalized copy
-            style = MaterialTheme.typography.headlineMedium,
+          TextWithBetaLabel(
+            text = stringResource(id = R.string.RemoteBackupsSettingsFragment__signal_backups),
+            textStyle = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(top = 15.dp)
           )
         }
 
         item {
           Text(
-            text = "Back up your messages and media and using Signal’s secure, end-to-end encrypted storage service. Never lose a message when you get a new phone or reinstall Signal.", // TODO [message-backups] Finalized copy
+            text = stringResource(id = R.string.MessageBackupsEducationScreen__backup_your_messages_and_media),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -97,28 +105,28 @@ fun MessageBackupsEducationScreen(
           ) {
             NotableFeatureRow(
               painter = painterResource(id = R.drawable.symbol_lock_compact_20),
-              text = "End-to-end Encrypted" // TODO [message-backups] Finalized copy
+              text = stringResource(id = R.string.MessageBackupsEducationScreen__end_to_end_encrypted)
             )
 
             NotableFeatureRow(
               painter = painterResource(id = R.drawable.symbol_check_square_compact_20),
-              text = "Optional, always" // TODO [message-backups] Finalized copy
+              text = stringResource(id = R.string.MessageBackupsEducationScreen__optional_always)
             )
 
             NotableFeatureRow(
               painter = painterResource(id = R.drawable.symbol_trash_compact_20),
-              text = "Delete your backup anytime" // TODO [message-backups] Finalized copy
+              text = stringResource(id = R.string.MessageBackupsEducationScreen__delete_your_backup_anytime)
             )
           }
         }
       }
 
-      Buttons.LargePrimary(
+      Buttons.LargeTonal(
         onClick = onEnableBackups,
         modifier = Modifier.fillMaxWidth()
       ) {
         Text(
-          text = "Enable backups" // TODO [message-backups] Finalized copy
+          text = stringResource(id = R.string.MessageBackupsEducationScreen__enable_backups)
         )
       }
 
@@ -129,14 +137,14 @@ fun MessageBackupsEducationScreen(
           .padding(bottom = 16.dp)
       ) {
         Text(
-          text = "Learn more" // TODO [message-backups] Finalized copy
+          text = stringResource(id = R.string.MessageBackupsEducationScreen__learn_more)
         )
       }
     }
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun MessageBackupsEducationSheetPreview() {
   Previews.Preview {
@@ -148,7 +156,7 @@ private fun MessageBackupsEducationSheetPreview() {
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun NotableFeatureRowPreview() {
   Previews.Preview {
@@ -174,7 +182,6 @@ private fun NotableFeatureRow(
       modifier = Modifier
         .padding(end = 8.dp)
         .size(32.dp)
-        .background(color = SignalTheme.colors.colorSurface2, shape = CircleShape)
         .padding(6.dp)
     )
 

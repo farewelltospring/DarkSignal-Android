@@ -4,6 +4,8 @@ import android.net.Uri
 import android.os.Parcel
 import org.thoughtcrime.securesms.blurhash.BlurHash
 import org.thoughtcrime.securesms.database.AttachmentTable
+import org.thoughtcrime.securesms.stickers.StickerLocator
+import org.thoughtcrime.securesms.util.MediaUtil
 import java.util.UUID
 
 /**
@@ -13,9 +15,21 @@ import java.util.UUID
  * quote them and know their contentType even though the media has been deleted.
  */
 class TombstoneAttachment : Attachment {
-  constructor(contentType: String, quote: Boolean) : super(
+
+  companion object {
+    fun forQuote(): TombstoneAttachment {
+      return TombstoneAttachment(contentType = null, quote = true, quoteTargetContentType = MediaUtil.VIEW_ONCE)
+    }
+
+    fun forNonQuote(contentType: String?): TombstoneAttachment {
+      return TombstoneAttachment(contentType = contentType, quote = false, quoteTargetContentType = null)
+    }
+  }
+
+  constructor(contentType: String?, quote: Boolean, quoteTargetContentType: String?) : super(
     contentType = contentType,
     quote = quote,
+    quoteTargetContentType = quoteTargetContentType,
     transferState = AttachmentTable.TRANSFER_PROGRESS_DONE,
     size = 0,
     fileName = null,
@@ -47,18 +61,22 @@ class TombstoneAttachment : Attachment {
     width: Int?,
     height: Int?,
     caption: String?,
+    fileName: String? = null,
     blurHash: String?,
     voiceNote: Boolean = false,
     borderless: Boolean = false,
     gif: Boolean = false,
+    stickerLocator: StickerLocator? = null,
     quote: Boolean,
+    quoteTargetContentType: String?,
     uuid: UUID?
   ) : super(
     contentType = contentType ?: "",
     quote = quote,
+    quoteTargetContentType = quoteTargetContentType,
     transferState = AttachmentTable.TRANSFER_PROGRESS_PERMANENT_FAILURE,
     size = 0,
-    fileName = null,
+    fileName = fileName,
     cdn = Cdn.CDN_0,
     remoteLocation = null,
     remoteKey = null,
@@ -73,7 +91,7 @@ class TombstoneAttachment : Attachment {
     incrementalMacChunkSize = incrementalMacChunkSize ?: 0,
     uploadTimestamp = 0,
     caption = caption,
-    stickerLocator = null,
+    stickerLocator = stickerLocator,
     blurHash = BlurHash.parseOrNull(blurHash),
     audioHash = null,
     transformProperties = null,

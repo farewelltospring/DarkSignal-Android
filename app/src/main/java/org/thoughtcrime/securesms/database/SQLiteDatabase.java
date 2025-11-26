@@ -353,7 +353,7 @@ public class SQLiteDatabase implements SupportSQLiteDatabase {
     return traceSql("rawQuery(2a)", sql, false, () -> wrapped.rawQuery(sql, selectionArgs));
   }
 
-  public Cursor rawQuery(String sql, Object[] args) {
+  public Cursor rawQuery(String sql, Object... args) {
     DatabaseMonitor.onSql(sql, args);
     return traceSql("rawQuery(2b)", sql, false,() -> wrapped.rawQuery(sql, args));
   }

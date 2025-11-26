@@ -46,6 +46,10 @@ public final class UuidUtil {
     return new UUID(high, low);
   }
 
+  public static UUID parseOrThrow(ByteString bytes) {
+    return parseOrNull(bytes.toByteArray());
+  }
+
   public static boolean isUuid(String uuid) {
     return uuid != null && UUID_PATTERN.matcher(uuid).matches();
   }
@@ -74,6 +78,11 @@ public final class UuidUtil {
     return parseOrNull(bytes.toByteArray());
   }
 
+  public static @Nullable String getStringUUID(@Nullable String stringId, @Nullable ByteString bytes) {
+    UUID uuid = parseOrNull(bytes);
+    return (uuid != null) ? uuid.toString() : stringId;
+  }
+
   public static UUID fromByteStringOrUnknown(ByteString bytes) {
     UUID uuid = fromByteStringOrNull(bytes);
     return uuid != null ? uuid : UNKNOWN_UUID;
@@ -81,6 +90,10 @@ public final class UuidUtil {
 
   public static UUID parseOrNull(byte[] byteArray) {
     return byteArray != null && byteArray.length == 16 ? parseOrThrow(byteArray) : null;
+  }
+
+  public static UUID parseOrNull(ByteString byteString) {
+    return byteString != null ? parseOrNull(byteString.toByteArray()): null;
   }
 
   public static List<UUID> fromByteStrings(Collection<ByteString> byteStringCollection) {

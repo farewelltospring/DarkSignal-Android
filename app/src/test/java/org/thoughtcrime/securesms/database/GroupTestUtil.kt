@@ -67,7 +67,7 @@ class ChangeSet {
   }
 
   fun toApiResponse(): GroupHistoryPage {
-    return GroupHistoryPage(changeSet.map { DecryptedGroupChangeLog(it.groupSnapshot, it.groupChange) }, GroupHistoryPage.PagingData.NONE)
+    return GroupHistoryPage(changeSet.map { DecryptedGroupChangeLog(it.groupSnapshot, it.groupChange) }, null, GroupHistoryPage.PagingData.NONE)
   }
 }
 
@@ -121,9 +121,10 @@ class GroupStateTestData(private val masterKey: GroupMasterKey, private val grou
     pendingMembers: List<DecryptedPendingMember> = emptyList(),
     requestingMembers: List<DecryptedRequestingMember> = emptyList(),
     inviteLinkPassword: ByteArray = ByteArray(0),
-    disappearingMessageTimer: DecryptedTimer = DecryptedTimer()
+    disappearingMessageTimer: DecryptedTimer = DecryptedTimer(),
+    isPlaceholderGroup: Boolean = false
   ) {
-    localState = decryptedGroup(revision, title, avatar, description, accessControl, members, pendingMembers, requestingMembers, inviteLinkPassword, disappearingMessageTimer)
+    localState = decryptedGroup(revision, title, avatar, description, accessControl, members, pendingMembers, requestingMembers, inviteLinkPassword, disappearingMessageTimer, isPlaceholderGroup)
     groupRecord = groupRecord(masterKey, localState!!, active = active)
   }
 
@@ -193,7 +194,8 @@ fun groupRecord(
       decryptedGroup.revision,
       decryptedGroup.encode(),
       distributionId,
-      System.currentTimeMillis()
+      System.currentTimeMillis(),
+      0
     )
   )
 }
@@ -208,7 +210,8 @@ fun decryptedGroup(
   pendingMembers: List<DecryptedPendingMember> = emptyList(),
   requestingMembers: List<DecryptedRequestingMember> = emptyList(),
   inviteLinkPassword: ByteArray = ByteArray(0),
-  disappearingMessageTimer: DecryptedTimer = DecryptedTimer()
+  disappearingMessageTimer: DecryptedTimer = DecryptedTimer(),
+  isPlaceholderGroup: Boolean = false
 ): DecryptedGroup {
   return DecryptedGroup(
     accessControl = accessControl,
@@ -221,6 +224,7 @@ fun decryptedGroup(
     revision = revision,
     members = members,
     pendingMembers = pendingMembers,
-    requestingMembers = requestingMembers
+    requestingMembers = requestingMembers,
+    isPlaceholderGroup = isPlaceholderGroup
   )
 }

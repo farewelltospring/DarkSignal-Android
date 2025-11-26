@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.thoughtcrime.securesms.profiles.manage
 
 import android.content.DialogInterface
@@ -11,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.map
 import androidx.navigation.Navigation.findNavController
@@ -20,6 +23,7 @@ import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.getParcelableCompat
 import org.thoughtcrime.securesms.AvatarPreviewActivity
 import org.thoughtcrime.securesms.LoggingFragment
 import org.thoughtcrime.securesms.R
@@ -37,7 +41,7 @@ import org.thoughtcrime.securesms.profiles.ProfileName
 import org.thoughtcrime.securesms.profiles.manage.EditProfileViewModel.AvatarState
 import org.thoughtcrime.securesms.profiles.manage.UsernameRepository.UsernameDeleteResult
 import org.thoughtcrime.securesms.recipients.Recipient
-import org.thoughtcrime.securesms.registration.RegistrationNavigationActivity
+import org.thoughtcrime.securesms.registration.ui.RegistrationActivity
 import org.thoughtcrime.securesms.util.NameUtil.getAbbreviation
 import org.thoughtcrime.securesms.util.PlayStoreUtil
 import org.thoughtcrime.securesms.util.livedata.LiveDataUtil
@@ -57,7 +61,9 @@ class EditProfileFragment : LoggingFragment() {
   private lateinit var binding: EditProfileFragmentBinding
   private lateinit var disposables: LifecycleDisposable
 
-  private val DISABLED_ALPHA = 0.4f
+  companion object {
+    private const val DISABLED_ALPHA = 0.4f
+  }
 
   override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
     binding = EditProfileFragmentBinding.inflate(inflater, container, false)
@@ -128,7 +134,7 @@ class EditProfileFragment : LoggingFragment() {
       } else if (bundle.getBoolean(AvatarPickerFragment.SELECT_AVATAR_CLEAR)) {
         viewModel.onAvatarSelected(requireContext(), null)
       } else {
-        val result = bundle.getParcelable<Media>(AvatarPickerFragment.SELECT_AVATAR_MEDIA)
+        val result = bundle.getParcelableCompat(AvatarPickerFragment.SELECT_AVATAR_MEDIA, Media::class.java)
         viewModel.onAvatarSelected(requireContext(), result)
       }
     }
@@ -242,6 +248,17 @@ class EditProfileFragment : LoggingFragment() {
       binding.manageProfileName.setText(R.string.ManageProfileFragment_profile_name)
     } else {
       binding.manageProfileName.text = profileName.toString()
+      if (binding.manageProfileAvatarPlaceholder.isVisible || binding.manageProfileAvatarInitials.isVisible) {
+        val initials = getAbbreviation(profileName.toString())
+        if (TextUtils.isEmpty(initials)) {
+          binding.manageProfileAvatarPlaceholder.visibility = View.VISIBLE
+          binding.manageProfileAvatarInitials.visibility = View.GONE
+        } else {
+          updateInitials(initials.toString())
+          binding.manageProfileAvatarPlaceholder.visibility = View.GONE
+          binding.manageProfileAvatarInitials.visibility = View.VISIBLE
+        }
+      }
     }
 
     binding.manageProfileName.isEnabled = viewModel.isRegisteredAndUpToDate
@@ -389,7 +406,7 @@ class EditProfileFragment : LoggingFragment() {
         .setMessage(R.string.EditProfileFragment_unregistered_dialog_body)
         .setNegativeButton(android.R.string.cancel) { d, _ -> d.dismiss() }
         .setPositiveButton(R.string.EditProfileFragment_unregistered_dialog_reregister_button) { d, _ ->
-          startActivity(RegistrationNavigationActivity.newIntentForReRegistration(requireContext()))
+          startActivity(RegistrationActivity.newIntentForReRegistration(requireContext()))
           d.dismiss()
         }
         .show()

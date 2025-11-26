@@ -26,7 +26,8 @@ public final class SignalStrengthPhoneStateListener extends PhoneStateListener
   private static final String TAG = Log.tag(SignalStrengthPhoneStateListener.class);
 
   private final Callback  callback;
-  private final Debouncer debouncer = new Debouncer(1000);
+  private final Debouncer  debouncer    = new Debouncer(1000);
+  private volatile boolean hasLowSignal = true;
 
   @SuppressWarnings("deprecation")
   public SignalStrengthPhoneStateListener(@NonNull LifecycleOwner lifecycleOwner, @NonNull Callback callback) {
@@ -40,22 +41,21 @@ public final class SignalStrengthPhoneStateListener extends PhoneStateListener
     if (signalStrength == null) return;
 
     if (isLowLevel(signalStrength)) {
+      hasLowSignal = true;
       Log.w(TAG, "No cell signal detected");
       debouncer.publish(callback::onNoCellSignalPresent);
     } else {
-      Log.i(TAG, "Cell signal detected");
+      if (hasLowSignal) {
+        hasLowSignal = false;
+        Log.i(TAG, "Cell signal detected");
+      }
       debouncer.clear();
       callback.onCellSignalPresent();
     }
   }
 
   private boolean isLowLevel(@NonNull SignalStrength signalStrength) {
-    if (Build.VERSION.SDK_INT >= 23) {
-      return signalStrength.getLevel() == 0;
-    } else {
-      //noinspection deprecation: False lint warning, deprecated by 29, but this else block is for < 23
-      return signalStrength.getGsmSignalStrength() == 0;
-    }
+    return signalStrength.getLevel() == 0;
   }
 
   public interface Callback {

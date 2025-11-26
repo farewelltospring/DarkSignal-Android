@@ -23,7 +23,6 @@ import org.thoughtcrime.securesms.mms.PartAuthority
 import org.thoughtcrime.securesms.sharing.MultiShareArgs
 import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.util.hasSharedContact
-import java.util.Optional
 import java.util.function.Consumer
 
 /**
@@ -55,11 +54,11 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
 
   companion object {
     @JvmStatic
-    fun create(context: Context, threadId: Long, mediaUri: Uri, mediaType: String, consumer: Consumer<MultiselectForwardFragmentArgs>) {
+    fun create(context: Context, threadId: Long, mediaUri: Uri, contentType: String?, consumer: Consumer<MultiselectForwardFragmentArgs>) {
       SignalExecutors.BOUNDED.execute {
         val multiShareArgs = MultiShareArgs.Builder(setOf())
           .withDataUri(mediaUri)
-          .withDataType(mediaType)
+          .withDataType(contentType)
           .build()
 
         val sendButtonColors: ViewColorSet? = threadId.takeIf { it > 0 }
@@ -188,18 +187,19 @@ data class MultiselectForwardFragmentArgs @JvmOverloads constructor(
       val uri = this.uri ?: return null
 
       return Media(
-        uri,
-        contentType,
-        System.currentTimeMillis(),
-        width,
-        height,
-        size,
-        0,
-        borderless,
-        videoGif,
-        Optional.empty(),
-        Optional.ofNullable(caption),
-        Optional.ofNullable(transformProperties)
+        uri = uri,
+        contentType = contentType,
+        date = System.currentTimeMillis(),
+        width = width,
+        height = height,
+        size = size,
+        duration = 0,
+        isBorderless = borderless,
+        isVideoGif = videoGif,
+        bucketId = null,
+        caption = caption,
+        transformProperties = transformProperties,
+        fileName = fileName
       )
     }
   }

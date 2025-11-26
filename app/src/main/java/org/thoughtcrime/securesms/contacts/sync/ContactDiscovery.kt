@@ -19,12 +19,12 @@ import org.thoughtcrime.securesms.mms.IncomingMessage
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.v2.ConversationId
 import org.thoughtcrime.securesms.permissions.Permissions
-import org.thoughtcrime.securesms.phonenumbers.PhoneNumberFormatter
 import org.thoughtcrime.securesms.profiles.ProfileName
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
-import org.thoughtcrime.securesms.registration.RegistrationUtil
+import org.thoughtcrime.securesms.registration.util.RegistrationUtil
 import org.thoughtcrime.securesms.storage.StorageSyncHelper
+import org.thoughtcrime.securesms.util.SignalE164Util
 import org.thoughtcrime.securesms.util.TextSecurePreferences
 import org.thoughtcrime.securesms.util.Util
 import org.whispersystems.signalservice.api.push.ServiceId
@@ -81,13 +81,14 @@ object ContactDiscovery {
   }
 
   @JvmStatic
+  @JvmOverloads
   @Throws(IOException::class)
   @WorkerThread
-  fun refresh(context: Context, recipients: List<Recipient>, notifyOfNewUsers: Boolean) {
+  fun refresh(context: Context, recipients: List<Recipient>, notifyOfNewUsers: Boolean, timeoutMs: Long? = null) {
     refreshRecipients(
       context = context,
       descriptor = "refresh-multiple",
-      refresh = { ContactDiscoveryRefreshV2.refresh(context, recipients) },
+      refresh = { ContactDiscoveryRefreshV2.refresh(context, recipients, timeoutMs = timeoutMs) },
       removeSystemContactLinksIfMissing = false,
       notifyOfNewUsers = notifyOfNewUsers
     )
@@ -141,8 +142,8 @@ object ContactDiscovery {
     )
   }
 
-  private fun phoneNumberFormatter(context: Context): (String) -> String {
-    return { PhoneNumberFormatter.get(context).format(it) }
+  private fun phoneNumberFormatter(): (String) -> String? {
+    return { SignalE164Util.formatNonShortCodeAsE164(it) }
   }
 
   private fun refreshRecipients(
@@ -171,13 +172,13 @@ object ContactDiscovery {
         contactsProvider = {
           if (useFullSync) {
             Log.d(TAG, "Doing a full system contact sync. There are ${result.registeredIds.size} contacts to get info for.")
-            SystemContactsRepository.getAllSystemContacts(context, phoneNumberFormatter(context))
+            SystemContactsRepository.getAllSystemContacts(context, phoneNumberFormatter())
           } else {
             Log.d(TAG, "Doing a partial system contact sync. There are ${result.registeredIds.size} contacts to get info for.")
             SystemContactsRepository.getContactDetailsByQueries(
               context = context,
               queries = Recipient.resolvedList(result.registeredIds).mapNotNull { it.e164.orElse(null) },
-              e164Formatter = phoneNumberFormatter(context)
+              e164Formatter = phoneNumberFormatter()
             )
           }
         },
@@ -207,7 +208,7 @@ object ContactDiscovery {
     if (!SignalStore.settings.isNotifyWhenContactJoinsSignal) return
 
     Recipient.resolvedList(newUserIds)
-      .filter { !it.isSelf && it.hasAUserSetDisplayName(context) && !hasSession(it.id) && it.hasE164 }
+      .filter { !it.isSelf && it.hasAUserSetDisplayName(context) && !hasSession(it.id) && it.hasE164 && !it.isBlocked }
       .map {
         Log.i(TAG, "Inserting 'contact joined' message for ${it.id}. E164: ${it.e164}")
         val message = IncomingMessage.contactJoined(it.id, System.currentTimeMillis())
@@ -235,7 +236,7 @@ object ContactDiscovery {
   private fun syncRecipientsWithSystemContacts(
     context: Context,
     rewrites: Map<String, String>,
-    contactsProvider: () -> ContactIterator = { SystemContactsRepository.getAllSystemContacts(context, phoneNumberFormatter(context)) },
+    contactsProvider: () -> ContactIterator = { SystemContactsRepository.getAllSystemContacts(context, phoneNumberFormatter()) },
     clearInfoForMissingContacts: Boolean
   ) {
     val localNumber: String = SignalStore.account.e164 ?: ""
@@ -259,8 +260,10 @@ object ContactDiscovery {
               ProfileName.EMPTY
             }
 
+            val recipient: Recipient = Recipient.externalContact(realNumber) ?: continue
+
             handle.setSystemContactInfo(
-              Recipient.externalContact(realNumber).id,
+              recipient.id,
               profileName,
               phoneDetails.displayName,
               phoneDetails.photoUri,

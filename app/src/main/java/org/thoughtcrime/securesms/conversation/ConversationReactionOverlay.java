@@ -26,12 +26,16 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.ViewKt;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.vectordrawable.graphics.drawable.AnimatorInflaterCompat;
 
 import com.annimon.stream.Stream;
 
 import org.signal.core.util.DimensionUnit;
+import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.animation.AnimationCompleteListener;
 import org.thoughtcrime.securesms.components.emoji.EmojiImageView;
@@ -53,6 +57,7 @@ import kotlin.Unit;
 
 public final class ConversationReactionOverlay extends FrameLayout {
 
+  private static final String       TAG          = Log.tag(ConversationReactionOverlay.class);
   private static final Interpolator INTERPOLATOR = new DecelerateInterpolator();
 
   private final Rect  emojiViewGlobalRect = new Rect();
@@ -73,12 +78,8 @@ public final class ConversationReactionOverlay extends FrameLayout {
   private boolean downIsOurs;
   private int     selected = -1;
   private int     customEmojiIndex;
-  private int     originalStatusBarColor;
-  private int     originalNavigationBarColor;
 
   private View             dropdownAnchor;
-  private View             toolbarShade;
-  private View             inputShade;
   private View             conversationItem;
   private View             backgroundView;
   private ConstraintLayout foregroundView;
@@ -116,8 +117,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     super.onFinishInflate();
 
     dropdownAnchor   = findViewById(R.id.dropdown_anchor);
-    toolbarShade     = findViewById(R.id.toolbar_shade);
-    inputShade       = findViewById(R.id.input_shade);
     conversationItem = findViewById(R.id.conversation_item);
     backgroundView   = findViewById(R.id.conversation_reaction_scrubber_background);
     foregroundView   = findViewById(R.id.conversation_reaction_scrubber_foreground);
@@ -165,11 +164,21 @@ public final class ConversationReactionOverlay extends FrameLayout {
 
     setupSelectedEmoji();
 
-    View statusBarBackground = activity.findViewById(android.R.id.statusBarBackground);
-    statusBarHeight = statusBarBackground == null ? 0 : statusBarBackground.getHeight();
+    View               root             = activity.findViewById(android.R.id.content).getRootView();
+    WindowInsetsCompat rootWindowInsets = ViewCompat.getRootWindowInsets(root);
 
-    View navigationBarBackground = activity.findViewById(android.R.id.navigationBarBackground);
-    bottomNavigationBarHeight = navigationBarBackground == null ? 0 : navigationBarBackground.getHeight();
+    if (rootWindowInsets != null) {
+      Log.i(TAG, "Capturing insets from root view.");
+
+      Insets insets = rootWindowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+      statusBarHeight = insets.top;
+      bottomNavigationBarHeight = insets.bottom;
+    } else {
+      Log.i(TAG, "Capturing insets from util methods.");
+
+      statusBarHeight           = ViewUtil.getStatusBarHeight(root);
+      bottomNavigationBarHeight = ViewUtil.getNavigationBarHeight(root);
+    }
 
     if (zeroNavigationBarHeightForConfiguration()) {
       bottomNavigationBarHeight = 0;
@@ -188,7 +197,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     setVisibility(View.INVISIBLE);
 
     this.activity = activity;
-    updateSystemUiOnShow(activity);
 
     ViewKt.doOnLayout(this, v -> {
       showAfterLayout(activity, conversationMessage, lastSeenDownPoint, isMessageOnLeft);
@@ -200,9 +208,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
                                @NonNull ConversationMessage conversationMessage,
                                @NonNull PointF lastSeenDownPoint,
                                boolean isMessageOnLeft) {
-    updateToolbarShade();
-    updateInputShade();
-
     contextMenu = new ConversationContextMenu(dropdownAnchor, getMenuActionItems(conversationMessage));
 
     conversationItem.setX(selectedConversationModel.getSnapshotMetrics().getSnapshotOffset());
@@ -383,18 +388,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     return Math.max(reactionStartingPoint - reactionBarOffset - reactionBarHeight, spaceNeededBetweenTopOfScreenAndTopOfReactionBar);
   }
 
-  private void updateToolbarShade() {
-    LayoutParams layoutParams = (LayoutParams) toolbarShade.getLayoutParams();
-    layoutParams.height = 0;
-    toolbarShade.setLayoutParams(layoutParams);
-  }
-
-  private void updateInputShade() {
-    LayoutParams layoutParams = (LayoutParams) inputShade.getLayoutParams();
-    layoutParams.height = 0;
-    inputShade.setLayoutParams(layoutParams);
-  }
-
   /**
    * Returns true when the device is in a configuration where the navigation bar doesn't take up
    * space at the bottom of the screen.
@@ -406,22 +399,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
       return getRootWindowInsets().getSystemGestureInsets().bottom == 0 && isLandscape;
     } else {
       return isLandscape;
-    }
-  }
-
-  private void updateSystemUiOnShow(@NonNull Activity activity) {
-    Window window   = activity.getWindow();
-    int    barColor = ContextCompat.getColor(getContext(), R.color.conversation_item_selected_system_ui);
-
-    originalStatusBarColor = window.getStatusBarColor();
-    WindowUtil.setStatusBarColor(window, barColor);
-
-    originalNavigationBarColor = window.getNavigationBarColor();
-    WindowUtil.setNavigationBarColor(activity, barColor);
-
-    if (!ThemeUtil.isDarkTheme(getContext())) {
-      WindowUtil.clearLightStatusBar(window);
-      WindowUtil.clearLightNavigationBar(window);
     }
   }
 
@@ -449,9 +426,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     animatorSet.addListener(new AnimationCompleteListener() {
       @Override public void onAnimationEnd(Animator animation) {
         animatorSet.removeListener(this);
-
-        toolbarShade.setVisibility(INVISIBLE);
-        inputShade.setVisibility(INVISIBLE);
 
         if (onHideListener != null) {
           onHideListener.onHide();
@@ -745,6 +719,10 @@ public final class ConversationReactionOverlay extends FrameLayout {
       items.add(new ActionItem(R.drawable.symbol_info_24, getResources().getString(R.string.conversation_selection__menu_message_details), () -> handleActionItemClicked(Action.VIEW_INFO)));
     }
 
+    if (menuState.shouldShowPollTerminateAction()) {
+      items.add(new ActionItem(R.drawable.symbol_stop_24, getResources().getString(R.string.conversation_selection__menu_end_poll), () -> handleActionItemClicked(Action.END_POLL)));
+    }
+
     backgroundView.setVisibility(menuState.shouldShowReactions() ? View.VISIBLE : View.INVISIBLE);
     foregroundView.setVisibility(menuState.shouldShowReactions() ? View.VISIBLE : View.INVISIBLE);
 
@@ -870,22 +848,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     itemYAnim.setDuration(duration);
     animators.add(itemYAnim);
 
-    if (activity != null) {
-      ValueAnimator statusBarAnim = ValueAnimator.ofArgb(activity.getWindow().getStatusBarColor(), originalStatusBarColor);
-      statusBarAnim.setDuration(duration);
-      statusBarAnim.addUpdateListener(animation -> {
-        WindowUtil.setStatusBarColor(activity.getWindow(), (int) animation.getAnimatedValue());
-      });
-      animators.add(statusBarAnim);
-
-      ValueAnimator navigationBarAnim = ValueAnimator.ofArgb(activity.getWindow().getStatusBarColor(), originalNavigationBarColor);
-      navigationBarAnim.setDuration(duration);
-      navigationBarAnim.addUpdateListener(animation -> {
-        WindowUtil.setNavigationBarColor(activity, (int) animation.getAnimatedValue());
-      });
-      animators.add(navigationBarAnim);
-    }
-
     return animators;
   }
 
@@ -946,5 +908,6 @@ public final class ConversationReactionOverlay extends FrameLayout {
     PAYMENT_DETAILS,
     VIEW_INFO,
     DELETE,
+    END_POLL
   }
 }

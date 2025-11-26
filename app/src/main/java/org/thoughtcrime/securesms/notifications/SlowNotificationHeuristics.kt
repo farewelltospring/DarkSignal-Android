@@ -5,7 +5,6 @@
 
 package org.thoughtcrime.securesms.notifications
 
-import android.os.Build
 import android.text.TextUtils
 import androidx.annotation.WorkerThread
 import org.signal.core.util.logging.Log
@@ -63,7 +62,7 @@ object SlowNotificationHeuristics {
   }
 
   @JvmStatic
-  fun shouldPromptUserForLogs(): Boolean {
+  fun shouldPromptUserForDelayedNotificationLogs(): Boolean {
     if (!LocaleRemoteConfig.isDelayedNotificationPromptEnabled() || SignalStore.uiHints.hasDeclinedToShareNotificationLogs()) {
       return false
     }
@@ -76,10 +75,6 @@ object SlowNotificationHeuristics {
 
   @JvmStatic
   fun shouldPromptBatterySaver(): Boolean {
-    if (Build.VERSION.SDK_INT < 23) {
-      return false
-    }
-
     val remoteEnabled = LocaleRemoteConfig.isBatterySaverPromptEnabled() || LocaleRemoteConfig.isDelayedNotificationPromptEnabled()
     if (!remoteEnabled || SignalStore.uiHints.hasDismissedBatterySaverPrompt()) {
       return false
@@ -132,7 +127,7 @@ object SlowNotificationHeuristics {
    * true can most definitely be at fault.
    */
   @JvmStatic
-  fun isPotentiallyCausedByBatteryOptimizations(): Boolean {
+  fun isBatteryOptimizationsOn(): Boolean {
     val applicationContext = AppDependencies.application
     if (DeviceProperties.getDataSaverState(applicationContext) == DeviceProperties.DataSaverState.ENABLED) {
       return false
@@ -143,8 +138,12 @@ object SlowNotificationHeuristics {
     return true
   }
 
-  fun showPreemptively(): Boolean {
-    return DelayedNotificationConfig.currentConfig.showPreemptively
+  fun getDeviceSpecificShowCondition(): DeviceSpecificNotificationConfig.ShowCondition {
+    return DeviceSpecificNotificationConfig.currentConfig.showCondition
+  }
+
+  fun shouldShowDeviceSpecificDialog(): Boolean {
+    return LocaleRemoteConfig.isDeviceSpecificNotificationEnabled() && SignalStore.uiHints.lastSupportVersionSeen < DeviceSpecificNotificationConfig.currentConfig.version
   }
 
   private fun hasRepeatedFailedServiceStarts(metrics: List<LocalMetricsDatabase.EventMetrics>, minimumEventAgeMs: Long, minimumEventCount: Int, failurePercentage: Float): Boolean {

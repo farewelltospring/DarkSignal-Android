@@ -98,7 +98,7 @@ public final class PushGroupSilentUpdateSendJob extends BaseJob {
                                                           .setQueue(queue)
                                                           .setLifespan(TimeUnit.DAYS.toMillis(1))
                                                           .setMaxAttempts(Parameters.UNLIMITED)
-                                                          .setPriority(Parameters.PRIORITY_LOW)
+                                                          .setGlobalPriority(Parameters.PRIORITY_LOW)
                                                           .build());
   }
 
@@ -180,7 +180,7 @@ public final class PushGroupSilentUpdateSendJob extends BaseJob {
                                                                         .asGroupMessage(group)
                                                                         .build();
 
-    List<SendMessageResult> results = GroupSendUtil.sendUnresendableDataMessage(context, groupId, destinations, false, ContentHint.IMPLICIT, groupDataMessage, false);
+    List<SendMessageResult> results = GroupSendUtil.sendUnresendableDataMessage(context, groupId, destinations, false, ContentHint.IMPLICIT, groupDataMessage, false, null);
 
     GroupSendJobHelper.SendResult groupResult = GroupSendJobHelper.getCompletedSends(destinations, results);
 

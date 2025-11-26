@@ -7,8 +7,8 @@ package org.thoughtcrime.securesms.attachments
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import org.signal.core.util.logging.Log
+import org.signal.core.util.mebiBytes
 import org.signal.protos.resumableuploads.ResumableUpload
 import org.thoughtcrime.securesms.blurhash.BlurHashEncoder
 import org.thoughtcrime.securesms.mms.PartAuthority
@@ -26,6 +26,11 @@ import java.util.Objects
 object AttachmentUploadUtil {
 
   private val TAG = Log.tag(AttachmentUploadUtil::class.java)
+
+  /**
+   * Foreground notification shows while uploading attachments larger than this.
+   */
+  val FOREGROUND_LIMIT_BYTES: Long = 10.mebiBytes.inWholeBytes
 
   /**
    * Builds a [SignalServiceAttachmentStream] from the provided data, which can then be provided to various upload methods.
@@ -69,7 +74,7 @@ object AttachmentUploadUtil {
   @Throws(IOException::class)
   private fun getImageBlurHash(context: Context, attachment: Attachment): String? {
     if (attachment.blurHash != null) {
-      return attachment.blurHash!!.hash
+      return attachment.blurHash.hash
     }
 
     if (attachment.uri == null) {
@@ -85,11 +90,6 @@ object AttachmentUploadUtil {
   private fun getVideoBlurHash(context: Context, attachment: Attachment): String? {
     if (attachment.blurHash != null) {
       return attachment.blurHash.hash
-    }
-
-    if (Build.VERSION.SDK_INT < 23) {
-      Log.w(TAG, "Video thumbnails not supported...")
-      return null
     }
 
     return MediaUtil.getVideoThumbnail(context, Objects.requireNonNull(attachment.uri), 1000)?.let { bitmap ->

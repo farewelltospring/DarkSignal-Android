@@ -5,23 +5,24 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.signal.core.util.Base64;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.AppCapabilities;
 import org.thoughtcrime.securesms.crypto.ProfileKeyUtil;
-import org.thoughtcrime.securesms.dependencies.AppDependencies;
-import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.Job;
+import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode;
-import org.thoughtcrime.securesms.keyvalue.SvrValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
-import org.thoughtcrime.securesms.registration.RegistrationRepository;
+import org.thoughtcrime.securesms.keyvalue.SvrValues;
+import org.thoughtcrime.securesms.net.SignalNetwork;
 import org.thoughtcrime.securesms.registration.secondary.DeviceNameCipher;
+import org.thoughtcrime.securesms.registration.data.RegistrationRepository;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
+import org.whispersystems.signalservice.api.NetworkResultUtil;
 import org.whispersystems.signalservice.api.account.AccountAttributes;
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess;
-import org.whispersystems.signalservice.api.push.exceptions.NetworkFailureException;
-import org.signal.core.util.Base64;
+import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,10 @@ public class RefreshAttributesJob extends BaseJob {
 
   private final boolean forced;
 
+  public static RefreshAttributesJob forAccountRestore() {
+    return new RefreshAttributesJob(true, Parameters.PRIORITY_HIGH);
+  }
+
   public RefreshAttributesJob() {
     this(true);
   }
@@ -48,7 +53,12 @@ public class RefreshAttributesJob extends BaseJob {
    *               to run if it hasn't run yet this app cycle.
    */
   public RefreshAttributesJob(boolean forced) {
+    this(forced, Parameters.PRIORITY_DEFAULT);
+  }
+
+  private RefreshAttributesJob(boolean forced, @Parameters.Priority int priority) {
     this(new Job.Parameters.Builder()
+                           .setGlobalPriority(priority)
                            .addConstraint(NetworkConstraint.KEY)
                            .setQueue("RefreshAttributesJob")
                            .setMaxInstancesForFactory(2)
@@ -91,8 +101,8 @@ public class RefreshAttributesJob extends BaseJob {
     boolean   universalUnidentifiedAccess = TextSecurePreferences.isUniversalUnidentifiedAccess(context);
     String    registrationLockV2          = null;
     SvrValues svrValues                   = SignalStore.svr();
-    int       pniRegistrationId           = new RegistrationRepository(AppDependencies.getApplication()).getPniRegistrationId();
-    String    recoveryPassword            = svrValues.getRecoveryPassword();
+    int       pniRegistrationId           = RegistrationRepository.getPniRegistrationId();
+    String    recoveryPassword            = svrValues.getMasterKey().deriveRegistrationRecoveryPassword();
 
     if (svrValues.isRegistrationLockEnabled()) {
       registrationLockV2 = svrValues.getRegistrationLockToken();
@@ -104,7 +114,7 @@ public class RefreshAttributesJob extends BaseJob {
     byte[] encryptedDeviceName = (deviceName == null) ? null : DeviceNameCipher.encryptDeviceName(deviceName.getBytes(StandardCharsets.UTF_8), SignalStore.account().getAciIdentityKey());
 
     AccountAttributes.Capabilities capabilities = AppCapabilities.getCapabilities(svrValues.hasPin() && !svrValues.hasOptedOut());
-    Log.i(TAG, "Calling setAccountAttributes() reglockV2? " + !TextUtils.isEmpty(registrationLockV2) + ", pin? " + svrValues.hasPin() +
+    Log.i(TAG, "Calling setAccountAttributes() reglockV2? " + !TextUtils.isEmpty(registrationLockV2) + ", pin? " + svrValues.hasPin() + ", restoredAEP? " + SignalStore.account().restoredAccountEntropyPool() +
                "\n    Recovery password? " + !TextUtils.isEmpty(recoveryPassword) +
                "\n    Phone number discoverable : " + phoneNumberDiscoverable +
                "\n    Device Name : " + (encryptedDeviceName != null) +
@@ -124,14 +134,14 @@ public class RefreshAttributesJob extends BaseJob {
         recoveryPassword
     );
 
-    AppDependencies.getSignalServiceAccountManager().setAccountAttributes(accountAttributes);
+    NetworkResultUtil.toBasicLegacy(SignalNetwork.account().setAccountAttributes(accountAttributes));
 
     hasRefreshedThisAppCycle = true;
   }
 
   @Override
   public boolean onShouldRetry(@NonNull Exception e) {
-    return e instanceof NetworkFailureException;
+    return e instanceof IOException && !(e instanceof NonSuccessfulResponseCodeException);
   }
 
   @Override

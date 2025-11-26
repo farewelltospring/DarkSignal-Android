@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,7 +32,6 @@ import org.thoughtcrime.securesms.avatar.Avatars;
 import org.thoughtcrime.securesms.avatar.picker.AvatarPickerFragment;
 import org.thoughtcrime.securesms.databinding.CreateProfileFragmentBinding;
 import org.thoughtcrime.securesms.groups.GroupId;
-import org.thoughtcrime.securesms.groups.ParcelableGroupId;
 import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mediasend.Media;
@@ -51,6 +49,7 @@ import java.io.InputStream;
 
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.EXCLUDE_SYSTEM;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.GROUP_ID;
+import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.IS_DESCRIPTION_FOCUSED;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.NEXT_BUTTON_TEXT;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.NEXT_INTENT;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.SHOW_TOOLBAR;
@@ -161,6 +160,7 @@ public class CreateProfileFragment extends LoggingFragment {
     boolean isEditingGroup = groupId != null;
 
     this.nextIntent = arguments.getParcelable(NEXT_INTENT);
+    boolean isDescriptionFocused = arguments.getBoolean(IS_DESCRIPTION_FOCUSED);
 
     binding.avatar.setOnClickListener(v -> startAvatarSelection());
     binding.mmsGroupHint.setVisibility(isEditingGroup && groupId.isMms() ? View.VISIBLE : View.GONE);
@@ -171,7 +171,9 @@ public class CreateProfileFragment extends LoggingFragment {
       binding.whoCanFindMeContainer.setVisibility(View.GONE);
       binding.givenName.addTextChangedListener(new AfterTextChanged(s -> viewModel.setGivenName(s.toString())));
       binding.givenNameWrapper.setHint(R.string.EditProfileFragment__group_name);
-      binding.givenName.requestFocus();
+      if (!isDescriptionFocused) {
+        binding.givenName.requestFocus();
+      }
       binding.toolbar.setTitle(R.string.EditProfileFragment__edit_group);
       binding.namePreview.setVisibility(View.GONE);
 
@@ -182,6 +184,9 @@ public class CreateProfileFragment extends LoggingFragment {
           viewModel.setFamilyName(s.toString());
         }));
         binding.familyNameWrapper.setHint(R.string.EditProfileFragment__group_description);
+        if (isDescriptionFocused) {
+          binding.familyName.requestFocus();
+        }
         binding.familyName.setSingleLine(false);
         binding.familyName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
 
@@ -299,8 +304,7 @@ public class CreateProfileFragment extends LoggingFragment {
 
   private void startAvatarSelection() {
     if (viewModel.isGroup()) {
-      Parcelable groupId = ParcelableGroupId.from(viewModel.getGroupId());
-      SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker((ParcelableGroupId) groupId, viewModel.getAvatarMedia()));
+      SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker(viewModel.getGroupId(), viewModel.getAvatarMedia()));
     } else {
       SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker(null, null));
     }

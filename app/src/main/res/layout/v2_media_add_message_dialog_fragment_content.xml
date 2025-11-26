@@ -56,7 +56,6 @@
         android:hint="@string/MediaReviewFragment__add_a_message"
         android:imeOptions="flagNoEnterAction"
         android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
-        android:maxLength="65536"
         android:maxLines="3"
         android:minHeight="@dimen/conversation_compose_height"
         android:paddingEnd="10dp"
@@ -76,6 +75,7 @@
         android:animateFirstView="false"
         android:inAnimation="@anim/fade_in"
         android:outAnimation="@anim/fade_out"
+        android:contentDescription="@string/MediaReviewFragment__view_once_toggle_accessibility_label"
         app:layout_constraintBottom_toBottomOf="@id/add_a_message_input"
         app:layout_constraintEnd_toStartOf="@id/confirm_button">
 
@@ -117,6 +117,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="2dp"
         android:padding="6dp"
+        android:contentDescription="@string/MediaReviewFragment__finish_adding_a_message_accessibility_label"
         app:layout_constraintBottom_toTopOf="@id/emoji_drawer_stub"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/input_barrier"

@@ -1,14 +1,12 @@
 package org.thoughtcrime.securesms.mediasend
 
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import org.signal.core.util.logging.Log
@@ -26,6 +24,7 @@ import org.thoughtcrime.securesms.video.videoconverter.VideoThumbnailsRangeSelec
 import org.thoughtcrime.securesms.video.videoconverter.VideoThumbnailsRangeSelectorView.PositionDragListener
 import java.io.IOException
 import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragment {
   private val sharedViewModel: MediaSelectionViewModel by viewModels(ownerProducer = { requireActivity() })
@@ -46,9 +45,9 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
   private val updatePosition = object : Runnable {
     override fun run() {
       if (MediaConstraints.isVideoTranscodeAvailable()) {
-        val playbackPositionUs = player.playbackPositionUs
-        if (playbackPositionUs >= 0) {
-          videoTimeLine.setActualPosition(playbackPositionUs)
+        val playbackPosition = player.truePlaybackPosition
+        if (playbackPosition >= 0) {
+          videoTimeLine.setActualPosition(playbackPosition.milliseconds.inWholeMicroseconds)
           handler.postDelayed(this, 100)
         }
       }
@@ -96,7 +95,7 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
 
         override fun onStopped() = Unit
 
-        override fun onError() {
+        override fun onError(e: Exception) {
           controller.onPlayerError()
         }
       })
@@ -125,7 +124,7 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
           hud.showPlayButton()
         }
 
-        override fun onError() {
+        override fun onError(e: Exception) {
           controller.onPlayerError()
         }
       })
@@ -160,7 +159,6 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
     }
   }
 
-  @RequiresApi(23)
   private fun bindVideoTimeline(data: VideoTrimData) {
     val autoplay = isVideoGif
     val slide = VideoSlide(requireContext(), uri, 0, autoplay)
@@ -212,10 +210,8 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
   }
 
   private fun startPositionUpdates() {
-    if (Build.VERSION.SDK_INT >= 23) {
-      stopPositionUpdates()
-      handler.post(updatePosition)
-    }
+    stopPositionUpdates()
+    handler.post(updatePosition)
   }
 
   private fun stopPositionUpdates() {
@@ -249,15 +245,15 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
     hud.showPlayButton()
   }
 
-  @RequiresApi(23)
   private fun onEditVideoDuration(data: VideoTrimData, editingComplete: Boolean) {
     if (editingComplete) {
       isInEdit = false
       videoScanThrottle.clear()
     } else if (!isInEdit) {
       isInEdit = true
-      wasPlayingBeforeEdit = player.isPlaying
     }
+
+    wasPlayingBeforeEdit = player.isPlaying
 
     if (wasPlayingBeforeEdit) {
       hud.hidePlayButton()
@@ -268,7 +264,9 @@ class VideoEditorFragment : Fragment(), PositionDragListener, MediaSendPageFragm
       if (!editingComplete) {
         player.removeClip(false)
       }
-      player.playbackPosition = if (editingComplete) data.startTimeUs / 1000 else data.endTimeUs / 1000
+      if (!wasPlayingBeforeEdit) {
+        player.playbackPosition = if (editingComplete) data.startTimeUs / 1000 else data.endTimeUs / 1000
+      }
       if (editingComplete) {
         if (data.isDurationEdited) {
           player.clip(data.startTimeUs, data.endTimeUs, wasPlayingBeforeEdit)

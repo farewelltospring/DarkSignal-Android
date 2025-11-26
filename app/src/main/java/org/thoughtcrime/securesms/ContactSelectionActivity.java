@@ -28,6 +28,8 @@ import org.signal.core.util.DimensionUnit;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.components.ContactFilterView;
 import org.thoughtcrime.securesms.contacts.ContactSelectionDisplayMode;
+import org.thoughtcrime.securesms.contacts.paged.ChatType;
+import org.thoughtcrime.securesms.contacts.selection.ContactSelectionArguments;
 import org.thoughtcrime.securesms.contacts.sync.ContactDiscovery;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.util.DynamicNoActionBarTheme;
@@ -68,9 +70,9 @@ public abstract class ContactSelectionActivity extends PassphraseRequiredActivit
 
   @Override
   protected void onCreate(Bundle icicle, boolean ready) {
-    if (!getIntent().hasExtra(ContactSelectionListFragment.DISPLAY_MODE)) {
+    if (!getIntent().hasExtra(ContactSelectionArguments.DISPLAY_MODE)) {
       int displayMode = ContactSelectionDisplayMode.FLAG_PUSH | ContactSelectionDisplayMode.FLAG_ACTIVE_GROUPS | ContactSelectionDisplayMode.FLAG_INACTIVE_GROUPS | ContactSelectionDisplayMode.FLAG_SELF;
-      getIntent().putExtra(ContactSelectionListFragment.DISPLAY_MODE, displayMode);
+      getIntent().putExtra(ContactSelectionArguments.DISPLAY_MODE, displayMode);
     }
 
     setContentView(getIntent().getIntExtra(EXTRA_LAYOUT_RES_ID, R.layout.contact_selection_activity));
@@ -127,12 +129,12 @@ public abstract class ContactSelectionActivity extends PassphraseRequiredActivit
   }
 
   @Override
-  public void onBeforeContactSelected(boolean isFromUnknownSearchKey, @NonNull Optional<RecipientId> recipientId, String number, @NonNull Consumer<Boolean> callback) {
+  public void onBeforeContactSelected(boolean isFromUnknownSearchKey, @NonNull Optional<RecipientId> recipientId, String number, @NonNull Optional<ChatType> chatType, @NonNull Consumer<Boolean> callback) {
     callback.accept(true);
   }
 
   @Override
-  public void onContactDeselected(@NonNull Optional<RecipientId> recipientId, String number) {}
+  public void onContactDeselected(@NonNull Optional<RecipientId> recipientId, String number, @NonNull Optional<ChatType> chatType) {}
 
   @Override
   public void onBeginScroll() {
@@ -169,8 +171,7 @@ public abstract class ContactSelectionActivity extends PassphraseRequiredActivit
       ContactSelectionActivity activity = this.activity.get();
 
       if (activity != null && !activity.isFinishing()) {
-        activity.contactFilterView.clear();
-        activity.contactsFragment.resetQueryFilter();
+        activity.contactsFragment.onDataRefreshed();
       }
     }
   }

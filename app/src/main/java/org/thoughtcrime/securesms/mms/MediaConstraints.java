@@ -3,7 +3,7 @@ package org.thoughtcrime.securesms.mms;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Pair;
+import kotlin.Pair;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -41,10 +41,6 @@ public abstract class MediaConstraints {
     return TranscodingPreset.LEVEL_1;
   }
 
-  public boolean isHighQuality() {
-    return false;
-  }
-
   /**
    * Provide a list of dimensions that should be attempted during compression. We will keep moving
    * down the list until the image can be scaled to fit under {@link #getImageMaxSize(Context)}.
@@ -53,18 +49,18 @@ public abstract class MediaConstraints {
   public abstract int[] getImageDimensionTargets(Context context);
 
   public abstract long getGifMaxSize(Context context);
-  public abstract long getVideoMaxSize(Context context);
+  public abstract long getVideoMaxSize();
 
   public @IntRange(from = 0, to = 100) int getImageCompressionQualitySetting(@NonNull Context context) {
     return 70;
   }
 
   public long getUncompressedVideoMaxSize(Context context) {
-    return getVideoMaxSize(context);
+    return getVideoMaxSize();
   }
 
   public long getCompressedVideoMaxSize(Context context) {
-    return getVideoMaxSize(context);
+    return getVideoMaxSize();
   }
 
   public abstract long getAudioMaxSize(Context context);
@@ -83,7 +79,7 @@ public abstract class MediaConstraints {
       return (MediaUtil.isGif(attachment)    && size <= getGifMaxSize(context)   && isWithinBounds(context, attachment.getUri())) ||
              (MediaUtil.isImage(attachment)  && size <= getImageMaxSize(context) && isWithinBounds(context, attachment.getUri())) ||
              (MediaUtil.isAudio(attachment)  && size <= getAudioMaxSize(context)) ||
-             (MediaUtil.isVideo(attachment)  && size <= getVideoMaxSize(context)) ||
+             (MediaUtil.isVideo(attachment)  && size <= getVideoMaxSize()) ||
              (MediaUtil.isFile(attachment)   && size <= getDocumentMaxSize(context));
     } catch (IOException ioe) {
       Log.w(TAG, "Failed to determine if media's constraints are satisfied.", ioe);
@@ -99,7 +95,7 @@ public abstract class MediaConstraints {
       return (MediaUtil.isGif(contentType)       && size <= getGifMaxSize(context) && isWithinBounds(context, uri))   ||
              (MediaUtil.isImageType(contentType) && size <= getImageMaxSize(context) && isWithinBounds(context, uri)) ||
              (MediaUtil.isAudioType(contentType) && size <= getAudioMaxSize(context))                                 ||
-             (MediaUtil.isVideoType(contentType) && size <= getVideoMaxSize(context))                                 ||
+             (MediaUtil.isVideoType(contentType) && size <= getVideoMaxSize())                                        ||
              size <= getDocumentMaxSize(context);
     } catch (IOException ioe) {
       Log.w(TAG, "Failed to determine if media's constraints are satisfied.", ioe);
@@ -111,8 +107,8 @@ public abstract class MediaConstraints {
     try {
       InputStream is = PartAuthority.getAttachmentStream(context, uri);
       Pair<Integer, Integer> dimensions = BitmapUtil.getDimensions(is);
-      return dimensions.first  > 0 && dimensions.first  <= getImageMaxWidth(context) &&
-             dimensions.second > 0 && dimensions.second <= getImageMaxHeight(context);
+return dimensions.getFirst()  > 0 && dimensions.getFirst()  <= getImageMaxWidth(context) &&
+              dimensions.getSecond() > 0 && dimensions.getSecond() <= getImageMaxHeight(context);
     } catch (BitmapDecodingException e) {
       throw new IOException(e);
     }
@@ -129,6 +125,6 @@ public abstract class MediaConstraints {
   }
 
   public static boolean isVideoTranscodeAvailable() {
-    return Build.VERSION.SDK_INT >= 26 && (RemoteConfig.useStreamingVideoMuxer() || MemoryFileDescriptor.supported());
+    return Build.VERSION.SDK_INT >= 26;
   }
 }

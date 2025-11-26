@@ -1,8 +1,9 @@
 package org.whispersystems.signalservice.internal.websocket;
 
+import org.jetbrains.annotations.NotNull;
 import org.signal.libsignal.protocol.logging.Log;
-import org.signal.libsignal.protocol.util.Pair;
 import org.whispersystems.signalservice.api.push.TrustStore;
+import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
 import org.whispersystems.signalservice.api.util.Tls12SocketFactory;
 import org.whispersystems.signalservice.api.util.TlsProxySocketFactory;
@@ -15,6 +16,7 @@ import org.whispersystems.signalservice.internal.util.BlacklistingTrustManager;
 import org.whispersystems.signalservice.internal.util.Util;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -34,12 +36,15 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import kotlin.Pair;
+
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.SingleSubject;
 import okhttp3.ConnectionSpec;
+import okhttp3.Credentials;
 import okhttp3.Dns;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -115,11 +120,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
     SignalServiceUrl serviceUrl = serviceUrls[random.nextInt(serviceUrls.length)];
     String           uri        = serviceUrl.getUrl().replace("https://", "wss://").replace("http://", "ws://");
 
-    if (credentialsProvider.isPresent()) {
-      return new Pair<>(serviceUrl, uri + "/v1/websocket/" + extraPathUri + "?login=%s&password=%s");
-    } else {
-      return new Pair<>(serviceUrl, uri + "/v1/websocket/" + extraPathUri);
-    }
+    return new Pair<>(serviceUrl, uri + "/v1/websocket/" + extraPathUri);
   }
 
   @Override
@@ -128,20 +129,13 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
 
     if (client == null) {
       Pair<SignalServiceUrl, String> connectionInfo = getConnectionInfo();
-      SignalServiceUrl               serviceUrl     = connectionInfo.first();
-      String                         wsUri          = connectionInfo.second();
-      String                         filledUri;
-
-      if (credentialsProvider.isPresent()) {
-        filledUri = String.format(wsUri, credentialsProvider.get().getUsername(), credentialsProvider.get().getPassword());
-      } else {
-        filledUri = wsUri;
-      }
+      SignalServiceUrl               serviceUrl     = connectionInfo.getFirst();
+      String                         wsUri          = connectionInfo.getSecond();
 
       Pair<SSLSocketFactory, X509TrustManager> socketFactory = createTlsSocketFactory(trustStore);
 
-      OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder().sslSocketFactory(new Tls12SocketFactory(socketFactory.first()),
-                                                                                       socketFactory.second())
+      OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder().sslSocketFactory(new Tls12SocketFactory(socketFactory.getFirst()),
+                                                                                       socketFactory.getSecond())
                                                                      .connectionSpecs(serviceUrl.getConnectionSpecs().orElse(Util.immutableList(ConnectionSpec.RESTRICTED_TLS)))
                                                                      .readTimeout(KEEPALIVE_FREQUENCY_SECONDS + 10, TimeUnit.SECONDS)
                                                                      .dns(dns.orElse(Dns.SYSTEM))
@@ -157,10 +151,18 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
 
       OkHttpClient okHttpClient = clientBuilder.build();
 
-      Request.Builder requestBuilder = new Request.Builder().url(filledUri);
+      Request.Builder requestBuilder = new Request.Builder().url(wsUri);
 
       if (signalAgent != null) {
         requestBuilder.addHeader("X-Signal-Agent", signalAgent);
+      }
+
+      if (credentialsProvider.isPresent()) {
+        if (credentialsProvider.get().getUsername() != null && credentialsProvider.get().getPassword() != null) {
+          requestBuilder.addHeader("Authorization", Credentials.basic(credentialsProvider.get().getUsername(), credentialsProvider.get().getPassword()));
+        } else {
+          Log.w(TAG, "CredentialsProvider was present, but username or password was missing!");
+        }
       }
 
       requestBuilder.addHeader("X-Signal-Receive-Stories", allowStories ? "true" : "false");
@@ -228,7 +230,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
   }
 
   @Override
-  public synchronized Single<WebsocketResponse> sendRequest(WebSocketRequestMessage request) throws IOException {
+  public synchronized Single<WebsocketResponse> sendRequest(@NotNull WebSocketRequestMessage request, long timeoutSeconds) throws IOException {
     if (client == null) {
       throw new IOException("No connection!");
     }
@@ -248,7 +250,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
 
     return single.subscribeOn(Schedulers.io())
                  .observeOn(Schedulers.io())
-                 .timeout(10, TimeUnit.SECONDS, Schedulers.io());
+                 .timeout(timeoutSeconds, TimeUnit.SECONDS, Schedulers.io());
   }
 
   @Override
@@ -326,10 +328,10 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
 
   @Override
   public synchronized void onClosed(WebSocket webSocket, int code, String reason) {
-    log("onClose()");
+    log("onClose(" + code + ")");
     webSocketState.onNext(WebSocketConnectionState.DISCONNECTED);
 
-    cleanupAfterShutdown();
+    cleanupAfterShutdown(code);
 
     notifyAll();
   }
@@ -344,17 +346,24 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
       webSocketState.onNext(WebSocketConnectionState.FAILED);
     }
 
-    cleanupAfterShutdown();
+    cleanupAfterShutdown(response != null ? response.code() : 1000);
 
     notifyAll();
   }
 
-  private void cleanupAfterShutdown() {
+  private void cleanupAfterShutdown(int code) {
     Iterator<Map.Entry<Long, OutgoingRequest>> iterator = outgoingRequests.entrySet().iterator();
+
+    IOException exception;
+    if (code == 403 || code == 4401) {
+      exception = new NonSuccessfulResponseCodeException(code);
+    } else {
+      exception = new SocketException("Closed unexpectedly");
+    }
 
     while (iterator.hasNext()) {
       Map.Entry<Long, OutgoingRequest> entry = iterator.next();
-      entry.getValue().onError(new IOException("Closed unexpectedly"));
+      entry.getValue().onError(exception);
       iterator.remove();
     }
 
@@ -372,7 +381,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
 
   @Override
   public synchronized void onClosing(WebSocket webSocket, int code, String reason) {
-    log("onClosing()");
+    log("onClosing(" + code + ")");
     webSocketState.onNext(WebSocketConnectionState.DISCONNECTING);
     webSocket.close(1000, "OK");
   }

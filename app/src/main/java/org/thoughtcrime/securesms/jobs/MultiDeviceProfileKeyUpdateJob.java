@@ -6,15 +6,15 @@ import androidx.annotation.Nullable;
 
 import org.signal.core.util.logging.Log;
 import org.signal.libsignal.zkgroup.profiles.ProfileKey;
+import org.thoughtcrime.securesms.BuildConfig;
 import org.thoughtcrime.securesms.crypto.ProfileKeyUtil;
-import org.thoughtcrime.securesms.crypto.UnidentifiedAccessUtil;
 import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.net.NotPushRegisteredException;
 import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.util.TextSecurePreferences;
+import org.thoughtcrime.securesms.util.RemoteConfig;
 import org.whispersystems.signalservice.api.SignalServiceMessageSender;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment;
@@ -67,14 +67,13 @@ public class MultiDeviceProfileKeyUpdateJob extends BaseJob {
       throw new NotPushRegisteredException();
     }
 
-    if (!TextSecurePreferences.isMultiDevice(context)) {
+    if (!SignalStore.account().isMultiDevice()) {
       Log.i(TAG, "Not multi device...");
       return;
     }
 
-    Optional<ProfileKey>  profileKey = Optional.of(ProfileKeyUtil.getSelfProfileKey());
-    ByteArrayOutputStream baos       = new ByteArrayOutputStream();
-    DeviceContactsOutputStream out        = new DeviceContactsOutputStream(baos);
+    ByteArrayOutputStream      baos = new ByteArrayOutputStream();
+    DeviceContactsOutputStream out  = new DeviceContactsOutputStream(baos, RemoteConfig.useBinaryId(), BuildConfig.USE_STRING_ID);
 
     out.write(new DeviceContact(Optional.ofNullable(SignalStore.account().getAci()),
                                 Optional.ofNullable(SignalStore.account().getE164()),
@@ -82,10 +81,7 @@ public class MultiDeviceProfileKeyUpdateJob extends BaseJob {
                                 Optional.empty(),
                                 Optional.empty(),
                                 Optional.empty(),
-                                profileKey,
-                                Optional.empty(),
-                                Optional.empty(),
-                                false));
+                                Optional.empty()));
 
     out.close();
 
@@ -94,11 +90,12 @@ public class MultiDeviceProfileKeyUpdateJob extends BaseJob {
                                                                             .withStream(new ByteArrayInputStream(baos.toByteArray()))
                                                                             .withContentType("application/octet-stream")
                                                                             .withLength(baos.toByteArray().length)
+                                                                            .withResumableUploadSpec(messageSender.getResumableUploadSpec())
                                                                             .build();
 
-    SignalServiceSyncMessage      syncMessage      = SignalServiceSyncMessage.forContacts(new ContactsMessage(attachmentStream, false));
+    SignalServiceSyncMessage syncMessage = SignalServiceSyncMessage.forContacts(new ContactsMessage(attachmentStream, false));
 
-    messageSender.sendSyncMessage(syncMessage, UnidentifiedAccessUtil.getAccessForSync(context));
+    messageSender.sendSyncMessage(syncMessage);
   }
 
   @Override

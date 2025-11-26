@@ -1,7 +1,7 @@
 package org.thoughtcrime.securesms.testing
 
 import org.signal.libsignal.protocol.IdentityKeyPair
-import org.signal.libsignal.protocol.ecc.Curve
+import org.signal.libsignal.protocol.ecc.ECKeyPair
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.util.KeyHelper
 import org.signal.libsignal.protocol.util.Medium
@@ -61,16 +61,16 @@ object MockProvider {
   }
 
   fun createWhoAmIResponse(aci: ServiceId, pni: ServiceId, e164: String): WhoAmIResponse {
-    return WhoAmIResponse().apply {
-      this.uuid = aci.toString()
-      this.pni = pni.toString()
-      this.number = e164
-    }
+    return WhoAmIResponse(
+      aci = aci.toString(),
+      pni = pni.toString(),
+      number = e164
+    )
   }
 
   fun createPreKeyResponse(identity: IdentityKeyPair = SignalStore.account.aciIdentityKey, deviceId: Int): PreKeyResponse {
     val signedPreKeyRecord = PreKeyUtil.generateSignedPreKey(SecureRandom().nextInt(Medium.MAX_VALUE), identity.privateKey)
-    val oneTimePreKey = PreKeyRecord(SecureRandom().nextInt(Medium.MAX_VALUE), Curve.generateKeyPair())
+    val oneTimePreKey = PreKeyRecord(SecureRandom().nextInt(Medium.MAX_VALUE), ECKeyPair.generate())
 
     val device = PreKeyResponseItem().apply {
       this.deviceId = deviceId

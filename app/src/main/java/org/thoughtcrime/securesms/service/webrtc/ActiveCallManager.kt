@@ -5,6 +5,8 @@
 
 package org.thoughtcrime.securesms.service.webrtc
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -16,9 +18,9 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
-import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.IntentCompat
 import androidx.core.os.bundleOf
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
@@ -26,13 +28,14 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.signal.core.util.PendingIntentFlags
-import org.signal.core.util.ThreadUtil
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.UnableToStartException
+import org.thoughtcrime.securesms.permissions.Permissions
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.service.SafeForegroundService
+import org.thoughtcrime.securesms.util.DeviceProperties
 import org.thoughtcrime.securesms.util.TelephonyUtil
 import org.thoughtcrime.securesms.webrtc.CallNotificationBuilder
 import org.thoughtcrime.securesms.webrtc.UncaughtExceptionHandlerManager
@@ -42,8 +45,6 @@ import org.thoughtcrime.securesms.webrtc.audio.SignalAudioManager.Companion.crea
 import org.thoughtcrime.securesms.webrtc.locks.LockManager
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
 
 /**
  * Entry point for [SignalCallManager] and friends to interact with the Android system.
@@ -57,6 +58,10 @@ class ActiveCallManager(
 
   companion object {
     private val TAG = Log.tag(ActiveCallManager::class.java)
+
+    private const val WEBSOCKET_KEEP_ALIVE_TOKEN: String = "ActiveCall"
+
+    private val requiresAsyncNotificationLoad = Build.VERSION.SDK_INT <= 29
 
     private var activeCallManager: ActiveCallManager? = null
     private val activeCallManagerLock = ReentrantLock()
@@ -137,19 +142,24 @@ class ActiveCallManager(
   private var networkReceiver: NetworkReceiver? = null
   private var powerButtonReceiver: PowerButtonReceiver? = null
   private var uncaughtExceptionHandlerManager: UncaughtExceptionHandlerManager? = null
-  private val webSocketKeepAliveTask: WebSocketKeepAliveTask = WebSocketKeepAliveTask()
   private var signalAudioManager: SignalAudioManager? = null
   private var previousNotificationId = -1
+  private var previousNotificationDisposable = Disposable.disposed()
 
   init {
+    Log.i(TAG, "init(bkgRestricted: ${DeviceProperties.isBackgroundRestricted()})")
+
     registerUncaughtExceptionHandler()
     registerNetworkReceiver()
 
-    webSocketKeepAliveTask.start()
+    AppDependencies.authWebSocket.registerKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
+    AppDependencies.unauthWebSocket.registerKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
   }
 
-  fun shutdown() {
+  fun shutdown(fromTimeout: Boolean = false) {
     Log.v(TAG, "shutdown")
+
+    previousNotificationDisposable.dispose()
 
     uncaughtExceptionHandlerManager?.unregister()
     uncaughtExceptionHandlerManager = null
@@ -160,15 +170,18 @@ class ActiveCallManager(
     unregisterNetworkReceiver()
     unregisterPowerButtonReceiver()
 
-    webSocketKeepAliveTask.stop()
+    AppDependencies.authWebSocket.removeKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
+    AppDependencies.unauthWebSocket.removeKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
 
-    if (!ActiveCallForegroundService.stop(application) && previousNotificationId != -1) {
+    if (!ActiveCallForegroundService.stop(application, fromTimeout) && previousNotificationId != -1) {
       NotificationManagerCompat.from(application).cancel(previousNotificationId)
     }
   }
 
+  @SuppressLint("MissingPermission")
   fun update(type: Int, recipientId: RecipientId, isVideoCall: Boolean) {
     Log.i(TAG, "update $type $recipientId $isVideoCall")
+    previousNotificationDisposable.dispose()
 
     val notificationId = CallNotificationBuilder.getNotificationId(type)
 
@@ -178,11 +191,22 @@ class ActiveCallManager(
 
     previousNotificationId = notificationId
 
-    if (type != CallNotificationBuilder.TYPE_ESTABLISHED) {
-      val notification = CallNotificationBuilder.getCallInProgressNotification(application, type, Recipient.resolved(recipientId), isVideoCall, false)
+    if (type == CallNotificationBuilder.TYPE_INCOMING_RINGING || type == CallNotificationBuilder.TYPE_INCOMING_CONNECTING) {
+      val notification = CallNotificationBuilder.getCallInProgressNotification(application, type, Recipient.resolved(recipientId), isVideoCall, requiresAsyncNotificationLoad)
       NotificationManagerCompat.from(application).notify(notificationId, notification)
+
+      if (requiresAsyncNotificationLoad) {
+        previousNotificationDisposable = Single.fromCallable { CallNotificationBuilder.getCallInProgressNotification(application, type, Recipient.resolved(recipientId), isVideoCall, false) }
+          .subscribeOn(Schedulers.io())
+          .observeOn(AndroidSchedulers.mainThread())
+          .subscribeBy { asyncNotification ->
+            if (NotificationManagerCompat.from(application).activeNotifications.any { n -> n.id == notificationId }) {
+              NotificationManagerCompat.from(application).notify(notificationId, asyncNotification)
+            }
+          }
+      }
     } else {
-      ActiveCallForegroundService.start(application, recipientId, isVideoCall)
+      ActiveCallForegroundService.update(application, type, recipientId, isVideoCall)
     }
   }
 
@@ -211,6 +235,7 @@ class ActiveCallManager(
   private fun registerNetworkReceiver() {
     if (networkReceiver == null) {
       networkReceiver = NetworkReceiver()
+      @Suppress("DEPRECATION")
       application.registerReceiver(networkReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
     }
   }
@@ -247,22 +272,28 @@ class ActiveCallManager(
   /** Foreground service started only after a call is established */
   class ActiveCallForegroundService : SafeForegroundService() {
     companion object {
+      private const val TAG = "ActiveCallService"
+
       private const val EXTRA_RECIPIENT_ID = "RECIPIENT_ID"
       private const val EXTRA_IS_VIDEO_CALL = "IS_VIDEO_CALL"
+      private const val EXTRA_TYPE = "TYPE"
 
-      fun start(context: Context, recipientId: RecipientId, isVideoCall: Boolean) {
+      fun update(context: Context, @CallNotificationBuilder.CallNotificationType type: Int, recipientId: RecipientId, isVideoCall: Boolean) {
         val extras = bundleOf(
+          EXTRA_TYPE to type,
           EXTRA_RECIPIENT_ID to recipientId,
           EXTRA_IS_VIDEO_CALL to isVideoCall
         )
 
-        if (!SafeForegroundService.start(context, ActiveCallForegroundService::class.java, extras)) {
-          throw UnableToStartException(Exception())
+        if (!SafeForegroundService.update(context, ActiveCallForegroundService::class.java, extras)) {
+          if (!SafeForegroundService.start(context, ActiveCallForegroundService::class.java, extras)) {
+            throw UnableToStartException(Exception())
+          }
         }
       }
 
-      fun stop(context: Context): Boolean {
-        return SafeForegroundService.stop(context, ActiveCallForegroundService::class.java)
+      fun stop(context: Context, fromTimeout: Boolean = false): Boolean {
+        return SafeForegroundService.stop(context, ActiveCallForegroundService::class.java, fromTimeout)
       }
     }
 
@@ -274,11 +305,32 @@ class ActiveCallManager(
 
     @get:RequiresApi(30)
     override val serviceType: Int
-      get() = ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+      get() {
+        var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 
+        if (Permissions.hasAll(this, Manifest.permission.RECORD_AUDIO)) {
+          type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        }
+
+        if (Permissions.hasAll(this, Manifest.permission.CAMERA)) {
+          type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+        }
+
+        return type
+      }
+
+    @Suppress("DEPRECATION")
     private var hangUpRtcOnDeviceCallAnswered: PhoneStateListener? = null
-    private var notification: Notification? = null
     private var notificationDisposable: Disposable = Disposable.disposed()
+
+    @Volatile
+    private var asyncServiceNotification: Notification? = null
+
+    @Volatile
+    private var lastAsyncServiceNotificationRequestTime: Long = 0
+
+    @Volatile
+    private var lastAsyncServiceNotificationType: Int = -1
 
     override fun onCreate() {
       super.onCreate()
@@ -286,6 +338,7 @@ class ActiveCallManager(
 
       if (!AndroidTelecomUtil.telecomSupported) {
         try {
+          @Suppress("DEPRECATION")
           TelephonyUtil.getManager(application).listen(hangUpRtcOnDeviceCallAnswered, PhoneStateListener.LISTEN_CALL_STATE)
         } catch (e: SecurityException) {
           Log.w(TAG, "Failed to listen to PSTN call answers!", e)
@@ -293,53 +346,70 @@ class ActiveCallManager(
       }
     }
 
-    override fun onDestroy() {
+    override fun onServiceStopCommandReceived(intent: Intent) {
       notificationDisposable.dispose()
+    }
 
+    override fun onTimeout(startId: Int, fgsType: Int) {
+      Log.w(TAG, "ActiveCallForegroundService has timed out. Hanging up. startId: $startId, foregroundServiceType: $fgsType")
+      AppDependencies.signalCallManager.localHangup()
+      activeCallManagerLock.withLock {
+        activeCallManager?.shutdown(fromTimeout = true)
+        activeCallManager = null
+      }
+    }
+
+    override fun onDestroy() {
       super.onDestroy()
 
       if (!AndroidTelecomUtil.telecomSupported) {
+        @Suppress("DEPRECATION")
         TelephonyUtil.getManager(application).listen(hangUpRtcOnDeviceCallAnswered, PhoneStateListener.LISTEN_NONE)
       }
     }
 
     override fun getForegroundNotification(intent: Intent): Notification {
+      notificationDisposable.dispose()
+
       if (SafeForegroundService.isStopping(intent)) {
         Log.v(TAG, "Service is stopping, using generic stopping notification")
         return CallNotificationBuilder.getStoppingNotification(this)
       }
 
-      if (notification != null) {
-        return notification!!
-      } else if (!intent.hasExtra(EXTRA_RECIPIENT_ID)) {
+      if (!intent.hasExtra(EXTRA_RECIPIENT_ID) || !intent.hasExtra(EXTRA_TYPE)) {
+        Log.w(TAG, "Missing required data, service is stopping, using generic stopping notification")
         return CallNotificationBuilder.getStoppingNotification(this)
       }
 
-      val recipient: Recipient = Recipient.resolved(intent.getParcelableExtra(EXTRA_RECIPIENT_ID)!!)
+      val type = intent.getIntExtra(EXTRA_TYPE, 0)
+      val recipient: Recipient = Recipient.resolved(IntentCompat.getParcelableExtra(intent, EXTRA_RECIPIENT_ID, RecipientId::class.java)!!)
       val isVideoCall = intent.getBooleanExtra(EXTRA_IS_VIDEO_CALL, false)
-      val requiresAsyncNotificationLoad = Build.VERSION.SDK_INT <= 29
-
-      notification = createNotification(recipient, isVideoCall, skipAvatarLoad = requiresAsyncNotificationLoad)
 
       if (requiresAsyncNotificationLoad) {
-        notificationDisposable = Single.fromCallable { createNotification(recipient, isVideoCall, skipAvatarLoad = false) }
+        if (asyncServiceNotification != null && lastAsyncServiceNotificationType == type) {
+          return asyncServiceNotification!!
+        }
+
+        val requestTime = System.currentTimeMillis()
+        lastAsyncServiceNotificationRequestTime = requestTime
+        notificationDisposable = Single.fromCallable { createNotification(type, recipient, isVideoCall, skipAvatarLoad = false) }
           .subscribeOn(Schedulers.io())
+          .filter { requestTime == lastAsyncServiceNotificationRequestTime }
           .observeOn(AndroidSchedulers.mainThread())
-          .subscribeBy {
-            notification = it
-            if (NotificationManagerCompat.from(this).activeNotifications.any { n -> n.id == notificationId }) {
-              NotificationManagerCompat.from(application).notify(notificationId, notification!!)
-            }
+          .subscribeBy { notification ->
+            lastAsyncServiceNotificationType = type
+            asyncServiceNotification = notification
+            update(this, type, recipient.id, isVideoCall)
           }
       }
 
-      return notification!!
+      return createNotification(type, recipient, isVideoCall, skipAvatarLoad = requiresAsyncNotificationLoad)
     }
 
-    private fun createNotification(recipient: Recipient, isVideoCall: Boolean, skipAvatarLoad: Boolean): Notification {
+    private fun createNotification(type: Int, recipient: Recipient, isVideoCall: Boolean, skipAvatarLoad: Boolean): Notification {
       return CallNotificationBuilder.getCallInProgressNotification(
         this,
-        CallNotificationBuilder.TYPE_ESTABLISHED,
+        type,
         recipient,
         isVideoCall,
         skipAvatarLoad
@@ -348,6 +418,7 @@ class ActiveCallManager(
 
     @Suppress("deprecation")
     private class HangUpRtcOnPstnCallAnsweredListener : PhoneStateListener() {
+      @Deprecated("Deprecated in Java")
       override fun onCallStateChanged(state: Int, phoneNumber: String) {
         super.onCallStateChanged(state, phoneNumber)
         if (state == TelephonyManager.CALL_STATE_OFFHOOK) {
@@ -378,42 +449,7 @@ class ActiveCallManager(
     }
   }
 
-  /**
-   * Periodically request the web socket stay open if we are doing anything call related.
-   */
-  private class WebSocketKeepAliveTask : Runnable {
-
-    companion object {
-      private val REQUEST_WEBSOCKET_STAY_OPEN_DELAY: Duration = 1.minutes
-      private val WEBSOCKET_KEEP_ALIVE_TOKEN: String = WebSocketKeepAliveTask::class.java.simpleName
-    }
-
-    private var keepRunning = false
-
-    @MainThread
-    fun start() {
-      if (!keepRunning) {
-        keepRunning = true
-        run()
-      }
-    }
-
-    @MainThread
-    fun stop() {
-      keepRunning = false
-      ThreadUtil.cancelRunnableOnMain(this)
-      AppDependencies.incomingMessageObserver.removeKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
-    }
-
-    @MainThread
-    override fun run() {
-      if (keepRunning) {
-        AppDependencies.incomingMessageObserver.registerKeepAliveToken(WEBSOCKET_KEEP_ALIVE_TOKEN)
-        ThreadUtil.runOnMainDelayed(this, REQUEST_WEBSOCKET_STAY_OPEN_DELAY.inWholeMilliseconds)
-      }
-    }
-  }
-
+  @Suppress("DEPRECATION")
   private class NetworkReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
       val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

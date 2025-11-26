@@ -6,15 +6,20 @@ import org.thoughtcrime.securesms.emoji.EmojiFiles
 data class InternalSettingsState(
   val seeMoreUserDetails: Boolean,
   val shakeToReport: Boolean,
+  val showArchiveStateHint: Boolean,
   val gv2forceInvites: Boolean,
   val gv2ignoreP2PChanges: Boolean,
   val allowCensorshipSetting: Boolean,
   val forceWebsocketMode: Boolean,
   val callingServer: String,
-  val callingAudioProcessingMethod: CallManager.AudioProcessingMethod,
   val callingDataMode: CallManager.DataMode,
   val callingDisableTelecom: Boolean,
-  val callingDisableLBRed: Boolean,
+  val callingSetAudioConfig: Boolean,
+  val callingUseOboeAdm: Boolean,
+  val callingUseSoftwareAec: Boolean,
+  val callingUseSoftwareNs: Boolean,
+  val callingUseInputLowLatency: Boolean,
+  val callingUseInputVoiceComm: Boolean,
   val useBuiltInEmojiSet: Boolean,
   val emojiVersion: EmojiFiles.Version?,
   val removeSenderKeyMinimium: Boolean,
@@ -23,5 +28,8 @@ data class InternalSettingsState(
   val canClearOnboardingState: Boolean,
   val pnpInitialized: Boolean,
   val useConversationItemV2ForMedia: Boolean,
-  val hasPendingOneTimeDonation: Boolean
+  val hasPendingOneTimeDonation: Boolean,
+  val hevcEncoding: Boolean,
+  val newCallingUi: Boolean,
+  val forceSplitPane: Boolean
 )

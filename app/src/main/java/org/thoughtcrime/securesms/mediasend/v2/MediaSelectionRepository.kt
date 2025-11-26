@@ -104,7 +104,9 @@ class MediaSelectionRepository(context: Context) {
       val updatedMedia = oldToNewMediaMap.values.toList()
 
       for (media in updatedMedia) {
-        Log.w(TAG, media.uri.toString() + " : " + media.transformProperties.map { t: TransformProperties -> "" + t.videoTrim }.orElse("null"))
+        val uri: Uri = media.uri
+        val transformProperties: Boolean? = media.transformProperties?.videoTrim
+        Log.w(TAG, "$uri : trimmed=$transformProperties")
       }
 
       val singleRecipient: Recipient? = singleContact?.let { Recipient.resolved(it.recipientId) }
@@ -116,22 +118,7 @@ class MediaSelectionRepository(context: Context) {
         StoryType.NONE
       }
 
-      if (MessageSender.isLocalSelfSend(context, singleRecipient, SendType.SIGNAL)) {
-        Log.i(TAG, "Local self-send. Skipping pre-upload.")
-        emitter.onSuccess(
-          MediaSendActivityResult(
-            recipientId = singleRecipient!!.id,
-            nonUploadedMedia = updatedMedia,
-            body = trimmedBody,
-            messageSendType = sendType,
-            isViewOnce = isViewOnce,
-            mentions = trimmedMentions,
-            bodyRanges = trimmedBodyRanges,
-            storyType = StoryType.NONE,
-            scheduledTime = scheduledTime
-          )
-        )
-      } else if (scheduledTime != -1L && storyType == StoryType.NONE) {
+      if (scheduledTime != -1L && storyType == StoryType.NONE) {
         Log.i(TAG, "Scheduled message. Skipping pre-upload.")
         if (contacts.isEmpty()) {
           emitter.onSuccess(
@@ -151,8 +138,23 @@ class MediaSelectionRepository(context: Context) {
           scheduleMessages(sendType, contacts.map { it.recipientId }, trimmedBody, updatedMedia, trimmedMentions, trimmedBodyRanges, isViewOnce, scheduledTime)
           emitter.onComplete()
         }
+      } else if (MediaUtil.isDocumentType(selectedMedia.first().contentType)) {
+        Log.i(TAG, "Document. Skipping pre-upload.")
+        emitter.onSuccess(
+          MediaSendActivityResult(
+            recipientId = singleRecipient!!.id,
+            nonUploadedMedia = updatedMedia,
+            body = trimmedBody,
+            messageSendType = sendType,
+            isViewOnce = isViewOnce,
+            mentions = trimmedMentions,
+            bodyRanges = trimmedBodyRanges,
+            storyType = StoryType.NONE,
+            scheduledTime = scheduledTime
+          )
+        )
       } else {
-        val splitMessage = MessageUtil.getSplitMessage(context, trimmedBody, sendType.calculateCharacters(trimmedBody).maxPrimaryMessageSize)
+        val splitMessage = MessageUtil.getSplitMessage(context, trimmedBody)
         val splitBody = splitMessage.body
 
         if (splitMessage.textSlide.isPresent) {
@@ -233,7 +235,7 @@ class MediaSelectionRepository(context: Context) {
 
   fun deleteBlobs(media: List<Media>) {
     media
-      .map(Media::getUri)
+      .map(Media::uri)
       .filter(BlobProvider::isAuthority)
       .forEach { BlobProvider.getInstance().delete(context, it) }
   }
@@ -242,10 +244,6 @@ class MediaSelectionRepository(context: Context) {
     deleteBlobs(selectedMedia)
     uploadRepository.cancelAllUploads()
     uploadRepository.deleteAbandonedAttachments()
-  }
-
-  fun isLocalSelfSend(recipient: Recipient?): Boolean {
-    return MessageSender.isLocalSelfSend(context, recipient, SendType.SIGNAL)
   }
 
   @WorkerThread
@@ -298,17 +296,17 @@ class MediaSelectionRepository(context: Context) {
     val context: Context = AppDependencies.application
 
     for (mediaItem in nonUploadedMedia) {
-      if (MediaUtil.isVideoType(mediaItem.mimeType)) {
-        slideDeck.addSlide(VideoSlide(context, mediaItem.uri, mediaItem.size, mediaItem.isVideoGif, mediaItem.width, mediaItem.height, mediaItem.caption.orElse(null), mediaItem.transformProperties.orElse(null)))
-      } else if (MediaUtil.isGif(mediaItem.mimeType)) {
-        slideDeck.addSlide(GifSlide(context, mediaItem.uri, mediaItem.size, mediaItem.width, mediaItem.height, mediaItem.isBorderless, mediaItem.caption.orElse(null)))
-      } else if (MediaUtil.isImageType(mediaItem.mimeType)) {
-        slideDeck.addSlide(ImageSlide(context, mediaItem.uri, mediaItem.mimeType, mediaItem.size, mediaItem.width, mediaItem.height, mediaItem.isBorderless, mediaItem.caption.orElse(null), null, mediaItem.transformProperties.orElse(null)))
+      if (MediaUtil.isVideoType(mediaItem.contentType)) {
+        slideDeck.addSlide(VideoSlide(context, mediaItem.uri, mediaItem.size, mediaItem.isVideoGif, mediaItem.width, mediaItem.height, mediaItem.caption, mediaItem.transformProperties))
+      } else if (MediaUtil.isGif(mediaItem.contentType)) {
+        slideDeck.addSlide(GifSlide(context, mediaItem.uri, mediaItem.size, mediaItem.width, mediaItem.height, mediaItem.isBorderless, mediaItem.caption))
+      } else if (MediaUtil.isImageType(mediaItem.contentType)) {
+        slideDeck.addSlide(ImageSlide(context, mediaItem.uri, mediaItem.contentType, mediaItem.size, mediaItem.width, mediaItem.height, mediaItem.isBorderless, mediaItem.caption, null, mediaItem.transformProperties))
       } else {
-        Log.w(TAG, "Asked to send an unexpected mimeType: '" + mediaItem.mimeType + "'. Skipping.")
+        Log.w(TAG, "Asked to send an unexpected mimeType: '" + mediaItem.contentType + "'. Skipping.")
       }
     }
-    val splitMessage = MessageUtil.getSplitMessage(context, body, sendType.calculateCharacters(body).maxPrimaryMessageSize)
+    val splitMessage = MessageUtil.getSplitMessage(context, body)
     val splitBody = splitMessage.body
     if (splitMessage.textSlide.isPresent) {
       slideDeck.addSlide(splitMessage.textSlide.get())
@@ -445,7 +443,7 @@ class MediaSelectionRepository(context: Context) {
   }
 
   private fun Media.asKey(): MediaKey {
-    return MediaKey(this, this.transformProperties)
+    return MediaKey(this, Optional.ofNullable(this.transformProperties))
   }
 
   data class MediaKey(val media: Media, val mediaTransform: Optional<TransformProperties>)

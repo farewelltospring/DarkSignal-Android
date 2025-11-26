@@ -7,11 +7,25 @@ package org.thoughtcrime.securesms.restore
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import org.thoughtcrime.securesms.devicetransfer.newdevice.BackupRestorationType
+import kotlinx.coroutines.launch
+import org.thoughtcrime.securesms.backup.v2.MessageBackupTier
+import org.thoughtcrime.securesms.database.model.databaseprotos.RestoreDecisionState
+import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.keyvalue.Skipped
+import org.thoughtcrime.securesms.keyvalue.includeDeviceToDeviceTransfer
+import org.thoughtcrime.securesms.keyvalue.skippedRestoreChoice
+import org.thoughtcrime.securesms.registration.data.QuickRegistrationRepository
+import org.thoughtcrime.securesms.registration.ui.restore.RestoreMethod
+import org.thoughtcrime.securesms.registration.ui.restore.StorageServiceRestore
+import org.whispersystems.signalservice.api.provisioning.RestoreMethod as ApiRestoreMethod
 
 /**
  * Shared view model for the restore flow.
@@ -20,32 +34,13 @@ class RestoreViewModel : ViewModel() {
   private val store = MutableStateFlow(RestoreState())
   val uiState = store.asLiveData()
 
+  var showStorageAccountRestoreProgress by mutableStateOf(false)
+    private set
+
   fun setNextIntent(nextIntent: Intent) {
     store.update {
       it.copy(nextIntent = nextIntent)
     }
-  }
-
-  fun onTransferFromAndroidDeviceSelected() {
-    store.update {
-      it.copy(restorationType = BackupRestorationType.DEVICE_TRANSFER)
-    }
-  }
-
-  fun onRestoreFromLocalBackupSelected() {
-    store.update {
-      it.copy(restorationType = BackupRestorationType.LOCAL_BACKUP)
-    }
-  }
-
-  fun onRestoreFromRemoteBackupSelected() {
-    store.update {
-      it.copy(restorationType = BackupRestorationType.REMOTE_BACKUP)
-    }
-  }
-
-  fun getBackupRestorationType(): BackupRestorationType {
-    return store.value.restorationType
   }
 
   fun setBackupFileUri(backupFileUri: Uri) {
@@ -57,4 +52,57 @@ class RestoreViewModel : ViewModel() {
   fun getBackupFileUri(): Uri? = store.value.backupFile
 
   fun getNextIntent(): Intent? = store.value.nextIntent
+
+  fun hasNoRestoreMethods(): Boolean {
+    return getAvailableRestoreMethods().isEmpty()
+  }
+
+  fun getAvailableRestoreMethods(): List<RestoreMethod> {
+    if (SignalStore.registration.isOtherDeviceAndroid || SignalStore.registration.restoreDecisionState.skippedRestoreChoice) {
+      val methods = mutableListOf(RestoreMethod.FROM_LOCAL_BACKUP_V1)
+
+      if (SignalStore.registration.isOtherDeviceAndroid && SignalStore.registration.restoreDecisionState.includeDeviceToDeviceTransfer) {
+        methods.add(0, RestoreMethod.FROM_OLD_DEVICE)
+      }
+
+      when (SignalStore.backup.backupTier) {
+        MessageBackupTier.FREE -> methods.add(1, RestoreMethod.FROM_SIGNAL_BACKUPS)
+        MessageBackupTier.PAID -> methods.add(0, RestoreMethod.FROM_SIGNAL_BACKUPS)
+        null -> if (!SignalStore.backup.restoringViaQr) {
+          methods.add(1, RestoreMethod.FROM_SIGNAL_BACKUPS)
+        }
+      }
+
+      return methods
+    }
+
+    if (SignalStore.backup.restoringViaQr && SignalStore.backup.backupTier != null) {
+      return listOf(RestoreMethod.FROM_SIGNAL_BACKUPS)
+    }
+
+    return emptyList()
+  }
+
+  fun hasRestoredAccountEntropyPool(): Boolean {
+    return SignalStore.account.restoredAccountEntropyPool
+  }
+
+  fun hasRestoredBackupDataFromQr(): Boolean {
+    return SignalStore.backup.restoringViaQr && SignalStore.backup.backupTier != null
+  }
+
+  fun skipRestore() {
+    SignalStore.registration.restoreDecisionState = RestoreDecisionState.Skipped
+
+    viewModelScope.launch {
+      QuickRegistrationRepository.setRestoreMethodForOldDevice(ApiRestoreMethod.DECLINE)
+    }
+  }
+
+  suspend fun performStorageServiceAccountRestoreIfNeeded() {
+    if (hasRestoredAccountEntropyPool() || SignalStore.svr.masterKeyForInitialDataRestore != null) {
+      showStorageAccountRestoreProgress = true
+      StorageServiceRestore.restore()
+    }
+  }
 }

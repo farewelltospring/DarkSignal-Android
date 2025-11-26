@@ -15,8 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import org.signal.core.util.ResourceUtil
 import org.signal.core.util.concurrent.LifecycleDisposable
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.databinding.PromptLogsBottomSheetBinding
 import org.thoughtcrime.securesms.dependencies.AppDependencies
@@ -32,6 +32,7 @@ import org.thoughtcrime.securesms.util.SupportEmailUtil
 class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragment() {
 
   companion object {
+    private val TAG = Log.tag(DebugLogsPromptDialogFragment::class)
     private const val KEY_PURPOSE = "purpose"
 
     @JvmStatic
@@ -41,15 +42,17 @@ class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragmen
       }
 
       if (NetworkUtil.isConnected(activity) && activity.supportFragmentManager.findFragmentByTag(BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG) == null) {
-        DebugLogsPromptDialogFragment().apply {
+        val dialog = DebugLogsPromptDialogFragment().apply {
           arguments = bundleOf(
             KEY_PURPOSE to purpose.serialized
           )
-        }.show(activity.supportFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG)
-
+        }
+        BottomSheetUtil.show(activity.supportFragmentManager, BottomSheetUtil.STANDARD_BOTTOM_SHEET_FRAGMENT_TAG, dialog)
+        Log.i(TAG, "Showing debug log dialog prompt for $purpose")
         when (purpose) {
           Purpose.NOTIFICATIONS -> SignalStore.uiHints.lastNotificationLogsPrompt = System.currentTimeMillis()
           Purpose.CRASH -> SignalStore.uiHints.lastCrashPrompt = System.currentTimeMillis()
+          Purpose.CONNECTIVITY_WARNING -> SignalStore.misc.lastConnectivityWarningTime = System.currentTimeMillis()
         }
       }
     }
@@ -84,6 +87,9 @@ class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragmen
       }
       Purpose.CRASH -> {
         binding.title.setText(R.string.PromptLogsSlowNotificationsDialog__title_crash)
+      }
+      Purpose.CONNECTIVITY_WARNING -> {
+        binding.title.setText(R.string.PromptLogsSlowNotificationsDialog__title_connectivity_warning)
       }
     }
 
@@ -137,8 +143,9 @@ class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragmen
     }
 
     val category = when (purpose) {
-      Purpose.NOTIFICATIONS -> ResourceUtil.getEnglishResources(requireContext()).getString(R.string.DebugLogsPromptDialogFragment__slow_notifications_category)
-      Purpose.CRASH -> ResourceUtil.getEnglishResources(requireContext()).getString(R.string.DebugLogsPromptDialogFragment__crash_category)
+      Purpose.NOTIFICATIONS -> "Slow notifications"
+      Purpose.CRASH -> "Crash"
+      Purpose.CONNECTIVITY_WARNING -> "Connectivity"
     }
 
     return SupportEmailUtil.generateSupportEmailBody(
@@ -151,11 +158,7 @@ class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragmen
   }
 
   private fun batteryOptimizationsString(): String {
-    return if (Build.VERSION.SDK_INT < 23) {
-      "N/A (API < 23)"
-    } else {
-      PowerManagerCompat.isIgnoringBatteryOptimizations(requireContext()).toString()
-    }
+    return PowerManagerCompat.isIgnoringBatteryOptimizations(requireContext()).toString()
   }
 
   private fun backgroundRestrictedString(): String {
@@ -177,17 +180,12 @@ class DebugLogsPromptDialogFragment : FixedRoundedCornerBottomSheetDialogFragmen
   enum class Purpose(val serialized: Int) {
 
     NOTIFICATIONS(1),
-    CRASH(2);
+    CRASH(2),
+    CONNECTIVITY_WARNING(3);
 
     companion object {
       fun deserialize(serialized: Int): Purpose {
-        for (value in values()) {
-          if (value.serialized == serialized) {
-            return value
-          }
-        }
-
-        throw IllegalArgumentException("Invalid value: $serialized")
+        return entries.firstOrNull { it.serialized == serialized } ?: throw IllegalArgumentException("Invalid value: $serialized")
       }
     }
   }

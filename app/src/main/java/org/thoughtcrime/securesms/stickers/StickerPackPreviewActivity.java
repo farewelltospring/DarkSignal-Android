@@ -20,13 +20,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 
 import org.signal.core.util.logging.Log;
-import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.PassphraseRequiredActivity;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.conversation.mutiselect.forward.MultiselectForwardFragment;
 import org.thoughtcrime.securesms.conversation.mutiselect.forward.MultiselectForwardFragmentArgs;
 import org.thoughtcrime.securesms.glide.cache.ApngOptions;
-import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader;
+import org.thoughtcrime.securesms.mms.DecryptableUri;
 import org.thoughtcrime.securesms.sharing.MultiShareArgs;
 import org.thoughtcrime.securesms.stickers.StickerManifest.Sticker;
 import org.thoughtcrime.securesms.util.DeviceProperties;
@@ -37,6 +36,7 @@ import org.whispersystems.signalservice.api.util.OptionalUtil;
 import java.util.Collections;
 import java.util.Optional;
 
+import kotlin.Pair;
 
 /**
  * Shows the contents of a pack and allows the user to install it (if not installed) or remove it
@@ -92,8 +92,8 @@ public final class StickerPackPreviewActivity extends PassphraseRequiredActivity
       return;
     }
 
-    String packId  = stickerParams.get().first();
-    String packKey = stickerParams.get().second();
+    String packId  = stickerParams.get().getFirst();
+    String packKey = stickerParams.get().getSecond();
 
     initToolbar();
     initView();
@@ -176,8 +176,8 @@ public final class StickerPackPreviewActivity extends PassphraseRequiredActivity
 
   private void initViewModel(@NonNull String packId, @NonNull String packKey) {
     viewModel = new ViewModelProvider(this, new StickerPackPreviewViewModel.Factory(getApplication(),
-                                                                                    new StickerPackPreviewRepository(this),
-                                                                                    new StickerManagementRepository(this))
+                                                                                    new StickerPackPreviewRepository(),
+                                                                                    StickerManagementRepository.INSTANCE)
     ).get(StickerPackPreviewViewModel.class);
 
     viewModel.getStickerManifest(packId, packKey).observe(this, manifest -> {
@@ -202,7 +202,7 @@ public final class StickerPackPreviewActivity extends PassphraseRequiredActivity
     Sticker cover = OptionalUtil.or(manifest.getCover(), Optional.ofNullable(first)).orElse(null);
 
     if (cover != null) {
-      Object model = cover.getUri().isPresent() ? new DecryptableStreamUriLoader.DecryptableUri(cover.getUri().get())
+      Object model = cover.getUri().isPresent() ? new DecryptableUri(cover.getUri().get())
                                                 : new StickerRemoteUri(cover.getPackId(), cover.getPackKey(), cover.getId());
       Glide.with(this).load(model)
               .transition(DrawableTransitionOptions.withCrossFade())

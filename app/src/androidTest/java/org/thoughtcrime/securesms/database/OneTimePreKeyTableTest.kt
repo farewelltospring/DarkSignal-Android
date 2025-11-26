@@ -5,15 +5,15 @@
 
 package org.thoughtcrime.securesms.database
 
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
-import junit.framework.TestCase.assertNull
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.signal.core.util.readToSingleObject
 import org.signal.core.util.requireLongOrNull
 import org.signal.core.util.select
 import org.signal.core.util.update
-import org.signal.libsignal.protocol.ecc.Curve
+import org.signal.libsignal.protocol.ecc.ECKeyPair
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
@@ -114,7 +114,7 @@ class OneTimePreKeyTableTest {
     SignalDatabase.oneTimePreKeys.insert(
       serviceId = account,
       keyId = id,
-      record = PreKeyRecord(id, Curve.generateKeyPair())
+      record = PreKeyRecord(id, ECKeyPair.generate())
     )
 
     val count = SignalDatabase.rawDatabase

@@ -2,11 +2,14 @@ package org.whispersystems.signalservice.internal;
 
 
 
+import org.whispersystems.signalservice.api.NetworkResult;
+import org.whispersystems.signalservice.api.NetworkResultUtil;
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.util.Preconditions;
 import org.whispersystems.signalservice.internal.websocket.WebsocketResponse;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -84,6 +87,25 @@ public final class ServiceResponse<Result> {
     }
   }
 
+  public NetworkResult<Result> toNetworkResult() {
+    if (result.isPresent()) {
+      return new NetworkResult.Success<>(result.get());
+    } else if (applicationError.isPresent()) {
+      return new NetworkResult.ApplicationError<>(applicationError.get());
+    } else  if (executionError.isPresent()) {
+      Throwable error = executionError.get();
+      if (error instanceof NonSuccessfulResponseCodeException) {
+        return new NetworkResult.StatusCodeError<>((NonSuccessfulResponseCodeException) error);
+      } else if (error instanceof IOException) {
+        return new NetworkResult.NetworkError<>((IOException) error);
+      } else {
+        return new NetworkResult.ApplicationError<>(error);
+      }
+    } else {
+      throw new AssertionError("Should never get here");
+    }
+  }
+
   public Result getResultOrThrow() throws Throwable {
     if (result.isPresent()) {
       return result.get();
@@ -120,7 +142,7 @@ public final class ServiceResponse<Result> {
     if (throwable instanceof ExecutionException) {
       return forUnknownError(throwable.getCause());
     } else if (throwable instanceof NonSuccessfulResponseCodeException) {
-      return forApplicationError(throwable, ((NonSuccessfulResponseCodeException) throwable).getCode(), null);
+      return forApplicationError(throwable, ((NonSuccessfulResponseCodeException) throwable).code, null);
     } else if (throwable instanceof PushNetworkException && throwable.getCause() != null) {
       return forUnknownError(throwable.getCause());
     } else {

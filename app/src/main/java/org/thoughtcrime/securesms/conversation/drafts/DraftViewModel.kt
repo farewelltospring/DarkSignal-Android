@@ -44,6 +44,9 @@ class DraftViewModel @JvmOverloads constructor(
 
   fun cancelEphemeralVoiceNoteDraft(draft: Draft) {
     repository.deleteVoiceNoteDraftData(draft)
+    store.update {
+      saveDraftsIfChanged(it, it.copy(voiceNoteDraft = null))
+    }
   }
 
   fun deleteVoiceNoteDraft() {
@@ -115,9 +118,9 @@ class DraftViewModel @JvmOverloads constructor(
     }
   }
 
-  fun onSendComplete(threadId: Long = store.state.threadId) {
+  fun clearDraft() {
     repository.deleteVoiceNoteDraftData(store.state.voiceNoteDraft)
-    store.update { saveDraftsIfChanged(it, it.copyAndClearDrafts(threadId)) }
+    store.update { saveDraftsIfChanged(it, it.copyAndClearDrafts(store.state.threadId)) }
   }
 
   private fun saveDraftsIfChanged(oldState: DraftState, newState: DraftState): DraftState {

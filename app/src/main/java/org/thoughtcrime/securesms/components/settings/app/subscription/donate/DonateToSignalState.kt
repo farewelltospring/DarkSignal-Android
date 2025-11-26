@@ -6,7 +6,6 @@ import org.thoughtcrime.securesms.badges.models.Badge
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppDonations
 import org.thoughtcrime.securesms.components.settings.app.subscription.boost.Boost
 import org.thoughtcrime.securesms.components.settings.app.subscription.manage.NonVerifiedMonthlyDonation
-import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.PendingOneTimeDonation
 import org.thoughtcrime.securesms.database.model.isLongRunning
 import org.thoughtcrime.securesms.database.model.isPending
@@ -82,16 +81,16 @@ data class DonateToSignalState(
   val canUpdate: Boolean
     get() = when (inAppPaymentType) {
       InAppPaymentType.ONE_TIME_DONATION -> false
-      InAppPaymentType.RECURRING_DONATION -> areFieldsEnabled && monthlyDonationState.isSelectionValid
+      InAppPaymentType.RECURRING_DONATION -> areFieldsEnabled && monthlyDonationState.isSelectionValid && monthlyDonationState.isSubscriptionActive && !monthlyDonationState.transactionState.isInProgress
       else -> error("This flow does not support $inAppPaymentType")
     }
 
   val isUpdateLongRunning: Boolean
-    get() = monthlyDonationState.activeSubscription?.paymentMethod == ActiveSubscription.PAYMENT_METHOD_SEPA_DEBIT
+    get() = monthlyDonationState.activeSubscription?.paymentMethod == ActiveSubscription.PaymentMethod.SEPA_DEBIT
 
   data class OneTimeDonationState(
     val badge: Badge? = null,
-    val selectedCurrency: Currency = SignalStore.donations.getOneTimeCurrency(),
+    val selectedCurrency: Currency = SignalStore.inAppPayments.getOneTimeCurrency(),
     val boosts: List<Boost> = emptyList(),
     val selectedBoost: Boost? = null,
     val customAmount: FiatMoney = FiatMoney(BigDecimal.ZERO, selectedCurrency),
@@ -114,7 +113,7 @@ data class DonateToSignalState(
   }
 
   data class MonthlyDonationState(
-    val selectedCurrency: Currency = SignalStore.donations.getSubscriptionCurrency(InAppPaymentSubscriberRecord.Type.DONATION),
+    val selectedCurrency: Currency = SignalStore.inAppPayments.getRecurringDonationCurrency(),
     val subscriptions: List<Subscription> = emptyList(),
     private val _activeSubscription: ActiveSubscription? = null,
     val selectedSubscription: Subscription? = null,
@@ -124,6 +123,7 @@ data class DonateToSignalState(
     val transactionState: TransactionState = TransactionState()
   ) {
     val isSubscriptionActive: Boolean = _activeSubscription?.isActive == true
+    val isSubscriptionInProgress: Boolean = _activeSubscription?.isInProgress == true
     val activeLevel: Int? = _activeSubscription?.activeSubscription?.level
     val activeSubscription: ActiveSubscription.Subscription? = _activeSubscription?.activeSubscription
     val isActiveSubscriptionEnding: Boolean = _activeSubscription?.isActive == true && _activeSubscription.activeSubscription.willCancelAtPeriodEnd()

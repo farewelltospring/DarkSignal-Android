@@ -72,7 +72,11 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
 
     val quoteView = binding.quoteStub.get()
     quoteView.setOnClickListener {
-      conversationContext.clickListener.onQuoteClicked(record)
+      if (conversationContext.selectedItems.isEmpty()) {
+        conversationContext.clickListener.onQuoteClicked(record)
+      } else {
+        conversationContext.clickListener.onItemClick(getMultiselectPartForLatestTouch())
+      }
     }
 
     binding.quoteStub.visibility = View.VISIBLE
@@ -84,7 +88,8 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
       quote.isOriginalMissing,
       quote.attachment,
       if (conversationMessage.messageRecord.isStoryReaction()) conversationMessage.messageRecord.body else null,
-      quote.quoteType
+      quote.quoteType,
+      false
     )
 
     quoteView.setMessageType(

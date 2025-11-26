@@ -7,7 +7,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Annotation;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.Selection;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -24,6 +23,7 @@ import android.view.inputmethod.InputConnection;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.inputmethod.EditorInfoCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
@@ -210,17 +210,11 @@ public class ComposeText extends EmojiEditText {
   }
 
   public void setMessageSendType(MessageSendType messageSendType) {
-    final boolean useSystemEmoji = SignalStore.settings().isPreferSystemEmoji();
-
     int imeOptions = (getImeOptions() & ~EditorInfo.IME_MASK_ACTION) | EditorInfo.IME_ACTION_SEND;
     int inputType  = getInputType();
 
     if (isLandscape()) setImeActionLabel(getContext().getString(messageSendType.getComposeHintRes()), EditorInfo.IME_ACTION_SEND);
     else               setImeActionLabel(null, 0);
-
-    if (useSystemEmoji) {
-      inputType = (inputType & ~InputType.TYPE_MASK_VARIATION) | InputType.TYPE_TEXT_VARIATION_SHORT_MESSAGE;
-    }
 
     setImeOptions(imeOptions);
     setHint(getContext().getString(messageSendType.getComposeHintRes()));
@@ -233,6 +227,7 @@ public class ComposeText extends EmojiEditText {
 
     if (SignalStore.settings().isEnterKeySends()) {
       editorInfo.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+      editorInfo.inputType &= ~EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE;
     }
 
     if (mediaListener == null) {
@@ -243,7 +238,7 @@ public class ComposeText extends EmojiEditText {
       return null;
     }
 
-    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[] { "image/jpeg", "image/png", "image/gif" });
+    EditorInfoCompat.setContentMimeTypes(editorInfo, new String[] { "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif", "image/avif" });
     return InputConnectionCompat.createWrapper(inputConnection, editorInfo, new CommitContentListener(mediaListener));
   }
 
@@ -260,7 +255,7 @@ public class ComposeText extends EmojiEditText {
   }
 
   public @NonNull List<Mention> getMentions() {
-    return MentionAnnotation.getMentionsFromAnnotations(getText());
+    return MentionAnnotation.getMentionsFromAnnotations(getTextTrimmed());
   }
 
   public boolean hasStyling() {
@@ -484,16 +479,20 @@ public class ComposeText extends EmojiEditText {
   /**
    * Return true if we think the user may be inputting a time.
    */
-  private static boolean couldBeTimeEntry(@NonNull CharSequence text, int startIndex) {
+  @VisibleForTesting
+  static boolean couldBeTimeEntry(@NonNull CharSequence text, int startIndex) {
     if (startIndex <= 0 || startIndex + 1 >= text.length()) {
       return false;
     }
 
     int startOfToken = startIndex;
-    while (startOfToken > 0 && !Character.isWhitespace(text.charAt(startOfToken))) {
-      startOfToken--;
+    while (startOfToken > 0) {
+      int prevIndex = startOfToken - 1;
+      if (Character.isWhitespace(text.charAt(prevIndex))) {
+        break;
+      }
+      startOfToken = prevIndex;
     }
-    startOfToken++;
 
     int endOfToken = startIndex;
     while (endOfToken < text.length() && !Character.isWhitespace(text.charAt(endOfToken))) {

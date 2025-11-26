@@ -9,7 +9,6 @@ import org.signal.core.util.concurrent.SignalExecutors;
 import org.thoughtcrime.securesms.conversation.colors.ChatColors;
 import org.thoughtcrime.securesms.conversation.colors.ChatColorsPalette;
 import org.thoughtcrime.securesms.database.SignalDatabase;
-import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
@@ -50,27 +49,27 @@ class ChatWallpaperRepository {
     EXECUTOR.execute(() -> {
       List<ChatWallpaper> wallpapers = new ArrayList<>(ChatWallpaper.BuiltIns.INSTANCE.getAllBuiltIns());
 
-      wallpapers.addAll(WallpaperStorage.getAll(AppDependencies.getApplication()));
+      wallpapers.addAll(WallpaperStorage.getAll());
       consumer.accept(wallpapers);
     });
   }
 
   void saveWallpaper(@Nullable RecipientId recipientId, @Nullable ChatWallpaper chatWallpaper, @NonNull Runnable onWallpaperSaved) {
-    if (recipientId != null) {
-      //noinspection CodeBlock2Expr
-      EXECUTOR.execute(() -> {
-        SignalDatabase.recipients().setWallpaper(recipientId, chatWallpaper);
+    EXECUTOR.execute(() -> {
+      if (recipientId != null) {
+        //noinspection CodeBlock2Expr
+        SignalDatabase.recipients().setWallpaper(recipientId, chatWallpaper, true);
         onWallpaperSaved.run();
-      });
-    } else {
-      SignalStore.wallpaper().setWallpaper(AppDependencies.getApplication(), chatWallpaper);
-      onWallpaperSaved.run();
-    }
+      } else {
+        SignalStore.wallpaper().setWallpaper(chatWallpaper);
+        onWallpaperSaved.run();
+      }
+    });
   }
 
   void resetAllWallpaper(@NonNull Runnable onWallpaperReset) {
-    SignalStore.wallpaper().setWallpaper(AppDependencies.getApplication(), null);
     EXECUTOR.execute(() -> {
+      SignalStore.wallpaper().setWallpaper(null);
       SignalDatabase.recipients().resetAllWallpaper();
       onWallpaperReset.run();
     });
@@ -95,7 +94,8 @@ class ChatWallpaperRepository {
                        .setWallpaper(recipientId,
                                      ChatWallpaperFactory.updateWithDimming(recipient.getWallpaper(),
                                                                             dimInDarkTheme ? ChatWallpaper.FIXED_DIM_LEVEL_FOR_DARK_THEME
-                                                                                           : 0f));
+                                                                                           : 0f),
+                                     false);
         } else {
           throw new IllegalStateException("Unexpected call to setDimInDarkTheme, no wallpaper has been set on the given recipient or globally.");
         }

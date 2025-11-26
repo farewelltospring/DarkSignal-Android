@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.keyvalue
 import org.thoughtcrime.securesms.components.settings.app.usernamelinks.UsernameQrCodeColorScheme
 import org.thoughtcrime.securesms.database.model.databaseprotos.PendingChangeNumberMetadata
 import org.thoughtcrime.securesms.jobmanager.impl.ChangeNumberConstraintObserver
+import org.thoughtcrime.securesms.jobs.DeprecatedNotificationJob
 import org.thoughtcrime.securesms.keyvalue.protos.LeastActiveLinkedDevice
 
 class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalStoreValues(store) {
@@ -23,7 +24,6 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
     private const val LAST_FOREGROUND_TIME = "misc.last_foreground_time"
     private const val PNI_INITIALIZED_DEVICES = "misc.pni_initialized_devices"
     private const val LINKED_DEVICES_REMINDER = "misc.linked_devices_reminder"
-    private const val HAS_LINKED_DEVICES = "misc.linked_devices_present"
     private const val USERNAME_QR_CODE_COLOR = "mis.username_qr_color_scheme"
     private const val KEYBOARD_LANDSCAPE_HEIGHT = "misc.keyboard.landscape_height"
     private const val KEYBOARD_PORTRAIT_HEIGHT = "misc.keyboard.protrait_height"
@@ -36,15 +36,23 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
     private const val LINKED_DEVICE_LAST_ACTIVE_CHECK_TIME = "misc.linked_device.last_active_check_time"
     private const val LEAST_ACTIVE_LINKED_DEVICE = "misc.linked_device.least_active"
     private const val NEXT_DATABASE_ANALYSIS_TIME = "misc.next_database_analysis_time"
+    private const val LAST_NETWORK_RESET_TIME = "misc.last_network_reset_time"
+    private const val LAST_WEBSOCKET_CONNECT_TIME = "misc.last_websocket_connect_time"
+    private const val LAST_CONNECTIVITY_WARNING_TIME = "misc.last_connectivity_warning_time"
+    private const val NEW_LINKED_DEVICE_ID = "misc.new_linked_device_id"
+    private const val NEW_LINKED_DEVICE_CREATED_TIME = "misc.new_linked_device_created_time"
+    private const val STARTED_QUOTE_THUMBNAIL_MIGRATION = "misc.started_quote_thumbnail_migration"
+    private const val PREFERRED_MAIN_ACTIVITY_ANCHOR_INDEX = "misc.preferred_main_activity_anchor_index"
   }
 
   public override fun onFirstEverAppLaunch() {
     putLong(MESSAGE_REQUEST_ENABLE_TIME, 0)
     putBoolean(NEEDS_USERNAME_RESTORE, true)
+    putBoolean(STARTED_QUOTE_THUMBNAIL_MIGRATION, true)
   }
 
   public override fun getKeysToIncludeInBackup(): List<String> {
-    return emptyList()
+    return listOf(STARTED_QUOTE_THUMBNAIL_MIGRATION)
   }
 
   /**
@@ -65,9 +73,16 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
   var lastProfileRefreshTime by longValue(LAST_PROFILE_REFRESH_TIME, 0)
 
   /**
-   * Whether or not the client is currently in a 'deprecated' state, disallowing network access.
+   * Whether or not the client is currently in a 'deprecated' state, disallowing network access. Send a notification if the client changes from not deprecated to deprecated state.
    */
-  var isClientDeprecated: Boolean by booleanValue(CLIENT_DEPRECATED, false)
+  var isClientDeprecated: Boolean
+    get() = getBoolean(CLIENT_DEPRECATED, false)
+    set(isDeprecated) {
+      if (isDeprecated && !isClientDeprecated) {
+        DeprecatedNotificationJob.enqueue()
+      }
+      putBoolean(CLIENT_DEPRECATED, isDeprecated)
+    }
 
   /**
    * Whether or not we've locked the device after they've transferred to a new one.
@@ -80,6 +95,8 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
   var hasEverHadAnAvatar by booleanValue(HAS_EVER_HAD_AN_AVATAR, false)
 
   val isChangeNumberLocked: Boolean by booleanValue(CHANGE_NUMBER_LOCK, false)
+
+  var preferredMainActivityAnchorIndex: Int by integerValue(PREFERRED_MAIN_ACTIVITY_ANCHOR_INDEX, -1)
 
   fun lockChangeNumber() {
     putBoolean(CHANGE_NUMBER_LOCK, true)
@@ -157,11 +174,6 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
    * Whether or not we've done the initial "PNP Hello World" dance.
    */
   var hasPniInitializedDevices by booleanValue(PNI_INITIALIZED_DEVICES, true)
-
-  /**
-   * Whether or not the user has linked devices.
-   */
-  var hasLinkedDevices by booleanValue(HAS_LINKED_DEVICES, false)
 
   /**
    * Whether or not we should show a reminder for the user to relink their devices after re-registering.
@@ -248,4 +260,35 @@ class MiscellaneousValues internal constructor(store: KeyValueStore) : SignalSto
    * When the next scheduled database analysis is.
    */
   var nextDatabaseAnalysisTime: Long by longValue(NEXT_DATABASE_ANALYSIS_TIME, 0)
+
+  var lastNetworkResetDueToStreamResets: Long by longValue(LAST_NETWORK_RESET_TIME, 0L)
+
+  /**
+   * The last time you successfully connected to the websocket.
+   */
+  var lastWebSocketConnectTime: Long by longValue(LAST_WEBSOCKET_CONNECT_TIME, System.currentTimeMillis())
+
+  /**
+   * The last time we prompted the user regarding a [org.thoughtcrime.securesms.util.ConnectivityWarning].
+   */
+  var lastConnectivityWarningTime: Long by longValue(LAST_CONNECTIVITY_WARNING_TIME, 0)
+
+  /**
+   * The device id of the device that was recently linked
+   */
+  var newLinkedDeviceId: Int by integerValue(NEW_LINKED_DEVICE_ID, 0)
+
+  /**
+   * The time, in milliseconds, that the device was created at
+   */
+  var newLinkedDeviceCreatedTime: Long by longValue(NEW_LINKED_DEVICE_CREATED_TIME, 0)
+
+  /**
+   * Whether or not we have started the quote thumbnail migration. We store this so that upon restoring from
+   * a local backup, we can know whether or not the user marked all of the quotes that need conversion in
+   * the database. If so, we can enqueue a job to continue any pending conversions, and if not we can start
+   * the conversion process from scratch.
+   */
+  @get:JvmName("startedQuoteThumbnailMigration")
+  var startedQuoteThumbnailMigration: Boolean by booleanValue(STARTED_QUOTE_THUMBNAIL_MIGRATION, false)
 }

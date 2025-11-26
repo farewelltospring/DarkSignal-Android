@@ -59,11 +59,11 @@ object TestMessages {
       null
     )
     if (timestamp != null) {
-      TestDbUtils.setMessageReceived(insert, timestamp)
+      TestDbUtils.setMessageReceived(insert.messageId, timestamp)
     }
-    SignalDatabase.messages.markAsSent(insert, true)
+    SignalDatabase.messages.markAsSent(insert.messageId, true)
 
-    return insert
+    return insert.messageId
   }
   fun insertIncomingTextMessage(other: Recipient, body: String, timestamp: Long? = null) {
     val message = IncomingMessage(
@@ -161,7 +161,8 @@ object TestMessages {
       false,
       Optional.empty(),
       Optional.empty(),
-      System.currentTimeMillis()
+      System.currentTimeMillis(),
+      null
     )
   }
 
@@ -184,7 +185,8 @@ object TestMessages {
       false,
       Optional.empty(),
       Optional.empty(),
-      System.currentTimeMillis()
+      System.currentTimeMillis(),
+      null
     )
   }
 

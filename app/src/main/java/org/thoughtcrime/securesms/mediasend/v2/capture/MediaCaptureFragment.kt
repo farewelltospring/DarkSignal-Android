@@ -7,12 +7,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import app.cash.exhaustive.Exhaustive
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.reactivex.rxjava3.core.Flowable
 import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.logging.Log
-import org.thoughtcrime.securesms.DeviceActivity
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity
 import org.thoughtcrime.securesms.mediasend.CameraFragment
@@ -22,9 +20,9 @@ import org.thoughtcrime.securesms.mediasend.v2.MediaSelectionNavigator
 import org.thoughtcrime.securesms.mediasend.v2.MediaSelectionViewModel
 import org.thoughtcrime.securesms.mms.MediaConstraints
 import org.thoughtcrime.securesms.permissions.Permissions
+import org.thoughtcrime.securesms.registration.olddevice.TransferAccountActivity
 import org.thoughtcrime.securesms.stories.Stories
 import org.thoughtcrime.securesms.util.CommunicationActions
-import org.thoughtcrime.securesms.util.RemoteConfig
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
 import java.io.FileDescriptor
 import java.util.Optional
@@ -63,12 +61,12 @@ class MediaCaptureFragment : Fragment(R.layout.fragment_container), CameraFragme
       .commitNowAllowingStateLoss()
 
     lifecycleDisposable += viewModel.events.subscribe { event ->
-      @Exhaustive
       when (event) {
         MediaCaptureEvent.MediaCaptureRenderFailed -> {
           Log.w(TAG, "Failed to render captured media.")
           Toast.makeText(requireContext(), R.string.MediaSendActivity_camera_unavailable, Toast.LENGTH_SHORT).show()
         }
+
         is MediaCaptureEvent.MediaCaptureRendered -> {
           if (isFirst()) {
             sharedViewModel.addCameraFirstCapture(event.media)
@@ -78,6 +76,7 @@ class MediaCaptureFragment : Fragment(R.layout.fragment_container), CameraFragme
 
           navigator.goToReview(findNavController())
         }
+
         is MediaCaptureEvent.UsernameScannedFromQrCode -> {
           MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.MediaCaptureFragment_username_dialog_title, event.username))
@@ -89,20 +88,22 @@ class MediaCaptureFragment : Fragment(R.layout.fragment_container), CameraFragme
             .setNegativeButton(android.R.string.cancel, null)
             .show()
         }
+
         is MediaCaptureEvent.DeviceLinkScannedFromQrCode -> {
           MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.MediaCaptureFragment_device_link_dialog_title)
-            .setMessage(R.string.MediaCaptureFragment_device_link_dialog_body)
+            .setMessage(R.string.MediaCaptureFragment_it_looks_like_youre_trying)
             .setPositiveButton(R.string.MediaCaptureFragment_device_link_dialog_continue) { d, _ ->
-              if (RemoteConfig.internalUser) {
-                startActivity(AppSettingsActivity.linkedDevices(requireContext()))
-              } else {
-                startActivity(DeviceActivity.getIntentForScanner(requireContext()))
-              }
+              startActivity(AppSettingsActivity.linkedDevices(requireContext()))
               requireActivity().finish()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+        }
+
+        is MediaCaptureEvent.ReregistrationScannedFromQrCode -> {
+          startActivity(TransferAccountActivity.intent(requireContext(), event.data))
+          requireActivity().finish()
         }
       }
     }
@@ -118,7 +119,7 @@ class MediaCaptureFragment : Fragment(R.layout.fragment_container), CameraFragme
       }
     }
 
-    if (isFirst()) {
+    if (isFirst() || sharedViewModel.isSelectedMediaEmpty()) {
       requireActivity().onBackPressedDispatcher.addCallback(
         viewLifecycleOwner,
         object : OnBackPressedCallback(true) {

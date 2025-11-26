@@ -1,15 +1,20 @@
 package org.thoughtcrime.securesms.contacts.paged
 
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import io.reactivex.rxjava3.subjects.PublishSubject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import org.signal.paging.LivePagedData
 import org.signal.paging.PagedData
 import org.signal.paging.PagingConfig
@@ -26,6 +31,7 @@ import org.whispersystems.signalservice.api.util.Preconditions
  * Simple, reusable view model that manages a ContactSearchPagedDataSource as well as filter and expansion state.
  */
 class ContactSearchViewModel(
+  private val savedStateHandle: SavedStateHandle,
   private val selectionLimits: SelectionLimits,
   private val contactSearchRepository: ContactSearchRepository,
   private val performSafetyNumberChecks: Boolean,
@@ -33,6 +39,10 @@ class ContactSearchViewModel(
   private val searchRepository: SearchRepository,
   private val contactSearchPagedDataSourceRepository: ContactSearchPagedDataSourceRepository
 ) : ViewModel() {
+
+  companion object {
+    private const val QUERY = "query"
+  }
 
   private val safetyNumberRepository: SafetyNumberRepository by lazy { SafetyNumberRepository() }
 
@@ -45,24 +55,22 @@ class ContactSearchViewModel(
     .build()
 
   private val pagedData = MutableLiveData<LivePagedData<ContactSearchKey, ContactSearchData>>()
-  private val configurationStore = Store(ContactSearchState())
-  private val selectionStore = Store<Set<ContactSearchKey>>(emptySet())
+  private val configurationStore = Store(ContactSearchState(query = savedStateHandle[QUERY]))
+  private val internalSelectedContacts = MutableStateFlow<Set<ContactSearchKey>>(emptySet())
   private val errorEvents = PublishSubject.create<ContactSearchError>()
 
   val controller: LiveData<PagingController<ContactSearchKey>> = pagedData.map { it.controller }
   val data: LiveData<List<ContactSearchData>> = pagedData.switchMap { it.data }
   val configurationState: LiveData<ContactSearchState> = configurationStore.stateLiveData
-  val selectionState: LiveData<Set<ContactSearchKey>> = selectionStore.stateLiveData
+  private val selectedContacts: StateFlow<Set<ContactSearchKey>> = internalSelectedContacts
+  val selectionState: LiveData<Set<ContactSearchKey>> = selectedContacts.asLiveData()
+
   val errorEventsStream: Observable<ContactSearchError> = errorEvents
 
-  private var selectionSize = 0
   override fun onCleared() {
     disposables.clear()
   }
 
-  fun getSelectedMembersSize(): Int {
-    return selectionSize
-  }
   fun setConfiguration(contactSearchConfiguration: ContactSearchConfiguration) {
     val pagedDataSource = ContactSearchPagedDataSource(
       contactSearchConfiguration,
@@ -73,7 +81,10 @@ class ContactSearchViewModel(
     pagedData.value = PagedData.createForLiveData(pagedDataSource, pagingConfig)
   }
 
+  fun getQuery(): String? = savedStateHandle[QUERY]
+
   fun setQuery(query: String?) {
+    savedStateHandle[QUERY] = query
     configurationStore.update { it.copy(query = query) }
   }
 
@@ -94,7 +105,6 @@ class ContactSearchViewModel(
 
       val newSelectionEntries = results.filter { it.isSelectable }.map { it.key } - getSelectedContacts()
       val newSelectionSize = newSelectionEntries.size + getSelectedContacts().size
-      selectionSize = newSelectionSize
       if (selectionLimits.hasRecommendedLimit() && getSelectedContacts().size < selectionLimits.recommendedLimit && newSelectionSize >= selectionLimits.recommendedLimit) {
         errorEvents.onNext(ContactSearchError.RECOMMENDED_LIMIT_REACHED)
       } else if (selectionLimits.hasHardLimit() && newSelectionSize > selectionLimits.hardLimit) {
@@ -106,22 +116,20 @@ class ContactSearchViewModel(
         safetyNumberRepository.batchSafetyNumberCheck(newSelectionEntries)
       }
 
-      selectionStore.update { state -> state + newSelectionEntries }
+      internalSelectedContacts.update { it + newSelectionEntries }
     }
   }
 
   fun setKeysNotSelected(contactSearchKeys: Set<ContactSearchKey>) {
-    val newSelectionSize = getSelectedContacts().size - contactSearchKeys.size
-    selectionSize = newSelectionSize
-    selectionStore.update { it - contactSearchKeys }
+    internalSelectedContacts.update { it - contactSearchKeys }
   }
 
   fun getSelectedContacts(): Set<ContactSearchKey> {
-    return selectionStore.state
+    return selectedContacts.value
   }
 
   fun clearSelection() {
-    selectionStore.update { emptySet() }
+    internalSelectedContacts.update { emptySet() }
   }
 
   fun addToVisibleGroupStories(groupStories: Set<ContactSearchKey.RecipientSearchKey>) {
@@ -169,10 +177,11 @@ class ContactSearchViewModel(
     private val arbitraryRepository: ArbitraryRepository?,
     private val searchRepository: SearchRepository,
     private val contactSearchPagedDataSourceRepository: ContactSearchPagedDataSourceRepository
-  ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+  ) : AbstractSavedStateViewModelFactory() {
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T {
       return modelClass.cast(
         ContactSearchViewModel(
+          savedStateHandle = handle,
           selectionLimits = selectionLimits,
           contactSearchRepository = repository,
           performSafetyNumberChecks = performSafetyNumberChecks,

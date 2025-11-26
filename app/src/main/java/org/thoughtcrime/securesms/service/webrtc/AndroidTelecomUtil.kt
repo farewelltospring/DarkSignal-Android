@@ -161,6 +161,7 @@ object AndroidTelecomUtil {
     return true
   }
 
+  @Suppress("DEPRECATION")
   fun selectAudioDevice(recipientId: RecipientId, device: SignalAudioManager.AudioDevice) {
     if (telecomSupported) {
       val connection: AndroidCallConnection? = connections[recipientId]
@@ -176,6 +177,7 @@ object AndroidTelecomUtil {
     }
   }
 
+  @Suppress("DEPRECATION")
   fun getSelectedAudioDevice(recipientId: RecipientId): SignalAudioManager.AudioDevice {
     if (telecomSupported) {
       val connection: AndroidCallConnection? = connections[recipientId]
@@ -193,12 +195,13 @@ object AndroidTelecomUtil {
 
   private fun isTelecomAllowedForDevice(): Boolean {
     if (RemoteConfig.internalUser) {
-      return !SignalStore.internal.callingDisableTelecom()
+      return !SignalStore.internal.callingDisableTelecom
     }
     return RingRtcDynamicConfiguration.isTelecomAllowedForDevice()
   }
 }
 
+@Suppress("DEPRECATION")
 @RequiresApi(26)
 private fun Connection.setAudioRouteIfDifferent(newRoute: Int) {
   if (callAudioState.route != newRoute) {

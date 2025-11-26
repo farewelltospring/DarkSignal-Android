@@ -31,7 +31,7 @@ class NetworkResultTest {
     check(result is NetworkResult.StatusCodeError)
     assertEquals(exception, result.exception)
     assertEquals(404, result.code)
-    assertEquals("body", result.body)
+    assertEquals("body", result.stringBody)
   }
 
   @Test
@@ -215,6 +215,77 @@ class NetworkResultTest {
     NetworkResult
       .fromFetch { throw PushNetworkException("network error") }
       .runOnStatusCodeError { handled = true }
+
+    assertFalse(handled)
+  }
+
+  @Test
+  fun `runOnApplicationError - simple call`() {
+    var handled = false
+
+    NetworkResult
+      .fromFetch { throw RuntimeException() }
+      .runOnApplicationError { handled = true }
+
+    assertTrue(handled)
+  }
+
+  @Test
+  fun `runOnApplicationError - ensure only called once`() {
+    var handleCount = 0
+
+    NetworkResult
+      .fromFetch { throw RuntimeException() }
+      .runOnApplicationError { handleCount++ }
+      .map { 1 }
+      .then { NetworkResult.Success(2) }
+      .map { 3 }
+
+    assertEquals(1, handleCount)
+  }
+
+  @Test
+  fun `runOnApplicationError - called when placed before a failing then`() {
+    var handled = false
+
+    val result = NetworkResult
+      .fromFetch { }
+      .runOnApplicationError { handled = true }
+      .then { NetworkResult.fromFetch { throw RuntimeException() } }
+
+    assertTrue(handled)
+    assertTrue(result is NetworkResult.ApplicationError)
+  }
+
+  @Test
+  fun `runOnApplicationError - called when placed two spots before a failing then`() {
+    var handled = false
+
+    val result = NetworkResult
+      .fromFetch { }
+      .runOnApplicationError { handled = true }
+      .then { NetworkResult.Success(Unit) }
+      .then { NetworkResult.fromFetch { throw RuntimeException() } }
+
+    assertTrue(handled)
+    assertTrue(result is NetworkResult.ApplicationError)
+  }
+
+  @Test
+  fun `runOnApplicationError - should not be called for successful results`() {
+    var handled = false
+
+    NetworkResult
+      .fromFetch {}
+      .runOnApplicationError { handled = true }
+
+    NetworkResult
+      .fromFetch { throw NonSuccessfulResponseCodeException(404, "not found", "body") }
+      .runOnApplicationError { handled = true }
+
+    NetworkResult
+      .fromFetch { throw PushNetworkException("network error") }
+      .runOnApplicationError { handled = true }
 
     assertFalse(handled)
   }

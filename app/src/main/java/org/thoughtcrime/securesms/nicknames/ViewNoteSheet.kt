@@ -27,20 +27,21 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.os.bundleOf
 import androidx.core.text.method.LinkMovementMethodCompat
 import androidx.core.text.util.LinkifyCompat
-import org.signal.core.ui.BottomSheets
-import org.signal.core.ui.Previews
+import org.signal.core.ui.compose.BottomSheets
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Previews
 import org.signal.core.util.getParcelableCompat
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.emoji.EmojiTextView
 import org.thoughtcrime.securesms.compose.ComposeBottomSheetDialogFragment
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.util.viewModel
+import org.signal.core.ui.R as CoreUiR
 
 /**
  * Allows user to view the full note for a given recipient.
@@ -98,7 +99,7 @@ class ViewNoteSheet : ComposeBottomSheetDialogFragment() {
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun ViewNoteBottomSheetContentPreview() {
   Previews.Preview {
@@ -117,7 +118,7 @@ private fun ViewNoteBottomSheetContent(
 ) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
-    modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
+    modifier = Modifier.padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
   ) {
     BottomSheets.Handle()
 
@@ -151,7 +152,6 @@ private fun ViewNoteBottomSheetContent(
       factory = { context ->
         val view = EmojiTextView(context)
 
-        @Suppress("DEPRECATION")
         view.setTextAppearance(context, R.style.Signal_Text_BodyLarge)
         view.movementMethod = LinkMovementMethodCompat.getInstance()
 

@@ -47,16 +47,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import kotlinx.coroutines.launch
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Dividers
-import org.signal.core.ui.Texts
-import org.signal.core.ui.theme.SignalTheme
-import org.signal.donations.PaymentSourceType
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Dividers
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Texts
+import org.signal.core.ui.compose.theme.SignalTheme
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.compose.ComposeFragment
 import org.thoughtcrime.securesms.compose.StatusBarColorAnimator
@@ -72,7 +73,7 @@ class BankTransferMandateFragment : ComposeFragment() {
 
   private val args: BankTransferMandateFragmentArgs by navArgs()
   private val viewModel: BankTransferMandateViewModel by viewModel {
-    BankTransferMandateViewModel(PaymentSourceType.Stripe.SEPADebit)
+    BankTransferMandateViewModel(args.inAppPaymentId)
   }
 
   private lateinit var statusBarColorAnimator: StatusBarColorAnimator
@@ -112,22 +113,24 @@ class BankTransferMandateFragment : ComposeFragment() {
   }
 
   private fun onContinueClick() {
-    if (args.inAppPayment.data.paymentMethodType == InAppPaymentData.PaymentMethodType.SEPA_DEBIT) {
-      findNavController().safeNavigate(
-        BankTransferMandateFragmentDirections.actionBankTransferMandateFragmentToBankTransferDetailsFragment(args.inAppPayment)
-      )
-    } else {
-      findNavController().safeNavigate(
-        BankTransferMandateFragmentDirections.actionBankTransferMandateFragmentToIdealTransferDetailsFragment(args.inAppPayment)
-      )
+    lifecycleScope.launch {
+      if (viewModel.getPaymentMethodType() == InAppPaymentData.PaymentMethodType.SEPA_DEBIT) {
+        findNavController().safeNavigate(
+          BankTransferMandateFragmentDirections.actionBankTransferMandateFragmentToBankTransferDetailsFragment(args.inAppPaymentId)
+        )
+      } else {
+        findNavController().safeNavigate(
+          BankTransferMandateFragmentDirections.actionBankTransferMandateFragmentToIdealTransferDetailsFragment(args.inAppPaymentId)
+        )
+      }
     }
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 fun BankTransferScreenPreview() {
-  SignalTheme {
+  Previews.Preview {
     BankTransferScreen(
       bankMandate = "Test ".repeat(500),
       failedToLoadMandate = false,
@@ -171,7 +174,7 @@ fun BankTransferScreen(
             Modifier.padding(end = 16.dp)
           ) {
             Icon(
-              painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.symbol_arrow_left_24)),
+              painter = rememberVectorPainter(ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24)),
               contentDescription = null
             )
           }

@@ -1,18 +1,19 @@
+@file:Suppress("UnstableApiUsage")
+
 import com.android.build.api.dsl.ManagedVirtualDevice
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Properties
 
 plugins {
-  id("com.android.application")
-  id("kotlin-android")
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.jetbrains.kotlin.android)
+  alias(libs.plugins.ktlint)
+  alias(libs.plugins.compose.compiler)
+  alias(libs.plugins.kotlinx.serialization)
   id("androidx.navigation.safeargs")
-  id("org.jlleitschuh.gradle.ktlint")
-  id("org.jetbrains.kotlin.android")
-  id("app.cash.exhaustive")
   id("kotlin-parcelize")
   id("com.squareup.wire")
   id("translations")
@@ -21,14 +22,16 @@ plugins {
 
 apply(from = "static-ips.gradle.kts")
 
-val canonicalVersionCode = 1429
-val canonicalVersionName = "7.10.0"
+val canonicalVersionCode = 1623
+val canonicalVersionName = "7.66.3"
 val currentHotfixVersion = 0
 val maxHotfixVersions = 100
 
 val keystores: Map<String, Properties?> = mapOf("debug" to loadKeystoreProperties("keystore.debug.properties"))
 
 val selectableVariants = listOf(
+  "nightlyBackupRelease",
+  "nightlyBackupSpinner",
   "nightlyProdSpinner",
   "nightlyProdPerf",
   "nightlyProdRelease",
@@ -54,6 +57,7 @@ val signalBuildToolsVersion: String by rootProject.extra
 val signalCompileSdkVersion: String by rootProject.extra
 val signalTargetSdkVersion: Int by rootProject.extra
 val signalMinSdkVersion: Int by rootProject.extra
+val signalNdkVersion: String by rootProject.extra
 val signalJavaVersion: JavaVersion by rootProject.extra
 val signalKotlinJvmTarget: String by rootProject.extra
 
@@ -69,6 +73,8 @@ wire {
   protoPath {
     srcDir("${project.rootDir}/libsignal-service/src/main/protowire")
   }
+  // Handled by libsignal
+  prune("signalservice.DecryptionErrorMessage")
 }
 
 ktlint {
@@ -80,15 +86,17 @@ android {
 
   buildToolsVersion = signalBuildToolsVersion
   compileSdkVersion = signalCompileSdkVersion
+  ndkVersion = signalNdkVersion
 
   flavorDimensions += listOf("distribution", "environment")
-  useLibrary("org.apache.http.legacy")
   testBuildType = "instrumentation"
 
   android.bundle.language.enableSplit = false
 
   kotlinOptions {
     jvmTarget = signalKotlinJvmTarget
+    freeCompilerArgs = listOf("-Xjvm-default=all")
+    suppressWarnings = true
   }
 
   keystores["debug"]?.let { properties ->
@@ -135,13 +143,32 @@ android {
     targetCompatibility = signalJavaVersion
   }
 
-  packagingOptions {
+  packaging {
+    jniLibs {
+      excludes += setOf(
+        "**/*.dylib",
+        "**/*.dll"
+      )
+    }
     resources {
-      excludes += setOf("LICENSE.txt", "LICENSE", "NOTICE", "asm-license.txt", "META-INF/LICENSE", "META-INF/LICENSE.md", "META-INF/NOTICE", "META-INF/LICENSE-notice.md", "META-INF/proguard/androidx-annotations.pro", "libsignal_jni.dylib", "signal_jni.dll")
+      excludes += setOf(
+        "LICENSE.txt",
+        "LICENSE",
+        "NOTICE",
+        "asm-license.txt",
+        "META-INF/LICENSE",
+        "META-INF/LICENSE.md",
+        "META-INF/NOTICE",
+        "META-INF/LICENSE-notice.md",
+        "META-INF/proguard/androidx-annotations.pro",
+        "**/*.dylib",
+        "**/*.dll"
+      )
     }
   }
 
   buildFeatures {
+    buildConfig = true
     viewBinding = true
     compose = true
   }
@@ -156,8 +183,6 @@ android {
 
     minSdk = signalMinSdkVersion
     targetSdk = signalTargetSdkVersion
-
-    multiDexEnabled = true
 
     vectorDrawables.useSupportLibrary = true
     project.ext.set("archivesBaseName", "Signal")
@@ -190,9 +215,9 @@ android {
     buildConfigField("String[]", "SIGNAL_CDSI_IPS", rootProject.extra["cdsi_ips"] as String)
     buildConfigField("String[]", "SIGNAL_SVR2_IPS", rootProject.extra["svr2_ips"] as String)
     buildConfigField("String", "SIGNAL_AGENT", "\"OWA\"")
-    buildConfigField("String", "CDSI_MRENCLAVE", "\"0f6fd79cdfdaa5b2e6337f534d3baf999318b0c462a7ac1f41297a3e4b424a57\"")
-    buildConfigField("String", "SVR2_MRENCLAVE", "\"a6622ad4656e1abcd0bc0ff17c229477747d2ded0495c4ebee7ed35c1789fa97\"")
-    buildConfigField("String", "UNIDENTIFIED_SENDER_TRUST_ROOT", "\"BXu6QIKVz5MA8gstzfOgRQGqyLqOwNKHL6INkv3IHWMF\"")
+    buildConfigField("String", "SVR2_MRENCLAVE_LEGACY", "\"093be9ea32405e85ae28dbb48eb668aebeb7dbe29517b9b86ad4bec4dfe0e6a6\"")
+    buildConfigField("String", "SVR2_MRENCLAVE", "\"29cd63c87bea751e3bfd0fbd401279192e2e5c99948b4ee9437eafc4968355fb\"")
+    buildConfigField("String[]", "UNIDENTIFIED_SENDER_TRUST_ROOTS", "new String[]{ \"BXu6QIKVz5MA8gstzfOgRQGqyLqOwNKHL6INkv3IHWMF\", \"BUkY0I+9+oPgDCn4+Ac6Iu813yvqkDr/ga8DzLxFxuk6\"}")
     buildConfigField("String", "ZKGROUP_SERVER_PUBLIC_PARAMS", "\"AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X36nOoGPs54XsEGzPdEV+itQNGUFEjY6X9Uv+Acuks7NpyGvCoKxGwgKgE5XyJ+nNKlyHHOLb6N1NuHyBrZrgtY/JYJHRooo5CEqYKBqdFnmbTVGEkCvJKxLnjwKWf+fEPoWeQFj5ObDjcKMZf2Jm2Ae69x+ikU5gBXsRmoF94GXTLfN0/vLt98KDPnxwAQL9j5V1jGOY8jQl6MLxEs56cwXN0dqCnImzVH3TZT1cJ8SW1BRX6qIVxEzjsSGx3yxF3suAilPMqGRp4ffyopjMD1JXiKR2RwLKzizUe5e8XyGOy9fplzhw3jVzTRyUZTRSZKkMLWcQ/gv0E4aONNqs4P+NameAZYOD12qRkxosQQP5uux6B2nRyZ7sAV54DgFyLiRcq1FvwKw2EPQdk4HDoePrO/RNUbyNddnM/mMgj4FW65xCoT1LmjrIjsv/Ggdlx46ueczhMgtBunx1/w8k8V+l8LVZ8gAT6wkU5J+DPQalQguMg12Jzug3q4TbdHiGCmD9EunCwOmsLuLJkz6EcSYXtrlDEnAM+hicw7iergYLLlMXpfTdGxJCWJmP4zqUFeTTmsmhsjGBt7NiEB/9pFFEB3pSbf4iiUukw63Eo8Aqnf4iwob6X1QviCWuc8t0LUlT9vALgh/f2DPVOOmR0RW6bgRvc7DSF20V/omg+YBw==\"")
     buildConfigField("String", "GENERIC_SERVER_PUBLIC_PARAMS", "\"AByD873dTilmOSG0TjKrvpeaKEsUmIO8Vx9BeMmftwUs9v7ikPwM8P3OHyT0+X3EUMZrSe9VUp26Wai51Q9I8mdk0hX/yo7CeFGJyzoOqn8e/i4Ygbn5HoAyXJx5eXfIbqpc0bIxzju4H/HOQeOpt6h742qii5u/cbwOhFZCsMIbElZTaeU+BWMBQiZHIGHT5IE0qCordQKZ5iPZom0HeFa8Yq0ShuEyAl0WINBiY6xE3H/9WnvzXBbMuuk//eRxXgzO8ieCeK8FwQNxbfXqZm6Ro1cMhCOF3u7xoX83QhpN\"")
     buildConfigField("String", "BACKUP_SERVER_PUBLIC_PARAMS", "\"AJwNSU55fsFCbgaxGRD11wO1juAs8Yr5GF8FPlGzzvdJJIKH5/4CC7ZJSOe3yL2vturVaRU2Cx0n751Vt8wkj1bozK3CBV1UokxV09GWf+hdVImLGjXGYLLhnI1J2TWEe7iWHyb553EEnRb5oxr9n3lUbNAJuRmFM7hrr0Al0F0wrDD4S8lo2mGaXe0MJCOM166F8oYRQqpFeEHfiLnxA1O8ZLh7vMdv4g9jI5phpRBTsJ5IjiJrWeP0zdIGHEssUeprDZ9OUJ14m0v61eYJMKsf59Bn+mAT2a7YfB+Don9O\"")
@@ -209,9 +234,11 @@ android {
     buildConfigField("String", "BUILD_ENVIRONMENT_TYPE", "\"unset\"")
     buildConfigField("String", "BUILD_VARIANT_TYPE", "\"unset\"")
     buildConfigField("String", "BADGE_STATIC_ROOT", "\"https://updates2.signal.org/static/badges/\"")
+    buildConfigField("String", "STRIPE_BASE_URL", "\"https://api.stripe.com/v1\"")
     buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"pk_live_6cmGZopuTsV8novGgJJW9JpC00vLIgtQ1D\"")
     buildConfigField("boolean", "TRACING_ENABLED", "false")
-    buildConfigField("boolean", "MESSAGE_BACKUP_RESTORE_ENABLED", "false")
+    buildConfigField("boolean", "LINK_DEVICE_UX_ENABLED", "false")
+    buildConfigField("boolean", "USE_STRING_ID", "true")
 
     ndk {
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -251,7 +278,6 @@ android {
         "proguard/proguard-glide.pro",
         "proguard/proguard-shortcutbadger.pro",
         "proguard/proguard-retrofit.pro",
-        "proguard/proguard-webrtc.pro",
         "proguard/proguard-klinker.pro",
         "proguard/proguard-mobilecoin.pro",
         "proguard/proguard-retrolambda.pro",
@@ -267,6 +293,7 @@ android {
       manifestPlaceholders["mapsKey"] = getMapsKey()
 
       buildConfigField("String", "BUILD_VARIANT_TYPE", "\"Debug\"")
+      buildConfigField("boolean", "LINK_DEVICE_UX_ENABLED", "true")
     }
 
     getByName("release") {
@@ -283,6 +310,7 @@ android {
       applicationIdSuffix = ".instrumentation"
 
       buildConfigField("String", "BUILD_VARIANT_TYPE", "\"Instrumentation\"")
+      buildConfigField("String", "STRIPE_BASE_URL", "\"http://127.0.0.1:8080/stripe\"")
     }
 
     create("spinner") {
@@ -350,6 +378,7 @@ android {
       buildConfigField("boolean", "MANAGES_APP_UPDATES", "true")
       buildConfigField("String", "APK_UPDATE_MANIFEST_URL", "\"${apkUpdateManifestUrl}\"")
       buildConfigField("String", "BUILD_DISTRIBUTION_TYPE", "\"nightly\"")
+      buildConfigField("boolean", "LINK_DEVICE_UX_ENABLED", "true")
     }
 
     create("prod") {
@@ -373,8 +402,9 @@ android {
       buildConfigField("String", "SIGNAL_CDN3_URL", "\"https://cdn3-staging.signal.org\"")
       buildConfigField("String", "SIGNAL_CDSI_URL", "\"https://cdsi.staging.signal.org\"")
       buildConfigField("String", "SIGNAL_SVR2_URL", "\"https://svr2.staging.signal.org\"")
-      buildConfigField("String", "SVR2_MRENCLAVE", "\"acb1973aa0bbbd14b3b4e06f145497d948fd4a98efc500fcce363b3b743ec482\"")
-      buildConfigField("String", "UNIDENTIFIED_SENDER_TRUST_ROOT", "\"BbqY1DzohE4NUZoVF+L18oUPrK3kILllLEJh2UnPSsEx\"")
+      buildConfigField("String", "SVR2_MRENCLAVE_LEGACY", "\"2e8cefe6e3f389d8426adb24e9b7fb7adf10902c96f06f7bbcee36277711ed91\"")
+      buildConfigField("String", "SVR2_MRENCLAVE", "\"a75542d82da9f6914a1e31f8a7407053b99cc99a0e7291d8fbd394253e19b036\"")
+      buildConfigField("String[]", "UNIDENTIFIED_SENDER_TRUST_ROOTS", "new String[]{\"BbqY1DzohE4NUZoVF+L18oUPrK3kILllLEJh2UnPSsEx\", \"BYhU6tPjqP46KGZEzRs1OL4U39V5dlPJ/X09ha4rErkm\"}")
       buildConfigField("String", "ZKGROUP_SERVER_PUBLIC_PARAMS", "\"ABSY21VckQcbSXVNCGRYJcfWHiAMZmpTtTELcDmxgdFbtp/bWsSxZdMKzfCp8rvIs8ocCU3B37fT3r4Mi5qAemeGeR2X+/YmOGR5ofui7tD5mDQfstAI9i+4WpMtIe8KC3wU5w3Inq3uNWVmoGtpKndsNfwJrCg0Hd9zmObhypUnSkfYn2ooMOOnBpfdanRtrvetZUayDMSC5iSRcXKpdlukrpzzsCIvEwjwQlJYVPOQPj4V0F4UXXBdHSLK05uoPBCQG8G9rYIGedYsClJXnbrgGYG3eMTG5hnx4X4ntARBgELuMWWUEEfSK0mjXg+/2lPmWcTZWR9nkqgQQP0tbzuiPm74H2wMO4u1Wafe+UwyIlIT9L7KLS19Aw8r4sPrXZSSsOZ6s7M1+rTJN0bI5CKY2PX29y5Ok3jSWufIKcgKOnWoP67d5b2du2ZVJjpjfibNIHbT/cegy/sBLoFwtHogVYUewANUAXIaMPyCLRArsKhfJ5wBtTminG/PAvuBdJ70Z/bXVPf8TVsR292zQ65xwvWTejROW6AZX6aqucUjlENAErBme1YHmOSpU6tr6doJ66dPzVAWIanmO/5mgjNEDeK7DDqQdB1xd03HT2Qs2TxY3kCK8aAb/0iM0HQiXjxZ9HIgYhbtvGEnDKW5ILSUydqH/KBhW4Pb0jZWnqN/YgbWDKeJxnDbYcUob5ZY5Lt5ZCMKuaGUvCJRrCtuugSMaqjowCGRempsDdJEt+cMaalhZ6gczklJB/IbdwENW9KeVFPoFNFzhxWUIS5ML9riVYhAtE6JE5jX0xiHNVIIPthb458cfA8daR0nYfYAUKogQArm0iBezOO+mPk5vCNWI+wwkyFCqNDXz/qxl1gAntuCJtSfq9OC3NkdhQlgYQ==\"")
       buildConfigField("String", "GENERIC_SERVER_PUBLIC_PARAMS", "\"AHILOIrFPXX9laLbalbA9+L1CXpSbM/bTJXZGZiuyK1JaI6dK5FHHWL6tWxmHKYAZTSYmElmJ5z2A5YcirjO/yfoemE03FItyaf8W1fE4p14hzb5qnrmfXUSiAIVrhaXVwIwSzH6RL/+EO8jFIjJ/YfExfJ8aBl48CKHgu1+A6kWynhttonvWWx6h7924mIzW0Czj2ROuh4LwQyZypex4GuOPW8sgIT21KNZaafgg+KbV7XM1x1tF3XA17B4uGUaDbDw2O+nR1+U5p6qHPzmJ7ggFjSN6Utu+35dS1sS0P9N\"")
       buildConfigField("String", "BACKUP_SERVER_PUBLIC_PARAMS", "\"AHYrGb9IfugAAJiPKp+mdXUx+OL9zBolPYHYQz6GI1gWjpEu5me3zVNSvmYY4zWboZHif+HG1sDHSuvwFd0QszSwuSF4X4kRP3fJREdTZ5MCR0n55zUppTwfHRW2S4sdQ0JGz7YDQIJCufYSKh0pGNEHL6hv79Agrdnr4momr3oXdnkpVBIp3HWAQ6IbXQVSG18X36GaicI1vdT0UFmTwU2KTneluC2eyL9c5ff8PcmiS+YcLzh0OKYQXB5ZfQ06d6DiINvDQLy75zcfUOniLAj0lGJiHxGczin/RXisKSR8\"")
@@ -383,10 +413,21 @@ android {
       buildConfigField("String", "RECAPTCHA_PROOF_URL", "\"https://signalcaptchas.org/staging/challenge/generate.html\"")
       buildConfigField("org.signal.libsignal.net.Network.Environment", "LIBSIGNAL_NET_ENV", "org.signal.libsignal.net.Network.Environment.STAGING")
       buildConfigField("int", "LIBSIGNAL_LOG_LEVEL", "org.signal.libsignal.protocol.logging.SignalProtocolLogger.DEBUG")
+      buildConfigField("boolean", "USE_STRING_ID", "false")
 
       buildConfigField("String", "BUILD_ENVIRONMENT_TYPE", "\"Staging\"")
       buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"pk_test_sngOd8FnXNkpce9nPXawKrJD00kIDngZkD\"")
-      buildConfigField("boolean", "MESSAGE_BACKUP_RESTORE_ENABLED", "true")
+    }
+
+    create("backup") {
+      initWith(getByName("staging"))
+
+      dimension = "environment"
+
+      applicationIdSuffix = ".backup"
+
+      buildConfigField("boolean", "MANAGES_APP_UPDATES", "true")
+      buildConfigField("String", "BUILD_ENVIRONMENT_TYPE", "\"Backup\"")
     }
   }
 
@@ -394,6 +435,8 @@ android {
     abortOnError = true
     baseline = file("lint-baseline.xml")
     checkReleaseBuilds = false
+    ignoreWarnings = true
+    quiet = true
     disable += "LintError"
   }
 
@@ -426,6 +469,12 @@ android {
     beforeVariants { variant ->
       variant.enable = variant.name in selectableVariants
     }
+    onVariants { variant ->
+      // Include the test-only library on debug builds.
+      if (variant.buildType != "instrumentation") {
+        variant.packaging.jniLibs.excludes.add("**/libsignal_jni_testing.so")
+      }
+    }
   }
 
   val releaseDir = "$projectDir/src/release/java"
@@ -452,6 +501,7 @@ dependencies {
   implementation(project(":device-transfer"))
   implementation(project(":image-editor"))
   implementation(project(":donations"))
+  implementation(project(":debuglogs-viewer"))
   implementation(project(":contacts"))
   implementation(project(":qr"))
   implementation(project(":sticky-header-grid"))
@@ -477,7 +527,6 @@ dependencies {
   implementation(libs.androidx.compose.runtime.livedata)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.constraintlayout)
-  implementation(libs.androidx.multidex)
   implementation(libs.androidx.navigation.fragment.ktx)
   implementation(libs.androidx.navigation.ui.ktx)
   implementation(libs.androidx.navigation.compose)
@@ -487,6 +536,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.savedstate)
   implementation(libs.androidx.lifecycle.common.java8)
   implementation(libs.androidx.lifecycle.reactivestreams.ktx)
+  implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.camera.core)
   implementation(libs.androidx.camera.camera2)
@@ -508,6 +558,7 @@ dependencies {
   }
   implementation(libs.google.play.services.maps)
   implementation(libs.google.play.services.auth)
+  implementation(libs.google.signin)
   implementation(libs.bundles.media3)
   implementation(libs.conscrypt.android)
   implementation(libs.signal.aesgcmprovider)
@@ -516,7 +567,6 @@ dependencies {
   implementation(libs.signal.ringrtc)
   implementation(libs.leolin.shortcutbadger)
   implementation(libs.emilsjolander.stickylistheaders)
-  implementation(libs.apache.httpclient.android)
   implementation(libs.glide.glide)
   implementation(libs.roundedimageview)
   implementation(libs.materialish.progress)
@@ -535,6 +585,7 @@ dependencies {
   implementation(libs.lottie.compose)
   implementation(libs.signal.android.database.sqlcipher)
   implementation(libs.androidx.sqlite)
+  testImplementation(libs.androidx.sqlite.framework)
   implementation(libs.google.ez.vcard) {
     exclude(group = "com.fasterxml.jackson.core")
     exclude(group = "org.freemarker")
@@ -542,13 +593,20 @@ dependencies {
   implementation(libs.dnsjava)
   implementation(libs.kotlinx.collections.immutable)
   implementation(libs.accompanist.permissions)
+  implementation(libs.accompanist.drawablepainter)
   implementation(libs.kotlin.stdlib.jdk8)
   implementation(libs.kotlin.reflect)
   implementation(libs.kotlinx.coroutines.play.services)
+  implementation(libs.kotlinx.coroutines.rx3)
   implementation(libs.jackson.module.kotlin)
   implementation(libs.rxjava3.rxandroid)
   implementation(libs.rxjava3.rxkotlin)
   implementation(libs.rxdogtag)
+  implementation(libs.androidx.credentials)
+  implementation(libs.androidx.credentials.compat)
+  implementation(libs.kotlinx.serialization.json)
+
+  implementation(project(":billing"))
 
   "spinnerImplementation"(project(":spinner"))
 
@@ -559,14 +617,11 @@ dependencies {
   }
 
   testImplementation(testLibs.junit.junit)
-  testImplementation(testLibs.assertj.core)
-  testImplementation(testLibs.mockito.core)
-  testImplementation(testLibs.mockito.kotlin)
+  testImplementation(testLibs.assertk)
   testImplementation(testLibs.androidx.test.core)
   testImplementation(testLibs.robolectric.robolectric) {
     exclude(group = "com.google.protobuf", module = "protobuf-java")
   }
-  testImplementation(testLibs.robolectric.shadows.multidex)
   testImplementation(testLibs.bouncycastle.bcprov.jdk15on) {
     version {
       strictly("1.70")
@@ -578,20 +633,24 @@ dependencies {
     }
   }
   testImplementation(testLibs.conscrypt.openjdk.uber)
-  testImplementation(testLibs.hamcrest.hamcrest)
   testImplementation(testLibs.mockk)
   testImplementation(testFixtures(project(":libsignal-service")))
   testImplementation(testLibs.espresso.core)
+  testImplementation(testLibs.kotlinx.coroutines.test)
+  testImplementation(libs.androidx.compose.ui.test.junit4)
 
+  "perfImplementation"(libs.androidx.compose.ui.test.manifest)
+
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(testLibs.androidx.test.ext.junit)
   androidTestImplementation(testLibs.espresso.core)
   androidTestImplementation(testLibs.androidx.test.core)
   androidTestImplementation(testLibs.androidx.test.core.ktx)
   androidTestImplementation(testLibs.androidx.test.ext.junit.ktx)
-  androidTestImplementation(testLibs.mockito.android)
-  androidTestImplementation(testLibs.mockito.kotlin)
+  androidTestImplementation(testLibs.assertk)
   androidTestImplementation(testLibs.mockk.android)
-  androidTestImplementation(testLibs.square.okhttp.mockserver)
+  androidTestImplementation(testLibs.diff.utils)
 
   androidTestUtil(testLibs.androidx.test.orchestrator)
 }
@@ -605,39 +664,25 @@ fun assertIsGitRepo() {
 fun getLastCommitTimestamp(): String {
   assertIsGitRepo()
 
-  ByteArrayOutputStream().use { os ->
-    exec {
-      executable = "git"
-      args = listOf("log", "-1", "--pretty=format:%ct")
-      standardOutput = os
-    }
-
-    return os.toString() + "000"
-  }
+  return providers.exec {
+    commandLine("git", "log", "-1", "--pretty=format:%ct")
+  }.standardOutput.asText.get() + "000"
 }
 
 fun getGitHash(): String {
   assertIsGitRepo()
 
-  val stdout = ByteArrayOutputStream()
-  exec {
-    commandLine = listOf("git", "rev-parse", "HEAD")
-    standardOutput = stdout
-  }
-
-  return stdout.toString().trim().substring(0, 12)
+  return providers.exec {
+    commandLine("git", "rev-parse", "HEAD")
+  }.standardOutput.asText.get().trim().substring(0, 12)
 }
 
 fun getCurrentGitTag(): String? {
   assertIsGitRepo()
 
-  val stdout = ByteArrayOutputStream()
-  exec {
-    commandLine = listOf("git", "tag", "--points-at", "HEAD")
-    standardOutput = stdout
-  }
-
-  val output: String = stdout.toString().trim()
+  val output = providers.exec {
+    commandLine("git", "tag", "--points-at", "HEAD")
+  }.standardOutput.asText.get().trim()
 
   return if (output.isNotEmpty()) {
     val tags = output.split("\n").toList()
@@ -657,19 +702,10 @@ tasks.withType<Test>().configureEach {
   }
 }
 
-project.tasks.configureEach {
-  if (name.lowercase().contains("nightly") && name != "checkNightlyParams") {
-    dependsOn(tasks.getByName("checkNightlyParams"))
-  }
-}
-
-tasks.register("checkNightlyParams") {
-  doFirst {
-    if (project.gradle.startParameter.taskNames.any { it.lowercase().contains("nightly") }) {
-
-      if (!file("${project.rootDir}/nightly-url.txt").exists()) {
-        throw GradleException("Cannot find 'nightly-url.txt' for nightly build! It must exist in the root of this project and contain the location of the nightly manifest.")
-      }
+gradle.taskGraph.whenReady {
+  if (gradle.startParameter.taskNames.any { it.contains("nightly", ignoreCase = true) }) {
+    if (!file("${project.rootDir}/nightly-url.txt").exists()) {
+      throw GradleException("Missing required file: nightly-url.txt")
     }
   }
 }
@@ -701,13 +737,18 @@ fun getMapsKey(): String {
 }
 
 fun Project.languageList(): List<String> {
+  // In API 35, language codes for Hebrew and Indonesian now use the ISO 639-1 code ("he" and "id").
+  // However, the value resources still only support the outdated code ("iw" and "in") so we have
+  // to manually indicate that we support these languages.
+  val updatedLanguageCodes = listOf("he", "id")
+
   return fileTree("src/main/res") { include("**/strings.xml") }
     .map { stringFile -> stringFile.parentFile.name }
     .map { valuesFolderName -> valuesFolderName.replace("values-", "") }
     .filter { valuesFolderName -> valuesFolderName != "values" }
     .map { languageCode -> languageCode.replace("-r", "_") }
     .distinct()
-    .sorted() + "en"
+    .sorted() + updatedLanguageCodes + "en"
 }
 
 fun String.capitalize(): String {

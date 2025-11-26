@@ -14,6 +14,7 @@ import org.signal.core.util.logging.Log;
 import org.signal.libsignal.protocol.IdentityKey;
 import org.signal.libsignal.protocol.InvalidKeyException;
 import org.signal.libsignal.protocol.SignalProtocolAddress;
+import org.signal.libsignal.protocol.state.IdentityKeyStore;
 import org.signal.libsignal.protocol.state.SessionRecord;
 import org.signal.libsignal.protocol.state.SessionStore;
 import org.thoughtcrime.securesms.R;
@@ -37,6 +38,7 @@ import org.whispersystems.signalservice.api.SignalSessionLock;
 import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage;
 import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
+import org.whispersystems.signalservice.api.util.UuidUtil;
 import org.whispersystems.signalservice.internal.push.Verified;
 
 import java.util.List;
@@ -172,7 +174,7 @@ public final class IdentityUtil {
       SessionStore          sessionStore     = AppDependencies.getProtocolStore().aci();
       SignalProtocolAddress address          = new SignalProtocolAddress(user, SignalServiceAddress.DEFAULT_DEVICE_ID);
 
-      if (AppDependencies.getProtocolStore().aci().identities().saveIdentity(address, identityKey)) {
+      if (AppDependencies.getProtocolStore().aci().identities().saveIdentity(address, identityKey) == IdentityKeyStore.IdentityChange.REPLACED_EXISTING) {
         if (sessionStore.containsSession(address)) {
           SessionRecord sessionRecord = sessionStore.loadSession(address);
           sessionRecord.archiveCurrentState();
@@ -184,7 +186,7 @@ public final class IdentityUtil {
   }
 
   public static void processVerifiedMessage(Context context, Verified verified) throws InvalidKeyException {
-    SignalServiceAddress          destination = new SignalServiceAddress(ServiceId.parseOrThrow(verified.destinationAci));
+    SignalServiceAddress          destination = new SignalServiceAddress(ServiceId.ACI.parseOrThrow(verified.destinationAci, verified.destinationAciBinary));
     IdentityKey                   identityKey = new IdentityKey(verified.identityKey.toByteArray(), 0);
     VerifiedMessage.VerifiedState state;
 

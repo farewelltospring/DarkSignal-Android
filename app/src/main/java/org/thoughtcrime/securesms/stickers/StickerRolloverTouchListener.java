@@ -11,12 +11,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.RequestManager;
 
-import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.keyboard.sticker.KeyboardStickerListAdapter;
 import org.thoughtcrime.securesms.util.ViewUtil;
 
 import java.lang.ref.WeakReference;
+
+import kotlin.Pair;
 
 public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchListener {
   private final StickerPreviewPopup      popup;
@@ -81,7 +82,7 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
 
   public void enterHoverMode(@NonNull RecyclerView recyclerView, @NonNull KeyboardStickerListAdapter.Sticker sticker) {
     this.hoverMode = true;
-    showSticker(recyclerView, sticker.getUri(), sticker.getStickerRecord().getEmoji());
+    showSticker(recyclerView, sticker.getUri(), sticker.getStickerRecord().emoji);
   }
 
   private void exitHoverMode() {
@@ -95,7 +96,7 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
     Pair<Object, String> stickerData = stickerRetriever.getStickerDataFromView(view);
 
     if (stickerData != null) {
-      showSticker(recyclerView, stickerData.first(), stickerData.second());
+      showSticker(recyclerView, stickerData.getFirst(), stickerData.getSecond());
     }
   }
 

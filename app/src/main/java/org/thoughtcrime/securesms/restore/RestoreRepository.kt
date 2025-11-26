@@ -15,7 +15,9 @@ import org.thoughtcrime.securesms.backup.BackupPassphrase
 import org.thoughtcrime.securesms.backup.FullBackupImporter
 import org.thoughtcrime.securesms.crypto.AttachmentSecretProvider
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobmanager.impl.DataRestoreConstraint
+import org.thoughtcrime.securesms.jobs.E164FormattingJob
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.service.LocalBackupListener
@@ -41,7 +43,7 @@ object RestoreRepository {
   suspend fun restoreBackupAsynchronously(context: Context, backupFileUri: Uri, passphrase: String): BackupImportResult = withContext(Dispatchers.IO) {
     // TODO [regv2]: migrate this to a service
     try {
-      Log.i(TAG, "Starting backup restore.")
+      Log.i(TAG, "Initiating backup restore.")
       DataRestoreConstraint.isRestoringData = true
 
       val database = SignalDatabase.backupDatabase
@@ -49,20 +51,26 @@ object RestoreRepository {
       BackupPassphrase.set(context, passphrase)
 
       if (!FullBackupImporter.validatePassphrase(context, backupFileUri, passphrase)) {
-        // TODO [regv2]: implement a specific, user-visible error for wrong passphrase.
+        Log.i(TAG, "Restore failed due to invalid passphrase.")
         return@withContext BackupImportResult.FAILURE_UNKNOWN
       }
+
+      Log.i(TAG, "Passphrase validated.")
 
       FullBackupImporter.importFile(
         context,
         AttachmentSecretProvider.getInstance(context).getOrCreateAttachmentSecret(),
         database,
         backupFileUri,
-        passphrase
+        passphrase,
+        SignalStore.registration.localRegistrationMetadata != null
       )
+
+      Log.i(TAG, "Backup importer complete.")
 
       SignalDatabase.runPostBackupRestoreTasks(database)
       NotificationChannels.getInstance().restoreContactNotificationChannels()
+      AppDependencies.jobManager.add(E164FormattingJob())
 
       if (BackupUtil.canUserAccessBackupDirectory(context)) {
         LocalBackupListener.setNextBackupTimeToIntervalFromNow(context)
@@ -81,7 +89,7 @@ object RestoreRepository {
       Log.w(TAG, "Failed due to foreign key constraint violations.", e)
       return@withContext BackupImportResult.FAILURE_FOREIGN_KEY
     } catch (e: IOException) {
-      Log.w(TAG, e)
+      Log.w(TAG, "Restore failed due to unknown error!", e)
       return@withContext BackupImportResult.FAILURE_UNKNOWN
     } finally {
       DataRestoreConstraint.isRestoringData = false

@@ -16,6 +16,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.backup.BackupEvent
+import org.thoughtcrime.securesms.database.model.databaseprotos.RestoreDecisionState
+import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.jobs.ReclaimUsernameAndLinkJob
+import org.thoughtcrime.securesms.keyvalue.Completed
+import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.registration.data.RegistrationRepository
+import org.thoughtcrime.securesms.registration.util.RegistrationUtil
 import org.thoughtcrime.securesms.restore.RestoreRepository
 
 /**
@@ -27,7 +34,7 @@ class RestoreLocalBackupViewModel(fileBackupUri: Uri) : ViewModel() {
 
   val backupReadError = store.map { it.backupFileStateError }.asLiveData()
 
-  val backupComplete = store.map { Pair(it.backupRestoreComplete, it.backupImportResult) }.asLiveData()
+  val importResult = store.map { it.backupImportResult }.asLiveData()
 
   fun prepareRestore(context: Context) {
     val backupFileUri = store.value.uri
@@ -82,13 +89,24 @@ class RestoreLocalBackupViewModel(fileBackupUri: Uri) : ViewModel() {
     }
 
     viewModelScope.launch {
-      val importResult = RestoreRepository.restoreBackupAsynchronously(context, backupFileUri, backupPassphrase)
+      val importResult: RestoreRepository.BackupImportResult = RestoreRepository.restoreBackupAsynchronously(context, backupFileUri, backupPassphrase)
+
+      if (importResult == RestoreRepository.BackupImportResult.SUCCESS) {
+        SignalStore.registration.localRegistrationMetadata?.let {
+          RegistrationRepository.registerAccountLocally(context, it)
+          SignalStore.registration.localRegistrationMetadata = null
+          RegistrationUtil.maybeMarkRegistrationComplete()
+
+          AppDependencies.jobManager.add(ReclaimUsernameAndLinkJob())
+        }
+
+        SignalStore.registration.restoreDecisionState = RestoreDecisionState.Completed
+      }
 
       store.update {
         it.copy(
-          backupImportResult = if (importResult == RestoreRepository.BackupImportResult.SUCCESS) null else importResult,
+          backupImportResult = importResult,
           restoreInProgress = false,
-          backupRestoreComplete = true,
           backupEstimatedTotalCount = -1L,
           backupProgressCount = -1L,
           backupVerifyingInProgress = false
@@ -102,15 +120,21 @@ class RestoreLocalBackupViewModel(fileBackupUri: Uri) : ViewModel() {
       it.copy(
         backupProgressCount = event.count,
         backupEstimatedTotalCount = event.estimatedTotalCount,
-        backupVerifyingInProgress = event.type == BackupEvent.Type.PROGRESS_VERIFYING,
-        backupRestoreComplete = event.type == BackupEvent.Type.FINISHED,
-        restoreInProgress = event.type != BackupEvent.Type.FINISHED
+        backupVerifyingInProgress = event.type == BackupEvent.Type.PROGRESS_VERIFYING
       )
     }
   }
 
   fun clearBackupFileStateError() {
     store.update { it.copy(backupFileStateError = null) }
+  }
+
+  fun backupImportErrorShown() {
+    store.update {
+      it.copy(
+        backupImportResult = null
+      )
+    }
   }
 
   companion object {

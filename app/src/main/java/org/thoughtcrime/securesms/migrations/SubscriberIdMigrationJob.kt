@@ -31,16 +31,17 @@ internal class SubscriberIdMigrationJob(
 
   override fun performMigration() {
     Currency.getAvailableCurrencies().forEach { currency ->
-      val subscriber = SignalStore.donations.getSubscriber(currency)
+      val subscriber = SignalStore.inAppPayments.getSubscriber(currency)
 
       if (subscriber != null) {
         SignalDatabase.inAppPaymentSubscribers.insertOrReplace(
           InAppPaymentSubscriberRecord(
-            subscriber.subscriberId,
-            subscriber.currency,
-            InAppPaymentSubscriberRecord.Type.DONATION,
-            SignalStore.donations.shouldCancelSubscriptionBeforeNextSubscribeAttempt,
-            SignalStore.donations.getSubscriptionPaymentSourceType().toPaymentMethodType()
+            subscriberId = subscriber.subscriberId,
+            currency = subscriber.currency,
+            type = InAppPaymentSubscriberRecord.Type.DONATION,
+            requiresCancel = SignalStore.inAppPayments.shouldCancelSubscriptionBeforeNextSubscribeAttempt,
+            paymentMethodType = SignalStore.inAppPayments.getSubscriptionPaymentSourceType().toPaymentMethodType(),
+            iapSubscriptionId = null
           )
         )
       }

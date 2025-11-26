@@ -19,6 +19,7 @@ import org.whispersystems.signalservice.internal.push.ReceiptMessage
 import org.whispersystems.signalservice.internal.push.StoryMessage
 import org.whispersystems.signalservice.internal.push.SyncMessage
 import org.whispersystems.signalservice.internal.push.TypingMessage
+import org.whispersystems.signalservice.internal.util.Util
 
 /**
  * Validates an [Envelope] and its decrypted [Content] so that we know the message can be processed safely
@@ -28,16 +29,16 @@ import org.whispersystems.signalservice.internal.push.TypingMessage
  */
 object EnvelopeContentValidator {
 
-  fun validate(envelope: Envelope, content: Content): Result {
-    if (envelope.type == Envelope.Type.PLAINTEXT_CONTENT) {
-      val result: Result? = createPlaintextResultIfInvalid(content)
+  private const val MAX_POLL_CHARACTER_LENGTH = 100
+  private const val MIN_POLL_OPTIONS = 2
 
-      if (result != null) {
-        return result
-      }
+  fun validate(envelope: Envelope, content: Content, localAci: ACI): Result {
+    if (envelope.type == Envelope.Type.PLAINTEXT_CONTENT) {
+      validatePlaintextContent(content)?.let { return it }
     }
 
-    if (envelope.sourceServiceId != null && envelope.sourceServiceId.isInvalidServiceId()) {
+    val sourceServiceId = ServiceId.parseOrNull(envelope.sourceServiceId, envelope.sourceServiceIdBinary)
+    if (Util.anyNotNull(envelope.sourceServiceId, envelope.sourceServiceIdBinary) && sourceServiceId.isNullOrInvalidServiceId()) {
       return Result.Invalid("Envelope had an invalid sourceServiceId!")
     }
 
@@ -54,7 +55,7 @@ object EnvelopeContentValidator {
     return when {
       envelope.story == true && !content.meetsStoryFlagCriteria() -> Result.Invalid("Envelope was flagged as a story, but it did not have any story-related content!")
       content.dataMessage != null -> validateDataMessage(envelope, content.dataMessage)
-      content.syncMessage != null -> validateSyncMessage(envelope, content.syncMessage)
+      content.syncMessage != null -> validateSyncMessage(envelope, content.syncMessage, localAci)
       content.callMessage != null -> Result.Valid
       content.nullMessage != null -> Result.Valid
       content.receiptMessage != null -> validateReceiptMessage(content.receiptMessage)
@@ -81,10 +82,10 @@ object EnvelopeContentValidator {
     }
 
     if (dataMessage.timestamp != envelope.timestamp) {
-      Result.Invalid("[DataMessage] Timestamps don't match! envelope: ${envelope.timestamp}, content: ${dataMessage.timestamp}")
+      return Result.Invalid("[DataMessage] Timestamps don't match! envelope: ${envelope.timestamp}, content: ${dataMessage.timestamp}")
     }
 
-    if (dataMessage.quote != null && dataMessage.quote.authorAci.isNullOrInvalidAci()) {
+    if (dataMessage.quote != null && ACI.parseOrNull(dataMessage.quote.authorAci, dataMessage.quote.authorAciBinary).isNullOrInvalidServiceId()) {
       return Result.Invalid("[DataMessage] Invalid ACI on quote!")
     }
 
@@ -96,7 +97,7 @@ object EnvelopeContentValidator {
       return Result.Invalid("[DataMessage] Invalid AttachmentPointer on DataMessage.previewList.image!")
     }
 
-    if (dataMessage.bodyRanges.any { it.mentionAci != null && it.mentionAci.isNullOrInvalidAci() }) {
+    if (dataMessage.bodyRanges.any { Util.anyNotNull(it.mentionAci, it.mentionAciBinary) && ACI.parseOrNull(it.mentionAci, it.mentionAciBinary).isNullOrInvalidServiceId() }) {
       return Result.Invalid("[DataMessage] Invalid ACI on body range!")
     }
 
@@ -109,7 +110,7 @@ object EnvelopeContentValidator {
         return Result.Invalid("[DataMessage] Missing timestamp on DataMessage.reaction!")
       }
 
-      if (dataMessage.reaction.targetAuthorAci.isNullOrInvalidAci()) {
+      if (ACI.parseOrNull(dataMessage.reaction.targetAuthorAci, dataMessage.reaction.targetAuthorAciBinary).isNullOrInvalidServiceId()) {
         return Result.Invalid("[DataMessage] Invalid ACI on DataMessage.reaction!")
       }
     }
@@ -118,7 +119,7 @@ object EnvelopeContentValidator {
       return Result.Invalid("[DataMessage] Missing timestamp on DataMessage.delete!")
     }
 
-    if (dataMessage.storyContext != null && dataMessage.storyContext.authorAci.isNullOrInvalidAci()) {
+    if (dataMessage.storyContext != null && ACI.parseOrNull(dataMessage.storyContext.authorAci, dataMessage.storyContext.authorAciBinary).isNullOrInvalidServiceId()) {
       return Result.Invalid("[DataMessage] Invalid ACI on DataMessage.storyContext!")
     }
 
@@ -142,12 +143,39 @@ object EnvelopeContentValidator {
       validateGroupContextV2(dataMessage.groupV2, "[DataMessage]")?.let { return it }
     }
 
+    if (dataMessage.pollCreate != null && (dataMessage.pollCreate.hasInvalidPollQuestion() || dataMessage.pollCreate.hasInvalidPollOptions() || dataMessage.pollCreate.allowMultiple == null)) {
+      return Result.Invalid("[DataMessage] Invalid poll create!")
+    }
+
+    if (dataMessage.pollTerminate != null && dataMessage.pollTerminate.targetSentTimestamp == null) {
+      return Result.Invalid("[DataMessage] Invalid poll terminate!")
+    }
+
+    if (dataMessage.pollVote != null && (dataMessage.pollVote.targetAuthorAciBinary.isNullOrInvalidAci() || dataMessage.pollVote.targetSentTimestamp == null || dataMessage.pollVote.voteCount == null)) {
+      return Result.Invalid("[DataMessage] Invalid poll vote!")
+    }
+
     return Result.Valid
   }
 
-  private fun validateSyncMessage(envelope: Envelope, syncMessage: SyncMessage): Result {
+  private fun DataMessage.PollCreate.hasInvalidPollQuestion(): Boolean {
+    return this.question.isNullOrBlank() || this.question.length > MAX_POLL_CHARACTER_LENGTH
+  }
+
+  private fun DataMessage.PollCreate.hasInvalidPollOptions(): Boolean {
+    return this.options.size < MIN_POLL_OPTIONS || this.options.any { option -> option.length > MAX_POLL_CHARACTER_LENGTH }
+  }
+
+  private fun validateSyncMessage(envelope: Envelope, syncMessage: SyncMessage, localAci: ACI): Result {
+    // Source serviceId was already determined to be a valid serviceId in general
+    val sourceServiceId = ServiceId.parseOrThrow(envelope.sourceServiceId, envelope.sourceServiceIdBinary)
+
+    if (sourceServiceId != localAci) {
+      return Result.Invalid("[SyncMessage] Source was not our own account!")
+    }
+
     if (syncMessage.sent != null) {
-      val validAddress = syncMessage.sent.destinationServiceId.isValidServiceId()
+      val validAddress = ServiceId.parseOrNull(syncMessage.sent.destinationServiceId, syncMessage.sent.destinationServiceIdBinary) != null
       val hasDataGroup = syncMessage.sent.message?.groupV2 != null
       val hasStoryGroup = syncMessage.sent.storyMessage?.group != null
       val hasStoryManifest = syncMessage.sent.storyMessageRecipients.isNotEmpty()
@@ -170,7 +198,7 @@ object EnvelopeContentValidator {
       }
 
       for (status in syncMessage.sent.unidentifiedStatus) {
-        if (status.destinationServiceId.isNullOrInvalidServiceId()) {
+        if (ServiceId.parseOrNull(status.destinationServiceId, status.destinationServiceIdBinary).isNullOrInvalidServiceId()) {
           return Result.Invalid("[SyncMessage] Invalid ServiceId in SyncMessage.sent.unidentifiedStatusList!")
         }
       }
@@ -188,19 +216,19 @@ object EnvelopeContentValidator {
       }
     }
 
-    if (syncMessage.read.any { it.senderAci.isNullOrInvalidAci() }) {
+    if (syncMessage.read.any { ACI.parseOrNull(it.senderAci, it.senderAciBinary).isNullOrInvalidServiceId() }) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.readList!")
     }
 
-    if (syncMessage.viewed.any { it.senderAci.isNullOrInvalidAci() }) {
+    if (syncMessage.viewed.any { ACI.parseOrNull(it.senderAci, it.senderAciBinary).isNullOrInvalidServiceId() }) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.viewList!")
     }
 
-    if (syncMessage.viewOnceOpen != null && syncMessage.viewOnceOpen.senderAci.isNullOrInvalidAci()) {
+    if (syncMessage.viewOnceOpen != null && ACI.parseOrNull(syncMessage.viewOnceOpen.senderAci, syncMessage.viewOnceOpen.senderAciBinary).isNullOrInvalidServiceId()) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.viewOnceOpen!")
     }
 
-    if (syncMessage.verified != null && syncMessage.verified.destinationAci.isNullOrInvalidAci()) {
+    if (syncMessage.verified != null && ACI.parseOrNull(syncMessage.verified.destinationAci, syncMessage.verified.destinationAciBinary).isNullOrInvalidServiceId()) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.verified!")
     }
 
@@ -208,11 +236,11 @@ object EnvelopeContentValidator {
       return Result.Invalid("[SyncMessage] Missing packId in stickerPackOperationList!")
     }
 
-    if (syncMessage.blocked != null && syncMessage.blocked.acis.any { it.isNullOrInvalidAci() }) {
+    if (syncMessage.blocked != null && syncMessage.blocked.acis.any { it.isNullOrInvalidAci() } && syncMessage.blocked.acisBinary.any { it.isNullOrInvalidAci() }) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.blocked!")
     }
 
-    if (syncMessage.messageRequestResponse != null && syncMessage.messageRequestResponse.groupId == null && syncMessage.messageRequestResponse.threadAci.isNullOrInvalidAci()) {
+    if (syncMessage.messageRequestResponse != null && syncMessage.messageRequestResponse.groupId == null && ACI.parseOrNull(syncMessage.messageRequestResponse.threadAci, syncMessage.messageRequestResponse.threadAciBinary).isNullOrInvalidServiceId()) {
       return Result.Invalid("[SyncMessage] Invalid ACI in SyncMessage.messageRequestResponse!")
     }
 
@@ -303,7 +331,7 @@ object EnvelopeContentValidator {
       return Result.Invalid("[EditMessage] Invalid AttachmentPointer on DataMessage.previewList.image!")
     }
 
-    if (dataMessage.bodyRanges.any { it.mentionAci != null && it.mentionAci.isNullOrInvalidAci() }) {
+    if (dataMessage.bodyRanges.any { Util.anyNotNull(it.mentionAci, it.mentionAciBinary) && ACI.parseOrNull(it.mentionAci, it.mentionAciBinary).isNullOrInvalidServiceId() }) {
       return Result.Invalid("[EditMessage] Invalid UUID on body range!")
     }
 
@@ -336,19 +364,23 @@ object EnvelopeContentValidator {
     return parsed == null || parsed.isUnknown
   }
 
-  private fun String.isInvalidServiceId(): Boolean {
-    val parsed = ServiceId.parseOrNull(this)
+  private fun String?.isNullOrInvalidAci(): Boolean {
+    val parsed = ACI.parseOrNull(this)
     return parsed == null || parsed.isUnknown
   }
 
-  private fun String?.isNullOrInvalidAci(): Boolean {
-    val parsed = ACI.parseOrNull(this)
+  private fun ByteString?.isNullOrInvalidAci(): Boolean {
+    val parsed = this?.let { ACI.parseOrNull(this) }
     return parsed == null || parsed.isUnknown
   }
 
   private fun ByteString?.isNullOrInvalidPni(): Boolean {
     val parsed = ServiceId.PNI.parseOrNull(this?.toByteArray())
     return parsed == null || parsed.isUnknown
+  }
+
+  private fun ServiceId?.isNullOrInvalidServiceId(): Boolean {
+    return this == null || this.isUnknown
   }
 
   private fun Content?.meetsStoryFlagCriteria(): Boolean {
@@ -362,38 +394,40 @@ object EnvelopeContentValidator {
     }
   }
 
-  private fun createPlaintextResultIfInvalid(content: Content): Result? {
+  private fun validatePlaintextContent(content: Content): Result? {
     val errors: MutableList<String> = mutableListOf()
-
     if (content.decryptionErrorMessage == null) {
       errors += "Missing DecryptionErrorMessage"
     }
-    if (content.storyMessage != null) {
-      errors += "Unexpected StoryMessage"
-    }
-    if (content.senderKeyDistributionMessage != null) {
-      errors += "Unexpected SenderKeyDistributionMessage"
-    }
-    if (content.callMessage != null) {
-      errors += "Unexpected CallMessage"
-    }
-    if (content.editMessage != null) {
-      errors += "Unexpected EditMessage"
-    }
-    if (content.nullMessage != null) {
-      errors += "Unexpected NullMessage"
-    }
-    if (content.pniSignatureMessage != null) {
-      errors += "Unexpected PniSignatureMessage"
-    }
-    if (content.receiptMessage != null) {
-      errors += "Unexpected ReceiptMessage"
+    if (content.dataMessage != null) {
+      errors += "Unexpected DataMessage"
     }
     if (content.syncMessage != null) {
       errors += "Unexpected SyncMessage"
     }
+    if (content.callMessage != null) {
+      errors += "Unexpected CallMessage"
+    }
+    if (content.nullMessage != null) {
+      errors += "Unexpected NullMessage"
+    }
+    if (content.receiptMessage != null) {
+      errors += "Unexpected ReceiptMessage"
+    }
     if (content.typingMessage != null) {
       errors += "Unexpected TypingMessage"
+    }
+    if (content.senderKeyDistributionMessage != null) {
+      errors += "Unexpected SenderKeyDistributionMessage"
+    }
+    if (content.storyMessage != null) {
+      errors += "Unexpected StoryMessage"
+    }
+    if (content.pniSignatureMessage != null) {
+      errors += "Unexpected PniSignatureMessage"
+    }
+    if (content.editMessage != null) {
+      errors += "Unexpected EditMessage"
     }
 
     return if (errors.isNotEmpty()) {

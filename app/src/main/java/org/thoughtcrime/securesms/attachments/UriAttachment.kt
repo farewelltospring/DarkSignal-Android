@@ -14,7 +14,7 @@ class UriAttachment : Attachment {
 
   constructor(
     uri: Uri,
-    contentType: String,
+    contentType: String?,
     transferState: Int,
     size: Long,
     fileName: String?,
@@ -22,6 +22,7 @@ class UriAttachment : Attachment {
     borderless: Boolean,
     videoGif: Boolean,
     quote: Boolean,
+    quoteTargetContentType: String?,
     caption: String?,
     stickerLocator: StickerLocator?,
     blurHash: BlurHash?,
@@ -40,6 +41,7 @@ class UriAttachment : Attachment {
     borderless = borderless,
     videoGif = videoGif,
     quote = quote,
+    quoteTargetContentType = quoteTargetContentType,
     caption = caption,
     stickerLocator = stickerLocator,
     blurHash = blurHash,
@@ -50,7 +52,7 @@ class UriAttachment : Attachment {
   @JvmOverloads
   constructor(
     dataUri: Uri,
-    contentType: String,
+    contentType: String?,
     transferState: Int,
     size: Long,
     width: Int,
@@ -61,6 +63,7 @@ class UriAttachment : Attachment {
     borderless: Boolean,
     videoGif: Boolean,
     quote: Boolean,
+    quoteTargetContentType: String?,
     caption: String?,
     stickerLocator: StickerLocator?,
     blurHash: BlurHash?,
@@ -85,6 +88,7 @@ class UriAttachment : Attachment {
     height = height,
     incrementalMacChunkSize = 0,
     quote = quote,
+    quoteTargetContentType = quoteTargetContentType,
     uploadTimestamp = 0,
     caption = caption,
     stickerLocator = stickerLocator,

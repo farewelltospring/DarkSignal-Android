@@ -11,7 +11,6 @@ import com.annimon.stream.Stream;
 
 import org.signal.core.util.SetUtil;
 import org.signal.core.util.logging.Log;
-import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.attachments.Attachment;
 import org.thoughtcrime.securesms.database.GroupReceiptTable;
 import org.thoughtcrime.securesms.database.GroupReceiptTable.GroupReceiptInfo;
@@ -37,12 +36,15 @@ import org.thoughtcrime.securesms.messages.StorySendUtil;
 import org.thoughtcrime.securesms.mms.MessageGroupContext;
 import org.thoughtcrime.securesms.mms.MmsException;
 import org.thoughtcrime.securesms.mms.OutgoingMessage;
+import org.thoughtcrime.securesms.polls.Poll;
+import org.thoughtcrime.securesms.ratelimit.ProofRequiredExceptionHandler;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.recipients.RecipientUtil;
 import org.thoughtcrime.securesms.transport.RetryLaterException;
 import org.thoughtcrime.securesms.transport.UndeliverableMessageException;
 import org.thoughtcrime.securesms.util.GroupUtil;
+import org.thoughtcrime.securesms.util.MessageUtil;
 import org.thoughtcrime.securesms.util.RecipientAccessList;
 import org.thoughtcrime.securesms.util.SignalLocalMetrics;
 import org.thoughtcrime.securesms.util.Util;
@@ -71,7 +73,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import kotlin.Pair;
+
 import okio.ByteString;
+import okio.Utf8;
 
 public final class PushGroupSendJob extends PushSendJob {
 
@@ -115,6 +120,10 @@ public final class PushGroupSendJob extends PushSendJob {
       Recipient group = Recipient.resolved(destination);
       if (!group.isPushGroup()) {
         throw new AssertionError("Not a group!");
+      }
+
+      if (group.isPushV1Group()) {
+        throw new MmsException("Cannot send to GV1 groups");
       }
 
       MessageTable    database = SignalDatabase.messages();
@@ -261,18 +270,24 @@ public final class PushGroupSendJob extends PushSendJob {
   private List<SendMessageResult> deliver(OutgoingMessage message, @Nullable MessageRecord originalEditedMessage, @NonNull Recipient groupRecipient, @NonNull List<Recipient> destinations)
       throws IOException, UntrustedIdentityException, UndeliverableMessageException
   {
+    if (Utf8.size(message.getBody()) > MessageUtil.MAX_INLINE_BODY_SIZE_BYTES) {
+      throw new UndeliverableMessageException("The total body size was greater than our limit of " + MessageUtil.MAX_INLINE_BODY_SIZE_BYTES + " bytes.");
+    }
+
     try {
       rotateSenderCertificateIfNecessary();
 
-      GroupId.Push                               groupId            = groupRecipient.requireGroupId().requirePush();
-      Optional<byte[]>                           profileKey         = getProfileKey(groupRecipient);
-      Optional<SignalServiceDataMessage.Sticker> sticker            = getStickerFor(message);
-      List<SharedContact>                        sharedContacts     = getSharedContactsFor(message);
-      List<SignalServicePreview>                 previews           = getPreviewsFor(message);
-      List<SignalServiceDataMessage.Mention>     mentions           = getMentionsFor(message.getMentions());
-      List<BodyRange>                            bodyRanges         = getBodyRanges(message);
-      List<Attachment>                           attachments        = Stream.of(message.getAttachments()).filterNot(Attachment::isSticker).toList();
-      List<SignalServiceAttachment>              attachmentPointers = getAttachmentPointersFor(attachments);
+      GroupId.Push                                     groupId            = groupRecipient.requireGroupId().requirePush();
+      Optional<byte[]>                                 profileKey         = getProfileKey(groupRecipient);
+      Optional<SignalServiceDataMessage.Sticker>       sticker            = getStickerFor(message);
+      List<SharedContact>                              sharedContacts     = getSharedContactsFor(message);
+      List<SignalServicePreview>                       previews           = getPreviewsFor(message);
+      List<SignalServiceDataMessage.Mention>           mentions           = getMentionsFor(message.getMentions());
+      List<BodyRange>                                  bodyRanges         = getBodyRanges(message);
+      Optional<SignalServiceDataMessage.PollCreate>    pollCreate         = getPollCreate(message);
+      Optional<SignalServiceDataMessage.PollTerminate> pollTerminate      = getPollTerminate(message);
+      List<Attachment>                                 attachments        = Stream.of(message.getAttachments()).filterNot(Attachment::isSticker).toList();
+      List<SignalServiceAttachment>                    attachmentPointers = getAttachmentPointersFor(attachments);
       boolean isRecipientUpdate = Stream.of(SignalDatabase.groupReceipts().getGroupReceiptInfo(messageId))
                                         .anyMatch(info -> info.getStatus() > GroupReceiptTable.STATUS_UNDELIVERED);
 
@@ -351,7 +366,9 @@ public final class PushGroupSendJob extends PushSendJob {
                                                                       .withSharedContacts(sharedContacts)
                                                                       .withPreviews(previews)
                                                                       .withMentions(mentions)
-                                                                      .withBodyRanges(bodyRanges);
+                                                                      .withBodyRanges(bodyRanges)
+                                                                      .withPollCreate(pollCreate.orElse(null))
+                                                                      .withPollTerminate(pollTerminate.orElse(null));
 
         if (message.getParentStoryId() != null) {
           try {
@@ -396,6 +413,23 @@ public final class PushGroupSendJob extends PushSendJob {
     }
   }
 
+  private Optional<SignalServiceDataMessage.PollCreate> getPollCreate(OutgoingMessage message) {
+    Poll poll = message.getPoll();
+    if (poll == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new SignalServiceDataMessage.PollCreate(poll.getQuestion(), poll.getAllowMultipleVotes(), poll.getPollOptions()));
+  }
+
+  private Optional<SignalServiceDataMessage.PollTerminate> getPollTerminate(OutgoingMessage message) {
+    if (message.getMessageExtras() == null || message.getMessageExtras().pollTerminate == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(new SignalServiceDataMessage.PollTerminate(message.getMessageExtras().pollTerminate.targetTimestamp));
+  }
+
   public static long getMessageId(@Nullable byte[] serializedData) {
     JsonJobData data = JsonJobData.deserialize(serializedData);
     return data.getLong(KEY_MESSAGE_ID);
@@ -422,7 +456,7 @@ public final class PushGroupSendJob extends PushSendJob {
     ProofRequiredException           proofRequired             = Stream.of(results).filter(r -> r.getProofRequiredFailure() != null).findLast().map(SendMessageResult::getProofRequiredFailure).orElse(null);
     List<SendMessageResult>          successes                 = Stream.of(results).filter(result -> result.getSuccess() != null).toList();
     List<Pair<RecipientId, Boolean>> successUnidentifiedStatus = Stream.of(successes).map(result -> new Pair<>(accessList.requireIdByAddress(result.getAddress()), result.getSuccess().isUnidentified())).toList();
-    Set<RecipientId>                 successIds                = Stream.of(successUnidentifiedStatus).map(Pair::first).collect(Collectors.toSet());
+    Set<RecipientId>                 successIds                = Stream.of(successUnidentifiedStatus).map(Pair::getFirst).collect(Collectors.toSet());
     Set<NetworkFailure>              resolvedNetworkFailures   = Stream.of(existingNetworkFailures).filter(failure -> successIds.contains(failure.getRecipientId())).collect(Collectors.toSet());
     Set<IdentityKeyMismatch>         resolvedIdentityFailures  = Stream.of(existingIdentityMismatches).filter(failure -> successIds.contains(failure.getRecipientId())).collect(Collectors.toSet());
     List<RecipientId>                unregisteredRecipients    = Stream.of(results).filter(SendMessageResult::isUnregisteredFailure).map(result -> RecipientId.from(result.getAddress())).toList();
@@ -456,13 +490,21 @@ public final class PushGroupSendJob extends PushSendJob {
     SignalDatabase.groupReceipts().setUnidentified(successUnidentifiedStatus, messageId);
 
     if (proofRequired != null) {
-      handleProofRequiredException(context, proofRequired, groupRecipient, threadId, messageId, true);
+      ProofRequiredExceptionHandler.Result result = ProofRequiredExceptionHandler.handle(context, proofRequired, groupRecipient, threadId, messageId);
+      if (result.isRetry()) {
+        throw new RetryLaterException();
+      } else {
+        throw proofRequired;
+      }
     }
 
     if (existingNetworkFailures.isEmpty() && existingIdentityMismatches.isEmpty()) {
       database.markAsSent(messageId, true);
 
       markAttachmentsUploaded(messageId, message);
+
+      // For scheduled messages, which may not have updated the thread with it's snippet yet
+      SignalDatabase.threads().updateSilently(threadId, false);
 
       if (skippedRecipients.size() > 0) {
         SignalDatabase.groupReceipts().setSkipped(skippedRecipients, messageId);
@@ -490,7 +532,7 @@ public final class PushGroupSendJob extends PushSendJob {
                                                     .map(mismatch -> mismatch.getRecipientId())
                                                     .collect(Collectors.toSet());
 
-      RetrieveProfileJob.enqueue(mismatchRecipientIds);
+      RetrieveProfileJob.enqueue(mismatchRecipientIds, true);
     } else if (!networkFailures.isEmpty()) {
       long retryAfter = results.stream()
                                .filter(r -> r.getRateLimitFailure() != null)

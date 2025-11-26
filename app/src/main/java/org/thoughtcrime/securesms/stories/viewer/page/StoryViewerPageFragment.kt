@@ -6,13 +6,17 @@ import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.res.ColorStateList
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.media.AudioManager
 import android.os.Bundle
+import android.text.Spannable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
-import android.text.method.ScrollingMovementMethod
 import android.text.style.ClickableSpan
+import android.text.style.StyleSpan
+import android.text.style.URLSpan
+import android.text.util.Linkify
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
@@ -23,21 +27,26 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
-import androidx.core.view.GestureDetectorCompat
+import androidx.core.text.util.LinkifyCompat
 import androidx.core.view.animation.PathInterpolatorCompat
+import androidx.core.view.doOnNextLayout
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicatorSpec
 import com.google.android.material.progressindicator.IndeterminateDrawable
+import com.google.android.material.snackbar.Snackbar
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.kotlin.subscribeBy
+import kotlinx.coroutines.launch
 import org.signal.core.util.DimensionUnit
 import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.dp
@@ -61,6 +70,7 @@ import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
 import org.thoughtcrime.securesms.mediapreview.MediaPreviewFragment
 import org.thoughtcrime.securesms.mediapreview.VideoControlsDelegate
+import org.thoughtcrime.securesms.permissions.Permissions
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.recipients.ui.bottomsheet.RecipientBottomSheetDialogFragment
@@ -83,6 +93,9 @@ import org.thoughtcrime.securesms.util.AvatarUtil
 import org.thoughtcrime.securesms.util.BottomSheetUtil
 import org.thoughtcrime.securesms.util.DateUtils
 import org.thoughtcrime.securesms.util.Debouncer
+import org.thoughtcrime.securesms.util.LinkUtil
+import org.thoughtcrime.securesms.util.LongClickCopySpan
+import org.thoughtcrime.securesms.util.LongClickMovementMethod
 import org.thoughtcrime.securesms.util.Projection
 import org.thoughtcrime.securesms.util.ServiceUtil
 import org.thoughtcrime.securesms.util.ViewUtil
@@ -224,7 +237,7 @@ class StoryViewerPageFragment :
     )
 
     closeView.setOnClickListener {
-      requireActivity().onBackPressed()
+      onBackPressed()
     }
 
     val addToGroupStoryDelegate = AddToGroupStoryDelegate(this)
@@ -238,7 +251,18 @@ class StoryViewerPageFragment :
       viewModel::goToPreviousPost
     )
 
-    val gestureDetector = GestureDetectorCompat(
+    val parentListener = GestureDetector(
+      requireContext(),
+      ParentGestureListener(
+        singleTapHandler = singleTapHandler
+      )
+    )
+
+    storyPageContainer.setOnTouchListener { v, event ->
+      parentListener.onTouchEvent(event)
+    }
+
+    val gestureDetector = GestureDetector(
       requireContext(),
       StoryGestureListener(
         cardWrapper,
@@ -282,7 +306,7 @@ class StoryViewerPageFragment :
         val canCloseFromHorizontalSlide = requireView().translationX > DimensionUnit.DP.toPixels(56f)
         val canCloseFromVerticalSlide = requireView().translationY > DimensionUnit.DP.toPixels(56f) || requireView().translationY < -DimensionUnit.DP.toPixels(56f)
         if ((canCloseFromHorizontalSlide || canCloseFromVerticalSlide) && event.actionMasked == MotionEvent.ACTION_UP) {
-          requireActivity().onBackPressed()
+          onBackPressed()
         } else {
           sharedViewModel.setIsChildScrolling(false)
           requireView().animate()
@@ -473,9 +497,11 @@ class StoryViewerPageFragment :
         state.hideChromeImmediate -> {
           hideChromeImmediate()
         }
+
         state.hideChrome -> {
           hideChrome()
         }
+
         else -> {
           showChrome()
         }
@@ -490,6 +516,7 @@ class StoryViewerPageFragment :
           is StoryViewerDialog.GroupDirectReply -> {
             onStartDirectReply(sheet.storyId, sheet.recipientId)
           }
+
           StoryViewerDialog.Delete,
           StoryViewerDialog.Forward -> Unit
         }
@@ -504,6 +531,14 @@ class StoryViewerPageFragment :
         reactionAnimationView.playForEmoji(listOf(emoji))
         viewModel.setIsDisplayingReactionAnimation(true)
       }
+    }
+  }
+
+  private fun onBackPressed() {
+    if (sharedViewModel.getInitialRecipientId() != storyViewerPageArgs.recipientId) {
+      requireActivity().finish()
+    } else {
+      ActivityCompat.finishAfterTransition(requireActivity())
     }
   }
 
@@ -534,6 +569,11 @@ class StoryViewerPageFragment :
 
   override fun onDismissForwardSheet() {
     viewModel.setIsDisplayingForwardDialog(false)
+  }
+
+  @Suppress("OVERRIDE_DEPRECATION")
+  override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    Permissions.onRequestPermissionsResult(this, requestCode, permissions, grantResults)
   }
 
   private fun checkEventIntersectsClickableSpan(cardWrapper: ViewGroup, event: MotionEvent): Boolean {
@@ -709,12 +749,14 @@ class StoryViewerPageFragment :
         constraintSet.connect(viewsAndReplies.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
         card.radius = DimensionUnit.DP.toPixels(18f)
       }
+
       StoryDisplay.MEDIUM -> {
         constraintSet.setDimensionRatio(cardWrapper.id, "9:16")
         constraintSet.clear(viewsAndReplies.id, ConstraintSet.TOP)
         constraintSet.connect(viewsAndReplies.id, ConstraintSet.BOTTOM, cardWrapper.id, ConstraintSet.BOTTOM)
         card.radius = DimensionUnit.DP.toPixels(18f)
       }
+
       StoryDisplay.SMALL -> {
         constraintSet.setDimensionRatio(cardWrapper.id, null)
         constraintSet.clear(viewsAndReplies.id, ConstraintSet.TOP)
@@ -754,6 +796,7 @@ class StoryViewerPageFragment :
         isFromNotification,
         groupReplyStartPosition
       )
+
       StoryViewerPageState.ReplyState.PRIVATE -> StoryDirectReplyDialogFragment.create(storyPostId)
       StoryViewerPageState.ReplyState.GROUP_SELF -> StoryViewsAndRepliesDialogFragment.create(
         storyPostId,
@@ -762,14 +805,17 @@ class StoryViewerPageFragment :
         isFromNotification,
         groupReplyStartPosition
       )
+
       StoryViewerPageState.ReplyState.PARTIAL_SEND -> {
         handleResend(storyPost)
         return
       }
+
       StoryViewerPageState.ReplyState.SEND_FAILURE -> {
         handleResend(storyPost)
         return
       }
+
       StoryViewerPageState.ReplyState.SENDING -> return
     }
 
@@ -851,24 +897,28 @@ class StoryViewerPageFragment :
         viewModel.setIsDisplayingSlate(false)
         markViewedIfAble()
       }
+
       AttachmentTable.TRANSFER_PROGRESS_PENDING -> {
         Log.d(TAG, "Story content download is pending.")
         storySlate.moveToState(StorySlateView.State.LOADING, post.id)
         sharedViewModel.setContentIsReady()
         viewModel.setIsDisplayingSlate(true)
       }
+
       AttachmentTable.TRANSFER_PROGRESS_STARTED -> {
         Log.d(TAG, "Story content download is in progress.")
         storySlate.moveToState(StorySlateView.State.LOADING, post.id)
         sharedViewModel.setContentIsReady()
         viewModel.setIsDisplayingSlate(true)
       }
+
       AttachmentTable.TRANSFER_PROGRESS_FAILED -> {
         Log.d(TAG, "Story content download has failed temporarily.")
         storySlate.moveToState(StorySlateView.State.ERROR, post.id)
         sharedViewModel.setContentIsReady()
         viewModel.setIsDisplayingSlate(true)
       }
+
       AttachmentTable.TRANSFER_PROGRESS_PERMANENT_FAILURE -> {
         Log.d(TAG, "Story content download has failed permanently.")
         storySlate.moveToState(StorySlateView.State.FAILED, post.id, post.sender)
@@ -908,7 +958,7 @@ class StoryViewerPageFragment :
       if (ranges != null && displayBodySpan.isNotEmpty()) {
         MessageStyler.style(storyPost.conversationMessage.messageRecord.dateSent, ranges, displayBodySpan)
       }
-
+      linkifyUrlLinks(displayBodySpan)
       displayBodySpan
     } else {
       ""
@@ -921,18 +971,41 @@ class StoryViewerPageFragment :
     largeCaption.text = displayBody
     caption.visible = displayBody.isNotEmpty()
     caption.requestLayout()
-    caption.movementMethod = LinkMovementMethod.getInstance()
-    caption.setOverflowText(getString(R.string.StoryViewerPageFragment__see_more))
+    caption.movementMethod = LongClickMovementMethod.getInstance(requireContext())
+    val overflow = SpannableString(getString(R.string.StoryViewerPageFragment__read_more))
+    overflow.setSpan(StyleSpan(Typeface.BOLD), 0, overflow.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    caption.setOverflowText(overflow)
     caption.maxLines = 5
     caption.text = displayBody
-    caption.setMaxLength(280)
+    caption.setMaxLength(SMALL_CAPTION_TEXT_MAX_LENGTH)
 
-    if (caption.text.length == displayBody.length) {
-      caption.setOnClickListener(null)
-      caption.isClickable = false
-    } else {
-      caption.setOnClickListener {
-        onShowCaptionOverlay(caption, largeCaption, largeCaptionOverlay)
+    caption.doOnNextLayout {
+      if (displayBody.length <= SMALL_CAPTION_TEXT_MAX_LENGTH && caption.lineCount <= SMALL_CAPTION_TEXT_MAX_LINES) {
+        caption.setOnClickListener(null)
+        caption.isClickable = false
+      } else {
+        caption.setOnClickListener {
+          onShowCaptionOverlay(caption, largeCaption, largeCaptionOverlay)
+        }
+      }
+    }
+  }
+
+  fun linkifyUrlLinks(spannable: Spannable) {
+    val hasLinks = LinkifyCompat.addLinks(spannable, CAPTION_LINK_PATTERN)
+
+    if (hasLinks) {
+      spannable.getSpans(0, spannable.length, URLSpan::class.java)
+        .filterNot { url -> LinkUtil.isLegalUrl(url.url) }
+        .forEach { spannable.removeSpan(it) }
+
+      val urlSpans = spannable.getSpans(0, spannable.length, URLSpan::class.java)
+
+      for (urlSpan in urlSpans) {
+        val start = spannable.getSpanStart(urlSpan)
+        val end = spannable.getSpanEnd(urlSpan)
+        val span = LongClickCopySpan(urlSpan.url)
+        spannable.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
       }
     }
   }
@@ -943,7 +1016,7 @@ class StoryViewerPageFragment :
     caption.visible = false
     largeCaption.visible = true
     largeCaptionOverlay.visible = true
-    largeCaption.movementMethod = ScrollingMovementMethod()
+    largeCaption.movementMethod = LinkMovementMethod.getInstance()
     largeCaption.scrollY = 0
     largeCaption.setOnClickListener {
       onHideCaptionOverlay(caption, largeCaption, largeCaptionOverlay)
@@ -1159,11 +1232,25 @@ class StoryViewerPageFragment :
           }
         }
       },
+      onUnhide = {
+        lifecycleDisposable += viewModel.unhideStory().subscribe {
+          Snackbar
+            .make(requireView(), R.string.StoryViewerPageFragment__story_no_longer_hidden, Snackbar.LENGTH_SHORT)
+            .show()
+        }
+      },
       onShare = {
         StoryContextMenu.share(this, it.conversationMessage.messageRecord as MmsMessageRecord)
       },
       onSave = {
-        StoryContextMenu.save(requireContext(), it.conversationMessage.messageRecord)
+        lifecycleScope.launch {
+          viewModel.setIsSavingMedia(true)
+          StoryContextMenu.save(
+            fragment = this@StoryViewerPageFragment,
+            messageRecord = it.conversationMessage.messageRecord
+          )
+          viewModel.setIsSavingMedia(false)
+        }
       },
       onDelete = {
         viewModel.setIsDisplayingDeleteDialog(true)
@@ -1224,6 +1311,9 @@ class StoryViewerPageFragment :
     private val CHARACTERS_PER_SECOND = 15L
     private val DEFAULT_DURATION = TimeUnit.SECONDS.toMillis(5)
     private val ONBOARDING_DURATION = TimeUnit.SECONDS.toMillis(10)
+    private const val SMALL_CAPTION_TEXT_MAX_LENGTH = 280
+    private const val SMALL_CAPTION_TEXT_MAX_LINES = 5
+    private const val CAPTION_LINK_PATTERN = Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES or Linkify.PHONE_NUMBERS
 
     private const val ARGS = "args"
 
@@ -1280,6 +1370,19 @@ class StoryViewerPageFragment :
           sharedViewModel.setIsChildScrolling(false)
         }
       })
+    }
+  }
+
+  private class ParentGestureListener(
+    private val singleTapHandler: SingleTapHandler
+  ) : GestureDetector.SimpleOnGestureListener() {
+    override fun onDown(e: MotionEvent): Boolean {
+      return true
+    }
+
+    override fun onSingleTapUp(e: MotionEvent): Boolean {
+      singleTapHandler.onActionUp(e)
+      return true
     }
   }
 
@@ -1396,6 +1499,8 @@ class StoryViewerPageFragment :
   override fun onRecipientBottomSheetDismissed() {
     viewModel.setIsDisplayingRecipientBottomSheet(false)
   }
+
+  override fun onMessageClicked() = Unit
 
   interface Callback {
     fun onGoToPreviousStory(recipientId: RecipientId)

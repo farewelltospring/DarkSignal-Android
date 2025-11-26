@@ -14,7 +14,7 @@ object SqlUtil {
   private val TAG = Log.tag(SqlUtil::class.java)
 
   /** The maximum number of arguments (i.e. question marks) allowed in a SQL statement.  */
-  private const val MAX_QUERY_ARGS = 999
+  const val MAX_QUERY_ARGS = 999
 
   @JvmField
   val COUNT = arrayOf("COUNT(*)")
@@ -43,7 +43,7 @@ object SqlUtil {
    * IMPORTANT: Due to how connection pooling is handled in the app, the only way to have this return useful numbers is to call it within a transaction.
    */
   fun getTotalChanges(db: SupportSQLiteDatabase): Long {
-    return db.query("SELECT total_changes()", null).readToSingleLong()
+    return db.query("SELECT total_changes()", arrayOf()).readToSingleLong()
   }
 
   @JvmStatic
@@ -120,7 +120,7 @@ object SqlUtil {
 
   @JvmStatic
   fun isEmpty(db: SupportSQLiteDatabase, table: String): Boolean {
-    db.query("SELECT COUNT(*) FROM $table", null).use { cursor ->
+    db.query("SELECT COUNT(*) FROM $table", arrayOf()).use { cursor ->
       return if (cursor.moveToFirst()) {
         cursor.getInt(0) == 0
       } else {
@@ -131,7 +131,7 @@ object SqlUtil {
 
   @JvmStatic
   fun columnExists(db: SupportSQLiteDatabase, table: String, column: String): Boolean {
-    db.query("PRAGMA table_info($table)", null).use { cursor ->
+    db.query("PRAGMA table_info($table)", arrayOf()).use { cursor ->
       val nameColumnIndex = cursor.getColumnIndexOrThrow("name")
       while (cursor.moveToNext()) {
         val name = cursor.getString(nameColumnIndex)
@@ -145,6 +145,17 @@ object SqlUtil {
 
   @JvmStatic
   fun buildArgs(vararg objects: Any?): Array<String> {
+    return objects.map {
+      when (it) {
+        null -> throw NullPointerException("Cannot have null arg!")
+        is DatabaseId -> it.serialize()
+        else -> it.toString()
+      }
+    }.toTypedArray()
+  }
+
+  @JvmStatic
+  fun buildArgs(objects: Collection<Any?>): Array<String> {
     return objects.map {
       when (it) {
         null -> throw NullPointerException("Cannot have null arg!")
@@ -291,6 +302,20 @@ object SqlUtil {
   }
 
   /**
+   * A convenient way of making queries that are _equivalent_ to `WHERE [column] IN (?, ?, ..., ?)`
+   * Under the hood, it uses JSON1 functions which can both be surprisingly faster than normal (?, ?, ?) lists, as well as removes the [MAX_QUERY_ARGS] limit.
+   * This means chunking isn't necessary for any practical collection length.
+   */
+  @JvmStatic
+  fun buildFastCollectionQuery(
+    column: String,
+    values: Collection<Any?>
+  ): Query {
+    require(!values.isEmpty()) { "Must have values!" }
+    return Query("$column IN (SELECT e.value FROM json_each(?) e)", arrayOf(jsonEncode(buildArgs(values))))
+  }
+
+  /**
    * A convenient way of making queries in the form: WHERE [column] IN (?, ?, ..., ?)
    *
    * Important: Should only be used if you know the number of values is < 1000. Otherwise you risk creating a SQL statement this is too large.
@@ -378,13 +403,13 @@ object SqlUtil {
   }
 
   @JvmStatic
-  fun buildBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>): List<Query> {
+  fun buildBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>, onConflict: String? = null): List<Query> {
     return buildBulkInsert(tableName, columns, contentValues, MAX_QUERY_ARGS)
   }
 
   @JvmStatic
   @VisibleForTesting
-  fun buildBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>, maxQueryArgs: Int): List<Query> {
+  fun buildBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>, maxQueryArgs: Int, onConflict: String? = null): List<Query> {
     val batchSize = maxQueryArgs / columns.size
 
     return contentValues
@@ -393,9 +418,11 @@ object SqlUtil {
       .toList()
   }
 
-  fun buildSingleBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>): Query {
+  fun buildSingleBulkInsert(tableName: String, columns: Array<String>, contentValues: List<ContentValues>, onConflict: String? = null): Query {
+    val conflictString = onConflict?.let { " OR $onConflict" } ?: ""
+
     val builder = StringBuilder()
-    builder.append("INSERT INTO ").append(tableName).append(" (")
+    builder.append("INSERT$conflictString INTO ").append(tableName).append(" (")
 
     val columnString = columns.joinToString(separator = ", ")
     builder.append(columnString)
@@ -451,6 +478,11 @@ object SqlUtil {
     }
 
     return null
+  }
+
+  /** Simple encoding of a string array as a json array */
+  private fun jsonEncode(strings: Array<String>): String {
+    return strings.joinToString(prefix = "[", postfix = "]", separator = ",") { "\"$it\"" }
   }
 
   class Query(val where: String, val whereArgs: Array<String>) {

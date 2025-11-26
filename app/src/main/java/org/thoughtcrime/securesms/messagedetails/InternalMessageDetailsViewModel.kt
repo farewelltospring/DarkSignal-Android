@@ -39,6 +39,7 @@ class InternalMessageDetailsViewModel(val messageId: Long) : ViewModel() {
           AttachmentInfo(
             id = attachment.attachmentId.id,
             contentType = attachment.contentType,
+            quoteTargetContentType = attachment.quoteTargetContentType,
             size = attachment.size,
             fileName = attachment.fileName,
             hashStart = info?.hashStart,
@@ -62,7 +63,8 @@ class InternalMessageDetailsViewModel(val messageId: Long) : ViewModel() {
 
   data class AttachmentInfo(
     val id: Long,
-    val contentType: String,
+    val contentType: String?,
+    val quoteTargetContentType: String?,
     val size: Long,
     val fileName: String?,
     val hashStart: String?,

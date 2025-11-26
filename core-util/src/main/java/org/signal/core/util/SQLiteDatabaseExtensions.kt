@@ -6,6 +6,13 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.core.content.contentValuesOf
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteQueryBuilder
+import androidx.sqlite.db.SupportSQLiteStatement
+import org.signal.core.util.SqlUtil.ForeignKeyViolation
+import org.signal.core.util.logging.Log
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+private val TAG = "SQLiteDatabaseExtensions"
 
 /**
  * Begins a transaction on the `this` database, runs the provided [block] providing the `this` value as it's argument
@@ -13,14 +20,18 @@ import androidx.sqlite.db.SupportSQLiteQueryBuilder
  *
  * @return The value returned by [block] if any
  */
-fun <T : SupportSQLiteDatabase, R> T.withinTransaction(block: (T) -> R): R {
+inline fun <T : SupportSQLiteDatabase, R> T.withinTransaction(block: (T) -> R): R {
   beginTransaction()
   try {
     val toReturn = block(this)
-    setTransactionSuccessful()
+    if (inTransaction()) {
+      setTransactionSuccessful()
+    }
     return toReturn
   } finally {
-    endTransaction()
+    if (inTransaction()) {
+      endTransaction()
+    }
   }
 }
 
@@ -42,7 +53,11 @@ fun SupportSQLiteDatabase.getAllTables(): List<String> {
  * Returns a list of objects that represent the table definitions in the database. Basically the table name and then the SQL that was used to create it.
  */
 fun SupportSQLiteDatabase.getAllTableDefinitions(): List<CreateStatement> {
-  return this.query("SELECT name, sql FROM sqlite_schema WHERE type = 'table' AND sql NOT NULL AND name != 'sqlite_sequence'")
+  return this
+    .select("name", "sql")
+    .from("sqlite_schema")
+    .where("type = ? AND sql NOT NULL AND name != ?", "table", "sqlite_sequence")
+    .run()
     .readToList { cursor ->
       CreateStatement(
         name = cursor.requireNonNullString("name"),
@@ -57,11 +72,33 @@ fun SupportSQLiteDatabase.getAllTableDefinitions(): List<CreateStatement> {
  * Returns a list of objects that represent the index definitions in the database. Basically the index name and then the SQL that was used to create it.
  */
 fun SupportSQLiteDatabase.getAllIndexDefinitions(): List<CreateStatement> {
-  return this.query("SELECT name, sql FROM sqlite_schema WHERE type = 'index' AND sql NOT NULL")
+  return this
+    .select("name", "sql")
+    .from("sqlite_schema")
+    .where("type = ? AND sql NOT NULL", "index")
+    .run()
     .readToList { cursor ->
       CreateStatement(
         name = cursor.requireNonNullString("name"),
         statement = cursor.requireNonNullString("sql")
+      )
+    }
+    .sortedBy { it.name }
+}
+
+/**
+ * Retrieves the names of all triggers, sorted alphabetically.
+ */
+fun SupportSQLiteDatabase.getAllTriggerDefinitions(): List<CreateStatement> {
+  return this
+    .select("name", "sql")
+    .from("sqlite_schema")
+    .where("type = ? AND sql NOT NULL", "trigger")
+    .run()
+    .readToList {
+      CreateStatement(
+        name = it.requireNonNullString("name"),
+        statement = it.requireNonNullString("sql")
       )
     }
     .sortedBy { it.name }
@@ -84,9 +121,27 @@ fun SupportSQLiteDatabase.getForeignKeys(): List<ForeignKeyConstraint> {
 }
 
 fun SupportSQLiteDatabase.areForeignKeyConstraintsEnabled(): Boolean {
-  return this.query("PRAGMA foreign_keys", null).use { cursor ->
+  return this.query("PRAGMA foreign_keys", arrayOf()).use { cursor ->
     cursor.moveToFirst() && cursor.getInt(0) != 0
   }
+}
+
+/**
+ * Provides a list of all foreign key violations present.
+ * If a [targetTable] is specified, results will be limited to that table specifically.
+ * Otherwise, the check will be performed across all tables.
+ */
+@JvmOverloads
+fun SupportSQLiteDatabase.getForeignKeyViolations(targetTable: String? = null): List<ForeignKeyViolation> {
+  return SqlUtil.getForeignKeyViolations(this, targetTable)
+}
+
+/**
+ * For tables that have an autoincrementing primary key, this will reset the key to start back at 1.
+ * IMPORTANT: This is quite dangerous! Only do this if you're effectively resetting the entire database.
+ */
+fun SupportSQLiteDatabase.resetAutoIncrementValue(targetTable: String) {
+  SqlUtil.resetAutoIncrementValue(this, targetTable)
 }
 
 /**
@@ -125,6 +180,22 @@ fun SupportSQLiteDatabase.getIndexes(): List<Index> {
       table = cursor.requireNonNullString("tbl_name"),
       columns = this.query("PRAGMA index_info($indexName)").readToList { it.requireNonNullString("name") }
     )
+  }
+}
+
+fun SupportSQLiteDatabase.forceForeignKeyConstraintsEnabled(enabled: Boolean, timeout: Duration = 10.seconds) {
+  val startTime = System.currentTimeMillis()
+  while (true) {
+    try {
+      this.setForeignKeyConstraintsEnabled(enabled)
+      break
+    } catch (e: IllegalStateException) {
+      if (System.currentTimeMillis() - startTime > timeout.inWholeMilliseconds) {
+        throw IllegalStateException("Failed to force foreign keys to '$enabled' within the timeout of $timeout", e)
+      }
+      Log.w(TAG, "Failed to set foreign keys because we're in a transaction. Waiting 100ms then trying again.")
+      ThreadUtil.sleep(100)
+    }
   }
 }
 
@@ -176,8 +247,32 @@ fun SupportSQLiteDatabase.deleteAll(tableName: String): Int {
   return this.delete(tableName, null, arrayOfNulls<String>(0))
 }
 
+/**
+ * Begins an INSERT statement with a helpful builder pattern.
+ */
 fun SupportSQLiteDatabase.insertInto(tableName: String): InsertBuilderPart1 {
   return InsertBuilderPart1(this, tableName)
+}
+
+/**
+ * Bind an arbitrary value to an index. It will handle calling the correct bind method based on the class type.
+ * @param index The index you want to bind to. Important: Indexes start at 1, not 0.
+ */
+fun SupportSQLiteStatement.bindValue(index: Int, value: Any?) {
+  when (value) {
+    null -> this.bindNull(index)
+    is DatabaseId -> this.bindString(index, value.serialize())
+    is Boolean -> this.bindLong(index, value.toInt().toLong())
+    is ByteArray -> this.bindBlob(index, value)
+    is Number -> {
+      if (value.toLong() == value || value.toInt() == value || value.toShort() == value || value.toByte() == value) {
+        this.bindLong(index, value.toLong())
+      } else {
+        this.bindDouble(index, value.toDouble())
+      }
+    }
+    else -> this.bindString(index, value.toString())
+  }
 }
 
 class SelectBuilderPart1(
@@ -200,6 +295,14 @@ class SelectBuilderPart2(
 
   fun where(where: String, whereArgs: Array<String>): SelectBuilderPart3 {
     return SelectBuilderPart3(db, columns, tableName, where, whereArgs)
+  }
+
+  fun orderBy(orderBy: String): SelectBuilderPart4a {
+    return SelectBuilderPart4a(db, columns, tableName, "", arrayOf(), orderBy)
+  }
+
+  fun limit(limit: Int): SelectBuilderPart4b {
+    return SelectBuilderPart4b(db, columns, tableName, "", arrayOf(), limit.toString())
   }
 
   fun run(): Cursor {
@@ -233,6 +336,10 @@ class SelectBuilderPart3(
 
   fun limit(limit: Int, offset: Int): SelectBuilderPart4b {
     return SelectBuilderPart4b(db, columns, tableName, where, whereArgs, "$offset,$limit")
+  }
+
+  fun groupBy(groupBy: String): SelectBuilderPart4c {
+    return SelectBuilderPart4c(db, columns, tableName, where, whereArgs, groupBy)
   }
 
   fun run(): Cursor {
@@ -302,6 +409,27 @@ class SelectBuilderPart4b(
   }
 }
 
+class SelectBuilderPart4c(
+  private val db: SupportSQLiteDatabase,
+  private val columns: Array<String>,
+  private val tableName: String,
+  private val where: String,
+  private val whereArgs: Array<String>,
+  private val groupBy: String
+) {
+
+  fun run(): Cursor {
+    return db.query(
+      SupportSQLiteQueryBuilder
+        .builder(tableName)
+        .columns(columns)
+        .selection(where, whereArgs)
+        .groupBy(groupBy)
+        .create()
+    )
+  }
+}
+
 class SelectBuilderPart5(
   private val db: SupportSQLiteDatabase,
   private val columns: Array<String>,
@@ -344,7 +472,7 @@ class UpdateBuilderPart2(
 ) {
   fun where(where: String, vararg whereArgs: Any): UpdateBuilderPart3 {
     require(where.isNotBlank())
-    return UpdateBuilderPart3(db, tableName, values, where, SqlUtil.buildArgs(*whereArgs))
+    return UpdateBuilderPart3(db, tableName, values, where, whereArgs.toArgs())
   }
 
   fun where(where: String, whereArgs: Array<String>): UpdateBuilderPart3 {
@@ -358,11 +486,35 @@ class UpdateBuilderPart3(
   private val tableName: String,
   private val values: ContentValues,
   private val where: String,
-  private val whereArgs: Array<String>
+  private val whereArgs: Array<out Any?>
 ) {
   @JvmOverloads
-  fun run(conflictStrategy: Int = SQLiteDatabase.CONFLICT_NONE): Int {
-    return db.update(tableName, conflictStrategy, values, where, whereArgs)
+  fun run(): Int {
+    val query = StringBuilder("UPDATE $tableName SET ")
+
+    val contentValuesKeys = values.keySet()
+    for ((index, column) in contentValuesKeys.withIndex()) {
+      query.append(column).append(" = ?")
+      if (index < contentValuesKeys.size - 1) {
+        query.append(", ")
+      }
+    }
+
+    query.append(" WHERE ").append(where)
+
+    val statement = db.compileStatement(query.toString())
+    var bindIndex = 1
+    for (key in contentValuesKeys) {
+      statement.bindValue(bindIndex, values.get(key))
+      bindIndex++
+    }
+
+    for (arg in whereArgs) {
+      statement.bindValue(bindIndex, arg)
+      bindIndex++
+    }
+
+    return statement.use { it.executeUpdateDelete() }
   }
 }
 
@@ -430,7 +582,7 @@ class ExistsBuilderPart1(
   }
 
   fun run(): Boolean {
-    return db.query("SELECT EXISTS(SELECT 1 FROM $tableName)", null).use { cursor ->
+    return db.query("SELECT EXISTS(SELECT 1 FROM $tableName)", arrayOf()).use { cursor ->
       cursor.moveToFirst() && cursor.getInt(0) == 1
     }
   }
@@ -470,6 +622,20 @@ class InsertBuilderPart2(
   fun run(conflictStrategy: Int = SQLiteDatabase.CONFLICT_IGNORE): Long {
     return db.insert(tableName, conflictStrategy, values)
   }
+}
+
+/**
+ * Helper function to massage passed-in arguments into a better form to give to the database.
+ */
+private fun Array<out Any?>.toArgs(): Array<Any?> {
+  return this
+    .map {
+      when (it) {
+        is DatabaseId -> it.serialize()
+        else -> it
+      }
+    }
+    .toTypedArray()
 }
 
 data class ForeignKeyConstraint(

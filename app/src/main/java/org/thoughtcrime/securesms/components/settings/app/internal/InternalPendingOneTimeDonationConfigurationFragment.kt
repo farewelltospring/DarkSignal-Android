@@ -21,14 +21,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Rows
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Rows
+import org.signal.core.ui.compose.Scaffolds
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.settings.app.internal.donor.DonationErrorValueCodeSelector
 import org.thoughtcrime.securesms.components.settings.app.internal.donor.DonationErrorValueTypeSelector
@@ -69,7 +70,7 @@ class InternalPendingOneTimeDonationConfigurationFragment : ComposeFragment() {
         viewModel.state.value = viewModel.state.value.copy(error = viewModel.state.value.error!!.copy(code = it))
       },
       onSave = {
-        SignalStore.donations.setPendingOneTimeDonation(viewModel.state.value)
+        SignalStore.inAppPayments.setPendingOneTimeDonation(viewModel.state.value)
         findNavController().popBackStack()
       }
     )
@@ -79,7 +80,7 @@ class InternalPendingOneTimeDonationConfigurationFragment : ComposeFragment() {
 @Preview
 @Composable
 private fun ContentPreview() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       Content(
         state = PendingOneTimeDonation.Builder().error(DonationErrorValue()).build(),
@@ -109,7 +110,7 @@ private fun Content(
 ) {
   Scaffolds.Settings(
     title = "One-time donation state",
-    navigationIconPainter = painterResource(id = R.drawable.symbol_arrow_left_24),
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24),
     navigationContentDescription = null,
     onNavigationClick = onNavigationClick
   ) {
@@ -140,7 +141,7 @@ private fun Content(
             expanded = expanded,
             onDismissRequest = { expanded = false }
           ) {
-            PendingOneTimeDonation.PaymentMethodType.values().forEach { item ->
+            PendingOneTimeDonation.PaymentMethodType.entries.forEach { item ->
               DropdownMenuItem(
                 text = { Text(text = item.name) },
                 onClick = {

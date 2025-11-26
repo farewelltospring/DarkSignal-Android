@@ -27,6 +27,7 @@ import androidx.annotation.DimenRes;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
@@ -36,6 +37,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.concurrent.ListenableFuture;
@@ -60,10 +62,9 @@ import org.thoughtcrime.securesms.database.model.MmsMessageRecord;
 import org.thoughtcrime.securesms.database.model.Quote;
 import org.thoughtcrime.securesms.database.model.StickerRecord;
 import org.thoughtcrime.securesms.keyboard.KeyboardPage;
-import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.linkpreview.LinkPreview;
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewRepository;
-import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader;
+import org.thoughtcrime.securesms.mms.DecryptableUri;
 import org.thoughtcrime.securesms.mms.QuoteModel;
 import org.thoughtcrime.securesms.mms.Slide;
 import org.thoughtcrime.securesms.mms.SlideDeck;
@@ -172,13 +173,8 @@ public class InputPanel extends ConstraintLayout
 
     this.recordLockCancel.setOnClickListener(v -> microphoneRecorderView.cancelAction(true));
 
-    if (SignalStore.settings().isPreferSystemEmoji()) {
-      mediaKeyboard.setVisibility(View.GONE);
-      emojiVisible = false;
-    } else {
-      mediaKeyboard.setVisibility(View.VISIBLE);
-      emojiVisible = true;
-    }
+    mediaKeyboard.setVisibility(View.VISIBLE);
+    emojiVisible = true;
 
     quoteDismiss.setOnClickListener(v -> clearQuote());
 
@@ -223,7 +219,10 @@ public class InputPanel extends ConstraintLayout
                        @NonNull SlideDeck attachments,
                        @NonNull QuoteModel.Type quoteType)
   {
-    this.quoteView.setQuote(requestManager, id, author, body, false, attachments, null, quoteType);
+    this.quoteView.setQuote(requestManager, id, author, body, false, attachments, null, quoteType, true);
+    if (listener != null) {
+      this.quoteView.setOnClickListener(v -> listener.onQuoteClicked(id, author.getId()));
+    }
 
     int originalHeight = this.quoteView.getVisibility() == VISIBLE ? this.quoteView.getMeasuredHeight()
                                                                    : 0;
@@ -310,13 +309,17 @@ public class InputPanel extends ConstraintLayout
                                         quoteView.getAuthor().getId(),
                                         quoteView.getBody().toString(),
                                         false,
-                                        quoteView.getAttachments(),
+                                        quoteView.getAttachment(),
                                         quoteView.getMentions(),
                                         quoteView.getQuoteType(),
                                         quoteView.getBodyRanges()));
     } else {
       return Optional.empty();
     }
+  }
+
+  public boolean hasLinkPreview() {
+    return linkPreview.getVisibility() == View.VISIBLE;
   }
 
   public void setLinkPreviewLoading() {
@@ -408,33 +411,56 @@ public class InputPanel extends ConstraintLayout
     quoteView.setWallpaperEnabled(enabled);
   }
 
-  public void enterEditMessageMode(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft) {
-    int originalHeight         = composeTextContainer.getMeasuredHeight();
-    SpannableString textToEdit = conversationMessageToEdit.getDisplayBody(getContext());
+  public void enterEditModeIfPossible(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft, boolean clearQuote) {
+    String currentText = composeText.getText() == null ? "" : composeText.getText().toString();
+    if ((messageToEdit == null && currentText.isEmpty()) || (messageToEdit != null && currentText.equals(messageToEdit.getBody()))) {
+      enterEditMessageMode(requestManager, conversationMessageToEdit, fromDraft, clearQuote);
+    } else {
+      AlertDialog.Builder builder = new MaterialAlertDialogBuilder(getContext());
+      builder.setTitle(R.string.InputPanel__discard_draft);
+      builder.setMessage(R.string.InputPanel__this_action_cant_be_undone);
+      builder.setPositiveButton(R.string.InputPanel__discard, (dialog, which) -> enterEditMessageMode(requestManager, conversationMessageToEdit, fromDraft, clearQuote));
+      builder.setNegativeButton(android.R.string.cancel, null);
+      builder.show();
+    }
+}
+
+  public void enterEditMessageMode(@NonNull RequestManager requestManager, @NonNull ConversationMessage conversationMessageToEdit, boolean fromDraft, boolean clearQuote) {
+    boolean fromEditMessageMode = inEditMessageMode();
+    int originalHeight          = composeTextContainer.getMeasuredHeight();
+    SpannableString textToEdit  = conversationMessageToEdit.getDisplayBody(getContext());
+
     if (!fromDraft) {
       MessageStyler.convertSpoilersToComposeMode(textToEdit);
       composeText.setText(textToEdit);
       composeText.setSelection(textToEdit.length());
     }
+
     Quote quote = MessageRecordUtil.getQuote(conversationMessageToEdit.getMessageRecord());
-    if (quote == null) {
+    if (quote == null || clearQuote) {
       clearQuote();
     } else {
       setQuote(requestManager, quote.getId(), Recipient.resolved(quote.getAuthor()), quote.getDisplayText(), quote.getAttachment(), quote.getQuoteType());
     }
+
     this.messageToEdit = conversationMessageToEdit.getMessageRecord();
+
+    updateEditModeUi();
     updateEditModeThumbnail(requestManager);
 
-    int maxWidth = composeContainer.getWidth();
-    if (composeContainer.getLayoutParams() instanceof MarginLayoutParams) {
-      MarginLayoutParams layoutParams = (MarginLayoutParams) composeContainer.getLayoutParams();
-      maxWidth -= layoutParams.leftMargin + layoutParams.rightMargin;
+    int maxWidth = composeContainer.getWidth() - mediaKeyboard.getWidth();
+    if (!fromEditMessageMode) {
+      maxWidth -= editMessageCancel.getWidth();
+      if (editMessageCancel.getLayoutParams() instanceof MarginLayoutParams) {
+        MarginLayoutParams layoutParams = (MarginLayoutParams) editMessageCancel.getLayoutParams();
+        maxWidth -= layoutParams.leftMargin;
+      }
     }
     composeTextContainer.measure(MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.AT_MOST), MeasureSpec.UNSPECIFIED);
-    int finalHeight = (inEditMessageMode()) ? composeTextContainer.getMeasuredHeight() : composeTextContainer.getMeasuredHeight() + editMessageTitle.getMeasuredHeight();
+    int finalHeight = composeTextContainer.getMeasuredHeight();
 
     if (editMessageAnimator != null) {
-     editMessageAnimator.cancel();
+      editMessageAnimator.cancel();
     }
     editMessageAnimator = createHeightAnimator(composeTextContainer, originalHeight, finalHeight, new AnimationCompleteListener() {
       @Override
@@ -442,7 +468,6 @@ public class InputPanel extends ConstraintLayout
         ViewGroup.LayoutParams params = composeTextContainer.getLayoutParams();
         params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
         composeTextContainer.setLayoutParams(params);
-        updateEditModeUi();
       }
     });
     editMessageAnimator.start();
@@ -456,7 +481,7 @@ public class InputPanel extends ConstraintLayout
 
       if (imageVideoSlide != null && imageVideoSlide.getUri() != null) {
         editMessageThumbnail.setVisibility(VISIBLE);
-        requestManager.load(new DecryptableStreamUriLoader.DecryptableUri(imageVideoSlide.getUri()))
+        requestManager.load(new DecryptableUri(imageVideoSlide.getUri()))
                      .centerCrop()
                      .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                      .into(editMessageThumbnail);
@@ -548,6 +573,11 @@ public class InputPanel extends ConstraintLayout
   }
 
   @Override
+  public void onRecorderAlreadyInUse() {
+    if (listener != null) listener.onRecorderAlreadyInUse();
+  }
+
+  @Override
   public void onRecordPressed() {
     if (listener != null) listener.onRecorderStarted();
     recordTime.display();
@@ -606,8 +636,19 @@ public class InputPanel extends ConstraintLayout
     if (listener != null) listener.onRecorderLocked();
   }
 
+  @Override
+  public void onRecordSaved() {
+    Log.d(TAG, "Recording saved");
+    onRecordHideEvent();
+    if (listener != null) listener.onRecorderSaveDraft();
+  }
+
   public void onPause() {
     this.microphoneRecorderView.cancelAction(false);
+  }
+
+  public void onSaveRecordDraft() {
+    this.microphoneRecorderView.saveAction();
   }
 
   public @NonNull Observer<VoiceNotePlaybackState> getPlaybackStateObserver() {
@@ -673,7 +714,7 @@ public class InputPanel extends ConstraintLayout
     return microphoneRecorderView.isRecordingLocked();
   }
 
-  public void releaseRecordingLock() {
+  public void releaseRecordingLockAndSend() {
     microphoneRecorderView.unlockAction();
   }
 
@@ -755,11 +796,15 @@ public class InputPanel extends ConstraintLayout
   }
 
   private void updateVisibility() {
-    if (hideForGroupState || hideForBlockedState || hideForSearch || hideForSelection || hideForMessageRequestState) {
+    if (isHidden()) {
       setVisibility(GONE);
     } else {
       setVisibility(VISIBLE);
     }
+  }
+
+  public boolean isHidden() {
+    return hideForGroupState || hideForBlockedState || hideForSearch || hideForSelection || hideForMessageRequestState;
   }
 
   public @Nullable MessageRecord getEditMessage() {
@@ -775,14 +820,17 @@ public class InputPanel extends ConstraintLayout
   public interface Listener extends VoiceNoteDraftView.Listener {
     void onRecorderStarted();
     void onRecorderLocked();
+    void onRecorderSaveDraft();
     void onRecorderFinished();
     void onRecorderCanceled(boolean byUser);
     void onRecorderPermissionRequired();
+    void onRecorderAlreadyInUse();
     void onEmojiToggle();
     void onLinkPreviewCanceled();
     void onStickerSuggestionSelected(@NonNull StickerRecord sticker);
     void onQuoteChanged(long id, @NonNull RecipientId author);
     void onQuoteCleared();
+    void onQuoteClicked(long quoteId, RecipientId authorId);
     void onEnterEditMode();
     void onExitEditMode();
     void onQuickCameraToggleClicked();

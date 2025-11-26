@@ -14,7 +14,9 @@ data class JobSpec(
   val serializedInputData: ByteArray?,
   val isRunning: Boolean,
   val isMemoryOnly: Boolean,
-  val priority: Int
+  val globalPriority: Int,
+  val queuePriority: Int,
+  val initialDelay: Long
 ) {
 
   fun withNextBackoffInterval(updated: Long): JobSpec {
@@ -26,7 +28,7 @@ data class JobSpec(
   }
 
   override fun toString(): String {
-    return "id: JOB::$id | factoryKey: $factoryKey | queueKey: $queueKey | createTime: $createTime | lastRunAttemptTime: $lastRunAttemptTime | nextBackoffInterval: $nextBackoffInterval | runAttempt: $runAttempt | maxAttempts: $maxAttempts | lifespan: $lifespan | isRunning: $isRunning | memoryOnly: $isMemoryOnly"
+    return "id: JOB::$id | factoryKey: $factoryKey | queueKey: $queueKey | createTime: $createTime | lastRunAttemptTime: $lastRunAttemptTime | nextBackoffInterval: $nextBackoffInterval | runAttempt: $runAttempt | maxAttempts: $maxAttempts | lifespan: $lifespan | isRunning: $isRunning | memoryOnly: $isMemoryOnly | globalPriority: $globalPriority | queuePriorty: $queuePriority | initialDelay: $initialDelay"
   }
 
   override fun equals(other: Any?): Boolean {

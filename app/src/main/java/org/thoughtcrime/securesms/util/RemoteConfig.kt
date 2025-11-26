@@ -1,33 +1,45 @@
 package org.thoughtcrime.securesms.util
 
+import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import org.json.JSONException
 import org.json.JSONObject
+import org.signal.core.util.ByteSize
+import org.signal.core.util.bytes
 import org.signal.core.util.gibiBytes
+import org.signal.core.util.kibiBytes
 import org.signal.core.util.logging.Log
 import org.signal.core.util.mebiBytes
-import org.thoughtcrime.securesms.BuildConfig
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.SelectionLimits
-import org.thoughtcrime.securesms.jobs.RefreshAttributesJob
-import org.thoughtcrime.securesms.jobs.RefreshOwnProfileJob
 import org.thoughtcrime.securesms.jobs.RemoteConfigRefreshJob
 import org.thoughtcrime.securesms.jobs.Svr3MirrorJob
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.messageprocessingalarm.RoutineMessageFetchReceiver
-import org.thoughtcrime.securesms.util.RemoteConfig.Config
+import org.thoughtcrime.securesms.net.SignalNetwork
+import org.thoughtcrime.securesms.util.RemoteConfig.REMOTE_VALUES
+import org.thoughtcrime.securesms.util.RemoteConfig.asBoolean
+import org.thoughtcrime.securesms.util.RemoteConfig.asInteger
 import org.thoughtcrime.securesms.util.RemoteConfig.remoteBoolean
 import org.thoughtcrime.securesms.util.RemoteConfig.remoteValue
+import org.thoughtcrime.securesms.util.RemoteConfig.retryReceiptMaxCount
+import org.thoughtcrime.securesms.util.RemoteConfig.retryReceiptMaxCountResetAge
+import org.whispersystems.signalservice.api.NetworkResultUtil
 import java.io.IOException
 import java.util.TreeMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.reflect.KProperty
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /**
  * A location for accessing remotely-configured values.
@@ -51,17 +63,40 @@ object RemoteConfig {
   val configsByKey: MutableMap<String, Config<*>> = mutableMapOf()
 
   @JvmStatic
-  @Synchronized
+  val libsignalConfigs: Map<String, String>
+    get() {
+      if (!initialized) {
+        Log.w(TAG, "Tried to read libsignalConfigs before initialization. Initializing now.")
+        initLock.withLock {
+          if (!initialized) {
+            init()
+          }
+        }
+      }
+      return computeLibsignalConfigs(REMOTE_VALUES)
+    }
+
+  @GuardedBy("initLock")
+  @Volatile
+  @VisibleForTesting
+  var initialized: Boolean = false
+  private val initLock: ReentrantLock = ReentrantLock()
+
+  @JvmStatic
   fun init() {
-    val current = parseStoredConfig(SignalStore.remoteConfig.currentConfig)
-    val pending = parseStoredConfig(SignalStore.remoteConfig.pendingConfig)
-    val changes = computeChanges(current, pending)
+    initLock.withLock {
+      val current = parseStoredConfig(SignalStore.remoteConfig.currentConfig)
+      val pending = parseStoredConfig(SignalStore.remoteConfig.pendingConfig)
+      val changes = computeChanges(current, pending)
 
-    SignalStore.remoteConfig.currentConfig = mapToJson(pending)
-    REMOTE_VALUES.putAll(pending)
-    triggerFlagChangeListeners(changes)
+      SignalStore.remoteConfig.currentConfig = mapToJson(pending)
+      REMOTE_VALUES.putAll(pending)
+      triggerFlagChangeListeners(changes)
 
-    Log.i(TAG, "init() $REMOTE_VALUES")
+      Log.i(TAG, "init() $REMOTE_VALUES")
+
+      initialized = true
+    }
   }
 
   @JvmStatic
@@ -80,7 +115,7 @@ object RemoteConfig {
   @WorkerThread
   @Throws(IOException::class)
   fun refreshSync() {
-    val result = AppDependencies.signalServiceAccountManager.getRemoteConfig()
+    val result = NetworkResultUtil.toBasicLegacy(SignalNetwork.remoteConfig.getRemoteConfig())
     update(result.config)
   }
 
@@ -109,10 +144,9 @@ object RemoteConfig {
     Log.i(TAG, "[Disk]   After : ${result.disk}")
   }
 
-  /** Only for rendering debug info.  */
   @JvmStatic
   @get:Synchronized
-  val debugMemoryValues: Map<String, Any>
+  val memoryValues: Map<String, Any>
     get() = TreeMap(REMOTE_VALUES)
 
   /** Only for rendering debug info.  */
@@ -143,7 +177,7 @@ object RemoteConfig {
     val allKeys: Set<String> = remote.keys + localDisk.keys + localMemory.keys
 
     allKeys
-      .filter { remoteCapable.contains(it) }
+      .filter { remoteCapable.contains(it) || it.startsWith("android.libsignal.") }
       .forEach { key: String ->
         val remoteValue = remote[key]
         val diskValue = localDisk[key]
@@ -182,8 +216,14 @@ object RemoteConfig {
         }
       }
 
+    // Libsignal does not support sticky flags and is okay with any flag that is not known to the server being
+    // forgotten about.
+    val libsignalConfigsKnownToServer = remote.keys.filter { it.startsWith("android.libsignal.") }.toSet()
+
     allKeys
-      .filterNot { remoteCapable.contains(it) }
+      .filterNot { key ->
+        remoteCapable.contains(key) || libsignalConfigsKnownToServer.contains(key)
+      }
       .filterNot { key -> sticky.contains(key) && localDisk[key] == java.lang.Boolean.TRUE }
       .forEach { key: String ->
         newDisk.remove(key)
@@ -256,6 +296,28 @@ object RemoteConfig {
         listener.onFlagChange(value)
       }
     }
+  }
+
+  private fun computeLibsignalConfigs(config: Map<String, Any?>): Map<String, String> {
+    return config
+      .filterKeys { it.startsWith("android.libsignal.") }
+      .mapNotNull { (key, value) ->
+        val newKey = key.removePrefix("android.libsignal.")
+        when (value) {
+          is String -> newKey to value
+          // The server is currently synthesizing "true" / "false" values
+          // for RemoteConfigs that are otherwise empty string values.
+          // Libsignal expects that disabled values are simply absent from the
+          // map, so we map true to "true" and otherwise omit disabled values.
+          is Boolean -> if (value) newKey to "true" else null
+          else -> {
+            val type = value?.let { value::class.simpleName }
+            Log.w(TAG, "[libsignal] Unexpected type for $newKey! Was a $type")
+            newKey to value.toString()
+          }
+        }
+      }
+      .toMap()
   }
 
   @VisibleForTesting
@@ -349,6 +411,15 @@ object RemoteConfig {
     val transformer: (Any?) -> T
   ) {
     operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+      if (!initialized) {
+        Log.w(TAG, "Tried to read $key before initialization. Initializing now.")
+        initLock.withLock {
+          if (!initialized) {
+            init()
+          }
+        }
+      }
+
       return transformer(REMOTE_VALUES[key])
     }
   }
@@ -402,6 +473,24 @@ object RemoteConfig {
       active = active,
       onChangeListener = onChangeListener,
       transformer = { it.asLong(defaultValue) }
+    )
+  }
+
+  private fun remoteDuration(
+    key: String,
+    defaultValue: Duration,
+    hotSwappable: Boolean,
+    durationUnit: DurationUnit,
+    active: Boolean = true,
+    onChangeListener: OnFlagChange? = null
+  ): Config<Duration> {
+    return remoteValue(
+      key = key,
+      hotSwappable = hotSwappable,
+      sticky = false,
+      active = active,
+      onChangeListener = onChangeListener,
+      transformer = { it?.toString()?.toLongOrNull()?.toDuration(durationUnit) ?: defaultValue }
     )
   }
 
@@ -500,15 +589,6 @@ object RemoteConfig {
     key = "android.clientExpiration",
     hotSwappable = true,
     defaultValue = null
-  )
-
-  /** Whether to use the custom streaming muxer or built in android muxer.  */
-  @JvmStatic
-  @get:JvmName("useStreamingVideoMuxer")
-  val useStreamingVideoMuxer: Boolean by remoteBoolean(
-    key = "android.customVideoMuxer.1",
-    defaultValue = false,
-    hotSwappable = true
   )
 
   /** The time in between routine CDS refreshes, in seconds.  */
@@ -683,16 +763,9 @@ object RemoteConfig {
     hotSwappable = false
   )
 
-  /** A comma-separated list of models that should *not* use hardware AEC for calling.  */
-  val hardwareAecBlocklistModels: String by remoteString(
-    key = "android.calling.hardwareAecBlockList",
-    defaultValue = "",
-    hotSwappable = true
-  )
-
-  /** A comma-separated list of models that should *not* use software AEC for calling.  */
-  val softwareAecBlocklistModels: String by remoteString(
-    key = "android.calling.softwareAecBlockList",
+  /** A json string representing rules necessary to build an audio configuration for a device. */
+  val callingAudioDeviceConfig: String by remoteString(
+    key = "android.calling.audioDeviceConfig",
     defaultValue = "",
     hotSwappable = true
   )
@@ -723,13 +796,6 @@ object RemoteConfig {
     key = "android.cameraXMixedModelBlockList",
     defaultValue = "",
     hotSwappable = false
-  )
-
-  /** Whether or not hardware AEC should be used for calling on devices older than API 29.  */
-  val useHardwareAecIfOlderThanApi29: Boolean by remoteBoolean(
-    key = "android.calling.useHardwareAecIfOlderThanApi29",
-    defaultValue = false,
-    hotSwappable = true
   )
 
   /** Prefetch count for stories from a given user. */
@@ -815,17 +881,6 @@ object RemoteConfig {
     sticky = true
   )
 
-  /**
-   * Whether or not ad-hoc calling is enabled
-   */
-  @JvmStatic
-  @get:JvmName("adHocCalling")
-  val adHocCalling: Boolean by remoteBoolean(
-    key = "android.calling.ad.hoc.3",
-    defaultValue = false,
-    hotSwappable = false
-  )
-
   /** Maximum number of attachments allowed to be sent/received.  */
   val maxAttachmentCount: Int by remoteInt(
     key = "android.attachments.maxCount",
@@ -850,12 +905,21 @@ object RemoteConfig {
     hotSwappable = true
   )
 
+  /** Maximum input size when opening a video to send in bytes  */
+  @JvmStatic
+  @get:JvmName("maxSourceTranscodeVideoSizeBytes")
+  val maxSourceTranscodeVideoSizeBytes: Long by remoteLong(
+    key = "android.media.sourceTranscodeVideo.maxBytes",
+    defaultValue = 500L.mebiBytes.inWholeBytes,
+    hotSwappable = true
+  )
+
   const val PROMPT_FOR_NOTIFICATION_LOGS: String = "android.logs.promptNotifications"
 
   @JvmStatic
   @get:JvmName("promptForDelayedNotificationLogs")
   val promptForDelayedNotificationLogs: String by remoteString(
-    key = RemoteConfig.PROMPT_FOR_NOTIFICATION_LOGS,
+    key = PROMPT_FOR_NOTIFICATION_LOGS,
     defaultValue = "*",
     hotSwappable = true
   )
@@ -876,15 +940,15 @@ object RemoteConfig {
     hotSwappable = true
   )
 
-  private const val PROMPT_DELAYED_NOTIFICATION_CONFIG: String = "android.delayedNotificationConfig"
+  const val DEVICE_SPECIFIC_NOTIFICATION_CONFIG: String = "android.deviceSpecificNotificationConfig"
 
-  val promptDelayedNotificationConfig: String by remoteString(
-    key = PROMPT_DELAYED_NOTIFICATION_CONFIG,
+  val deviceSpecificNotificationConfig: String by remoteString(
+    key = DEVICE_SPECIFIC_NOTIFICATION_CONFIG,
     defaultValue = "",
     hotSwappable = true
   )
 
-  const val CRASH_PROMPT_CONFIG: String = "android.crashPromptConfig"
+  const val CRASH_PROMPT_CONFIG: String = "android.crashPromptConfig.2"
 
   /** Config object for what crashes to prompt about.  */
   val crashPromptConfig: String by remoteString(
@@ -929,15 +993,6 @@ object RemoteConfig {
     hotSwappable = true
   )
 
-  /** Whether or not to use active call manager instead of WebRtcCallService.  */
-  @JvmStatic
-  @get:JvmName("useActiveCallManager")
-  val useActiveCallManager: Boolean by remoteBoolean(
-    key = "android.calling.useActiveCallManager.5",
-    defaultValue = false,
-    hotSwappable = false
-  )
-
   /** Whether the in-app GIF search is available for use.  */
   @JvmStatic
   @get:JvmName("gifSearchAvailable")
@@ -972,13 +1027,6 @@ object RemoteConfig {
     hotSwappable = true
   )
 
-  /** Make CDSI lookups via libsignal-net instead of native websocket.  */
-  val useLibsignalNetForCdsiLookup: Boolean by remoteBoolean(
-    key = "android.cds.libsignal.4",
-    defaultValue = false,
-    hotSwappable = true
-  )
-
   /** The lifespan of a linked device (i.e. the time it can be inactive for before it expires), in milliseconds.  */
   @JvmStatic
   val linkedDeviceLifespan: Long by remoteValue(
@@ -989,72 +1037,29 @@ object RemoteConfig {
     inSeconds.seconds.inWholeMilliseconds
   }
 
-  /**
-   * Enable Message Backups UI
-   * Note: This feature is in active development and is not intended to currently function.
-   */
-  @JvmStatic
-  @get:JvmName("messageBackups")
-  val messageBackups: Boolean by remoteValue(
-    key = "android.messageBackups",
-    hotSwappable = false,
-    active = false
+  val backupFallbackArchiveCdn: Int by remoteInt(
+    key = "global.backups.mediaTierFallbackCdnNumber",
+    hotSwappable = true,
+    active = true,
+    defaultValue = 3
+  )
+
+  /** Max plaintext unpadded file size for backup thumbnails. */
+  val backupMaxThumbnailFileSize: ByteSize by remoteValue(
+    key = "global.backups.maxThumbnailFileSizeBytes",
+    hotSwappable = true,
+    active = true
   ) { value ->
-    BuildConfig.MESSAGE_BACKUP_RESTORE_ENABLED || value.asBoolean(false)
+    value.asLong(8.kibiBytes.inWholeBytes).bytes
   }
 
-  /** Whether or not to use the custom CameraX controller class  */
   @JvmStatic
-  @get:JvmName("customCameraXController")
-  val customCameraXController: Boolean by remoteBoolean(
-    key = "android.cameraXCustomController",
-    defaultValue = false,
-    hotSwappable = true
-  )
-
-  /** Whether or not to use the V2 refactor of registration.  */
-  @JvmStatic
-  @get:JvmName("registrationV2")
-  val registrationV2: Boolean by remoteBoolean(
-    key = "android.registration.v2",
-    defaultValue = true,
-    hotSwappable = false,
-    active = false
-  )
-
-  /** Whether unauthenticated chat web socket is backed by libsignal-net  */
-  @JvmStatic
-  @get:JvmName("libSignalWebSocketEnabled")
-  val libSignalWebSocketEnabled: Boolean by remoteBoolean(
-    key = "android.libsignalWebSocketEnabled",
+  @get:JvmName("libsignalEnforceMinTlsVersion")
+  val libsignalEnforceMinTlsVersion by remoteBoolean(
+    key = "android.libsignalEnforceMinTlsVersion",
     defaultValue = false,
     hotSwappable = false
   )
-
-  /** Whether or not to launch the restore activity after registration is complete, rather than before.  */
-  @JvmStatic
-  @get:JvmName("restoreAfterRegistration")
-  val restoreAfterRegistration: Boolean by remoteValue(
-    key = "android.registration.restorePostRegistration",
-    hotSwappable = false,
-    active = false
-  ) { value ->
-    BuildConfig.MESSAGE_BACKUP_RESTORE_ENABLED || value.asBoolean(false)
-  }
-
-  /**
-   * Percentage [0, 100] of web socket requests that will be "shadowed" by sending
-   * an unauthenticated keep-alive via libsignal-net. Default: 0
-   */
-  @JvmStatic
-  @get:JvmName("libSignalWebSocketShadowingPercentage")
-  val libSignalWebSocketShadowingPercentage: Int by remoteValue(
-    key = "android.libsignalWebSocketShadowingPercentage",
-    hotSwappable = false
-  ) { value ->
-    val remote = value.asInteger(0)
-    remote.coerceIn(0, 100)
-  }
 
   @JvmStatic
   val backgroundMessageProcessInterval: Long by remoteValue(
@@ -1073,16 +1078,6 @@ object RemoteConfig {
     hotSwappable = true
   )
 
-  /** Whether or not to delete syncing is enabled.  */
-  val deleteSyncEnabled: Boolean by remoteBoolean(
-    key = "android.deleteSyncEnabled",
-    defaultValue = false,
-    hotSwappable = true,
-    onChangeListener = {
-      AppDependencies.jobManager.startChain(RefreshAttributesJob()).then(RefreshOwnProfileJob()).enqueue()
-    }
-  )
-
   /** Which phase we're in for the SVR3 migration  */
   val svr3MigrationPhase: Int by remoteInt(
     key = "global.svr3.phase",
@@ -1096,5 +1091,119 @@ object RemoteConfig {
     }
   )
 
+  /** JSON object representing some details about how we might want to warn the user around connectivity issues. */
+  val connectivityWarningConfig: String by remoteString(
+    key = "android.connectivityWarningConfig",
+    defaultValue = "{}",
+    hotSwappable = true
+  )
+
+  /** Whether or not to show chat folders. */
+  @JvmStatic
+  val showChatFolders: Boolean by remoteBoolean(
+    key = "android.showChatFolders.2",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
+  /** Whether or not to use the new pinned chat UI. */
+  @JvmStatic
+  val inlinePinnedChats: Boolean by remoteBoolean(
+    key = "android.inlinePinnedChats.2",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
+  @JvmStatic
+  @get:JvmName("newCallUi")
+  val newCallUi: Boolean by remoteBoolean(
+    key = "android.newCallUi",
+    defaultValue = false,
+    hotSwappable = false
+  )
+
+  @JvmStatic
+  @get:JvmName("useHevcEncoder")
+  val useHevcEncoder: Boolean by remoteBoolean(
+    key = "android.useHevcEncoder",
+    defaultValue = false,
+    hotSwappable = false
+  )
+
+  /** Whether to allow different WindowSizeClasses to be used to determine screen layout */
+  val largeScreenUi: Boolean by remoteBoolean(
+    key = "android.largeScreenUI.2",
+    hotSwappable = false,
+    defaultValue = false
+  )
+
+  @JvmStatic
+  @get:JvmName("useMessageSendRestFallback")
+  val useMessageSendRestFallback: Boolean by remoteBoolean(
+    key = "android.useMessageSendRestFallback",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
+  /**
+   * Also determines how long an unregistered/deleted record should remain in storage service
+   */
+  val messageQueueTime: Long by remoteValue(
+    key = "global.messageQueueTimeInSeconds",
+    hotSwappable = true
+  ) { value ->
+    val inSeconds = value.asLong(45.days.inWholeSeconds)
+    inSeconds.seconds.inWholeMilliseconds
+  }
+
+  @JvmStatic
+  val archiveReconciliationSyncInterval: Duration by remoteDuration(
+    key = "global.archive.attachmentReconciliationSyncIntervalDays",
+    defaultValue = 7.days,
+    hotSwappable = true,
+    durationUnit = DurationUnit.DAYS
+  )
+
+  /** The maximum allowed envelope size for messages we send. */
+  @JvmStatic
+  @get:JvmName("maxEnvelopeSizeBytes")
+  val maxEnvelopeSizeBytes: Long by remoteLong(
+    key = "android.maxEnvelopeSizeBytes",
+    defaultValue = 256.kibiBytes.inWholeBytes,
+    hotSwappable = true
+  )
+
+  @JvmStatic
+  @get:JvmName("polls")
+  val polls: Boolean by remoteBoolean(
+    key = "android.polls.2",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
+  /** Whether or not to send over binary service ids (alongside string service ids). */
+  @JvmStatic
+  @get:JvmName("useBinaryId")
+  val useBinaryId: Boolean by remoteBoolean(
+    key = "android.useBinaryServiceId",
+    defaultValue = Environment.IS_STAGING,
+    hotSwappable = false
+  )
+
+  @JvmStatic
+  @get:JvmName("receivePolls")
+  val receivePolls: Boolean by remoteBoolean(
+    key = "android.receivePolls",
+    defaultValue = false,
+    hotSwappable = true
+  )
+
+  @JvmStatic
+  @get:JvmName("backupsBetaMegaphone")
+  val backupsBetaMegaphone: Boolean by remoteBoolean(
+    key = "android.backupsBetaMegaphone",
+    defaultValue = false,
+    hotSwappable = true
+  )
   // endregion
 }

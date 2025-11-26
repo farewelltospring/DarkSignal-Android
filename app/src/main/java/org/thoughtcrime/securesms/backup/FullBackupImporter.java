@@ -6,7 +6,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.util.Pair;
+import kotlin.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -29,7 +29,11 @@ import org.thoughtcrime.securesms.crypto.ModernEncryptingPartOutputStream;
 import org.thoughtcrime.securesms.database.AttachmentTable;
 import org.thoughtcrime.securesms.database.EmojiSearchTable;
 import org.thoughtcrime.securesms.database.KeyValueDatabase;
+import org.thoughtcrime.securesms.database.KyberPreKeyTable;
+import org.thoughtcrime.securesms.database.LastResortKeyTupleTable;
+import org.thoughtcrime.securesms.database.OneTimePreKeyTable;
 import org.thoughtcrime.securesms.database.SearchTable;
+import org.thoughtcrime.securesms.database.SignedPreKeyTable;
 import org.thoughtcrime.securesms.database.StickerTable;
 import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.KeyValueDataSet;
@@ -60,10 +64,14 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import kotlin.collections.SetsKt;
+
 public class FullBackupImporter extends FullBackupBase {
 
   @SuppressWarnings("unused")
   private static final String TAG = Log.tag(FullBackupImporter.class);
+
+  private static final Set<String> KEY_TABLES = SetsKt.setOf(KyberPreKeyTable.TABLE_NAME, LastResortKeyTupleTable.TABLE_NAME, OneTimePreKeyTable.TABLE_NAME, SignedPreKeyTable.TABLE_NAME);
 
   public static boolean validatePassphrase(@NonNull Context context,
                                            @NonNull Uri uri,
@@ -83,17 +91,25 @@ public class FullBackupImporter extends FullBackupBase {
     }
   }
 
-  public static void importFile(@NonNull Context context, @NonNull AttachmentSecret attachmentSecret,
-                                @NonNull SQLiteDatabase db, @NonNull Uri uri, @NonNull String passphrase)
+  public static void importFile(@NonNull Context context,
+                                @NonNull AttachmentSecret attachmentSecret,
+                                @NonNull SQLiteDatabase db,
+                                @NonNull Uri uri,
+                                @NonNull String passphrase,
+                                boolean excludeKeyTables)
       throws IOException
   {
     try (InputStream is = getInputStream(context, uri)) {
-      importFile(context, attachmentSecret, db, is, passphrase);
+      importFile(context, attachmentSecret, db, is, passphrase, excludeKeyTables);
     }
   }
 
-  public static void importFile(@NonNull Context context, @NonNull AttachmentSecret attachmentSecret,
-                                @NonNull SQLiteDatabase db, @NonNull InputStream is, @NonNull String passphrase)
+  public static void importFile(@NonNull Context context,
+                                @NonNull AttachmentSecret attachmentSecret,
+                                @NonNull SQLiteDatabase db,
+                                @NonNull InputStream is,
+                                @NonNull String passphrase,
+                                boolean excludeKeyTables)
       throws IOException
   {
     int count = 0;
@@ -106,7 +122,7 @@ public class FullBackupImporter extends FullBackupBase {
     try {
       BackupRecordInputStream inputStream = new BackupRecordInputStream(is, passphrase);
 
-      dropAllTables(db);
+      dropAllTables(db, excludeKeyTables);
 
       BackupFrame frame;
 
@@ -115,7 +131,7 @@ public class FullBackupImporter extends FullBackupBase {
         count++;
 
         if      (frame.version != null)    processVersion(db, frame.version);
-        else if (frame.statement != null)  processStatement(db, frame.statement);
+        else if (frame.statement != null)  processStatement(db, frame.statement, excludeKeyTables);
         else if (frame.preference != null) processPreference(context, frame.preference);
         else if (frame.attachment != null) processAttachment(context, attachmentSecret, db, frame.attachment, inputStream);
         else if (frame.sticker != null)    processSticker(context, attachmentSecret, db, frame.sticker, inputStream);
@@ -162,17 +178,19 @@ public class FullBackupImporter extends FullBackupBase {
     db.setVersion(version.version);
   }
 
-  private static void processStatement(@NonNull SQLiteDatabase db, SqlStatement statement) {
+  private static void processStatement(@NonNull SQLiteDatabase db, SqlStatement statement, boolean excludeKeyTables) {
     if (statement.statement == null) {
       Log.w(TAG, "Null statement!");
       return;
     }
 
-    boolean isForMmsFtsSecretTable = statement.statement.contains(SearchTable.FTS_TABLE_NAME + "_");
-    boolean isForEmojiSecretTable  = statement.statement.contains(EmojiSearchTable.TABLE_NAME + "_");
-    boolean isForSqliteSecretTable = statement.statement.toLowerCase().startsWith("create table sqlite_");
+    boolean isForMmsFtsSecretTable    = statement.statement.contains(SearchTable.FTS_TABLE_NAME + "_");
+    boolean isForEmojiSecretTable     = statement.statement.contains(EmojiSearchTable.TABLE_NAME + "_");
+    boolean isForSqliteSecretTable    = statement.statement.toLowerCase().startsWith("create table sqlite_");
+    boolean isForRemoteMegaphoneTable = statement.statement.toLowerCase().startsWith("insert into remote_megaphone");
+    boolean isForExcludedKeyTable     = excludeKeyTables && KEY_TABLES.stream().anyMatch(table -> statement.statement.toLowerCase().contains(table));
 
-    if (isForMmsFtsSecretTable || isForEmojiSecretTable || isForSqliteSecretTable) {
+    if (isForMmsFtsSecretTable || isForEmojiSecretTable || isForSqliteSecretTable || isForRemoteMegaphoneTable || isForExcludedKeyTable) {
       Log.i(TAG, "Ignoring import for statement: " + statement.statement);
       return;
     }
@@ -206,10 +224,10 @@ public class FullBackupImporter extends FullBackupBase {
     ContentValues contentValues = new ContentValues();
 
     try {
-      inputStream.readAttachmentTo(output.second, attachment.length);
+      inputStream.readAttachmentTo(output.getSecond(), attachment.length);
 
       contentValues.put(dataFileColumnName, dataFile.getAbsolutePath());
-      contentValues.put(dataRandomColumnName, output.first);
+      contentValues.put(dataRandomColumnName, output.getFirst());
     } catch (BackupRecordInputStream.BadMacException e) {
       Log.w(TAG, "Bad MAC for attachment " + attachment.attachmentId + "! Can't restore it.", e);
       dataFile.delete();
@@ -231,15 +249,15 @@ public class FullBackupImporter extends FullBackupBase {
 
     Pair<byte[], OutputStream> output = ModernEncryptingPartOutputStream.createFor(attachmentSecret, dataFile, false);
 
-    inputStream.readAttachmentTo(output.second, sticker.length);
+    inputStream.readAttachmentTo(output.getSecond(), sticker.length);
 
     ContentValues contentValues = new ContentValues();
     contentValues.put(StickerTable.FILE_PATH, dataFile.getAbsolutePath());
     contentValues.put(StickerTable.FILE_LENGTH, sticker.length);
-    contentValues.put(StickerTable.FILE_RANDOM, output.first);
+    contentValues.put(StickerTable.FILE_RANDOM, output.getFirst());
 
     db.update(StickerTable.TABLE_NAME, contentValues,
-              StickerTable._ID + " = ?",
+              StickerTable.ID + " = ?",
               new String[] {String.valueOf(sticker.rowId)});
   }
 
@@ -314,12 +332,18 @@ public class FullBackupImporter extends FullBackupBase {
     }
   }
 
-  private static void dropAllTables(@NonNull SQLiteDatabase db) {
+  private static void dropAllTables(@NonNull SQLiteDatabase db, boolean excludeKeyTables) {
     for (String trigger : SqlUtil.getAllTriggers(db)) {
       Log.i(TAG, "Dropping trigger: " + trigger);
       db.execSQL("DROP TRIGGER IF EXISTS " + trigger);
     }
+
     for (String table : getTablesToDropInOrder(db)) {
+      if (excludeKeyTables && KEY_TABLES.contains(table)) {
+        Log.i(TAG, "Skipping table: " + table);
+        continue;
+      }
+
       Log.i(TAG, "Dropping table: " + table);
       db.execSQL("DROP TABLE IF EXISTS " + table);
     }

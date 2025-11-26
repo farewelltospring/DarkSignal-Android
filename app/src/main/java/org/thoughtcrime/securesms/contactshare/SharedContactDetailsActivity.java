@@ -24,9 +24,11 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import org.thoughtcrime.securesms.PassphraseRequiredActivity;
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.calls.YouAreAlreadyInACallSnackbar;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobs.DirectoryRefreshJob;
+import org.thoughtcrime.securesms.mms.DecryptableUri;
 import org.thoughtcrime.securesms.recipients.LiveRecipient;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
@@ -41,8 +43,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader.DecryptableUri;
 
 public class SharedContactDetailsActivity extends PassphraseRequiredActivity {
 
@@ -96,7 +96,7 @@ public class SharedContactDetailsActivity extends PassphraseRequiredActivity {
     initViews();
 
     presentContact(contact);
-    presentActionButtons(ContactUtil.getRecipients(this, contact));
+    presentActionButtons(ContactUtil.getRecipients(contact));
     presentAvatar(contact.getAvatarAttachment() != null ? contact.getAvatarAttachment().getUri() : null);
 
     for (LiveRecipient recipient : activeRecipients.values()) {
@@ -214,7 +214,9 @@ public class SharedContactDetailsActivity extends PassphraseRequiredActivity {
       });
 
       callButtonView.setOnClickListener(v -> {
-        ContactUtil.selectRecipientThroughDialog(this, pushUsers, dynamicLanguage.getCurrentLocale(), recipient -> CommunicationActions.startVoiceCall(this, recipient));
+        ContactUtil.selectRecipientThroughDialog(this, pushUsers, dynamicLanguage.getCurrentLocale(), recipient -> CommunicationActions.startVoiceCall(this, recipient, () -> {
+          YouAreAlreadyInACallSnackbar.show(callButtonView);
+        }));
       });
     } else if (!systemUsers.isEmpty()) {
       inviteButtonView.setVisibility(View.VISIBLE);

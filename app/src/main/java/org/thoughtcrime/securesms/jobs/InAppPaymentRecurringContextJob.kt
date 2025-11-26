@@ -7,17 +7,20 @@ package org.thoughtcrime.securesms.jobs
 
 import okio.ByteString.Companion.toByteString
 import org.signal.core.util.logging.Log
+import org.signal.donations.InAppPaymentType
 import org.signal.libsignal.zkgroup.VerificationFailedException
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredential
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialPresentation
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialRequestContext
 import org.signal.libsignal.zkgroup.receipts.ReceiptCredentialResponse
+import org.thoughtcrime.securesms.backup.v2.BackupRepository
+import org.thoughtcrime.securesms.backup.v2.MessageBackupTier
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository.requireSubscriberType
 import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository.toInAppPaymentDataChargeFailure
 import org.thoughtcrime.securesms.database.InAppPaymentTable
 import org.thoughtcrime.securesms.database.SignalDatabase
-import org.thoughtcrime.securesms.database.model.DonationReceiptRecord
+import org.thoughtcrime.securesms.database.model.InAppPaymentReceiptRecord
 import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.InAppPaymentData
 import org.thoughtcrime.securesms.dependencies.AppDependencies
@@ -25,12 +28,16 @@ import org.thoughtcrime.securesms.jobmanager.Job
 import org.thoughtcrime.securesms.jobmanager.JobManager.Chain
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.whispersystems.signalservice.api.NetworkResult
+import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
 import org.whispersystems.signalservice.api.subscriptions.ActiveSubscription
 import org.whispersystems.signalservice.api.subscriptions.ActiveSubscription.ChargeFailure
 import org.whispersystems.signalservice.api.subscriptions.ActiveSubscription.Subscription
 import org.whispersystems.signalservice.internal.ServiceResponse
+import org.whispersystems.signalservice.internal.push.SubscriptionsConfiguration
 import java.io.IOException
 import java.util.Currency
+import kotlin.concurrent.withLock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -48,31 +55,41 @@ class InAppPaymentRecurringContextJob private constructor(
 
     const val KEY = "InAppPurchaseRecurringContextJob"
 
-    private fun create(inAppPayment: InAppPaymentTable.InAppPayment): Job {
+    fun create(inAppPayment: InAppPaymentTable.InAppPayment): InAppPaymentRecurringContextJob {
       return InAppPaymentRecurringContextJob(
         inAppPaymentId = inAppPayment.id,
         parameters = Parameters.Builder()
           .addConstraint(NetworkConstraint.KEY)
           .setQueue(InAppPaymentsRepository.resolveJobQueueKey(inAppPayment))
-          .setLifespan(InAppPaymentsRepository.resolveContextJobLifespan(inAppPayment).inWholeMilliseconds)
+          .setLifespan(InAppPaymentsRepository.resolveContextJobLifespanMillis(inAppPayment))
           .setMaxAttempts(Parameters.UNLIMITED)
           .build()
       )
     }
 
+    /**
+     * Creates a job chain using data from the given InAppPayment. This object is passed by ID to the job,
+     * meaning the job will always load the freshest data it can about the payment.
+     */
     fun createJobChain(inAppPayment: InAppPaymentTable.InAppPayment, makePrimary: Boolean = false): Chain {
-      return AppDependencies.jobManager
-        .startChain(create(inAppPayment))
-        .then(InAppPaymentRedemptionJob.create(inAppPayment, makePrimary))
-        .then(RefreshOwnProfileJob())
-        .then(MultiDeviceProfileContentUpdateJob())
+      return if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP) {
+        AppDependencies.jobManager
+          .startChain(create(inAppPayment))
+          .then(InAppPaymentRedemptionJob.create(inAppPayment, makePrimary))
+      } else {
+        AppDependencies.jobManager
+          .startChain(create(inAppPayment))
+          .then(InAppPaymentRedemptionJob.create(inAppPayment, makePrimary))
+          .then(RefreshOwnProfileJob())
+          .then(MultiDeviceProfileContentUpdateJob())
+      }
     }
   }
 
   override fun onAdded() {
     val inAppPayment = SignalDatabase.inAppPayments.getById(inAppPaymentId)
     info("Added context job for payment with state ${inAppPayment?.state}")
-    if (inAppPayment?.state == InAppPaymentTable.State.CREATED) {
+    if (inAppPayment?.state == InAppPaymentTable.State.TRANSACTING) {
       SignalDatabase.inAppPayments.update(
         inAppPayment.copy(
           state = InAppPaymentTable.State.PENDING
@@ -89,22 +106,31 @@ class InAppPaymentRecurringContextJob private constructor(
     warning("A permanent failure occurred.")
 
     val inAppPayment = SignalDatabase.inAppPayments.getById(inAppPaymentId)
-    if (inAppPayment != null && inAppPayment.data.error == null) {
+    val isRedeemed = inAppPayment?.state == InAppPaymentTable.State.END && inAppPayment.data.redemption?.stage == InAppPaymentData.RedemptionState.Stage.REDEEMED
+    if (isRedeemed) {
+      info("Already redeemed. Exiting quietly.")
+      return
+    } else if (inAppPayment != null && inAppPayment.data.error == null) {
+      warning("Unredeemed payment failed.")
       SignalDatabase.inAppPayments.update(
         inAppPayment.copy(
           notified = false,
           state = InAppPaymentTable.State.END,
-          data = inAppPayment.data.copy(
+          data = inAppPayment.data.newBuilder().error(
             error = InAppPaymentData.Error(
               type = InAppPaymentData.Error.Type.REDEMPTION
             )
-          )
+          ).build()
         )
       )
     }
   }
 
   override fun getNextRunAttemptBackoff(pastAttemptCount: Int, exception: java.lang.Exception): Long {
+    if (exception is InAppPaymentRetryException && exception.cause is NonSuccessfulResponseCodeException) {
+      return super.getNextRunAttemptBackoff(pastAttemptCount, exception)
+    }
+
     val inAppPayment = SignalDatabase.inAppPayments.getById(inAppPaymentId)
     return if (inAppPayment != null) {
       when (inAppPayment.data.paymentMethodType) {
@@ -117,19 +143,34 @@ class InAppPaymentRecurringContextJob private constructor(
   }
 
   override fun onRun() {
-    synchronized(InAppPaymentsRepository.resolveMutex(inAppPaymentId)) {
+    InAppPaymentsRepository.resolveLock(inAppPaymentId).withLock {
       doRun()
     }
   }
 
   private fun doRun() {
+    if (!SignalStore.account.isRegistered) {
+      warning("User is not registered. Failing.")
+      throw Exception("Unregistered users cannot perform this job.")
+    }
+
+    if (SignalStore.account.isLinkedDevice) {
+      warning("Linked device. Failing.")
+      throw Exception("Linked devices cannot not perform this job")
+    }
+
     val (inAppPayment, requestContext) = getAndValidateInAppPayment()
     val activeSubscription = getActiveSubscription(inAppPayment)
     val subscription = activeSubscription.activeSubscription
 
     if (subscription == null) {
-      warning("Subscription is null. Retrying later.")
-      throw InAppPaymentRetryException()
+      if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP) {
+        warning("Backup subscription is null.")
+        throw Exception()
+      } else {
+        warning("${inAppPayment.type} Subscription is null. Retrying later.")
+        throw InAppPaymentRetryException()
+      }
     }
 
     handlePossibleFailedPayment(inAppPayment, activeSubscription, subscription)
@@ -138,21 +179,21 @@ class InAppPaymentRecurringContextJob private constructor(
     info("Subscription is valid, proceeding with request for ReceiptCredentialResponse")
 
     val updatedInAppPayment: InAppPaymentTable.InAppPayment = if (inAppPayment.data.redemption!!.stage != InAppPaymentData.RedemptionState.Stage.CONVERSION_STARTED || inAppPayment.endOfPeriod.inWholeMilliseconds <= 0) {
-      info("Updating payment state with endOfCurrentPeriod and proper stage.")
+      info("Updating payment state with endOfCurrentPeriod (${subscription.endOfCurrentPeriod}) and proper stage.")
 
       if (inAppPayment.type.requireSubscriberType() == InAppPaymentSubscriberRecord.Type.DONATION) {
-        info("Recording last end of period.")
-        SignalStore.donations.setLastEndOfPeriod(subscription.endOfCurrentPeriod)
+        info("Recording last end of period (${subscription.endOfCurrentPeriod}).")
+        SignalStore.inAppPayments.setLastEndOfPeriod(subscription.endOfCurrentPeriod)
       }
 
       SignalDatabase.inAppPayments.update(
         inAppPayment.copy(
           endOfPeriod = subscription.endOfCurrentPeriod.seconds,
-          data = inAppPayment.data.copy(
+          data = inAppPayment.data.newBuilder().redemption(
             redemption = inAppPayment.data.redemption.copy(
               stage = InAppPaymentData.RedemptionState.Stage.CONVERSION_STARTED
             )
-          )
+          ).build()
         )
       )
 
@@ -161,7 +202,91 @@ class InAppPaymentRecurringContextJob private constructor(
       inAppPayment
     }
 
-    submitAndValidateCredentials(updatedInAppPayment, subscription, requestContext)
+    if (hasEntitlementAlready(updatedInAppPayment, subscription.endOfCurrentPeriod)) {
+      info("Already have entitlement for this InAppPayment of type ${updatedInAppPayment.type}. Marking complete.")
+      markInAppPaymentCompleted(updatedInAppPayment, subscription)
+    } else {
+      info("No entitlement for InAppPayment of type ${updatedInAppPayment.type}. Submitting and validating credentials.")
+      submitAndValidateCredentials(updatedInAppPayment, subscription, requestContext)
+    }
+  }
+
+  private fun hasEntitlementAlready(
+    inAppPayment: InAppPaymentTable.InAppPayment,
+    endOfCurrentSubscriptionPeriod: Long
+  ): Boolean {
+    @Suppress("UsePropertyAccessSyntax")
+    val whoAmIResponse = try {
+      AppDependencies.signalServiceAccountManager.getWhoAmI()
+    } catch (e: NonSuccessfulResponseCodeException) {
+      warning("Failed to download whoAmI information for user: HTTP ${e.code}", e)
+      if (isRetryableErrorCode(e.code)) {
+        info("Retrying later for code ${e.code}")
+        throw InAppPaymentRetryException(e)
+      } else {
+        throw e
+      }
+    } catch (e: IOException) {
+      info("Retrying for network exception.")
+      throw InAppPaymentRetryException(e)
+    }
+
+    return when (inAppPayment.type) {
+      InAppPaymentType.RECURRING_BACKUP -> {
+        val whoAmIEntitlementLevel = whoAmIResponse.entitlements?.backup?.backupLevel
+        if (whoAmIEntitlementLevel != SubscriptionsConfiguration.BACKUPS_LEVEL.toLong()) {
+          info("WhoAmI entitlement level ($whoAmIEntitlementLevel) does not match expected paid backups level (${SubscriptionsConfiguration.BACKUPS_LEVEL.toLong()}). Forcing a redemption.")
+          return false
+        }
+
+        val tier = when (val result = BackupRepository.getBackupTier()) {
+          is NetworkResult.Success -> result.result
+          else -> {
+            warning("Failed to get backup tier via zk check.")
+            MessageBackupTier.FREE
+          }
+        }
+
+        if (tier != MessageBackupTier.PAID) {
+          warning("ZK credential does not align with entitlement. Clearing backup credentials and forcing a redemption.")
+          BackupRepository.resetInitializedStateAndAuthCredentials()
+          return false
+        }
+
+        val backupExpirationSeconds = whoAmIResponse.entitlements?.backup?.expirationSeconds ?: return false
+
+        backupExpirationSeconds >= endOfCurrentSubscriptionPeriod
+      }
+
+      InAppPaymentType.RECURRING_DONATION -> {
+        val donationExpirationSeconds = whoAmIResponse.entitlements?.badges?.firstOrNull { it.id == inAppPayment.data.badge?.id }?.expirationSeconds ?: return false
+
+        donationExpirationSeconds >= endOfCurrentSubscriptionPeriod
+      }
+
+      else -> error("Unsupported IAP type ${inAppPayment.type}")
+    }
+  }
+
+  private fun isRetryableErrorCode(code: Int): Boolean {
+    return (code >= 500 || code == 429) && code != 508
+  }
+
+  private fun markInAppPaymentCompleted(inAppPayment: InAppPaymentTable.InAppPayment, subscription: Subscription) {
+    SignalDatabase.donationReceipts.addReceipt(InAppPaymentReceiptRecord.createForSubscription(subscription))
+
+    SignalDatabase.inAppPayments.update(
+      inAppPayment = inAppPayment.copy(
+        state = InAppPaymentTable.State.END,
+        data = inAppPayment.data.newBuilder().redemption(
+          redemption = InAppPaymentData.RedemptionState(stage = InAppPaymentData.RedemptionState.Stage.REDEEMED)
+        ).build()
+      )
+    )
+
+    if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP) {
+      BackupRepository.enablePaidBackupTier()
+    }
   }
 
   private fun getAndValidateInAppPayment(): Pair<InAppPaymentTable.InAppPayment, ReceiptCredentialRequestContext> {
@@ -173,7 +298,12 @@ class InAppPaymentRecurringContextJob private constructor(
 
     if (inAppPayment.state != InAppPaymentTable.State.PENDING) {
       warning("Unexpected state. Got ${inAppPayment.state} but expected PENDING")
-      throw IOException("InAppPayment in unexpected state.")
+
+      if (inAppPayment.state == InAppPaymentTable.State.TRANSACTING) {
+        warning("onAdded failed to update payment state to PENDING. Updating now as long as the payment is valid otherwise.")
+      } else {
+        throw IOException("InAppPayment is in an invalid state: ${inAppPayment.state}")
+      }
     }
 
     if (!inAppPayment.type.recurring) {
@@ -199,12 +329,13 @@ class InAppPaymentRecurringContextJob private constructor(
     return if (inAppPayment.data.redemption.receiptCredentialRequestContext == null) {
       val requestContext = InAppPaymentsRepository.generateRequestCredential()
       val updatedPayment = inAppPayment.copy(
-        data = inAppPayment.data.copy(
+        state = InAppPaymentTable.State.PENDING,
+        data = inAppPayment.data.newBuilder().redemption(
           redemption = inAppPayment.data.redemption.copy(
             stage = InAppPaymentData.RedemptionState.Stage.CONVERSION_STARTED,
             receiptCredentialRequestContext = requestContext.serialize().toByteString()
           )
-        )
+        ).build()
       )
 
       SignalDatabase.inAppPayments.update(updatedPayment)
@@ -238,8 +369,8 @@ class InAppPaymentRecurringContextJob private constructor(
         warning("Charge failure detected on active subscription: ${chargeFailure.code}: ${chargeFailure.message}")
       }
 
-      if (inAppPayment.data.redemption!!.keepAlive == true) {
-        warning("Payment failure during keep-alive, allow keep-alive to retry later.")
+      if (inAppPayment.data.redemption!!.keepAlive == true && !subscription.isCanceled) {
+        warning("Payment failure for uncanceled subscription during keep-alive, allow keep-alive to retry later.")
 
         SignalDatabase.inAppPayments.update(
           inAppPayment.copy(
@@ -247,7 +378,7 @@ class InAppPaymentRecurringContextJob private constructor(
             data = inAppPayment.data.copy(
               error = InAppPaymentData.Error(
                 type = InAppPaymentData.Error.Type.PAYMENT_PROCESSING,
-                data_ = "keep-alive"
+                data_ = InAppPaymentKeepAliveJob.KEEP_ALIVE
               )
             )
           )
@@ -291,15 +422,25 @@ class InAppPaymentRecurringContextJob private constructor(
   }
 
   private fun handlePaymentFailure(inAppPayment: InAppPaymentTable.InAppPayment, subscription: Subscription, chargeFailure: ChargeFailure?) {
-    SignalDatabase.inAppPaymentSubscribers.insertOrReplace(
-      InAppPaymentSubscriberRecord(
-        subscriberId = inAppPayment.subscriberId!!,
-        currency = Currency.getInstance(inAppPayment.data.amount!!.currencyCode),
-        type = inAppPayment.type.requireSubscriberType(),
-        requiresCancel = true,
-        paymentMethodType = inAppPayment.data.paymentMethodType
+    val record = SignalDatabase.inAppPaymentSubscribers.getBySubscriberId(subscriberId = inAppPayment.subscriberId!!)
+    if (record == null) {
+      warning("Could not find subscriber record in local database. Building from payment data.")
+      SignalDatabase.inAppPaymentSubscribers.insertOrReplace(
+        InAppPaymentSubscriberRecord(
+          subscriberId = inAppPayment.subscriberId,
+          currency = if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP) null else Currency.getInstance(inAppPayment.data.amount!!.currencyCode),
+          type = inAppPayment.type.requireSubscriberType(),
+          requiresCancel = true,
+          paymentMethodType = inAppPayment.data.paymentMethodType,
+          iapSubscriptionId = null
+        )
       )
-    )
+    } else {
+      info("Marking requiresCancel as true in subscriber record due to payment failure.")
+      SignalDatabase.inAppPaymentSubscribers.insertOrReplace(
+        record.copy(requiresCancel = true)
+      )
+    }
 
     if (inAppPayment.data.redemption?.keepAlive == true) {
       info("Cancellation occurred during keep-alive. Setting cancellation state.")
@@ -375,7 +516,6 @@ class InAppPaymentRecurringContextJob private constructor(
     inAppPayment: InAppPaymentTable.InAppPayment,
     serviceResponse: ServiceResponse<ReceiptCredentialResponse>
   ) {
-    val isForKeepAlive = inAppPayment.data.redemption!!.keepAlive == true
     val applicationError = serviceResponse.applicationError.get()
     when (serviceResponse.status) {
       204 -> {
@@ -407,18 +547,22 @@ class InAppPaymentRecurringContextJob private constructor(
       }
 
       409 -> {
-        if (isForKeepAlive) {
-          warning("Already redeemed this token during keep-alive, ignoring.", applicationError)
-          SignalDatabase.inAppPayments.update(
-            inAppPayment.copy(
-              state = InAppPaymentTable.State.END,
-              data = inAppPayment.data.copy(redemption = inAppPayment.data.redemption.copy(stage = InAppPaymentData.RedemptionState.Stage.REDEEMED))
-            )
-          )
-        } else {
-          warning("Already redeemed this token during new subscription. Failing.", applicationError)
-          updateInAppPaymentWithGenericRedemptionError(inAppPayment)
+        warning("Already redeemed this token during new subscription. Failing.", applicationError)
+
+        // During keep-alive processing, we don't alert the user about redemption failures.
+        if (inAppPayment.type == InAppPaymentType.RECURRING_BACKUP && inAppPayment.data.redemption?.keepAlive != true) {
+          info("Displaying redemption failure for non-keep-alive processing.")
+          SignalStore.backup.hasBackupAlreadyRedeemedError = true
         }
+
+        updateInAppPaymentWithTokenAlreadyRedeemedError(inAppPayment)
+        throw Exception(applicationError)
+      }
+
+      508 -> {
+        warning("Loop detected on server. Failing.", applicationError)
+        updateInAppPaymentWithGenericRedemptionError(inAppPayment)
+        throw Exception(applicationError)
       }
 
       else -> {
@@ -456,15 +600,15 @@ class InAppPaymentRecurringContextJob private constructor(
     }
 
     info("Validated credential. Recording receipt and handing off to redemption job.")
-    SignalDatabase.donationReceipts.addReceipt(DonationReceiptRecord.createForSubscription(subscription))
+    SignalDatabase.donationReceipts.addReceipt(InAppPaymentReceiptRecord.createForSubscription(subscription))
     SignalDatabase.inAppPayments.update(
       inAppPayment = inAppPayment.copy(
-        data = inAppPayment.data.copy(
+        data = inAppPayment.data.newBuilder().redemption(
           redemption = inAppPayment.data.redemption!!.copy(
             stage = InAppPaymentData.RedemptionState.Stage.REDEMPTION_STARTED,
             receiptCredentialPresentation = receiptCredentialPresentation.serialize().toByteString()
           )
-        )
+        ).build()
       )
     )
   }
@@ -490,6 +634,22 @@ class InAppPaymentRecurringContextJob private constructor(
     )
 
     return isSameLevel && isExpirationAfterSub && isExpiration86400 && isExpirationInTheFuture && isExpirationWithinMax
+  }
+
+  private fun updateInAppPaymentWithTokenAlreadyRedeemedError(inAppPayment: InAppPaymentTable.InAppPayment) {
+    SignalDatabase.inAppPayments.update(
+      inAppPayment = inAppPayment.copy(
+        state = InAppPaymentTable.State.END,
+        data = inAppPayment.data.newBuilder()
+          .error(
+            InAppPaymentData.Error(
+              type = InAppPaymentData.Error.Type.REDEMPTION,
+              data_ = "409"
+            )
+          )
+          .build()
+      )
+    )
   }
 
   private fun updateInAppPaymentWithGenericRedemptionError(inAppPayment: InAppPaymentTable.InAppPayment) {

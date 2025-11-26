@@ -20,10 +20,12 @@ import org.thoughtcrime.securesms.database.LogDatabase
 import org.thoughtcrime.securesms.database.MegaphoneDatabase
 import org.thoughtcrime.securesms.database.MessageBitmaskColumnTransformer
 import org.thoughtcrime.securesms.database.MessageRangesTransformer
+import org.thoughtcrime.securesms.database.PollTransformer
 import org.thoughtcrime.securesms.database.ProfileKeyCredentialTransformer
 import org.thoughtcrime.securesms.database.QueryMonitor
 import org.thoughtcrime.securesms.database.RecipientTransformer
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.database.SignalStoreTransformer
 import org.thoughtcrime.securesms.database.TimestampTransformer
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.logging.PersistentLogger
@@ -69,11 +71,12 @@ class SpinnerApplicationContext : ApplicationContext() {
             MessageRangesTransformer,
             KyberKeyTransformer,
             RecipientTransformer,
-            AttachmentTransformer
+            AttachmentTransformer,
+            PollTransformer
           )
         ),
         "jobmanager" to DatabaseConfig(db = { JobDatabase.getInstance(this).sqlCipherDatabase }, columnTransformers = listOf(TimestampTransformer)),
-        "keyvalue" to DatabaseConfig(db = { KeyValueDatabase.getInstance(this).sqlCipherDatabase }),
+        "keyvalue" to DatabaseConfig(db = { KeyValueDatabase.getInstance(this).sqlCipherDatabase }, columnTransformers = listOf(SignalStoreTransformer)),
         "megaphones" to DatabaseConfig(db = { MegaphoneDatabase.getInstance(this).sqlCipherDatabase }),
         "localmetrics" to DatabaseConfig(db = { LocalMetricsDatabase.getInstance(this).sqlCipherDatabase }),
         "logs" to DatabaseConfig(
@@ -82,11 +85,12 @@ class SpinnerApplicationContext : ApplicationContext() {
         )
       ),
       linkedMapOf(
-        StorageServicePlugin.PATH to StorageServicePlugin()
+        StorageServicePlugin.PATH to StorageServicePlugin(),
+        AttachmentPlugin.PATH to AttachmentPlugin()
       )
     )
 
-    Log.initialize({ RemoteConfig.internalUser }, AndroidLogger(), PersistentLogger(this), SpinnerLogger())
+    Log.initialize({ RemoteConfig.internalUser }, AndroidLogger, PersistentLogger.getInstance(this), SpinnerLogger)
 
     DatabaseMonitor.initialize(object : QueryMonitor {
       override fun onSql(sql: String, args: Array<Any>?) {

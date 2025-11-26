@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.fragment.findNavController
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Rows
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Rows
 import org.thoughtcrime.securesms.components.settings.app.internal.donor.DonationErrorValueCodeSelector
 import org.thoughtcrime.securesms.components.settings.app.internal.donor.DonationErrorValueTypeSelector
 import org.thoughtcrime.securesms.compose.ComposeFragment
@@ -38,7 +38,7 @@ class InternalTerminalDonationConfigurationFragment : ComposeFragment() {
   override fun FragmentContent() {
     InternalTerminalDonationConfigurationContent(
       onAddClick = {
-        SignalStore.donations.appendToTerminalDonationQueue(it)
+        SignalStore.inAppPayments.appendToTerminalDonationQueue(it)
         findNavController().popBackStack()
       }
     )
@@ -48,7 +48,7 @@ class InternalTerminalDonationConfigurationFragment : ComposeFragment() {
 @Preview
 @Composable
 private fun InternalTerminalDonationConfigurationContentPreview() {
-  SignalTheme {
+  Previews.Preview {
     Surface {
       InternalTerminalDonationConfigurationContent(
         onAddClick = {}

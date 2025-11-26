@@ -2,14 +2,20 @@ package org.thoughtcrime.securesms.recipients
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.annotation.WorkerThread
 import org.thoughtcrime.securesms.conversation.colors.AvatarColor
 import org.thoughtcrime.securesms.database.RecipientTable.RegisteredState
+import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.database.model.GroupRecord
 import org.thoughtcrime.securesms.database.model.RecipientRecord
+import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.mms.PartAuthority
 import org.thoughtcrime.securesms.util.TextSecurePreferences
 import org.thoughtcrime.securesms.util.Util
+import org.thoughtcrime.securesms.wallpaper.ChatWallpaper
+import org.thoughtcrime.securesms.wallpaper.UriChatWallpaper
 import java.util.LinkedList
 import java.util.Optional
 
@@ -18,6 +24,7 @@ import java.util.Optional
  * It's also helpful for java-kotlin interop, since there's so many optional fields.
  */
 object RecipientCreator {
+
   @JvmOverloads
   @JvmStatic
   fun forId(recipientId: RecipientId, resolved: Boolean = false): Recipient {
@@ -102,8 +109,19 @@ object RecipientCreator {
   }
 
   @JvmStatic
-  fun forUnknown(): Recipient {
-    return Recipient.UNKNOWN
+  @WorkerThread
+  fun forRecord(context: Context, record: RecipientRecord): Recipient {
+    val recipient = if (record.groupId != null) {
+      getGroupRecipientDetails(record)
+    } else if (record.distributionListId != null) {
+      getDistributionListRecipientDetails(record)
+    } else if (record.callLinkRoomId != null) {
+      getCallLinkRecipientDetails(record)
+    } else {
+      forIndividual(context, record)
+    }
+
+    return recipient
   }
 
   @JvmStatic
@@ -149,6 +167,7 @@ object RecipientCreator {
       callVibrate = record.callVibrateState,
       isBlocked = record.isBlocked,
       expiresInSeconds = record.expireMessages,
+      expireTimerVersion = record.expireTimerVersion,
       participantIdsValue = participantIds ?: LinkedList(),
       isActiveGroup = groupRecord.map { it.isActive }.orElse(false),
       profileName = record.signalProfileName,
@@ -162,11 +181,11 @@ object RecipientCreator {
       lastProfileFetchTime = record.lastProfileFetch,
       isSelf = isSelf,
       notificationChannelValue = record.notificationChannel,
-      unidentifiedAccessModeValue = record.unidentifiedAccessMode,
+      sealedSenderAccessModeValue = record.sealedSenderAccessMode,
       capabilities = record.capabilities,
       storageId = record.storageId,
       mentionSetting = record.mentionSetting,
-      wallpaperValue = record.wallpaper,
+      wallpaperValue = record.wallpaper?.validate(),
       chatColorsValue = record.chatColors,
       avatarColor = avatarColor ?: record.avatarColor,
       about = record.about,
@@ -185,5 +204,58 @@ object RecipientCreator {
       nickname = record.nickname,
       note = record.note
     )
+  }
+
+  @WorkerThread
+  private fun getGroupRecipientDetails(record: RecipientRecord): Recipient {
+    val groupRecord = SignalDatabase.groups.getGroup(record.id)
+
+    return if (groupRecord.isPresent) {
+      forGroup(groupRecord.get(), record)
+    } else {
+      forUnknownGroup(record.id, record.groupId)
+    }
+  }
+
+  @WorkerThread
+  private fun getDistributionListRecipientDetails(record: RecipientRecord): Recipient {
+    val groupRecord = SignalDatabase.distributionLists.getList(record.distributionListId!!)
+
+    // TODO [stories] We'll have to see what the perf is like for very large distribution lists. We may not be able to support fetching all the members.
+    if (groupRecord != null) {
+      val title = if (groupRecord.isUnknown) null else groupRecord.name
+      val members = groupRecord.members.filterNot { it.isUnknown }
+
+      return forDistributionList(title, members, record)
+    }
+
+    return forDistributionList(null, null, record)
+  }
+
+  @WorkerThread
+  private fun getCallLinkRecipientDetails(record: RecipientRecord): Recipient {
+    val callLink = SignalDatabase.callLinks.getCallLinkByRoomId(record.callLinkRoomId!!)
+
+    if (callLink != null) {
+      val name = callLink.state.name
+
+      return forCallLink(name, record, callLink.avatarColor)
+    }
+
+    return forCallLink(null, record, AvatarColor.UNKNOWN)
+  }
+
+  @WorkerThread
+  private fun ChatWallpaper.validate(): ChatWallpaper? {
+    if (this !is UriChatWallpaper) {
+      return this
+    }
+
+    return try {
+      PartAuthority.getAttachmentStream(AppDependencies.application, this.uri).close()
+      this
+    } catch (_: Exception) {
+      null
+    }
   }
 }

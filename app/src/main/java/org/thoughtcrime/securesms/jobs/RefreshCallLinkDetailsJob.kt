@@ -48,7 +48,8 @@ class RefreshCallLinkDetailsJob private constructor(
     val manager: SignalCallLinkManager = AppDependencies.signalCallManager.callLinkManager
     val credentials = CallLinkCredentials(
       linkKeyBytes = callLinkUpdate.rootKey!!.toByteArray(),
-      adminPassBytes = callLinkUpdate.adminPassKey?.toByteArray()
+      epochBytes = callLinkUpdate.epoch?.toByteArray(),
+      adminPassBytes = callLinkUpdate.adminPasskey?.toByteArray()
     )
 
     when (val result = manager.readCallLink(credentials).safeBlockingGet()) {

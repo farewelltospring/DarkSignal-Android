@@ -31,35 +31,35 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.os.bundleOf
 import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.setFragmentResultListener
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.navigation.navGraphViewModels
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.Texts
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Scaffolds
+import org.signal.core.ui.compose.Texts
 import org.signal.core.util.getParcelableCompat
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.TemporaryScreenshotSecurity
 import org.thoughtcrime.securesms.components.settings.app.subscription.DonationSerializationHelper.toFiatMoney
-import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentComponent
-import org.thoughtcrime.securesms.components.settings.app.subscription.donate.DonationCheckoutDelegate
-import org.thoughtcrime.securesms.components.settings.app.subscription.donate.DonationProcessorAction
-import org.thoughtcrime.securesms.components.settings.app.subscription.donate.DonationProcessorActionResult
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.InAppPaymentCheckoutDelegate
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.InAppPaymentProcessorAction
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.InAppPaymentProcessorActionResult
 import org.thoughtcrime.securesms.components.settings.app.subscription.donate.stripe.StripePaymentInProgressFragment
 import org.thoughtcrime.securesms.components.settings.app.subscription.donate.stripe.StripePaymentInProgressViewModel
 import org.thoughtcrime.securesms.components.settings.app.subscription.donate.transfer.BankTransferRequestKeys
@@ -68,32 +68,32 @@ import org.thoughtcrime.securesms.compose.ComposeFragment
 import org.thoughtcrime.securesms.database.InAppPaymentTable
 import org.thoughtcrime.securesms.payments.FiatMoneyUtil
 import org.thoughtcrime.securesms.util.SpanUtil
-import org.thoughtcrime.securesms.util.fragments.requireListener
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
+import org.thoughtcrime.securesms.util.viewModel
 
 /**
  * Collects SEPA Debit bank transfer details from the user to proceed with donation.
  */
-class BankTransferDetailsFragment : ComposeFragment(), DonationCheckoutDelegate.ErrorHandlerCallback {
+class BankTransferDetailsFragment : ComposeFragment(), InAppPaymentCheckoutDelegate.ErrorHandlerCallback {
 
   private val args: BankTransferDetailsFragmentArgs by navArgs()
-  private val viewModel: BankTransferDetailsViewModel by viewModels()
+
+  private val viewModel: BankTransferDetailsViewModel by viewModel {
+    BankTransferDetailsViewModel(args.inAppPaymentId)
+  }
 
   private val stripePaymentViewModel: StripePaymentInProgressViewModel by navGraphViewModels(
-    R.id.checkout_flow,
-    factoryProducer = {
-      StripePaymentInProgressViewModel.Factory(requireListener<InAppPaymentComponent>().stripeRepository)
-    }
+    R.id.checkout_flow
   )
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     TemporaryScreenshotSecurity.bindToViewLifecycleOwner(this)
 
-    DonationCheckoutDelegate.ErrorHandler().attach(this, this, args.inAppPayment.id)
+    InAppPaymentCheckoutDelegate.ErrorHandler().attach(this, this, args.inAppPaymentId)
 
     setFragmentResultListener(StripePaymentInProgressFragment.REQUEST_KEY) { _, bundle ->
-      val result: DonationProcessorActionResult = bundle.getParcelableCompat(StripePaymentInProgressFragment.REQUEST_KEY, DonationProcessorActionResult::class.java)!!
-      if (result.status == DonationProcessorActionResult.Status.SUCCESS) {
+      val result: InAppPaymentProcessorActionResult = bundle.getParcelableCompat(StripePaymentInProgressFragment.REQUEST_KEY, InAppPaymentProcessorActionResult::class.java)!!
+      if (result.status == InAppPaymentProcessorActionResult.Status.SUCCESS) {
         findNavController().popBackStack(R.id.donateToSignalFragment, false)
         setFragmentResult(BankTransferRequestKeys.REQUEST_KEY, bundle)
       }
@@ -103,17 +103,33 @@ class BankTransferDetailsFragment : ComposeFragment(), DonationCheckoutDelegate.
   @Composable
   override fun FragmentContent() {
     val state: BankTransferDetailsState by viewModel.state
+    val inAppPayment by viewModel.inAppPayment.collectAsStateWithLifecycle(null)
 
-    val donateLabel = remember(args.inAppPayment) {
-      if (args.inAppPayment.type.recurring) { // TODO [message-requests] backups copy
+    if (inAppPayment != null) {
+      ReadyContent(
+        state,
+        viewModel,
+        inAppPayment!!
+      )
+    }
+  }
+
+  @Composable
+  private fun ReadyContent(
+    state: BankTransferDetailsState,
+    viewModel: BankTransferDetailsViewModel,
+    inAppPayment: InAppPaymentTable.InAppPayment
+  ) {
+    val donateLabel = remember(inAppPayment) {
+      if (inAppPayment.type.recurring) { // TODO [message-requests] backups copy
         getString(
           R.string.BankTransferDetailsFragment__donate_s_month,
-          FiatMoneyUtil.format(resources, args.inAppPayment.data.amount!!.toFiatMoney(), FiatMoneyUtil.formatOptions().trimZerosAfterDecimal())
+          FiatMoneyUtil.format(resources, inAppPayment.data.amount!!.toFiatMoney(), FiatMoneyUtil.formatOptions().trimZerosAfterDecimal())
         )
       } else {
         getString(
           R.string.BankTransferDetailsFragment__donate_s,
-          FiatMoneyUtil.format(resources, args.inAppPayment.data.amount!!.toFiatMoney())
+          FiatMoneyUtil.format(resources, inAppPayment.data.amount!!.toFiatMoney())
         )
       }
     }
@@ -146,9 +162,8 @@ class BankTransferDetailsFragment : ComposeFragment(), DonationCheckoutDelegate.
     stripePaymentViewModel.provideSEPADebitData(viewModel.state.value.asSEPADebitData())
     findNavController().safeNavigate(
       BankTransferDetailsFragmentDirections.actionBankTransferDetailsFragmentToStripePaymentInProgressFragment(
-        DonationProcessorAction.PROCESS_NEW_DONATION,
-        args.inAppPayment,
-        args.inAppPayment.type
+        InAppPaymentProcessorAction.PROCESS_NEW_IN_APP_PAYMENT,
+        args.inAppPaymentId
       )
     )
   }
@@ -163,12 +178,16 @@ class BankTransferDetailsFragment : ComposeFragment(), DonationCheckoutDelegate.
       }
     })
   }
+
+  override fun exitCheckoutFlow() {
+    requireActivity().finishAfterTransition()
+  }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun BankTransferDetailsContentPreview() {
-  SignalTheme {
+  Previews.Preview {
     BankTransferDetailsContent(
       state = BankTransferDetailsState(
         name = "Miles Morales",
@@ -203,7 +222,7 @@ private fun BankTransferDetailsContent(
   Scaffolds.Settings(
     title = "Bank transfer",
     onNavigationClick = onNavigationClick,
-    navigationIconPainter = painterResource(id = R.drawable.symbol_arrow_left_24)
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24)
   ) {
     Column(
       horizontalAlignment = CenterHorizontally,
@@ -239,7 +258,9 @@ private fun BankTransferDetailsContent(
         item {
           TextField(
             value = state.iban,
-            onValueChange = onIBANChanged,
+            onValueChange = { value ->
+              onIBANChanged(value.replace(" ", ""))
+            },
             label = {
               Text(text = stringResource(id = R.string.BankTransferDetailsFragment__iban))
             },

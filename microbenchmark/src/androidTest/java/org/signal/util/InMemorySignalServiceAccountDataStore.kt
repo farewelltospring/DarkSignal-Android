@@ -3,8 +3,10 @@ package org.signal.util
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SignalProtocolAddress
+import org.signal.libsignal.protocol.ecc.ECPublicKey
 import org.signal.libsignal.protocol.groups.state.SenderKeyRecord
 import org.signal.libsignal.protocol.state.IdentityKeyStore
+import org.signal.libsignal.protocol.state.IdentityKeyStore.IdentityChange
 import org.signal.libsignal.protocol.state.KyberPreKeyRecord
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SessionRecord
@@ -34,10 +36,13 @@ class InMemorySignalServiceAccountDataStore : SignalServiceAccountDataStore {
     return 1
   }
 
-  override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): Boolean {
-    val hadPrevious = identities.containsKey(address)
-    identities[address] = identityKey
-    return hadPrevious
+  override fun saveIdentity(address: SignalProtocolAddress, identityKey: IdentityKey): IdentityChange {
+    val previous = identities.put(address, identityKey)
+    return if (previous == null || previous == identityKey) {
+      IdentityChange.NEW_OR_UNCHANGED
+    } else {
+      IdentityChange.REPLACED_EXISTING
+    }
   }
 
   override fun isTrustedIdentity(address: SignalProtocolAddress?, identityKey: IdentityKey?, direction: IdentityKeyStore.Direction?): Boolean {
@@ -138,7 +143,7 @@ class InMemorySignalServiceAccountDataStore : SignalServiceAccountDataStore {
     return kyberPreKeys.containsKey(kyberPreKeyId)
   }
 
-  override fun markKyberPreKeyUsed(kyberPreKeyId: Int) {
+  override fun markKyberPreKeyUsed(kyberPreKeyId: Int, signedPreKeyId: Int, baseKey: ECPublicKey) {
     kyberPreKeys.remove(kyberPreKeyId)
   }
 

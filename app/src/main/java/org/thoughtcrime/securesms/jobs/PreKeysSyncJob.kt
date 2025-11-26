@@ -3,6 +3,8 @@ package org.thoughtcrime.securesms.jobs
 import androidx.annotation.VisibleForTesting
 import org.signal.core.util.logging.Log
 import org.signal.core.util.roundedString
+import org.signal.libsignal.protocol.InvalidKeyException
+import org.signal.libsignal.protocol.InvalidKeyIdException
 import org.signal.libsignal.protocol.state.KyberPreKeyRecord
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SignalProtocolStore
@@ -14,18 +16,18 @@ import org.thoughtcrime.securesms.jobmanager.Job
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint
 import org.thoughtcrime.securesms.jobs.protos.PreKeysSyncJobData
 import org.thoughtcrime.securesms.keyvalue.SignalStore
+import org.thoughtcrime.securesms.net.SignalNetwork
 import org.thoughtcrime.securesms.util.RemoteConfig
+import org.thoughtcrime.securesms.util.isRetryableIOException
 import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.SignalServiceAccountDataStore
 import org.whispersystems.signalservice.api.account.PreKeyUpload
 import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.ServiceIdType
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
-import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException
-import org.whispersystems.signalservice.internal.push.OneTimePreKeyCounts
 import java.io.IOException
+import java.net.ProtocolException
 import java.util.concurrent.TimeUnit
-import kotlin.jvm.Throws
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
@@ -165,8 +167,7 @@ class PreKeysSyncJob private constructor(
       return
     }
 
-    val accountManager = AppDependencies.signalServiceAccountManager
-    val availablePreKeyCounts: OneTimePreKeyCounts = accountManager.getPreKeyCounts(serviceIdType)
+    val availablePreKeyCounts = SignalNetwork.keys.getAvailablePreKeyCounts(serviceIdType).successOrThrow()
 
     val signedPreKeyToUpload: SignedPreKeyRecord? = signedPreKeyUploadIfNeeded(serviceIdType, protocolStore, metadataStore, forceRotation)
 
@@ -190,7 +191,7 @@ class PreKeysSyncJob private constructor(
 
     if (signedPreKeyToUpload != null || oneTimeEcPreKeysToUpload != null || lastResortKyberPreKeyToUpload != null || oneTimeKyberPreKeysToUpload != null) {
       log(serviceIdType, "Something to upload. SignedPreKey: ${signedPreKeyToUpload != null}, OneTimeEcPreKeys: ${oneTimeEcPreKeysToUpload != null}, LastResortKyberPreKey: ${lastResortKyberPreKeyToUpload != null}, OneTimeKyberPreKeys: ${oneTimeKyberPreKeysToUpload != null}")
-      accountManager.setPreKeys(
+      SignalNetwork.keys.setPreKeys(
         PreKeyUpload(
           serviceIdType = serviceIdType,
           signedPreKey = signedPreKeyToUpload,
@@ -198,7 +199,7 @@ class PreKeysSyncJob private constructor(
           lastResortKyberPreKey = lastResortKyberPreKeyToUpload,
           oneTimeKyberPreKeys = oneTimeKyberPreKeysToUpload
         )
-      )
+      ).successOrThrow()
 
       if (signedPreKeyToUpload != null) {
         log(serviceIdType, "Successfully uploaded signed prekey.")
@@ -258,18 +259,26 @@ class PreKeysSyncJob private constructor(
 
   @Throws(IOException::class)
   private fun checkPreKeyConsistency(serviceIdType: ServiceIdType, protocolStore: SignalServiceAccountDataStore, metadataStore: PreKeyMetadataStore): Boolean {
-    val result: NetworkResult<Unit> = AppDependencies.signalServiceAccountManager.keysApi.checkRepeatedUseKeys(
-      serviceIdType = serviceIdType,
-      identityKey = protocolStore.identityKeyPair.publicKey,
-      signedPreKeyId = metadataStore.activeSignedPreKeyId,
-      signedPreKey = protocolStore.loadSignedPreKey(metadataStore.activeSignedPreKeyId).keyPair.publicKey,
-      lastResortKyberKeyId = metadataStore.lastResortKyberPreKeyId,
-      lastResortKyberKey = protocolStore.loadKyberPreKey(metadataStore.lastResortKyberPreKeyId).keyPair.publicKey
-    )
+    val result: NetworkResult<Unit> = try {
+      SignalNetwork.keys.checkRepeatedUseKeys(
+        serviceIdType = serviceIdType,
+        identityKey = protocolStore.identityKeyPair.publicKey,
+        signedPreKeyId = metadataStore.activeSignedPreKeyId,
+        signedPreKey = protocolStore.loadSignedPreKey(metadataStore.activeSignedPreKeyId).keyPair.publicKey,
+        lastResortKyberKeyId = metadataStore.lastResortKyberPreKeyId,
+        lastResortKyberKey = protocolStore.loadKyberPreKey(metadataStore.lastResortKyberPreKeyId).keyPair.publicKey
+      )
+    } catch (e: InvalidKeyException) {
+      Log.w(TAG, "Unable to load keys.", e)
+      return false
+    } catch (e: InvalidKeyIdException) {
+      Log.w(TAG, "Unable to load keys.", e)
+      return false
+    }
 
     return when (result) {
       is NetworkResult.Success -> true
-      is NetworkResult.NetworkError -> throw result.exception ?: PushNetworkException("Network error")
+      is NetworkResult.NetworkError -> throw result.exception
       is NetworkResult.ApplicationError -> throw result.throwable
       is NetworkResult.StatusCodeError -> if (result.code == 409) {
         false
@@ -280,11 +289,7 @@ class PreKeysSyncJob private constructor(
   }
 
   override fun onShouldRetry(e: Exception): Boolean {
-    return when (e) {
-      is NonSuccessfulResponseCodeException -> false
-      is PushNetworkException -> true
-      else -> false
-    }
+    return e.isRetryableIOException()
   }
 
   override fun onFailure() {
@@ -304,6 +309,9 @@ class PreKeysSyncJob private constructor(
           PreKeysSyncJob(parameters, data.forceRefreshRequested)
         } ?: PreKeysSyncJob(parameters, forceRotationRequested = false)
       } catch (e: IOException) {
+        Log.w(TAG, "Error deserializing PreKeysSyncJob", e)
+        PreKeysSyncJob(parameters, forceRotationRequested = false)
+      } catch (e: ProtocolException) {
         Log.w(TAG, "Error deserializing PreKeysSyncJob", e)
         PreKeysSyncJob(parameters, forceRotationRequested = false)
       }

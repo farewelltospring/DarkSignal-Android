@@ -11,6 +11,7 @@ import androidx.core.view.postDelayed
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.createSavedStateHandle
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -32,7 +33,7 @@ import org.thoughtcrime.securesms.mediasend.v2.text.send.TextStoryPostSendReposi
 import org.thoughtcrime.securesms.mediasend.v2.text.send.TextStoryPostSendResult
 import org.thoughtcrime.securesms.safety.SafetyNumberBottomSheet
 import org.thoughtcrime.securesms.stories.Stories
-import org.thoughtcrime.securesms.util.activitySavedStateViewModel
+import org.thoughtcrime.securesms.util.activityViewModel
 import org.thoughtcrime.securesms.util.visible
 import java.util.Optional
 
@@ -56,8 +57,8 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
     }
   )
 
-  private val linkPreviewViewModel: LinkPreviewViewModelV2 by activitySavedStateViewModel { handle ->
-    LinkPreviewViewModelV2(handle, enablePlaceholder = true)
+  private val linkPreviewViewModel: LinkPreviewViewModelV2 by activityViewModel { extras ->
+    LinkPreviewViewModelV2(extras.createSavedStateHandle(), enablePlaceholder = true)
   }
 
   private val lifecycleDisposable = LifecycleDisposable()
@@ -90,7 +91,7 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
         linkPreviewViewModel.onSend()
       }
 
-      val canSend = state.body.isNotEmpty() || !state.linkPreviewUri.isNullOrEmpty()
+      val canSend = state.body.isNotBlank() || !state.linkPreviewUri.isNullOrEmpty()
       binding.send.alpha = if (canSend) 1f else 0.5f
       binding.send.isEnabled = canSend
     }
@@ -118,6 +119,10 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
 
     binding.storyTextPost.setLinkPreviewCloseListener {
       viewModel.setLinkPreview("")
+    }
+
+    binding.storyTextPost.setLinkPreviewClickListener {
+      TextStoryPostLinkEntryFragment(true).show(childFragmentManager, null)
     }
 
     val launcher = registerForActivityResult(StoriesMultiselectForwardActivity.SelectionContract()) {
@@ -157,7 +162,9 @@ class TextStoryPostCreationFragment : Fragment(R.layout.stories_text_post_creati
         MaterialAlertDialogBuilder(requireContext())
           .setMessage(getString(R.string.MediaReviewFragment__add_to_the_group_story, sharedViewModel.state.value!!.recipient!!.getDisplayName(requireContext())))
           .setPositiveButton(R.string.MediaReviewFragment__add_to_story) { _, _ -> performSend(contacts) }
-          .setNegativeButton(android.R.string.cancel) { _, _ -> }
+          .setNegativeButton(android.R.string.cancel) { _, _ ->
+            binding.sendInProgressIndicator.visible = false
+          }
           .show()
       } else {
         performSend(contacts)

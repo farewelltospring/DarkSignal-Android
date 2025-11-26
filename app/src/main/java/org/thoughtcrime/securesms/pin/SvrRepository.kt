@@ -8,23 +8,27 @@ package org.thoughtcrime.securesms.pin
 import android.app.backup.BackupManager
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
+import kotlinx.coroutines.runBlocking
+import okio.ByteString.Companion.toByteString
 import org.signal.core.util.Stopwatch
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.BuildConfig
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobmanager.JobTracker
-import org.thoughtcrime.securesms.jobs.ReclaimUsernameAndLinkJob
+import org.thoughtcrime.securesms.jobs.MultiDeviceKeysUpdateJob
 import org.thoughtcrime.securesms.jobs.RefreshAttributesJob
 import org.thoughtcrime.securesms.jobs.ResetSvrGuessCountJob
-import org.thoughtcrime.securesms.jobs.StorageAccountRestoreJob
 import org.thoughtcrime.securesms.jobs.StorageForcePushJob
-import org.thoughtcrime.securesms.jobs.StorageSyncJob
 import org.thoughtcrime.securesms.jobs.Svr2MirrorJob
 import org.thoughtcrime.securesms.jobs.Svr3MirrorJob
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.lock.v2.PinKeyboardType
 import org.thoughtcrime.securesms.megaphone.Megaphones
+import org.thoughtcrime.securesms.net.SignalNetwork
+import org.thoughtcrime.securesms.registration.ui.restore.StorageServiceRestore
 import org.thoughtcrime.securesms.registration.viewmodel.SvrAuthCredentialSet
+import org.whispersystems.signalservice.api.AccountEntropyPool
+import org.whispersystems.signalservice.api.NetworkResultUtil
 import org.whispersystems.signalservice.api.SvrNoDataException
 import org.whispersystems.signalservice.api.kbs.MasterKey
 import org.whispersystems.signalservice.api.svr.SecureValueRecovery
@@ -42,11 +46,16 @@ object SvrRepository {
 
   val TAG = Log.tag(SvrRepository::class.java)
 
+  private val svr2Legacy: SecureValueRecovery = AppDependencies.signalServiceAccountManager.getSecureValueRecoveryV2(BuildConfig.SVR2_MRENCLAVE_LEGACY)
   private val svr2: SecureValueRecovery = AppDependencies.signalServiceAccountManager.getSecureValueRecoveryV2(BuildConfig.SVR2_MRENCLAVE)
   private val svr3: SecureValueRecovery = AppDependencies.signalServiceAccountManager.getSecureValueRecoveryV3(AppDependencies.libsignalNetwork)
 
   /** An ordered list of SVR implementations to read from. They should be in priority order, with the most important one listed first. */
-  private val readImplementations: List<SecureValueRecovery> = if (Svr3Migration.shouldReadFromSvr3) listOf(svr3, svr2) else listOf(svr2)
+  private val readImplementations: List<SecureValueRecovery> = if (Svr3Migration.shouldReadFromSvr3) {
+    listOf(svr3, svr2)
+  } else {
+    listOf(svr2, svr2Legacy)
+  }
 
   /** An ordered list of SVR implementations to write to. They should be in priority order, with the most important one listed first. */
   private val writeImplementations: List<SecureValueRecovery>
@@ -57,6 +66,7 @@ object SvrRepository {
       }
       if (Svr3Migration.shouldWriteToSvr2) {
         implementations += svr2
+        implementations += svr2Legacy
       }
       return implementations
     }
@@ -89,10 +99,13 @@ object SvrRepository {
       val operations: List<Pair<SecureValueRecovery, () -> RestoreResponse>> = if (Svr3Migration.shouldReadFromSvr3) {
         listOf(
           svr3 to { restoreMasterKeyPreRegistrationFromV3(credentials.svr3, userPin) },
-          svr2 to { restoreMasterKeyPreRegistrationFromV2(credentials.svr2, userPin) }
+          svr2 to { restoreMasterKeyPreRegistrationFromV2(svr2, credentials.svr2, userPin) }
         )
       } else {
-        listOf(svr2 to { restoreMasterKeyPreRegistrationFromV2(credentials.svr2, userPin) })
+        listOf(
+          svr2 to { restoreMasterKeyPreRegistrationFromV2(svr2, credentials.svr2, userPin) },
+          svr2Legacy to { restoreMasterKeyPreRegistrationFromV2(svr2Legacy, credentials.svr2, userPin) }
+        )
       }
 
       for ((implementation, operation) in operations) {
@@ -126,6 +139,10 @@ object SvrRepository {
           RestoreResponse.Missing -> {
             Log.w(TAG, "[restoreMasterKeyPreRegistration] No data found for $implementation | Continuing to next implementation.", true)
           }
+
+          RestoreResponse.EnclaveNotFound -> {
+            Log.w(TAG, "[restoreMasterKeyPreRegistration] Enclave no longer exists: $implementation | Continuing to next implementation.", true)
+          }
         }
       }
 
@@ -152,13 +169,15 @@ object SvrRepository {
             Log.i(TAG, "[restoreMasterKeyPostRegistration] Successfully restored master key. $implementation", true)
             stopwatch.split("restore")
 
-            SignalStore.svr.setMasterKey(response.masterKey, userPin)
+            SignalStore.registration.localRegistrationMetadata?.let { metadata ->
+              SignalStore.registration.localRegistrationMetadata = metadata.copy(masterKey = response.masterKey.serialize().toByteString(), pin = userPin)
+            }
+
+            SignalStore.svr.masterKeyForInitialDataRestore = response.masterKey
+            SignalStore.svr.setPin(userPin)
             SignalStore.svr.isRegistrationLockEnabled = false
             SignalStore.pin.resetPinReminders()
-            SignalStore.svr.isPinForgottenOrSkipped = false
-            SignalStore.storageService.setNeedsAccountRestore(false)
             SignalStore.pin.keyboardType = pinKeyboardType
-            SignalStore.storageService.setNeedsAccountRestore(false)
 
             when (implementation.svrVersion) {
               SvrVersion.SVR2 -> SignalStore.svr.appendSvr2AuthTokenToList(response.authorization.asBasic())
@@ -168,15 +187,8 @@ object SvrRepository {
             AppDependencies.jobManager.add(ResetSvrGuessCountJob())
             stopwatch.split("metadata")
 
-            AppDependencies.jobManager.runSynchronously(StorageAccountRestoreJob(), StorageAccountRestoreJob.LIFESPAN)
-            stopwatch.split("account-restore")
-
-            AppDependencies
-              .jobManager
-              .startChain(StorageSyncJob())
-              .then(ReclaimUsernameAndLinkJob())
-              .enqueueAndBlockUntilCompletion(TimeUnit.SECONDS.toMillis(10))
-            stopwatch.split("contact-restore")
+            runBlocking { StorageServiceRestore.restore() }
+            stopwatch.split("restore-account")
 
             if (implementation.svrVersion != SvrVersion.SVR2 && Svr3Migration.shouldWriteToSvr2) {
               AppDependencies.jobManager.add(Svr2MirrorJob())
@@ -209,6 +221,10 @@ object SvrRepository {
           RestoreResponse.Missing -> {
             Log.w(TAG, "[restoreMasterKeyPostRegistration] No data found for: $implementation | Continuing to next implementation.", true)
           }
+
+          RestoreResponse.EnclaveNotFound -> {
+            Log.w(TAG, "[restoreMasterKeyPostRegistration] Enclave no longer exists: $implementation | Continuing to next implementation.", true)
+          }
         }
       }
 
@@ -225,7 +241,7 @@ object SvrRepository {
   @JvmStatic
   fun setPin(userPin: String, keyboardType: PinKeyboardType): BackupResponse {
     return operationLock.withLock {
-      val masterKey: MasterKey = SignalStore.svr.getOrCreateMasterKey()
+      val masterKey: MasterKey = SignalStore.svr.masterKey
 
       val writeTargets = writeImplementations
 
@@ -253,8 +269,7 @@ object SvrRepository {
       if (overallResponse is BackupResponse.Success) {
         Log.i(TAG, "[setPin] Success!", true)
 
-        SignalStore.svr.setMasterKey(masterKey, userPin)
-        SignalStore.svr.isPinForgottenOrSkipped = false
+        SignalStore.svr.setPin(userPin)
         responses
           .filterIsInstance<BackupResponse.Success>()
           .forEach {
@@ -291,7 +306,8 @@ object SvrRepository {
     masterKey: MasterKey?,
     userPin: String?,
     hasPinToRestore: Boolean,
-    setRegistrationLockEnabled: Boolean
+    setRegistrationLockEnabled: Boolean,
+    restoredAEP: Boolean
   ) {
     Log.i(TAG, "[onRegistrationComplete] Starting", true)
     operationLock.withLock {
@@ -307,14 +323,22 @@ object SvrRepository {
           Log.i(TAG, "[onRegistrationComplete] ReRegistration Skip SMS", true)
         }
 
-        SignalStore.svr.setMasterKey(masterKey, userPin)
+        SignalStore.svr.masterKeyForInitialDataRestore = masterKey
+        SignalStore.svr.setPin(userPin)
         SignalStore.pin.resetPinReminders()
 
         AppDependencies.jobManager.add(ResetSvrGuessCountJob())
+      } else if (masterKey != null) {
+        Log.i(TAG, "[onRegistrationComplete] ReRegistered with key without pin", true)
+        SignalStore.svr.masterKeyForInitialDataRestore = masterKey
+        if (restoredAEP && setRegistrationLockEnabled) {
+          Log.i(TAG, "[onRegistrationComplete] Registration Lock", true)
+          SignalStore.svr.isRegistrationLockEnabled = true
+        }
       } else if (hasPinToRestore) {
         Log.i(TAG, "[onRegistrationComplete] Has a PIN to restore.", true)
         SignalStore.svr.clearRegistrationLockAndPin()
-        SignalStore.storageService.setNeedsAccountRestore(true)
+        SignalStore.storageService.needsAccountRestore = true
       } else {
         Log.i(TAG, "[onRegistrationComplete] No registration lock or PIN at all.", true)
         SignalStore.svr.clearRegistrationLockAndPin()
@@ -331,16 +355,24 @@ object SvrRepository {
   fun onPinRestoreForgottenOrSkipped() {
     operationLock.withLock {
       SignalStore.svr.clearRegistrationLockAndPin()
-      SignalStore.storageService.setNeedsAccountRestore(false)
-      SignalStore.svr.isPinForgottenOrSkipped = true
+      SignalStore.storageService.needsAccountRestore = false
     }
   }
 
+  /**
+   * @param rotateAep If true, this will rotate the AEP as part of the process of opting out. Only do this if the user has not enabled backups! If the user
+   *    has backups enabled, you should guide them through rotating the AEP first, and then call this with [rotateAep] = false.
+   */
   @JvmStatic
   @WorkerThread
-  fun optOutOfPin() {
+  fun optOutOfPin(rotateAep: Boolean) {
     operationLock.withLock {
       SignalStore.svr.optOut()
+
+      if (rotateAep) {
+        SignalStore.account.rotateAccountEntropyPool(AccountEntropyPool.generate())
+        AppDependencies.jobManager.add(MultiDeviceKeysUpdateJob())
+      }
 
       AppDependencies.megaphoneRepository.markFinished(Megaphones.Event.PINS_FOR_ALL)
 
@@ -357,7 +389,7 @@ object SvrRepository {
       check(SignalStore.svr.hasPin() && !SignalStore.svr.hasOptedOut()) { "Must have a PIN to set a registration lock!" }
 
       Log.i(TAG, "[enableRegistrationLockForUserWithPin] Enabling registration lock.", true)
-      AppDependencies.signalServiceAccountManager.enableRegistrationLock(SignalStore.svr.getOrCreateMasterKey())
+      NetworkResultUtil.toBasicLegacy(SignalNetwork.account.enableRegistrationLock(SignalStore.svr.masterKey.deriveRegistrationLock()))
       SignalStore.svr.isRegistrationLockEnabled = true
       Log.i(TAG, "[enableRegistrationLockForUserWithPin] Registration lock successfully enabled.", true)
     }
@@ -371,7 +403,7 @@ object SvrRepository {
       check(SignalStore.svr.hasPin() && !SignalStore.svr.hasOptedOut()) { "Must have a PIN to disable registration lock!" }
 
       Log.i(TAG, "[disableRegistrationLockForUserWithPin] Disabling registration lock.", true)
-      AppDependencies.signalServiceAccountManager.disableRegistrationLock()
+      NetworkResultUtil.toBasicLegacy(SignalNetwork.account.disableRegistrationLock())
       SignalStore.svr.isRegistrationLockEnabled = false
       Log.i(TAG, "[disableRegistrationLockForUserWithPin] Registration lock successfully disabled.", true)
     }
@@ -412,11 +444,11 @@ object SvrRepository {
 
   @WorkerThread
   @VisibleForTesting
-  fun restoreMasterKeyPreRegistrationFromV2(credentials: AuthCredentials?, userPin: String): RestoreResponse {
+  fun restoreMasterKeyPreRegistrationFromV2(svr: SecureValueRecovery, credentials: AuthCredentials?, userPin: String): RestoreResponse {
     return if (credentials == null) {
       RestoreResponse.Missing
     } else {
-      svr2.restoreDataPreRegistration(credentials, shareSet = null, userPin)
+      svr.restoreDataPreRegistration(credentials, shareSet = null, userPin)
     }
   }
 

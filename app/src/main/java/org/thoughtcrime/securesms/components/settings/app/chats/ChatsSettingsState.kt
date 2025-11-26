@@ -7,5 +7,11 @@ data class ChatsSettingsState(
   val useSystemEmoji: Boolean,
   val enterKeySends: Boolean,
   val localBackupsEnabled: Boolean,
-  val remoteBackupsEnabled: Boolean
-)
+  val folderCount: Int,
+  val userUnregistered: Boolean,
+  val clientDeprecated: Boolean
+) {
+  fun isRegisteredAndUpToDate(): Boolean {
+    return !userUnregistered && !clientDeprecated
+  }
+}

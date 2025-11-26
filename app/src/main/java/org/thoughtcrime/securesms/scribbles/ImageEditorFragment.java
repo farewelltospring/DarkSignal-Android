@@ -1,6 +1,6 @@
 package org.thoughtcrime.securesms.scribbles;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -15,7 +15,6 @@ import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.ColorInt;
@@ -33,7 +32,7 @@ import com.bumptech.glide.request.target.Target;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.signal.core.util.FontUtil;
-import org.signal.core.util.concurrent.SignalExecutors;
+import org.signal.core.util.concurrent.LifecycleDisposable;
 import org.signal.core.util.concurrent.SimpleTask;
 import org.signal.core.util.logging.Log;
 import org.signal.imageeditor.core.Bounds;
@@ -46,9 +45,9 @@ import org.signal.imageeditor.core.model.EditorModel;
 import org.signal.imageeditor.core.renderers.BezierDrawingRenderer;
 import org.signal.imageeditor.core.renderers.FaceBlurRenderer;
 import org.signal.imageeditor.core.renderers.MultiLineTextRenderer;
-import org.signal.libsignal.protocol.util.Pair;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.animation.ResizeAnimation;
+import org.thoughtcrime.securesms.attachments.AttachmentSaver;
 import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.fonts.FontTypefaceProvider;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
@@ -65,8 +64,7 @@ import org.thoughtcrime.securesms.scribbles.stickers.FeatureSticker;
 import org.thoughtcrime.securesms.scribbles.stickers.TappableRenderer;
 import org.thoughtcrime.securesms.util.MediaUtil;
 import org.thoughtcrime.securesms.util.ParcelUtil;
-import org.thoughtcrime.securesms.util.SaveAttachmentTask;
-import org.thoughtcrime.securesms.util.StorageUtil;
+import org.thoughtcrime.securesms.util.SaveAttachmentUtil;
 import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.ThrottledDebouncer;
 import org.thoughtcrime.securesms.util.ViewUtil;
@@ -76,6 +74,11 @@ import java.io.ByteArrayOutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import kotlin.Pair;
+
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -88,7 +91,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
 
   public static final boolean CAN_RENDER_EMOJI = FontUtil.canRenderEmojiAtFontSize(1024);
 
-  private static final float PORTRAIT_ASPECT_RATIO  = 9 / 16f;
+  private static final float PORTRAIT_ASPECT_RATIO = 9 / 16f;
 
   private static final String KEY_IMAGE_URI = "image_uri";
   private static final String KEY_MODE      = "mode";
@@ -97,6 +100,9 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
 
   private static final int DRAW_HUD_PROTECTION = ViewUtil.dpToPx(72);
   private static final int CROP_HUD_PROTECTION = ViewUtil.dpToPx(144);
+  private static final int CONTROLS_PROTECTION = ViewUtil.dpToPx(74);
+
+  private final LifecycleDisposable lifecycleDisposable = new LifecycleDisposable();
 
   private EditorModel restoredModel;
 
@@ -223,6 +229,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
+    lifecycleDisposable.bindTo(getViewLifecycleOwner());
     controller.restoreState();
 
     Mode mode = Mode.getByCode(requireArguments().getString(KEY_MODE));
@@ -244,8 +251,8 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
       imageEditorView.addTextInputFilter(new RemoveEmojiTextFilter());
     }
 
-    int width = getResources().getDisplayMetrics().widthPixels;
-    int height = (int) ((16 / 9f) * width);
+    int width  = getResources().getDisplayMetrics().widthPixels;
+    int height = (int) ((16 / 9f) * width) - CONTROLS_PROTECTION;
     imageEditorView.setMinimumHeight(height);
     imageEditorView.requestLayout();
     imageEditorHud.setBottomOfImageEditorView(getResources().getDisplayMetrics().heightPixels - height);
@@ -573,8 +580,8 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
     Matrix inverseCropPosition = model.getInverseCropPosition();
 
     if (cachedFaceDetection != null) {
-      if (cachedFaceDetection.first().equals(getUri()) && cachedFaceDetection.second().position.equals(inverseCropPosition)) {
-        renderFaceBlurs(cachedFaceDetection.second());
+      if (cachedFaceDetection.getFirst().equals(getUri()) && cachedFaceDetection.getSecond().position.equals(inverseCropPosition)) {
+        renderFaceBlurs(cachedFaceDetection.getSecond());
         imageEditorHud.showBlurToast();
         return;
       } else {
@@ -616,6 +623,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   public void onClearAll() {
     if (imageEditorView != null) {
       imageEditorView.getModel().clearUndoStack();
+      imageEditorHud.setBlurFacesToggleEnabled(false);
       updateHudDialRotation();
     }
   }
@@ -653,20 +661,13 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
 
   @Override
   public void onSave() {
-    SaveAttachmentTask.showWarningDialog(requireContext(), (dialogInterface, i) -> {
-      if (StorageUtil.canWriteToMediaStore()) {
-        performSaveToDisk();
-        return;
-      }
-
-      Permissions.with(this)
-                 .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                 .ifNecessary()
-                 .withPermanentDenialDialog(getString(R.string.MediaPreviewActivity_signal_needs_the_storage_permission_in_order_to_write_to_external_storage_but_it_has_been_permanently_denied))
-                 .onAnyDenied(() -> Toast.makeText(requireContext(), R.string.MediaPreviewActivity_unable_to_write_to_external_storage_without_permission, Toast.LENGTH_LONG).show())
-                 .onAllGranted(this::performSaveToDisk)
-                 .execute();
-    });
+    lifecycleDisposable.add(
+        Single.fromCallable(this::renderToSingleUseBlob)
+              .subscribeOn(Schedulers.computation())
+              .map(uri -> new SaveAttachmentUtil.SaveAttachment(uri, MediaUtil.IMAGE_JPEG, System.currentTimeMillis(), null))
+              .flatMapCompletable(attachment -> new AttachmentSaver(this).saveAttachmentsRx(Collections.singleton(attachment)))
+              .subscribe()
+    );
   }
 
   @Override
@@ -753,10 +754,10 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
       resizeAnimation.cancel();
     }
 
-    int   maxHeight     = getHeightForOrientation(orientation);
-    float aspectRatio   = getAspectRatioForOrientation(orientation);
-    int   targetWidth   = getWidthForOrientation(orientation);
-    int   targetHeight  = (int) ((1 / aspectRatio) * targetWidth);
+    int   maxHeight    = getHeightForOrientation(orientation);
+    float aspectRatio  = getAspectRatioForOrientation(orientation);
+    int   targetWidth  = getWidthForOrientation(orientation);
+    int   targetHeight = (int) ((1 / aspectRatio) * targetWidth) - CONTROLS_PROTECTION;
 
     if (targetHeight > maxHeight) {
       targetHeight = maxHeight;
@@ -797,14 +798,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
     return mode != ImageEditorHudV2.Mode.NONE;
   }
 
-  private void performSaveToDisk() {
-    SimpleTask.run(this::renderToSingleUseBlob, uri -> {
-      SaveAttachmentTask            saveTask   = new SaveAttachmentTask(requireContext());
-      SaveAttachmentTask.Attachment attachment = new SaveAttachmentTask.Attachment(uri, MediaUtil.IMAGE_JPEG, System.currentTimeMillis(), null);
-      saveTask.executeOnExecutor(SignalExecutors.BOUNDED, attachment);
-    });
-  }
-
+  @SuppressLint("WrongThread")
   @WorkerThread
   public @NonNull Uri renderToSingleUseBlob() {
     return renderToSingleUseBlob(requireContext(), imageEditorView.getModel());
@@ -965,7 +959,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
               imageEditorHud.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             }
           }
-          
+
           editorElement.animatePartialFadeOut(imageEditorView::invalidate);
         });
       } else {
@@ -996,7 +990,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
         if (imageEditorHud.getMode() != ImageEditorHudV2.Mode.TEXT) {
           imageEditorHud.setMode(ImageEditorHudV2.Mode.MOVE_TEXT);
         }
-      } else if (editorElement != null && editorElement.getRenderer() instanceof UriGlideRenderer){
+      } else if (editorElement != null && editorElement.getRenderer() instanceof UriGlideRenderer) {
         editorElement.animatePartialFadeIn(imageEditorView::invalidate);
         imageEditorHud.setMode(ImageEditorHudV2.Mode.MOVE_STICKER);
       }
@@ -1073,6 +1067,12 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
       onPopEditorMode();
     }
   };
+
+  @SuppressWarnings("deprecation")
+  @Override
+  public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    Permissions.onRequestPermissionsResult(this, requestCode, permissions, grantResults);
+  }
 
   public interface Controller {
     void onTouchEventsNeeded(boolean needed);

@@ -3,7 +3,6 @@ package org.thoughtcrime.securesms.stories.viewer.reply.group
 import android.content.ClipData
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -15,8 +14,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetBehaviorHack
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.kotlin.subscribeBy
@@ -26,7 +23,6 @@ import org.signal.core.util.concurrent.SignalExecutors
 import org.signal.core.util.getParcelableCompat
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
-import org.thoughtcrime.securesms.components.FixedRoundedCornerBottomSheetDialogFragment
 import org.thoughtcrime.securesms.components.emoji.MediaKeyboard
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation
 import org.thoughtcrime.securesms.components.settings.DSLConfiguration
@@ -49,7 +45,6 @@ import org.thoughtcrime.securesms.jobs.RetrieveProfileJob
 import org.thoughtcrime.securesms.keyboard.KeyboardPage
 import org.thoughtcrime.securesms.keyboard.KeyboardPagerViewModel
 import org.thoughtcrime.securesms.keyboard.emoji.EmojiKeyboardCallback
-import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.mediasend.v2.UntrustedRecords
 import org.thoughtcrime.securesms.notifications.v2.ConversationId
 import org.thoughtcrime.securesms.reactions.any.ReactWithAnyEmojiBottomSheetDialogFragment
@@ -62,7 +57,6 @@ import org.thoughtcrime.securesms.stories.viewer.reply.StoryViewsAndRepliesPager
 import org.thoughtcrime.securesms.stories.viewer.reply.StoryViewsAndRepliesPagerParent
 import org.thoughtcrime.securesms.stories.viewer.reply.composer.StoryReplyComposer
 import org.thoughtcrime.securesms.util.DeleteDialog
-import org.thoughtcrime.securesms.util.Dialogs
 import org.thoughtcrime.securesms.util.ServiceUtil
 import org.thoughtcrime.securesms.util.ViewUtil
 import org.thoughtcrime.securesms.util.adapter.mapping.PagingMappingAdapter
@@ -120,18 +114,6 @@ class StoryGroupReplyFragment :
     ownerProducer = { requireActivity() }
   )
 
-  private val recyclerListener: RecyclerView.OnItemTouchListener = object : RecyclerView.SimpleOnItemTouchListener() {
-    override fun onInterceptTouchEvent(view: RecyclerView, e: MotionEvent): Boolean {
-      recyclerView.isNestedScrollingEnabled = view == recyclerView
-      composer.emojiPageView?.isNestedScrollingEnabled = view == composer.emojiPageView
-
-      val dialog = (parentFragment as FixedRoundedCornerBottomSheetDialogFragment).dialog as BottomSheetDialog
-      BottomSheetBehaviorHack.setNestedScrollingChild(dialog.behavior, view)
-      dialog.findViewById<View>(R.id.design_bottom_sheet)?.invalidate()
-      return false
-    }
-  }
-
   private val colorizer = Colorizer()
   private val lifecycleDisposable = LifecycleDisposable()
 
@@ -166,7 +148,7 @@ class StoryGroupReplyFragment :
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     SignalExecutors.BOUNDED.execute {
-      RetrieveProfileJob.enqueue(groupRecipientId)
+      RetrieveProfileJob.enqueue(groupRecipientId, skipDebounce = false)
     }
 
     recyclerView = view.findViewById(R.id.recycler)
@@ -362,11 +344,7 @@ class StoryGroupReplyFragment :
       performSend(body, mentions, bodyRanges)
     }
 
-    if (SignalStore.uiHints.hasNotSeenTextFormattingAlert() && composer.input.hasStyling()) {
-      Dialogs.showFormattedTextDialog(requireContext(), send)
-    } else {
-      send.run()
-    }
+    send.run()
   }
 
   override fun onPickAnyReactionClicked() {
@@ -414,13 +392,9 @@ class StoryGroupReplyFragment :
 
   override fun onShowEmojiKeyboard() {
     requireListener<Callback>().requestFullScreen(true)
-    recyclerView.addOnItemTouchListener(recyclerListener)
-    composer.emojiPageView?.addOnItemTouchListener(recyclerListener)
   }
 
   override fun onHideEmojiKeyboard() {
-    recyclerView.removeOnItemTouchListener(recyclerListener)
-    composer.emojiPageView?.removeOnItemTouchListener(recyclerListener)
     requireListener<Callback>().requestFullScreen(false)
   }
 
@@ -443,7 +417,7 @@ class StoryGroupReplyFragment :
     if (savedInstanceState == null) {
       lifecycleDisposable += isActiveGroup.firstOrError().observeOn(AndroidSchedulers.mainThread()).subscribe { active ->
         if (active) {
-          ViewUtil.focusAndShowKeyboard(composer)
+          ViewUtil.focusAndShowKeyboard(composer.input)
         }
       }
     }

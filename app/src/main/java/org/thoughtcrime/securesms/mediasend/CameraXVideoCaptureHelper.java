@@ -13,10 +13,12 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ZoomState;
 import androidx.camera.video.FileDescriptorOutputOptions;
 import androidx.camera.video.Recording;
 import androidx.camera.video.VideoRecordEvent;
+import androidx.camera.view.CameraController;
 import androidx.camera.view.PreviewView;
 import androidx.camera.view.video.AudioConfig;
 import androidx.core.content.ContextCompat;
@@ -25,7 +27,6 @@ import androidx.fragment.app.Fragment;
 
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
-import org.thoughtcrime.securesms.mediasend.camerax.CameraXController;
 import org.thoughtcrime.securesms.mediasend.camerax.CameraXModePolicy;
 import org.thoughtcrime.securesms.permissions.Permissions;
 import org.thoughtcrime.securesms.util.ContextUtil;
@@ -46,14 +47,14 @@ class CameraXVideoCaptureHelper implements CameraButtonView.VideoCaptureListener
   private static final String VIDEO_DEBUG_LABEL = "video-capture";
   private static final long   VIDEO_SIZE        = 10 * 1024 * 1024;
 
-  private final @NonNull Fragment               fragment;
-  private final @NonNull PreviewView            previewView;
-  private final @NonNull CameraXController cameraController;
-  private final @NonNull Callback               callback;
-  private final @NonNull MemoryFileDescriptor   memoryFileDescriptor;
-  private final @NonNull ValueAnimator          updateProgressAnimator;
-  private final @NonNull Debouncer              debouncer;
-  private final @NonNull CameraXModePolicy      cameraXModePolicy;
+  private final @NonNull Fragment             fragment;
+  private final @NonNull PreviewView          previewView;
+  private final @NonNull CameraController     cameraController;
+  private final @NonNull Callback             callback;
+  private final @NonNull MemoryFileDescriptor memoryFileDescriptor;
+  private final @NonNull ValueAnimator        updateProgressAnimator;
+  private final @NonNull Debouncer            debouncer;
+  private final @NonNull CameraXModePolicy    cameraXModePolicy;
 
   private ValueAnimator cameraMetricsAnimator;
 
@@ -87,7 +88,7 @@ class CameraXVideoCaptureHelper implements CameraButtonView.VideoCaptureListener
 
   CameraXVideoCaptureHelper(@NonNull Fragment fragment,
                             @NonNull CameraButtonView captureButton,
-                            @NonNull CameraXController cameraController,
+                            @NonNull CameraController cameraController,
                             @NonNull PreviewView previewView,
                             @NonNull MemoryFileDescriptor memoryFileDescriptor,
                             @NonNull CameraXModePolicy cameraXModePolicy,
@@ -143,7 +144,7 @@ class CameraXVideoCaptureHelper implements CameraButtonView.VideoCaptureListener
                .execute();
   }
 
-  @SuppressLint("RestrictedApi")
+  @SuppressLint({"RestrictedApi", "MissingPermission"})
   private void beginCameraRecording() {
     cameraXModePolicy.setToVideo(cameraController);
     this.cameraController.setZoomRatio(getDefaultVideoZoomRatio());
@@ -153,6 +154,7 @@ class CameraXVideoCaptureHelper implements CameraButtonView.VideoCaptureListener
     FileDescriptorOutputOptions outputOptions = new FileDescriptorOutputOptions.Builder(memoryFileDescriptor.getParcelFileDescriptor()).build();
     AudioConfig                 audioConfig   = AudioConfig.create(true);
 
+    cameraController.enableTorch(cameraController.getImageCaptureFlashMode() <= ImageCapture.FLASH_MODE_ON);
     activeRecording = cameraController.startRecording(outputOptions, audioConfig, ContextCompat.getMainExecutor(fragment.requireContext()), videoSavedListener);
 
     updateProgressAnimator.start();

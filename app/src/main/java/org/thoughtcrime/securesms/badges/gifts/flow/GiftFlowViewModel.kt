@@ -1,8 +1,6 @@
 package org.thoughtcrime.securesms.badges.gifts.flow
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observable
@@ -28,12 +26,12 @@ import java.util.Currency
  * Maintains state as a user works their way through the gift flow.
  */
 class GiftFlowViewModel(
-  private val giftFlowRepository: GiftFlowRepository
+  private val giftFlowRepository: GiftFlowRepository = GiftFlowRepository()
 ) : ViewModel() {
 
   private val store = RxStore(
     GiftFlowState(
-      currency = SignalStore.donations.getOneTimeCurrency()
+      currency = SignalStore.inAppPayments.getOneTimeCurrency()
     )
   )
   private val disposables = CompositeDisposable()
@@ -66,7 +64,7 @@ class GiftFlowViewModel(
 
   fun refresh() {
     disposables.clear()
-    disposables += SignalStore.donations.observableOneTimeCurrency.subscribe { currency ->
+    disposables += SignalStore.inAppPayments.observableOneTimeCurrency.subscribe { currency ->
       store.update {
         it.copy(
           currency = currency
@@ -104,9 +102,9 @@ class GiftFlowViewModel(
     )
   }
 
-  fun insertInAppPayment(context: Context): Single<InAppPaymentTable.InAppPayment> {
+  fun insertInAppPayment(): Single<InAppPaymentTable.InAppPayment> {
     val giftSnapshot = snapshot
-    return giftFlowRepository.insertInAppPayment(context, giftSnapshot)
+    return giftFlowRepository.insertInAppPayment(giftSnapshot)
       .doOnSuccess { inAppPayment ->
         store.update { it.copy(inAppPaymentId = inAppPayment.id) }
       }
@@ -160,18 +158,6 @@ class GiftFlowViewModel(
   }
 
   companion object {
-    private val TAG = Log.tag(GiftFlowViewModel::class.java)
-  }
-
-  class Factory(
-    private val repository: GiftFlowRepository
-  ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return modelClass.cast(
-        GiftFlowViewModel(
-          repository
-        )
-      ) as T
-    }
+    private val TAG = Log.tag(GiftFlowViewModel::class)
   }
 }

@@ -24,7 +24,7 @@ class AccountConsistencyWorkerJob private constructor(parameters: Parameters) : 
 
     @JvmStatic
     fun enqueueIfNecessary() {
-      if (System.currentTimeMillis() - SignalStore.misc.lastConsistencyCheckTime > 3.days.inWholeMilliseconds) {
+      if (SignalStore.account.isPrimaryDevice && System.currentTimeMillis() - SignalStore.misc.lastConsistencyCheckTime > 3.days.inWholeMilliseconds) {
         AppDependencies.jobManager.add(AccountConsistencyWorkerJob())
       }
     }
@@ -56,6 +56,11 @@ class AccountConsistencyWorkerJob private constructor(parameters: Parameters) : 
       return
     }
 
+    if (SignalStore.account.isLinkedDevice) {
+      Log.i(TAG, "Linked device, skipping.")
+      return
+    }
+
     val aciProfile: SignalServiceProfile = ProfileUtil.retrieveProfileSync(context, Recipient.self(), SignalServiceProfile.RequestType.PROFILE, false).profile
     val encodedAciPublicKey = Base64.encodeWithPadding(SignalStore.account.aciIdentityKey.publicKey.serialize())
 
@@ -64,7 +69,7 @@ class AccountConsistencyWorkerJob private constructor(parameters: Parameters) : 
 
       SignalStore.account.setRegistered(false)
       SignalStore.registration.clearRegistrationComplete()
-      SignalStore.registration.clearHasUploadedProfile()
+      SignalStore.registration.hasUploadedProfile = false
 
       SignalStore.misc.lastConsistencyCheckTime = System.currentTimeMillis()
       return
@@ -78,7 +83,7 @@ class AccountConsistencyWorkerJob private constructor(parameters: Parameters) : 
 
       SignalStore.account.setRegistered(false)
       SignalStore.registration.clearRegistrationComplete()
-      SignalStore.registration.clearHasUploadedProfile()
+      SignalStore.registration.hasUploadedProfile = false
       return
     }
 

@@ -13,7 +13,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,8 +25,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,18 +42,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -67,26 +61,29 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
-import org.signal.core.ui.Animations.navHostSlideInTransition
-import org.signal.core.ui.Animations.navHostSlideOutTransition
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Dialogs
-import org.signal.core.ui.Dividers
-import org.signal.core.ui.Previews
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.TextFields
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Animations.navHostSlideInTransition
+import org.signal.core.ui.compose.Animations.navHostSlideOutTransition
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.Dialogs
+import org.signal.core.ui.compose.Dividers
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Scaffolds
+import org.signal.core.ui.compose.TextFields
+import org.signal.core.util.E164Util
 import org.signal.core.util.getParcelableExtraCompat
 import org.thoughtcrime.securesms.PassphraseRequiredActivity
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.settings.app.usernamelinks.main.UsernameQrScannerActivity
+import org.thoughtcrime.securesms.compose.SignalTheme
 import org.thoughtcrime.securesms.invites.InviteActions
 import org.thoughtcrime.securesms.phonenumbers.PhoneNumberVisualTransformation
 import org.thoughtcrime.securesms.recipients.RecipientId
-import org.thoughtcrime.securesms.registration.util.CountryPrefix
+import org.thoughtcrime.securesms.registration.ui.countrycode.Country
+import org.thoughtcrime.securesms.registration.ui.countrycode.CountryCodeSelectScreen
+import org.thoughtcrime.securesms.registration.ui.countrycode.CountryCodeState
 import org.thoughtcrime.securesms.util.DynamicNoActionBarTheme
 import org.thoughtcrime.securesms.util.viewModel
-import org.whispersystems.signalservice.api.util.PhoneNumberFormatter
+import org.signal.core.ui.R as CoreUiR
 
 /**
  * Allows the user to look up another Signal user by phone number or username and
@@ -137,17 +134,15 @@ class FindByActivity : PassphraseRequiredActivity() {
             Scaffolds.Settings(
               title = stringResource(id = title),
               onNavigationClick = { finishAfterTransition() },
-              navigationIconPainter = painterResource(id = R.drawable.symbol_arrow_left_24)
+              navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24)
             ) {
-              val context = LocalContext.current
-
               Content(
                 paddingValues = it,
                 state = state,
                 onUserEntryChanged = viewModel::onUserEntryChanged,
                 onNextClick = {
                   lifecycleScope.launch {
-                    when (val result = viewModel.onNextClicked(context)) {
+                    when (val result = viewModel.onNextClicked()) {
                       is FindByResult.Success -> {
                         setResult(RESULT_OK, Intent().putExtra(RECIPIENT_ID, result.recipientId))
                         finishAfterTransition()
@@ -159,7 +154,7 @@ class FindByActivity : PassphraseRequiredActivity() {
                     }
                   }
                 },
-                onSelectCountryPrefixClick = {
+                onSelectCountryClick = {
                   navController.navigate("select-country-prefix")
                 },
                 onQrCodeScanClicked = {
@@ -170,23 +165,20 @@ class FindByActivity : PassphraseRequiredActivity() {
           }
 
           composable("select-country-prefix") {
-            Scaffolds.Settings(
-              title = stringResource(id = R.string.FindByActivity__select_country_code),
-              onNavigationClick = { navController.popBackStack() },
-              navigationIconPainter = painterResource(id = R.drawable.symbol_arrow_left_24)
-            ) { paddingValues ->
-              SelectCountryScreen(
-                paddingValues = paddingValues,
-                searchEntry = state.countryPrefixSearchEntry,
-                onSearchEntryChanged = viewModel::onCountryPrefixSearchEntryChanged,
-                supportedCountryPrefixes = state.supportedCountryPrefixes,
-                onCountryPrefixSelected = {
-                  navController.popBackStack()
-                  viewModel.onCountryPrefixSelected(it)
-                  viewModel.onCountryPrefixSearchEntryChanged("")
-                }
-              )
-            }
+            CountryCodeSelectScreen(
+              state = CountryCodeState(
+                query = state.query,
+                filteredList = state.filteredCountries,
+                countryList = state.supportedCountries
+              ),
+              title = stringResource(R.string.FindByActivity__select_country_code),
+              onSearch = { search -> viewModel.filterCountries(search) },
+              onDismissed = { navController.popBackStack() },
+              onClick = { country ->
+                viewModel.onCountrySelected(country)
+                navController.popBackStack()
+              }
+            )
           }
 
           dialog("invalid-entry") {
@@ -199,11 +191,7 @@ class FindByActivity : PassphraseRequiredActivity() {
             val body = if (state.mode == FindByMode.USERNAME) {
               stringResource(id = R.string.FindByActivity__s_is_not_a_valid_username, state.userEntry)
             } else {
-              val formattedNumber = remember(state.userEntry) {
-                val cleansed = state.userEntry.removePrefix(state.selectedCountryPrefix.digits.toString())
-                PhoneNumberFormatter.formatE164(state.selectedCountryPrefix.digits.toString(), cleansed)
-              }
-              stringResource(id = R.string.FindByActivity__s_is_not_a_valid_phone_number, formattedNumber)
+              stringResource(id = R.string.FindByActivity__s_is_not_a_valid_phone_number, state.userEntry)
             }
 
             Dialogs.SimpleAlertDialog(
@@ -239,8 +227,8 @@ class FindByActivity : PassphraseRequiredActivity() {
               stringResource(id = R.string.FindByActivity__s_is_not_a_signal_user, state.userEntry)
             } else {
               val formattedNumber = remember(state.userEntry) {
-                val cleansed = state.userEntry.removePrefix(state.selectedCountryPrefix.digits.toString())
-                PhoneNumberFormatter.formatE164(state.selectedCountryPrefix.digits.toString(), cleansed)
+                val cleansed = state.userEntry.removePrefix(state.selectedCountry.countryCode.toString())
+                E164Util.formatAsE164WithCountryCodeForDisplay(state.selectedCountry.countryCode.toString(), cleansed)
               }
               stringResource(id = R.string.FindByActivity__s_is_not_a_signal_user_would, formattedNumber)
             }
@@ -302,7 +290,7 @@ private fun Content(
   state: FindByState,
   onUserEntryChanged: (String) -> Unit,
   onNextClick: () -> Unit,
-  onSelectCountryPrefixClick: () -> Unit,
+  onSelectCountryClick: () -> Unit,
   onQrCodeScanClicked: () -> Unit
 ) {
   val placeholderLabel = remember(state.mode) {
@@ -337,8 +325,8 @@ private fun Content(
     val visualTransformation = if (state.mode == FindByMode.USERNAME) {
       VisualTransformation.None
     } else {
-      remember(state.selectedCountryPrefix) {
-        PhoneNumberVisualTransformation(state.selectedCountryPrefix.regionCode)
+      remember(state.selectedCountry.countryCode) {
+        PhoneNumberVisualTransformation(state.selectedCountry.regionCode)
       }
     }
 
@@ -354,8 +342,8 @@ private fun Content(
         {
           PhoneNumberEntryPrefix(
             enabled = !state.isLookupInProgress,
-            selectedCountryPrefix = state.selectedCountryPrefix,
-            onSelectCountryPrefixClick = onSelectCountryPrefixClick
+            selectedCountry = state.selectedCountry,
+            onSelectCountryClick = onSelectCountryClick
           )
         }
       },
@@ -391,7 +379,7 @@ private fun Content(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-          .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
+          .padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
           .padding(top = 8.dp)
       )
 
@@ -447,8 +435,8 @@ private fun Content(
 @Composable
 private fun PhoneNumberEntryPrefix(
   enabled: Boolean,
-  selectedCountryPrefix: CountryPrefix,
-  onSelectCountryPrefixClick: () -> Unit
+  selectedCountry: Country,
+  onSelectCountryClick: () -> Unit
 ) {
   Row(
     verticalAlignment = Alignment.CenterVertically,
@@ -458,10 +446,10 @@ private fun PhoneNumberEntryPrefix(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier
         .clip(RoundedCornerShape(1000.dp))
-        .clickable(onClick = onSelectCountryPrefixClick, enabled = enabled)
+        .clickable(onClick = onSelectCountryClick, enabled = enabled)
     ) {
       Text(
-        text = selectedCountryPrefix.toString(),
+        text = "+${selectedCountry.countryCode}",
         modifier = Modifier
           .padding(start = 12.dp, top = 6.dp, bottom = 6.dp)
       )
@@ -485,113 +473,6 @@ private fun PhoneNumberEntryPrefix(
   }
 }
 
-@Composable
-private fun SelectCountryScreen(
-  paddingValues: PaddingValues,
-  searchEntry: String,
-  onSearchEntryChanged: (String) -> Unit,
-  onCountryPrefixSelected: (CountryPrefix) -> Unit,
-  supportedCountryPrefixes: List<CountryPrefix>
-) {
-  val focusRequester = remember {
-    FocusRequester()
-  }
-
-  Column(
-    modifier = Modifier.padding(paddingValues)
-  ) {
-    TextFields.TextField(
-      value = searchEntry,
-      onValueChange = onSearchEntryChanged,
-      placeholder = { Text(text = stringResource(id = R.string.FindByActivity__search)) },
-      shape = RoundedCornerShape(32.dp),
-      colors = TextFieldDefaults.colors(
-        unfocusedIndicatorColor = Color.Transparent,
-        focusedIndicatorColor = Color.Transparent,
-        disabledIndicatorColor = Color.Transparent,
-        errorIndicatorColor = Color.Transparent,
-        cursorColor = MaterialTheme.colorScheme.onSurface
-      ),
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 10.dp)
-        .focusRequester(focusRequester)
-        .heightIn(min = 44.dp),
-      contentPadding = TextFieldDefaults.contentPaddingWithoutLabel(top = 10.dp, bottom = 10.dp)
-    )
-
-    LazyColumn {
-      items(
-        items = supportedCountryPrefixes
-      ) {
-        CountryPrefixRowItem(
-          searchTerm = searchEntry,
-          countryPrefix = it,
-          onClick = { onCountryPrefixSelected(it) }
-        )
-      }
-    }
-  }
-
-  LaunchedEffect(Unit) {
-    focusRequester.requestFocus()
-  }
-}
-
-@Composable
-private fun CountryPrefixRowItem(
-  searchTerm: String,
-  countryPrefix: CountryPrefix,
-  onClick: () -> Unit
-) {
-  val regionDisplayName = remember(countryPrefix.regionCode, Locale.current) {
-    PhoneNumberFormatter.getRegionDisplayName(countryPrefix.regionCode).orElse(countryPrefix.regionCode)
-  }
-
-  if (searchTerm.isNotBlank() && !regionDisplayName.contains(searchTerm, ignoreCase = true)) {
-    return
-  }
-
-  val highlightedName: AnnotatedString = remember(regionDisplayName, searchTerm) {
-    if (searchTerm.isBlank()) {
-      AnnotatedString(regionDisplayName)
-    } else {
-      buildAnnotatedString {
-        append(regionDisplayName)
-
-        val startIndex = regionDisplayName.indexOf(searchTerm, ignoreCase = true)
-
-        addStyle(
-          style = SpanStyle(
-            fontWeight = FontWeight.Bold
-          ),
-          start = startIndex,
-          end = startIndex + searchTerm.length
-        )
-      }
-    }
-  }
-
-  Column(
-    verticalArrangement = spacedBy((-2).dp),
-    modifier = Modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick)
-      .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
-      .padding(top = 16.dp, bottom = 14.dp)
-  ) {
-    Text(
-      text = highlightedName
-    )
-
-    Text(
-      text = countryPrefix.toString(),
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      style = MaterialTheme.typography.bodyMedium
-    )
-  }
-}
-
 @Preview(name = "Light Theme", group = "content - phone", uiMode = Configuration.UI_MODE_NIGHT_NO)
 @Preview(name = "Dark Theme", group = "content - phone", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
@@ -605,7 +486,7 @@ private fun ContentPreviewPhoneNumber() {
       ),
       onUserEntryChanged = {},
       onNextClick = {},
-      onSelectCountryPrefixClick = {},
+      onSelectCountryClick = {},
       onQrCodeScanClicked = {}
     )
   }
@@ -624,23 +505,8 @@ private fun ContentPreviewUsername() {
       ),
       onUserEntryChanged = {},
       onNextClick = {},
-      onSelectCountryPrefixClick = {},
+      onSelectCountryClick = {},
       onQrCodeScanClicked = {}
-    )
-  }
-}
-
-@Preview(name = "Light Theme", group = "select country", uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(name = "Dark Theme", group = "select country", uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun SelectCountryScreenPreview() {
-  Previews.Preview {
-    SelectCountryScreen(
-      paddingValues = PaddingValues(0.dp),
-      searchEntry = "",
-      onSearchEntryChanged = {},
-      supportedCountryPrefixes = FindByState(mode = FindByMode.PHONE_NUMBER).supportedCountryPrefixes,
-      onCountryPrefixSelected = {}
     )
   }
 }

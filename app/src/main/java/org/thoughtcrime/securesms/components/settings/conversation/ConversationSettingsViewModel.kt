@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.distinctUntilChanged
 import androidx.lifecycle.map
+import androidx.lifecycle.viewModelScope
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -13,8 +14,11 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import io.reactivex.rxjava3.subjects.PublishSubject
 import io.reactivex.rxjava3.subjects.Subject
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.signal.core.util.Result
 import org.signal.core.util.ThreadUtil
+import org.signal.core.util.concurrent.SignalDispatchers
 import org.signal.core.util.concurrent.SignalExecutors
 import org.signal.core.util.readToList
 import org.thoughtcrime.securesms.components.settings.conversation.preferences.ButtonStripPreference
@@ -26,6 +30,7 @@ import org.thoughtcrime.securesms.database.model.StoryViewState
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.GroupId
 import org.thoughtcrime.securesms.groups.LiveGroup
+import org.thoughtcrime.securesms.groups.SelectionLimits
 import org.thoughtcrime.securesms.groups.ui.GroupChangeFailureReason
 import org.thoughtcrime.securesms.groups.v2.GroupAddMembersResult
 import org.thoughtcrime.securesms.keyvalue.SignalStore
@@ -194,7 +199,7 @@ sealed class ConversationSettingsViewModel(
       }
 
       if (recipientId != Recipient.self().id) {
-        repository.getGroupsInCommon(recipientId) { groupsInCommon ->
+        disposable += repository.getGroupsInCommon(recipientId).subscribe { groupsInCommon ->
           store.update { state ->
             val recipientSettings = state.requireRecipientSettingsState()
             val canShowMore = !recipientSettings.groupsInCommonExpanded && groupsInCommon.size > 6
@@ -262,7 +267,15 @@ sealed class ConversationSettingsViewModel(
     }
 
     override fun block() {
-      repository.block(recipientId)
+      viewModelScope.launch {
+        val result = withContext(SignalDispatchers.IO) {
+          repository.block(recipientId)
+        }
+
+        if (!result.isSuccess) {
+          internalEvents.onNext(ConversationSettingsEvent.ShowBlockGroupError(result.getFailureReason()))
+        }
+      }
     }
 
     override fun unblock() {
@@ -423,9 +436,7 @@ sealed class ConversationSettingsViewModel(
           internalEvents.onNext(
             ConversationSettingsEvent.AddMembersToGroup(
               groupId,
-              capacityResult.getSelectionWarning(),
-              capacityResult.getSelectionLimit(),
-              capacityResult.isAnnouncementGroup,
+              SelectionLimits(capacityResult.getSelectionWarning(), capacityResult.getSelectionLimit()),
               capacityResult.getMembersWithoutSelf()
             )
           )
@@ -449,6 +460,7 @@ sealed class ConversationSettingsViewModel(
               internalEvents.onNext(ConversationSettingsEvent.ShowMembersAdded(it.numberOfMembersAdded))
             }
           }
+
           is GroupAddMembersResult.Failure -> internalEvents.onNext(ConversationSettingsEvent.ShowAddMembersToGroupError(it.reason))
         }
       }
@@ -475,7 +487,15 @@ sealed class ConversationSettingsViewModel(
     }
 
     override fun block() {
-      repository.block(groupId)
+      viewModelScope.launch {
+        val result = withContext(SignalDispatchers.IO) {
+          repository.block(groupId)
+        }
+
+        if (!result.isSuccess) {
+          internalEvents.onNext(ConversationSettingsEvent.ShowBlockGroupError(result.getFailureReason()))
+        }
+      }
     }
 
     override fun unblock() {

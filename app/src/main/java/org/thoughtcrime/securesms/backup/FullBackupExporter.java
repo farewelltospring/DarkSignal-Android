@@ -29,15 +29,19 @@ import org.thoughtcrime.securesms.crypto.AttachmentSecret;
 import org.thoughtcrime.securesms.crypto.ClassicDecryptingPartInputStream;
 import org.thoughtcrime.securesms.crypto.ModernDecryptingPartInputStream;
 import org.thoughtcrime.securesms.database.AttachmentTable;
+import org.thoughtcrime.securesms.database.BackupMediaSnapshotTable;
 import org.thoughtcrime.securesms.database.EmojiSearchTable;
 import org.thoughtcrime.securesms.database.GroupReceiptTable;
 import org.thoughtcrime.securesms.database.KeyValueDatabase;
+import org.thoughtcrime.securesms.database.KyberPreKeyTable;
+import org.thoughtcrime.securesms.database.LastResortKeyTupleTable;
 import org.thoughtcrime.securesms.database.MentionTable;
 import org.thoughtcrime.securesms.database.MessageTable;
 import org.thoughtcrime.securesms.database.OneTimePreKeyTable;
 import org.thoughtcrime.securesms.database.PendingRetryReceiptTable;
 import org.thoughtcrime.securesms.database.ReactionTable;
 import org.thoughtcrime.securesms.database.RemappedRecordTables;
+import org.thoughtcrime.securesms.database.RemoteMegaphoneTable;
 import org.thoughtcrime.securesms.database.SearchTable;
 import org.thoughtcrime.securesms.database.SenderKeyTable;
 import org.thoughtcrime.securesms.database.SenderKeySharedTable;
@@ -87,6 +91,8 @@ public class FullBackupExporter extends FullBackupBase {
   private static final Set<String> TABLE_CONTENT_BLOCKLIST = SetUtil.newHashSet(
       SignedPreKeyTable.TABLE_NAME,
       OneTimePreKeyTable.TABLE_NAME,
+      KyberPreKeyTable.TABLE_NAME,
+      LastResortKeyTupleTable.TABLE_NAME,
       SessionTable.TABLE_NAME,
       SearchTable.FTS_TABLE_NAME,
       EmojiSearchTable.TABLE_NAME,
@@ -95,7 +101,9 @@ public class FullBackupExporter extends FullBackupBase {
       PendingRetryReceiptTable.TABLE_NAME,
       AvatarPickerDatabase.TABLE_NAME,
       RemappedRecordTables.Recipients.TABLE_NAME,
-      RemappedRecordTables.Threads.TABLE_NAME
+      RemappedRecordTables.Threads.TABLE_NAME,
+      RemoteMegaphoneTable.TABLE_NAME,
+      BackupMediaSnapshotTable.TABLE_NAME
   );
 
   public static BackupEvent export(@NonNull Context context,
@@ -483,7 +491,7 @@ public class FullBackupExporter extends FullBackupBase {
                                    long estimatedCount)
       throws IOException
   {
-    long rowId = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable._ID));
+    long rowId = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable.ID));
     long size  = cursor.getLong(cursor.getColumnIndexOrThrow(StickerTable.FILE_LENGTH));
 
     String data   = cursor.getString(cursor.getColumnIndexOrThrow(StickerTable.FILE_PATH));

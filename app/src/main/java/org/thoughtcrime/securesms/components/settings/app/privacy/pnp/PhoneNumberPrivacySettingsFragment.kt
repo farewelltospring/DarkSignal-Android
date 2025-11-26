@@ -15,10 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.viewModels
@@ -26,14 +27,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
-import org.signal.core.ui.Dividers
-import org.signal.core.ui.Rows
-import org.signal.core.ui.Scaffolds
-import org.signal.core.ui.Texts
-import org.signal.core.ui.theme.SignalTheme
+import org.signal.core.ui.compose.Dividers
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Rows
+import org.signal.core.ui.compose.Scaffolds
+import org.signal.core.ui.compose.Texts
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.compose.ComposeFragment
 import org.thoughtcrime.securesms.compose.StatusBarColorNestedScrollConnection
+import org.signal.core.ui.R as CoreUiR
 
 class PhoneNumberPrivacySettingsFragment : ComposeFragment() {
 
@@ -103,7 +105,7 @@ private fun Screen(
   Scaffolds.Settings(
     title = stringResource(id = R.string.preferences_app_protection__phone_number),
     onNavigationClick = onNavigationClick,
-    navigationIconPainter = painterResource(id = R.drawable.ic_arrow_left_24),
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_arrow_start_24),
     navigationContentDescription = stringResource(id = R.string.Material3SearchToolbar__close),
     snackbarHost = {
       SnackbarHost(snackbarHostState)
@@ -149,7 +151,7 @@ private fun Screen(
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter), vertical = 16.dp)
+            modifier = Modifier.padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter), vertical = 16.dp)
           )
         }
 
@@ -189,7 +191,7 @@ private fun Screen(
             ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter), vertical = 16.dp)
+            modifier = Modifier.padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter), vertical = 16.dp)
           )
         }
       }
@@ -201,7 +203,7 @@ private fun Screen(
 @Preview(name = "Dark Theme", group = "Screen", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ScreenPreviewSharingAndDiscoverable() {
-  SignalTheme {
+  Previews.Preview {
     Screen(
       state = PhoneNumberPrivacySettingsState(
         phoneNumberSharing = true,
@@ -215,7 +217,7 @@ private fun ScreenPreviewSharingAndDiscoverable() {
 @Preview(name = "Dark Theme", group = "Screen", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ScreenPreviewNotSharingDiscoverable() {
-  SignalTheme {
+  Previews.Preview {
     Screen(
       state = PhoneNumberPrivacySettingsState(
         phoneNumberSharing = false,
@@ -229,7 +231,7 @@ private fun ScreenPreviewNotSharingDiscoverable() {
 @Preview(name = "Dark Theme", group = "Screen", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun ScreenPreviewNotSharingNotDiscoverable() {
-  SignalTheme {
+  Previews.Preview {
     Screen(
       state = PhoneNumberPrivacySettingsState(
         phoneNumberSharing = false,

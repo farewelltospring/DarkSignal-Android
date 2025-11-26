@@ -62,12 +62,16 @@ object MessageConstraintsUtil {
     } else {
       targetMessage
     }
+
+    val isNoteToSelf = targetMessage.toRecipient.isSelf && targetMessage.fromRecipient.isSelf
+
     return isValidRemoteDeleteSend(originalMessage, currentTime) &&
-      targetMessage.revisionNumber < MAX_EDIT_COUNT &&
+      (isNoteToSelf || targetMessage.revisionNumber < MAX_EDIT_COUNT) &&
       !targetMessage.isViewOnceMessage() &&
       !targetMessage.hasAudio() &&
       !targetMessage.hasSharedContact() &&
-      !targetMessage.hasSticker()
+      !targetMessage.hasSticker() &&
+      !targetMessage.hasPoll()
   }
 
   /**
