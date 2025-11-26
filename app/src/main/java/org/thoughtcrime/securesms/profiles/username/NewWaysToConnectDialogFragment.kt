@@ -21,18 +21,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.signal.core.ui.Buttons
-import org.signal.core.ui.Previews
-import org.signal.core.ui.Scaffolds
+import org.signal.core.ui.compose.Buttons
+import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.Scaffolds
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.compose.ComposeDialogFragment
 import org.thoughtcrime.securesms.profiles.manage.EditProfileActivity
+import org.signal.core.ui.R as CoreUiR
 
 /**
  * Displays an explanation page about usernames and gives the user
@@ -58,7 +61,7 @@ class NewWaysToConnectDialogFragment : ComposeDialogFragment() {
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun PreviewNewWaysToConnectDialogContent() {
   Previews.Preview {
@@ -77,20 +80,22 @@ private fun NewWaysToConnectDialogContent(
   Scaffolds.Settings(
     title = "",
     onNavigationClick = onNotNowClick,
-    navigationIconPainter = painterResource(id = R.drawable.symbol_x_24)
+    navigationIcon = ImageVector.vectorResource(id = R.drawable.symbol_x_24)
   ) {
     Column(modifier = Modifier.padding(it)) {
-      Text(
-        text = stringResource(id = R.string.NewWaysToConnectDialogFragment__new_ways_to_connect),
-        style = MaterialTheme.typography.headlineMedium,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
-          .padding(top = 16.dp, bottom = 36.dp)
-      )
-
       LazyColumn(modifier = Modifier.weight(1f)) {
+        item {
+          Text(
+            text = stringResource(id = R.string.NewWaysToConnectDialogFragment__new_ways_to_connect),
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
+              .padding(top = 4.dp, bottom = 36.dp)
+          )
+        }
+
         item {
           NewWaysToConnectRowItem(
             title = stringResource(id = R.string.NewWaysToConnectDialogFragment__phone_number_privacy),
@@ -119,8 +124,8 @@ private fun NewWaysToConnectDialogContent(
       Buttons.LargeTonal(
         onClick = onSetUpUsernameClick,
         modifier = Modifier
-          .padding(horizontal = dimensionResource(id = R.dimen.core_ui__gutter))
-          .padding(top = 36.dp)
+          .padding(horizontal = dimensionResource(id = CoreUiR.dimen.gutter))
+          .padding(top = 16.dp)
           .defaultMinSize(minWidth = 221.dp)
           .align(alignment = Alignment.CenterHorizontally)
       ) {
@@ -133,8 +138,10 @@ private fun NewWaysToConnectDialogContent(
         onClick = onNotNowClick,
         modifier = Modifier
           .padding(
-            horizontal = dimensionResource(id = R.dimen.core_ui__gutter),
-            vertical = 36.dp
+            start = dimensionResource(id = CoreUiR.dimen.gutter),
+            end = dimensionResource(id = CoreUiR.dimen.gutter),
+            top = 8.dp,
+            bottom = 16.dp
           )
           .defaultMinSize(minWidth = 221.dp)
           .align(alignment = Alignment.CenterHorizontally)
@@ -145,7 +152,7 @@ private fun NewWaysToConnectDialogContent(
   }
 }
 
-@Preview
+@DayNightPreviews
 @Composable
 private fun PreviewNewWaysToConnectRowItem() {
   Previews.Preview {
@@ -167,7 +174,7 @@ private fun NewWaysToConnectRowItem(
   Row(
     modifier = modifier
       .padding(
-        horizontal = dimensionResource(id = R.dimen.core_ui__gutter)
+        horizontal = dimensionResource(id = CoreUiR.dimen.gutter)
       )
       .padding(
         bottom = 40.dp

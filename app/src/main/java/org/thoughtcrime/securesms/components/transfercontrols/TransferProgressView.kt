@@ -15,6 +15,7 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.View
+import androidx.annotation.Discouraged
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.withTranslation
 import org.signal.core.util.logging.Log
@@ -24,6 +25,7 @@ import kotlin.math.roundToInt
 /**
  * This displays a circular progress around an icon. The icon is either an upload arrow, a download arrow, or a rectangular stop button.
  */
+@Discouraged("Use TransferProgressIndicator instead.")
 class TransferProgressView @JvmOverloads constructor(
   context: Context,
   attrs: AttributeSet? = null,
@@ -51,8 +53,8 @@ class TransferProgressView @JvmOverloads constructor(
 
   private val progressRect = RectF()
   private val stopIconRect = RectF()
-  private val downloadDrawable = ContextCompat.getDrawable(context, R.drawable.ic_arrow_down_24)
-  private val uploadDrawable = ContextCompat.getDrawable(context, R.drawable.ic_arrow_up_16)
+  private val downloadDrawable = ContextCompat.getDrawable(context, R.drawable.symbol_arrow_down_24)
+  private val uploadDrawable = ContextCompat.getDrawable(context, R.drawable.symbol_arrow_up_24)
 
   private var progressPercent = 0f
   private var currentState = State.UNINITIALIZED

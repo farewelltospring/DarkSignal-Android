@@ -180,10 +180,6 @@ public final class ThreadRecord {
     return hasReadReceipt;
   }
 
-  public boolean isPendingInsecureSmsFallback() {
-    return MessageTypes.isPendingInsecureSmsFallbackType(type);
-  }
-
   public boolean isDelivered() {
     return StatusUtil.isDelivered(deliveryStatus, hasDeliveryReceipt);
   }
@@ -232,6 +228,11 @@ public final class ThreadRecord {
   public boolean isRecipientHidden() {
     if (extra != null) return extra.isRecipientHidden();
     else               return true;
+  }
+
+  public boolean isPoll() {
+    if (extra != null) return extra.isPoll();
+    else               return false;
   }
 
   public boolean isPinned() {

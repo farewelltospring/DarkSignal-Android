@@ -15,8 +15,6 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
-import com.annimon.stream.Collectors;
-import com.annimon.stream.Stream;
 import com.bumptech.glide.RequestManager;
 
 import org.thoughtcrime.securesms.R;
@@ -137,14 +135,14 @@ public class ConversationTitleView extends ConstraintLayout {
       endDrawable = DrawableUtil.tint(endDrawable, ContextCompat.getColor(getContext(), R.color.signal_inverse_transparent_80));
     }
 
-    if (recipient != null && recipient.showVerified()) {
+    if (recipient != null && recipient.getShowVerified()) {
       endDrawable = ContextUtil.requireDrawable(getContext(), R.drawable.ic_official_24);
     }
 
     title.setCompoundDrawablesRelativeWithIntrinsicBounds(startDrawable, null, endDrawable, null);
 
     if (recipient != null) {
-      this.avatar.displayChatAvatar(requestManager, recipient, false);
+      this.avatar.displayChatAvatar(requestManager, recipient, false, true);
     }
 
     if (recipient == null || recipient.isSelf()) {
@@ -176,6 +174,11 @@ public class ConversationTitleView extends ConstraintLayout {
     updateVerifiedSubtitleVisibility();
   }
 
+  public void setGroupRecipientSubtitle(@Nullable String members) {
+    this.subtitle.setText(members);
+    updateSubtitleVisibility();
+  }
+
   private void setComposeTitle() {
     this.title.setText(R.string.ConversationActivity_compose_message);
     this.subtitle.setText(null);
@@ -183,22 +186,14 @@ public class ConversationTitleView extends ConstraintLayout {
   }
 
   private void setRecipientTitle(@NonNull Recipient recipient) {
-    if      (recipient.isGroup()) setGroupRecipientTitle(recipient);
-    else if (recipient.isSelf())  setSelfTitle();
-    else                          setIndividualRecipientTitle(recipient);
+    if      (recipient.isGroup())        setGroupRecipientTitle(recipient);
+    else if (recipient.isSelf())         setSelfTitle();
+    else if (recipient.isReleaseNotes()) setReleaseNotesTitle(recipient);
+    else                                 setIndividualRecipientTitle(recipient);
   }
 
   private void setGroupRecipientTitle(@NonNull Recipient recipient) {
     this.title.setText(recipient.getDisplayName(getContext()));
-    this.subtitle.setText(Stream.of(recipient.getParticipantIds())
-                                .limit(10)
-                                .map(Recipient::resolved)
-                                .sorted((a, b) -> Boolean.compare(a.isSelf(), b.isSelf()))
-                                .map(r -> r.isSelf() ? getResources().getString(R.string.ConversationTitleView_you)
-                                                     : r.getDisplayName(getContext()))
-                                .collect(Collectors.joining(", ")));
-
-    updateSubtitleVisibility();
   }
 
   private void setSelfTitle() {
@@ -206,8 +201,15 @@ public class ConversationTitleView extends ConstraintLayout {
     updateSubtitleVisibility();
   }
 
+  private void setReleaseNotesTitle(@NonNull Recipient recipient) {
+    final String displayName = recipient.getDisplayName(getContext());
+    this.title.setText(displayName);
+    this.subtitle.setText(R.string.ReleaseNotes__official_only_chat);
+    updateSubtitleVisibility();
+  }
+
   private void setIndividualRecipientTitle(@NonNull Recipient recipient) {
-    final String displayName = recipient.getDisplayNameOrUsername(getContext());
+    final String displayName = recipient.getDisplayName(getContext());
     this.title.setText(displayName);
     this.subtitle.setText(null);
     updateSubtitleVisibility();

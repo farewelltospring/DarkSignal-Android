@@ -15,6 +15,7 @@ import org.signal.ringrtc.PeekInfo;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.CallParticipantId;
 import org.thoughtcrime.securesms.events.GroupCallReactionEvent;
+import org.thoughtcrime.securesms.events.GroupCallSpeechEvent;
 import org.thoughtcrime.securesms.events.WebRtcViewModel;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.recipients.Recipient;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -49,7 +51,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
   @Override
   protected @NonNull WebRtcServiceState handleIsInCallQuery(@NonNull WebRtcServiceState currentState, @Nullable ResultReceiver resultReceiver) {
     if (resultReceiver != null) {
-      resultReceiver.send(1, null);
+      resultReceiver.send(1, ActiveCallData.fromCallState(currentState).toBundle());
     }
     return currentState;
   }
@@ -121,6 +123,65 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
   }
 
   @Override
+  protected @NonNull WebRtcServiceState handleRemoteMuteRequest(@NonNull WebRtcServiceState currentState, long sourceDemuxId) {
+    Log.i(tag, "handleRemoteMuteRequest():");
+
+    GroupCall                               groupCall    = currentState.getCallInfoState().requireGroupCall();
+    Map<CallParticipantId, CallParticipant> participants = currentState.getCallInfoState().getRemoteCallParticipantsMap();
+
+    if (!currentState.getLocalDeviceState().isMicrophoneEnabled()) {
+      // Nothing to do.
+      return currentState;
+    }
+
+    for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
+      if (entry.getKey().demuxId == sourceDemuxId) {
+        try {
+          groupCall.setOutgoingAudioMutedRemotely(sourceDemuxId);
+        } catch (CallException e) {
+          return groupCallFailure(currentState, "Unable to set attribution of remote mute", e);
+        }
+        return currentState.builder().changeLocalDeviceState().setRemoteMutedBy(entry.getValue()).build();
+      }
+    }
+
+    return currentState;
+  }
+
+  @Override
+  protected @NonNull WebRtcServiceState handleObservedRemoteMute(@NonNull WebRtcServiceState currentState, long sourceDemuxId, long targetDemuxId) {
+    Log.i(tag, "handleObservedRemoteMute not processed");
+
+    GroupCall                               groupCall    = currentState.getCallInfoState().requireGroupCall();
+    Map<CallParticipantId, CallParticipant> participants = currentState.getCallInfoState().getRemoteCallParticipantsMap();
+
+    Long      selfDemuxId = groupCall.getLocalDeviceState().getDemuxId();
+    Recipient source      = null;
+    if (selfDemuxId != null && sourceDemuxId == selfDemuxId) {
+      source = Recipient.self();
+    } else {
+      for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
+        if (entry.getKey().demuxId == sourceDemuxId) {
+          source = entry.getValue().getRecipient();
+        }
+      }
+    }
+    if (source == null) {
+      Log.w(tag, "handleObservedRemoteMute: source not found");
+      return currentState;
+    }
+
+    for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
+      if (entry.getKey().demuxId == targetDemuxId) {
+        WebRtcServiceStateBuilder.CallInfoStateBuilder builder = currentState.builder().changeCallInfoState().putParticipant(entry.getKey(), entry.getValue().withRemotelyMutedBy(source));
+        return builder.build();
+      }
+    }
+
+    return currentState;
+  }
+
+  @Override
   protected @NonNull WebRtcEphemeralState handleGroupAudioLevelsChanged(@NonNull WebRtcServiceState currentState, @NonNull WebRtcEphemeralState ephemeralState) {
     GroupCall                                    groupCall          = currentState.getCallInfoState().requireGroupCall();
     LongSparseArray<GroupCall.RemoteDeviceState> remoteDeviceStates = groupCall.getRemoteDeviceStates();
@@ -132,7 +193,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
       CallParticipantId callParticipantId = participant.getCallParticipantId();
 
       if (remoteDeviceStates != null) {
-        GroupCall.RemoteDeviceState state = remoteDeviceStates.get(callParticipantId.getDemuxId());
+        GroupCall.RemoteDeviceState state = remoteDeviceStates.get(callParticipantId.demuxId);
         if (state != null) {
           remoteAudioLevels.put(callParticipantId, CallParticipant.AudioLevel.fromRawAudioLevel(state.getAudioLevel()));
         }
@@ -247,7 +308,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
 
   @Nullable
   private GroupCallReactionEvent createGroupCallReaction(Collection<CallParticipant> participants, final GroupCall.Reaction reaction) {
-    CallParticipant participant = participants.stream().filter(it -> it.getCallParticipantId().getDemuxId() == reaction.demuxId).findFirst().orElse(null);
+    CallParticipant participant = participants.stream().filter(it -> it.getCallParticipantId().demuxId == reaction.demuxId).findFirst().orElse(null);
     if (participant == null) {
       Log.v(TAG, "Could not find CallParticipantId in list of call participants based on demuxId for reaction.");
       return null;
@@ -260,15 +321,15 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
   protected @NonNull WebRtcServiceState handleGroupCallRaisedHand(@NonNull WebRtcServiceState currentState, List<Long> raisedHands) {
     Log.i(TAG, "handleGroupCallRaisedHand():");
 
-    boolean                                        playSound    = !raisedHands.isEmpty();
-    long                                           now          = System.currentTimeMillis();
-    WebRtcServiceStateBuilder.CallInfoStateBuilder builder      = currentState.builder().changeCallInfoState();
-    Long                                           localDemuxId = currentState.getCallInfoState().requireGroupCall().getLocalDeviceState().getDemuxId();
+    boolean                                        playSound       = !raisedHands.isEmpty();
+    long                                           now             = System.currentTimeMillis();
+    WebRtcServiceStateBuilder.CallInfoStateBuilder callInfoBuilder = currentState.builder().changeCallInfoState();
+    Long                                           localDemuxId    = currentState.getCallInfoState().requireGroupCall().getLocalDeviceState().getDemuxId();
 
     List<CallParticipant> participants = currentState.getCallInfoState().getRemoteCallParticipants();
 
     for (CallParticipant updatedParticipant : participants) {
-      int raisedHandIndex = raisedHands.indexOf(updatedParticipant.getCallParticipantId().getDemuxId());
+      int raisedHandIndex = raisedHands.indexOf(updatedParticipant.getCallParticipantId().demuxId);
       boolean wasHandAlreadyRaised  = updatedParticipant.isHandRaised();
 
       if (wasHandAlreadyRaised) {
@@ -276,31 +337,35 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
       }
       
       if (raisedHandIndex >= 0 && !wasHandAlreadyRaised) {
-        builder.putParticipant(updatedParticipant.getCallParticipantId(), updatedParticipant.withHandRaisedTimestamp(now + raisedHandIndex));
+        callInfoBuilder.putParticipant(updatedParticipant.getCallParticipantId(), updatedParticipant.withHandRaisedTimestamp(now + raisedHandIndex));
       } else if (raisedHandIndex < 0 && wasHandAlreadyRaised) {
-        builder.putParticipant(updatedParticipant.getCallParticipantId(), updatedParticipant.withHandRaisedTimestamp(CallParticipant.HAND_LOWERED));
+        callInfoBuilder.putParticipant(updatedParticipant.getCallParticipantId(), updatedParticipant.withHandRaisedTimestamp(CallParticipant.HAND_LOWERED));
       }
     }
 
+    currentState = callInfoBuilder.build();
+
     if (localDemuxId != null) {
-      if (raisedHands.contains(localDemuxId)) {
-        builder.setLocalParticipant(CallParticipant.createLocal(currentState.getLocalDeviceState().getCameraState(),
-                                                                currentState.getVideoState().requireLocalSink(),
-                                                                currentState.getLocalDeviceState().isMicrophoneEnabled(),
-                                                                now,
-                                                                new CallParticipantId(localDemuxId, Recipient.self().getId())));
-      } else {
-        builder.setLocalParticipant(CallParticipant.createLocal(currentState.getLocalDeviceState().getCameraState(),
-                                                                currentState.getVideoState().requireLocalSink(),
-                                                                currentState.getLocalDeviceState().isMicrophoneEnabled(),
-                                                                CallParticipant.HAND_LOWERED,
-                                                                new CallParticipantId(localDemuxId, Recipient.self().getId())));
-      }
+      currentState = currentState.builder()
+                                 .changeLocalDeviceState()
+                                 .setHandRaisedTimestamp(raisedHands.contains(localDemuxId) ? now : CallParticipant.HAND_LOWERED)
+                                 .build();
     }
+
     if (playSound) {
       webRtcInteractor.playStateChangeUp();
     }
 
-    return builder.build();
+    return currentState;
+  }
+
+  @Override
+  protected @NonNull WebRtcServiceState handleGroupCallSpeechEvent(@NonNull WebRtcServiceState currentState, @NonNull GroupCall.SpeechEvent speechEvent) {
+    Log.i(tag, "handleGroupCallSpeechEvent :: " + speechEvent.name());
+
+    return currentState.builder()
+                       .changeCallInfoState()
+                       .setGroupCallSpeechEvent(new GroupCallSpeechEvent(speechEvent))
+                       .build();
   }
 }

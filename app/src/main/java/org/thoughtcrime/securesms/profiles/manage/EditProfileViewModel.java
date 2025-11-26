@@ -14,8 +14,8 @@ import org.signal.core.util.StreamUtil;
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.badges.models.Badge;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
-import org.thoughtcrime.securesms.jobs.RetrieveProfileJob;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
+import org.thoughtcrime.securesms.jobs.RefreshOwnProfileJob;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mediasend.Media;
 import org.thoughtcrime.securesms.profiles.AvatarHelper;
@@ -24,8 +24,8 @@ import org.thoughtcrime.securesms.providers.BlobProvider;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientForeverObserver;
 import org.thoughtcrime.securesms.util.DefaultValueLiveData;
-import org.thoughtcrime.securesms.util.FeatureFlags;
 import org.thoughtcrime.securesms.util.SingleLiveEvent;
+import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.livedata.LiveDataUtil;
 import org.whispersystems.signalservice.api.util.StreamDetails;
 
@@ -69,7 +69,7 @@ class EditProfileViewModel extends ViewModel {
 
     SignalExecutors.BOUNDED.execute(() -> {
       onRecipientChanged(Recipient.self().fresh());
-      RetrieveProfileJob.enqueue(Recipient.self().getId());
+      AppDependencies.getJobManager().add(new RefreshOwnProfileJob());
     });
 
     Recipient.self().live().observeForever(observer);
@@ -107,8 +107,12 @@ class EditProfileViewModel extends ViewModel {
     return UsernameRepository.deleteUsernameAndLink().observeOn(AndroidSchedulers.mainThread());
   }
 
-  public boolean shouldShowUsername() {
-    return FeatureFlags.usernames();
+  public boolean isRegisteredAndUpToDate() {
+    return !TextSecurePreferences.isUnauthorizedReceived(AppDependencies.getApplication()) && SignalStore.account().isRegistered() && !SignalStore.misc().isClientDeprecated();
+  }
+
+  public boolean isDeprecated() {
+    return SignalStore.misc().isClientDeprecated();
   }
 
   public void onAvatarSelected(@NonNull Context context, @Nullable Media media) {
@@ -136,7 +140,7 @@ class EditProfileViewModel extends ViewModel {
 
           internalAvatarState.postValue(InternalAvatarState.loading(data));
 
-          repository.setAvatar(context, data, media.getMimeType(), result -> {
+          repository.setAvatar(context, data, media.getContentType(), result -> {
             switch (result) {
               case SUCCESS:
                 internalAvatarState.postValue(InternalAvatarState.loaded(data));
@@ -166,7 +170,7 @@ class EditProfileViewModel extends ViewModel {
     about.postValue(recipient.getAbout());
     aboutEmoji.postValue(recipient.getAboutEmoji());
     badge.postValue(Optional.ofNullable(recipient.getFeaturedBadge()));
-    renderAvatar(AvatarHelper.getSelfProfileAvatarStream(ApplicationDependencies.getApplication()));
+    renderAvatar(AvatarHelper.getSelfProfileAvatarStream(AppDependencies.getApplication()));
   }
 
   private void renderAvatar(@Nullable StreamDetails details) {

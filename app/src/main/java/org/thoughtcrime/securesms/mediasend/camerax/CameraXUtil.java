@@ -13,8 +13,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.os.Build;
-import android.util.Pair;
-import android.util.Rational;
+import kotlin.Pair;
 import android.util.Size;
 
 import androidx.annotation.NonNull;
@@ -70,9 +69,9 @@ public class CameraXUtil {
     try {
       Pair<Integer, Integer> dimens = BitmapUtil.getDimensions(new ByteArrayInputStream(data));
 
-      if (dimens.first != image.getWidth() && dimens.second != image.getHeight()) {
+      if (dimens.getFirst() != image.getWidth() && dimens.getSecond() != image.getHeight()) {
         Log.w(TAG, String.format(Locale.ENGLISH, "Decoded image dimensions differed from stated dimensions! Stated: %d x %d, Decoded: %d x %d",
-                                                  image.getWidth(), image.getHeight(), dimens.first, dimens.second));
+                                                  image.getWidth(), image.getHeight(), dimens.getFirst(), dimens.getSecond()));
         Log.w(TAG, "Ignoring the stated rotation and rotating the crop rect 90 degrees (stated rotation is " + rotation + " degrees).");
 
         rotation = 0;
@@ -125,21 +124,6 @@ public class CameraXUtil {
   public static @ImageCapture.CaptureMode int getOptimalCaptureMode() {
     return FastCameraModels.contains(Build.MODEL) ? ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
                                                   : ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY;
-  }
-
-  public static int getIdealResolution(int displayWidth, int displayHeight) {
-    int maxDisplay = Math.max(displayWidth, displayHeight);
-    return Math.max(maxDisplay, 1920);
-  }
-
-  public static @NonNull Size buildResolutionForRatio(int longDimension, @NonNull Rational ratio, boolean isPortrait) {
-    int shortDimension = longDimension * ratio.getDenominator() / ratio.getNumerator();
-
-    if (isPortrait) {
-      return new Size(shortDimension, longDimension);
-    } else {
-      return new Size(longDimension, shortDimension);
-    }
   }
 
   private static byte[] transformByteArray(@NonNull byte[] data, @Nullable Rect cropRect, int rotation, boolean flip) throws IOException {
@@ -202,7 +186,7 @@ public class CameraXUtil {
   }
 
   public static int getLowestSupportedHardwareLevel(@NonNull Context context) {
-    @SuppressLint("RestrictedApi") CameraManager cameraManager = CameraManagerCompat.from(context).unwrap();
+    @SuppressLint("RestrictedApi") CameraManager cameraManager = CameraManagerCompat.from(context.getApplicationContext()).unwrap();
 
     try {
       int supported = maxHardwareLevel();

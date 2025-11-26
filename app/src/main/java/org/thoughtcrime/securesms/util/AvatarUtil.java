@@ -28,14 +28,15 @@ import com.bumptech.glide.request.transition.Transition;
 import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatar;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable;
 import org.thoughtcrime.securesms.contacts.avatars.ContactPhoto;
-import org.thoughtcrime.securesms.contacts.avatars.GeneratedContactPhoto;
 import org.thoughtcrime.securesms.contacts.avatars.ProfileContactPhoto;
+import org.thoughtcrime.securesms.conversation.colors.AvatarGradientColors;
 import org.thoughtcrime.securesms.providers.AvatarProvider;
 import org.thoughtcrime.securesms.recipients.Recipient;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -115,8 +116,17 @@ public final class AvatarUtil {
     if (Build.VERSION.SDK_INT > 29) {
       return IconCompat.createWithContentUri(AvatarProvider.getContentUri(recipient.getId()));
     } else {
-      return IconCompat.createWithBitmap(getBitmapForNotification(context, recipient, DrawableUtil.SHORTCUT_INFO_WRAPPED_SIZE));
+      return IconCompat.createWithBitmap(getBitmapForNotification(context, recipient, AdaptiveBitmapMetrics.getInnerWidth()));
     }
+  }
+
+  /**
+   * Shortcut icons cannot be created with uris:
+   * https://developer.android.com/reference/android/content/pm/ShortcutInfo.Builder#setIcon(android.graphics.drawable.Icon)
+   */
+  @WorkerThread
+  public static @NonNull IconCompat getIconCompatForShortcut(@NonNull Context context, @NonNull Recipient recipient) {
+    return IconCompat.createWithBitmap(getBitmapForNotification(context, recipient, AdaptiveBitmapMetrics.getInnerWidth()));
   }
 
   @WorkerThread
@@ -132,10 +142,14 @@ public final class AvatarUtil {
       AvatarTarget   avatarTarget   = new AvatarTarget(size);
       RequestManager requestManager = Glide.with(context);
 
-      requestCircle(requestManager.asBitmap(), context, recipient, size).into(avatarTarget);
+      if (recipient.getShouldBlurAvatar() && recipient.getHasAvatar()) {
+        return DrawableUtil.toBitmap(AvatarGradientColors.getGradientDrawable(recipient), size, size);
+      } else {
+        requestCircle(requestManager.asBitmap(), context, recipient, size).into(avatarTarget);
 
-      Bitmap bitmap = avatarTarget.await();
-      return Objects.requireNonNullElseGet(bitmap, () -> DrawableUtil.toBitmap(getFallback(context, recipient, size), size, size));
+        Bitmap bitmap = avatarTarget.await();
+        return Objects.requireNonNullElseGet(bitmap, () -> DrawableUtil.toBitmap(getFallback(context, recipient, size), size, size));
+      }
     } catch (InterruptedException e) {
       return DrawableUtil.toBitmap(getFallback(context, recipient, size), size, size);
     }
@@ -162,20 +176,13 @@ public final class AvatarUtil {
       photo = recipient.getContactPhoto();
     }
 
-    final int size = targetSize == -1 ? DrawableUtil.SHORTCUT_INFO_WRAPPED_SIZE : targetSize;
+    final int size = targetSize == -1 ? AdaptiveBitmapMetrics.getInnerWidth() : targetSize;
     final RequestBuilder<T> request = requestBuilder.load(photo)
                                                 .error(getFallback(context, recipient, size))
                                                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                                                 .override(size);
 
-    if (recipient.shouldBlurAvatar()) {
-      BlurTransformation blur = new BlurTransformation(context, 0.25f, BlurTransformation.MAX_RADIUS);
-      if (transformation != null) {
-        return request.transform(blur, transformation);
-      } else {
-        return request.transform(blur);
-      }
-    } else if (transformation != null) {
+    if (transformation != null) {
       return request.transform(transformation);
     } else {
       return request;
@@ -183,9 +190,12 @@ public final class AvatarUtil {
   }
 
   private static Drawable getFallback(@NonNull Context context, @NonNull Recipient recipient, int targetSize) {
-    String name = Optional.of(recipient.getDisplayName(context)).orElse("");
+    FallbackAvatar fallbackAvatar = FallbackAvatar.forTextOrDefault(recipient.getDisplayName(context), recipient.getAvatarColor());
 
-    return new GeneratedContactPhoto(name, R.drawable.ic_profile_outline_40, targetSize).asDrawable(context, recipient.getAvatarColor());
+    Drawable avatar = new FallbackAvatarDrawable(context, fallbackAvatar).circleCrop();
+    avatar.setBounds(0, 0, targetSize, targetSize);
+
+    return avatar;
   }
 
   /**
@@ -199,7 +209,7 @@ public final class AvatarUtil {
     private final int size;
 
     private AvatarTarget(int size) {
-      this.size = size == UNDEFINED_SIZE ? DrawableUtil.SHORTCUT_INFO_WRAPPED_SIZE : size;
+      this.size = size == UNDEFINED_SIZE ? AdaptiveBitmapMetrics.getInnerWidth() : size;
     }
 
     public @Nullable Bitmap await() throws InterruptedException {

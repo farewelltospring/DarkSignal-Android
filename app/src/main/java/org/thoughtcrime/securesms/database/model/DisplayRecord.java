@@ -75,6 +75,7 @@ public abstract class DisplayRecord {
     return
         MessageTypes.isFailedMessageType(type) ||
         MessageTypes.isPendingSecureSmsFallbackType(type) ||
+        MessageTypes.isPendingInsecureSmsFallbackType(type) ||
         deliveryStatus >= MessageTable.Status.STATUS_FAILED;
   }
 
@@ -195,8 +196,8 @@ public abstract class DisplayRecord {
     return MessageTypes.isChangeNumber(type);
   }
 
-  public boolean isBoostRequest() {
-    return MessageTypes.isBoostRequest(type);
+  public boolean isReleaseChannelDonationRequest() {
+    return MessageTypes.isReleaseChannelDonationRequest(type);
   }
 
   public int getDeliveryStatus() {
@@ -224,12 +225,12 @@ public abstract class DisplayRecord {
     return hasReadReceipt;
   }
 
-  public boolean isPendingInsecureSmsFallback() {
-    return MessageTypes.isPendingInsecureSmsFallbackType(type);
-  }
-
   public boolean isPaymentNotification() {
     return MessageTypes.isPaymentsNotification(type);
+  }
+
+  public boolean isPaymentTombstone() {
+    return MessageTypes.isPaymentTombstone(type);
   }
 
   public boolean isPaymentsRequestToActivate() {
@@ -238,5 +239,29 @@ public abstract class DisplayRecord {
 
   public boolean isPaymentsActivated() {
     return MessageTypes.isPaymentsActivated(type);
+  }
+
+  public boolean isReportedSpam() {
+    return MessageTypes.isReportedSpam(type);
+  }
+
+  public boolean isMessageRequestAccepted() {
+    return MessageTypes.isMessageRequestAccepted(type);
+  }
+
+  public boolean isBlocked() {
+    return MessageTypes.isBlocked(type);
+  }
+
+  public boolean isUnblocked() {
+    return MessageTypes.isUnblocked(type);
+  }
+
+  public boolean isUnsupported() {
+    return MessageTypes.isUnsupportedMessageType(type);
+  }
+
+  public boolean isPollTerminate() {
+    return MessageTypes.isPollTerminate(type);
   }
 }

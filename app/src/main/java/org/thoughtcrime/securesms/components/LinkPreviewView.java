@@ -20,13 +20,14 @@ import com.bumptech.glide.RequestManager;
 
 import org.signal.ringrtc.CallLinkRootKey;
 import org.thoughtcrime.securesms.R;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatar;
+import org.thoughtcrime.securesms.avatar.fallback.FallbackAvatarDrawable;
 import org.thoughtcrime.securesms.calls.links.CallLinks;
 import org.thoughtcrime.securesms.conversation.colors.AvatarColorHash;
 import org.thoughtcrime.securesms.linkpreview.LinkPreview;
 import org.thoughtcrime.securesms.linkpreview.LinkPreviewRepository;
 import org.thoughtcrime.securesms.mms.ImageSlide;
 import org.thoughtcrime.securesms.mms.SlidesClickedListener;
-import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.util.Util;
 import org.thoughtcrime.securesms.util.ViewUtil;
 import org.thoughtcrime.securesms.util.views.Stub;
@@ -171,11 +172,11 @@ public class LinkPreviewView extends FrameLayout {
     spinner.setVisibility(GONE);
     noPreview.setVisibility(GONE);
 
-    CallLinkRootKey callLinkRootKey = CallLinks.parseUrl(linkPreview.getUrl());
+    CallLinks.CallLinkParseResult linkParseResult = CallLinks.parseUrl(linkPreview.getUrl());
     if (!Util.isEmpty(linkPreview.getTitle())) {
       title.setText(linkPreview.getTitle());
       title.setVisibility(VISIBLE);
-    } else if (callLinkRootKey != null) {
+    } else if (linkParseResult != null) {
       title.setText(R.string.Recipient_signal_call);
       title.setVisibility(VISIBLE);
     } else {
@@ -185,7 +186,7 @@ public class LinkPreviewView extends FrameLayout {
     if (showDescription && !Util.isEmpty(linkPreview.getDescription())) {
       description.setText(linkPreview.getDescription());
       description.setVisibility(VISIBLE);
-    } else if (callLinkRootKey != null) {
+    } else if (linkParseResult != null) {
       description.setText(R.string.LinkPreviewView__use_this_link_to_join_a_signal_call);
       description.setVisibility(VISIBLE);
     } else {
@@ -219,17 +220,19 @@ public class LinkPreviewView extends FrameLayout {
       thumbnailState.applyState(thumbnail);
       thumbnail.get().setImageResource(requestManager, new ImageSlide(linkPreview.getThumbnail().get()), type == TYPE_CONVERSATION && !scheduleMessageMode, false);
       thumbnail.get().showSecondaryText(false);
-    } else if (callLinkRootKey != null) {
+      thumbnail.get().setOutlineEnabled(true);
+    } else if (linkParseResult != null) {
       thumbnail.setVisibility(VISIBLE);
       thumbnailState.applyState(thumbnail);
       thumbnail.get().setImageDrawable(
           requestManager,
-          Recipient.DEFAULT_FALLBACK_PHOTO_PROVIDER
-                   .getPhotoForCallLink()
-                   .asDrawable(getContext(),
-                               AvatarColorHash.forCallLink(callLinkRootKey.getKeyBytes()))
+          new FallbackAvatarDrawable(
+              getContext(),
+              new FallbackAvatar.Resource.CallLink(AvatarColorHash.forCallLink(linkParseResult.getRootKey().getKeyBytes()))
+          ).circleCrop()
       );
       thumbnail.get().showSecondaryText(false);
+      thumbnail.get().setOutlineEnabled(false);
     } else {
       thumbnail.setVisibility(GONE);
     }

@@ -5,6 +5,14 @@ plugins {
 
 android {
   namespace = "org.signal.donations"
+
+  buildFeatures {
+    buildConfig = true
+  }
+
+  defaultConfig {
+    vectorDrawables.useSupportLibrary = true
+  }
 }
 
 dependencies {

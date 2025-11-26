@@ -2,7 +2,7 @@ package org.thoughtcrime.securesms.components.settings.app.subscription.manage
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
@@ -10,10 +10,19 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.signal.core.util.logging.Log
 import org.signal.core.util.orNull
-import org.thoughtcrime.securesms.components.settings.app.subscription.MonthlyDonationRepository
+import org.signal.donations.InAppPaymentType
+import org.thoughtcrime.securesms.badges.Badges
+import org.thoughtcrime.securesms.badges.models.Badge
+import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository
+import org.thoughtcrime.securesms.components.settings.app.subscription.RecurringInAppPaymentRepository
 import org.thoughtcrime.securesms.database.SignalDatabase
+import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.subscription.LevelUpdate
@@ -22,15 +31,16 @@ import org.thoughtcrime.securesms.util.livedata.Store
 import org.whispersystems.signalservice.api.subscriptions.ActiveSubscription
 import java.util.Optional
 
-class ManageDonationsViewModel(
-  private val subscriptionsRepository: MonthlyDonationRepository
-) : ViewModel() {
+class ManageDonationsViewModel : ViewModel() {
 
   private val store = Store(ManageDonationsState())
   private val disposables = CompositeDisposable()
   private val networkDisposable: Disposable
 
   val state: LiveData<ManageDonationsState> = store.stateLiveData
+  private val internalDisplayThanksBottomSheetPulse = MutableSharedFlow<Badge>()
+
+  val displayThanksBottomSheetPulse: SharedFlow<Badge> = internalDisplayThanksBottomSheetPulse
 
   init {
     store.update(Recipient.self().live().liveDataResolved) { self, state ->
@@ -45,6 +55,13 @@ class ManageDonationsViewModel(
           retry()
         }
       }
+
+    viewModelScope.launch {
+      ManageDonationsRepository.consumeSuccessfulIdealPayments()
+        .collectLatest {
+          internalDisplayThanksBottomSheetPulse.emit(Badges.fromDatabaseBadge(it.data.badge!!))
+        }
+    }
   }
 
   override fun onCleared() {
@@ -62,7 +79,15 @@ class ManageDonationsViewModel(
     disposables.clear()
 
     val levelUpdateOperationEdges: Observable<Boolean> = LevelUpdate.isProcessing.distinctUntilChanged()
-    val activeSubscription: Single<ActiveSubscription> = subscriptionsRepository.getActiveSubscription()
+    val activeSubscription: Single<ActiveSubscription> = RecurringInAppPaymentRepository.getActiveSubscription(InAppPaymentSubscriberRecord.Type.DONATION)
+
+    disposables += Single.fromCallable {
+      InAppPaymentsRepository.getShouldCancelSubscriptionBeforeNextSubscribeAttempt(InAppPaymentSubscriberRecord.Type.DONATION)
+    }.subscribeOn(Schedulers.io()).subscribeBy { requiresCancel ->
+      store.update {
+        it.copy(subscriberRequiresCancel = requiresCancel)
+      }
+    }
 
     disposables += Recipient.observable(Recipient.self().id).map { it.badges }.subscribeBy { badges ->
       store.update { state ->
@@ -76,7 +101,7 @@ class ManageDonationsViewModel(
       store.update { it.copy(hasReceipts = hasReceipts) }
     }
 
-    disposables += DonationRedemptionJobWatcher.watchSubscriptionRedemption().subscribeBy { redemptionStatus ->
+    disposables += InAppPaymentsRepository.observeInAppPaymentRedemption(InAppPaymentType.RECURRING_DONATION).subscribeBy { redemptionStatus ->
       store.update { manageDonationsState ->
         manageDonationsState.copy(
           nonVerifiedMonthlyDonation = if (redemptionStatus is DonationRedemptionJobStatus.PendingExternalVerification) redemptionStatus.nonVerifiedMonthlyDonation else null,
@@ -86,8 +111,8 @@ class ManageDonationsViewModel(
     }
 
     disposables += Observable.combineLatest(
-      SignalStore.donationsValues().observablePendingOneTimeDonation,
-      DonationRedemptionJobWatcher.watchOneTimeRedemption()
+      SignalStore.inAppPayments.observablePendingOneTimeDonation,
+      InAppPaymentsRepository.observeInAppPaymentRedemption(InAppPaymentType.ONE_TIME_DONATION)
     ) { pendingFromStore, pendingFromJob ->
       if (pendingFromStore.isPresent) {
         pendingFromStore
@@ -123,7 +148,7 @@ class ManageDonationsViewModel(
       }
     )
 
-    disposables += subscriptionsRepository.getSubscriptions().subscribeBy(
+    disposables += RecurringInAppPaymentRepository.getSubscriptions().subscribeBy(
       onSuccess = { subs ->
         store.update { it.copy(availableSubscriptions = subs) }
       },
@@ -137,18 +162,11 @@ class ManageDonationsViewModel(
     return when (status) {
       DonationRedemptionJobStatus.FailedSubscription -> ManageDonationsState.RedemptionState.FAILED
       DonationRedemptionJobStatus.None -> ManageDonationsState.RedemptionState.NONE
+      DonationRedemptionJobStatus.PendingKeepAlive -> ManageDonationsState.RedemptionState.SUBSCRIPTION_REFRESH
 
       is DonationRedemptionJobStatus.PendingExternalVerification,
       DonationRedemptionJobStatus.PendingReceiptRedemption,
       DonationRedemptionJobStatus.PendingReceiptRequest -> ManageDonationsState.RedemptionState.IN_PROGRESS
-    }
-  }
-
-  class Factory(
-    private val subscriptionsRepository: MonthlyDonationRepository
-  ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-      return modelClass.cast(ManageDonationsViewModel(subscriptionsRepository))!!
     }
   }
 

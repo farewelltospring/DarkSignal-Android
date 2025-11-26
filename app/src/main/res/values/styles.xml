@@ -66,6 +66,11 @@
         <item name="android:windowExitAnimation">@anim/fade_scale_out</item>
     </style>
 
+    <style name="TextSecure.Animation.FullScreenDialogPoll" parent="@android:style/Animation.Activity">
+        <item name="android:windowEnterAnimation">@anim/slide_from_bottom</item>
+        <item name="android:windowExitAnimation">@anim/slide_to_bottom</item>
+    </style>
+
     <style name="TextSecure.Animation.AddMessageDialog" parent="@android:style/Animation.Activity">
         <item name="android:windowEnterAnimation">@anim/slide_from_bottom</item>
         <item name="android:windowExitAnimation">@anim/slide_to_bottom</item>
@@ -205,7 +210,6 @@
         <item name="android:padding">2dp</item>
         <item name="android:background">@null</item>
         <item name="android:maxLines">5</item>
-        <item name="android:maxLength">65536</item>
         <item name="android:textColor">@color/signal_text_primary</item>
         <item name="android:textColorHint">@color/signal_colorOnSurfaceVariant</item>
         <item name="android:capitalize">sentences</item>
@@ -231,6 +235,9 @@
         <item name="android:layout_width">@dimen/webrtc_button_size</item>
         <item name="android:textOn">@null</item>
         <item name="android:textOff">@null</item>
+        <item name="android:layout_marginStart">@dimen/CallControls__button_horizontal_margin</item>
+        <item name="android:layout_marginEnd">@dimen/CallControls__button_horizontal_margin</item>
+        <item name="android:layout_marginBottom">@dimen/CallControls__button_bottom_margin</item>
     </style>
 
     <style name="IdentityKey">
@@ -267,7 +274,7 @@
     </style>
 
     <style name="Signal.Toolbar.Overflow.Light">
-        <item name="srcCompat">@drawable/ic_more_vert_24</item>
+        <item name="srcCompat">@drawable/symbol_more_vertical</item>
         <item name="android:src">@null</item>
         <item name="android:tint">@color/signal_icon_tint_primary</item>
     </style>
@@ -312,8 +319,9 @@
         <attr name="arcProgress" format="float"   />
     </declare-styleable>
 
-    <declare-styleable name="MaxHeightFrameLayout">
-        <attr name="mhfl_maxHeight" format="dimension" />
+    <declare-styleable name="MaxSizeFrameLayout">
+        <attr name="msfl_maxHeight" format="dimension" />
+        <attr name="msfl_maxWidth" format="dimension" />
     </declare-styleable>
 
     <declare-styleable name="PreviewView">

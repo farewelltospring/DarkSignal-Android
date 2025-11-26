@@ -13,7 +13,7 @@ import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.ThreadTable;
 import org.thoughtcrime.securesms.database.model.GroupRecord;
 import org.thoughtcrime.securesms.database.model.MessageRecord;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.jobs.MultiDeviceViewedUpdateJob;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mms.PartAuthority;
@@ -41,7 +41,7 @@ public class ConversationRepository {
   private final Context  context;
 
   public ConversationRepository() {
-    this.context = ApplicationDependencies.getApplication();
+    this.context = AppDependencies.getApplication();
   }
 
   @WorkerThread
@@ -58,7 +58,7 @@ public class ConversationRepository {
     boolean                             showUniversalExpireTimerUpdate = false;
 
     if (lastSeen > 0) {
-      lastSeenPosition = SignalDatabase.messages().getMessagePositionOnOrAfterTimestamp(threadId, lastSeen);
+      lastSeenPosition = SignalDatabase.messages().getMessagePositionByDateReceivedTimestamp(threadId, lastSeen, false);
     }
 
     if (lastSeenPosition <= 0) {
@@ -66,7 +66,7 @@ public class ConversationRepository {
     }
 
     if (lastSeen == 0 && lastScrolled > 0) {
-      lastScrolledPosition = SignalDatabase.messages().getMessagePositionOnOrAfterTimestamp(threadId, lastScrolled);
+      lastScrolledPosition = SignalDatabase.messages().getMessagePositionByDateReceivedTimestamp(threadId, lastScrolled, true);
     }
 
     if (!isMessageRequestAccepted) {
@@ -77,14 +77,14 @@ public class ConversationRepository {
         if (group.isPresent()) {
           List<Recipient> recipients = Recipient.resolvedList(group.get().getMembers());
           for (Recipient recipient : recipients) {
-            if ((recipient.isProfileSharing() || recipient.hasGroupsInCommon()) && !recipient.isSelf()) {
+            if ((recipient.isProfileSharing() || recipient.getHasGroupsInCommon()) && !recipient.isSelf()) {
               recipientIsKnownOrHasGroupsInCommon = true;
               break;
             }
           }
         }
         isGroup = true;
-      } else if (conversationRecipient.hasGroupsInCommon()) {
+      } else if (conversationRecipient.getHasGroupsInCommon()) {
         recipientIsKnownOrHasGroupsInCommon = true;
       }
       messageRequestData = new ConversationData.MessageRequestData(isMessageRequestAccepted, isConversationHidden, recipientIsKnownOrHasGroupsInCommon, isGroup);

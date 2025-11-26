@@ -26,7 +26,7 @@ import org.thoughtcrime.securesms.jobmanager.Job;
 import org.thoughtcrime.securesms.jobmanager.JsonJobData;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.jobmanager.persistence.JobSpec;
-import org.thoughtcrime.securesms.mms.DecryptableStreamUriLoader;
+import org.thoughtcrime.securesms.mms.DecryptableUri;
 import org.thoughtcrime.securesms.mms.MediaConstraints;
 import org.thoughtcrime.securesms.mms.MediaStream;
 import org.thoughtcrime.securesms.mms.MmsException;
@@ -34,16 +34,15 @@ import org.thoughtcrime.securesms.mms.SentMediaQuality;
 import org.thoughtcrime.securesms.service.AttachmentProgressService;
 import org.thoughtcrime.securesms.transport.UndeliverableMessageException;
 import org.thoughtcrime.securesms.util.BitmapDecodingException;
-import org.thoughtcrime.securesms.util.FeatureFlags;
 import org.thoughtcrime.securesms.util.ImageCompressionUtil;
 import org.thoughtcrime.securesms.util.MediaUtil;
 import org.thoughtcrime.securesms.util.MemoryFileDescriptor.MemoryFileException;
-import org.thoughtcrime.securesms.video.InMemoryTranscoder;
+import org.thoughtcrime.securesms.util.RemoteConfig;
 import org.thoughtcrime.securesms.video.StreamingTranscoder;
-import org.thoughtcrime.securesms.video.exceptions.VideoPostProcessingException;
-import org.thoughtcrime.securesms.video.interfaces.TranscoderCancelationSignal;
 import org.thoughtcrime.securesms.video.TranscoderOptions;
+import org.thoughtcrime.securesms.video.exceptions.VideoPostProcessingException;
 import org.thoughtcrime.securesms.video.exceptions.VideoSourceException;
+import org.thoughtcrime.securesms.video.interfaces.TranscoderCancelationSignal;
 import org.thoughtcrime.securesms.video.postprocessing.Mp4FaststartPostProcessor;
 import org.thoughtcrime.securesms.video.videoconverter.exceptions.EncodingException;
 
@@ -85,11 +84,11 @@ public final class AttachmentCompressionJob extends BaseJob {
                                    int mmsSubscriptionId)
   {
     this(new Parameters.Builder()
-                       .addConstraint(NetworkConstraint.KEY)
-                       .setLifespan(TimeUnit.DAYS.toMillis(1))
-                       .setMaxAttempts(Parameters.UNLIMITED)
-                       .setQueue(isVideoTranscode ? "VIDEO_TRANSCODE" : "GENERIC_TRANSCODE")
-                       .build(),
+             .addConstraint(NetworkConstraint.KEY)
+             .setLifespan(TimeUnit.DAYS.toMillis(1))
+             .setMaxAttempts(Parameters.UNLIMITED)
+             .setQueue(isVideoTranscode ? "VIDEO_TRANSCODE" : "GENERIC_TRANSCODE")
+             .build(),
          attachmentId,
          mms,
          mmsSubscriptionId);
@@ -107,7 +106,7 @@ public final class AttachmentCompressionJob extends BaseJob {
   }
 
   @Override
-  public @Nullable byte [] serialize() {
+  public @Nullable byte[] serialize() {
     return new JsonJobData.Builder().putLong(KEY_ATTACHMENT_ID, attachmentId.id)
                                     .putBoolean(KEY_MMS, mms)
                                     .putInt(KEY_MMS_SUBSCRIPTION_ID, mmsSubscriptionId)
@@ -128,8 +127,8 @@ public final class AttachmentCompressionJob extends BaseJob {
   public void onAdded() {
     Log.i(TAG, "onAdded() " + attachmentId.toString());
 
-    final AttachmentTable    database     = SignalDatabase.attachments();
-    final DatabaseAttachment attachment   = database.getAttachment(attachmentId);
+    final AttachmentTable    database   = SignalDatabase.attachments();
+    final DatabaseAttachment attachment = database.getAttachment(attachmentId);
     final boolean pending = attachment != null && attachment.transferState != AttachmentTable.TRANSFER_PROGRESS_DONE
                             && attachment.transferState != AttachmentTable.TRANSFER_PROGRESS_PERMANENT_FAILURE;
 
@@ -162,8 +161,7 @@ public final class AttachmentCompressionJob extends BaseJob {
       return;
     }
 
-    MediaConstraints mediaConstraints = mms ? MediaConstraints.getMmsMediaConstraints(mmsSubscriptionId)
-                                            : MediaConstraints.getPushMediaConstraints(SentMediaQuality.fromCode(transformProperties.sentMediaQuality));
+    MediaConstraints mediaConstraints = MediaConstraints.getPushMediaConstraints(SentMediaQuality.fromCode(transformProperties.sentMediaQuality));
 
     compress(database, mediaConstraints, databaseAttachment);
   }
@@ -173,15 +171,11 @@ public final class AttachmentCompressionJob extends BaseJob {
     AttachmentTable    database           = SignalDatabase.attachments();
     DatabaseAttachment databaseAttachment = database.getAttachment(attachmentId);
     if (databaseAttachment == null) {
-      Log.i(TAG, "Could not find attachment in DB for compression job upon failure.");
+      Log.i(TAG, "Could not find attachment " + attachmentId.id + " in DB for compression job upon failure.");
       return;
     }
 
-    try {
-      database.setTransferProgressFailed(attachmentId, databaseAttachment.mmsId);
-    } catch (MmsException e) {
-      Log.w(TAG, "Error marking attachment as failed upon failed compression.", e);
-    }
+    database.setTransferProgressFailed(attachmentId, databaseAttachment.mmsId);
   }
 
   @Override
@@ -206,7 +200,7 @@ public final class AttachmentCompressionJob extends BaseJob {
       } else if (constraints.canResize(attachment)) {
         Log.i(TAG, "Compressing image.");
         try (MediaStream converted = compressImage(context, attachment, constraints)) {
-          attachmentDatabase.updateAttachmentData(attachment, converted, false);
+          attachmentDatabase.updateAttachmentData(attachment, converted);
         }
         attachmentDatabase.markAttachmentAsTransformed(attachmentId, false);
       } else if (constraints.isSatisfied(context, attachment)) {
@@ -228,12 +222,17 @@ public final class AttachmentCompressionJob extends BaseJob {
                                                                               @NonNull TranscoderCancelationSignal cancelationSignal)
       throws UndeliverableMessageException
   {
+
+    if (cancelationSignal.isCanceled()) {
+      throw new UndeliverableMessageException("Job is canceled!");
+    }
+
     AttachmentTable.TransformProperties transformProperties = attachment.transformProperties;
 
     boolean allowSkipOnFailure = false;
 
     if (!MediaConstraints.isVideoTranscodeAvailable()) {
-      if (transformProperties.getVideoEdited()) {
+      if (transformProperties != null && transformProperties.getVideoEdited()) {
         throw new UndeliverableMessageException("Video edited, but transcode is not available");
       }
       return attachment;
@@ -257,106 +256,83 @@ public final class AttachmentCompressionJob extends BaseJob {
           }
         }
 
-        if (FeatureFlags.useStreamingVideoMuxer()) {
-          StreamingTranscoder transcoder = new StreamingTranscoder(dataSource, options, constraints.getCompressedVideoMaxSize(context), FeatureFlags.allowAudioRemuxing());
+        StreamingTranscoder transcoder = new StreamingTranscoder(dataSource, options, constraints.getVideoTranscodingSettings(), constraints.getCompressedVideoMaxSize(context), RemoteConfig.allowAudioRemuxing());
 
-          if (transcoder.isTranscodeRequired()) {
-            Log.i(TAG, "Compressing with streaming muxer");
-            AttachmentSecret attachmentSecret = AttachmentSecretProvider.getInstance(context).getOrCreateAttachmentSecret();
+        if (transcoder.isTranscodeRequired()) {
+          Log.i(TAG, "Compressing with streaming muxer");
+          AttachmentSecret attachmentSecret = AttachmentSecretProvider.getInstance(context).getOrCreateAttachmentSecret();
 
-            File file = AttachmentTable.newFile(context);
-            file.deleteOnExit();
+          File file = AttachmentTable.newDataFile(context);
+          file.deleteOnExit();
 
-            boolean faststart = false;
-            try {
-              try (OutputStream outputStream = ModernEncryptingPartOutputStream.createFor(attachmentSecret, file, true).second) {
-                transcoder.transcode(percent -> {
-                  if (notification != null) {
-                    notification.setProgress(percent / 100f);
-                  }
-                  eventBus.postSticky(new PartProgressEvent(attachment,
-                                                            PartProgressEvent.Type.COMPRESSION,
-                                                            100,
-                                                            percent));
-                }, outputStream, cancelationSignal);
-              }
-
-              eventBus.postSticky(new PartProgressEvent(attachment,
-                                                        PartProgressEvent.Type.COMPRESSION,
-                                                        100,
-                                                        100));
-
-              final Mp4FaststartPostProcessor postProcessor = new Mp4FaststartPostProcessor(() -> {
-                try {
-                  return ModernDecryptingPartInputStream.createFor(attachmentSecret, file, 0);
-                } catch (IOException e) {
-                  Log.w(TAG, "IOException thrown while creating CipherInputStream.", e);
-                  throw new VideoPostProcessingException("Exception while opening InputStream!", e);
-                }
-              });
-
-              final long plaintextLength = ModernEncryptingPartOutputStream.getPlaintextLength(file.length());
-              try (MediaStream mediaStream = new MediaStream(postProcessor.process(plaintextLength), MimeTypes.VIDEO_MP4, 0, 0, true)) {
-                attachmentDatabase.updateAttachmentData(attachment, mediaStream, true);
-                faststart = true;
-              } catch (VideoPostProcessingException e) {
-                Log.w(TAG, "Exception thrown during post processing.", e);
-                final Throwable cause = e.getCause();
-                if (cause instanceof IOException) {
-                  throw (IOException) cause;
-                } else if (cause instanceof EncodingException) {
-                  throw (EncodingException) cause;
-                }
-              }
-
-              if (!faststart) {
-                try (MediaStream mediaStream = new MediaStream(ModernDecryptingPartInputStream.createFor(attachmentSecret, file, 0), MimeTypes.VIDEO_MP4, 0, 0, false)) {
-                  attachmentDatabase.updateAttachmentData(attachment, mediaStream, true);
-                }
-              }
-            } finally {
-              if (!file.delete()) {
-                Log.w(TAG, "Failed to delete temp file");
-              }
-            }
-
-            attachmentDatabase.markAttachmentAsTransformed(attachment.attachmentId, faststart);
-
-            return Objects.requireNonNull(attachmentDatabase.getAttachment(attachment.attachmentId));
-          } else {
-            Log.i(TAG, "Transcode was not required");
-          }
-        } else {
-          try (InMemoryTranscoder transcoder = new InMemoryTranscoder(context, dataSource, options, constraints.getCompressedVideoMaxSize(context))) {
-            if (transcoder.isTranscodeRequired()) {
-              Log.i(TAG, "Compressing with android in-memory muxer");
-
-              try (MediaStream mediaStream = transcoder.transcode(percent -> {
+          boolean faststart = false;
+          try {
+            int mdatLength;
+            try (OutputStream outputStream = ModernEncryptingPartOutputStream.createFor(attachmentSecret, file, true).getSecond()) {
+              mdatLength = (int) transcoder.transcode(percent -> {
                 if (notification != null) {
-                  notification.setProgress(percent / 100f);
+                  notification.updateProgress(percent / 100f);
                 }
                 eventBus.postSticky(new PartProgressEvent(attachment,
                                                           PartProgressEvent.Type.COMPRESSION,
                                                           100,
                                                           percent));
-              }, cancelationSignal)) {
-                attachmentDatabase.updateAttachmentData(attachment, mediaStream, true);
-                attachmentDatabase.markAttachmentAsTransformed(attachment.attachmentId, mediaStream.getFaststart());
-              }
+              }, outputStream, cancelationSignal);
+            } catch (EncodingException e) {
+              throw new UndeliverableMessageException("Failure during encoding", e);
+            }
 
-              eventBus.postSticky(new PartProgressEvent(attachment,
-                                                        PartProgressEvent.Type.COMPRESSION,
-                                                        100,
-                                                        100));
-              return Objects.requireNonNull(attachmentDatabase.getAttachment(attachment.attachmentId));
-            } else {
-              Log.i(TAG, "Transcode was not required (in-memory transcoder)");
+            eventBus.postSticky(new PartProgressEvent(attachment,
+                                                      PartProgressEvent.Type.COMPRESSION,
+                                                      100,
+                                                      100));
+            if (cancelationSignal.isCanceled()) {
+              throw new UndeliverableMessageException("Job is canceled!");
+            }
+
+            final Mp4FaststartPostProcessor postProcessor = new Mp4FaststartPostProcessor(() -> {
+              try {
+                return ModernDecryptingPartInputStream.createFor(attachmentSecret, file, 0);
+              } catch (IOException e) {
+                Log.w(TAG, "IOException thrown while creating CipherInputStream.", e);
+                throw new VideoPostProcessingException("Exception while opening InputStream!", e);
+              }
+            });
+
+            final long plaintextLength = ModernEncryptingPartOutputStream.getPlaintextLength(file.length());
+            try (MediaStream mediaStream = new MediaStream(postProcessor.processWithMdatLength(plaintextLength, mdatLength), MimeTypes.VIDEO_MP4, 0, 0, true)) {
+              attachmentDatabase.updateAttachmentData(attachment, mediaStream);
+              faststart = true;
+            } catch (VideoPostProcessingException e) {
+              Log.w(TAG, "Exception thrown during post processing.", e);
+              final Throwable cause = e.getCause();
+              if (cause instanceof IOException) {
+                throw (IOException) cause;
+              } else if (cause instanceof EncodingException) {
+                throw (EncodingException) cause;
+              }
+            }
+
+            if (!faststart) {
+              try (MediaStream mediaStream = new MediaStream(ModernDecryptingPartInputStream.createFor(attachmentSecret, file, 0), MimeTypes.VIDEO_MP4, 0, 0, false)) {
+                attachmentDatabase.updateAttachmentData(attachment, mediaStream);
+              }
+            }
+          } finally {
+            if (!file.delete()) {
+              Log.w(TAG, "Failed to delete temp file");
             }
           }
+
+          attachmentDatabase.markAttachmentAsTransformed(attachment.attachmentId, faststart);
+
+          return Objects.requireNonNull(attachmentDatabase.getAttachment(attachment.attachmentId));
+        } else {
+          Log.i(TAG, "Transcode was not required");
         }
       }
     } catch (VideoSourceException | EncodingException | MemoryFileException e) {
-      if (attachment.size > constraints.getVideoMaxSize(context)) {
+      if (attachment.size > constraints.getVideoMaxSize()) {
         throw new UndeliverableMessageException("Duration not found, attachment too large to skip transcode", e);
       } else {
         if (allowSkipOnFailure) {
@@ -399,7 +375,7 @@ public final class AttachmentCompressionJob extends BaseJob {
       for (int size : mediaConstraints.getImageDimensionTargets(context)) {
         result = ImageCompressionUtil.compressWithinConstraints(context,
                                                                 attachment.contentType,
-                                                                new DecryptableStreamUriLoader.DecryptableUri(uri),
+                                                                new DecryptableUri(uri),
                                                                 size,
                                                                 mediaConstraints.getImageMaxSize(context),
                                                                 mediaConstraints.getImageCompressionQualitySetting(context));

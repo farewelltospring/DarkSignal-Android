@@ -69,12 +69,14 @@ message DecryptedGroup {
            string                    description               = 11;
            EnabledState              isAnnouncementGroup       = 12;
   repeated DecryptedBannedMember     bannedMembers             = 13;
+           bool                      isPlaceholderGroup        = 64;
 }
 
 // Decrypted version of message GroupChange.Actions
 // Keep field numbers in step
 message DecryptedGroupChange {
            bytes                         editorServiceIdBytes        = 1;
+  reserved                                                             25; // groupId used only during verification + decrypt, only provided by server
            uint32                        revision                    = 2;
   repeated DecryptedMember               newMembers                  = 3;
   repeated bytes                         deleteMembers               = 4;

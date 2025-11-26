@@ -2,12 +2,16 @@ package org.thoughtcrime.securesms.keyvalue;
 
 import androidx.annotation.NonNull;
 
+import org.signal.core.util.logging.Log;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 public final class PhoneNumberPrivacyValues extends SignalStoreValues {
+
+  private static final String TAG = Log.tag(PhoneNumberPrivacyValues.class);
 
   public static final String SHARING_MODE              = "phoneNumberPrivacy.sharingMode";
   public static final String DISCOVERABILITY_MODE      = "phoneNumberPrivacy.listingMode";
@@ -23,10 +27,9 @@ public final class PhoneNumberPrivacyValues extends SignalStoreValues {
 
   @Override
   void onFirstEverAppLaunch() {
-    // TODO [ALAN] PhoneNumberPrivacy: During registration, set the attribute to so that new registrations start out as not listed
-    //getStore().beginWrite()
-    //          .putInteger(LISTING_MODE, PhoneNumberListingMode.UNLISTED.serialize())
-    //          .apply();
+    getStore().beginWrite()
+              .putInteger(DISCOVERABILITY_MODE, PhoneNumberDiscoverabilityMode.UNDECIDED.serialize())
+              .apply();
   }
 
   @Override
@@ -43,31 +46,29 @@ public final class PhoneNumberPrivacyValues extends SignalStoreValues {
   }
 
   public boolean isPhoneNumberSharingEnabled() {
-    // TODO [pnp] When we launch usernames, the default should return false
     return switch (getPhoneNumberSharingMode()) {
-      case DEFAULT, EVERYBODY -> true;
-      case NOBODY -> false;
+      case EVERYBODY -> true;
+      case DEFAULT, NOBODY -> false;
     };
   }
 
   public void setPhoneNumberSharingMode(@NonNull PhoneNumberSharingMode phoneNumberSharingMode) {
-    putInteger(SHARING_MODE, phoneNumberSharingMode.serialize());
-  }
-
-  public boolean isDiscoverableByPhoneNumber() {
-    return getPhoneNumberDiscoverabilityMode() == PhoneNumberDiscoverabilityMode.DISCOVERABLE;
+    Log.i(TAG, "Setting phone number sharing to: " + phoneNumberSharingMode.name(), new Throwable());
+    getStore().beginWrite().putInteger(SHARING_MODE, phoneNumberSharingMode.serialize()).commit();
   }
 
   public @NonNull PhoneNumberDiscoverabilityMode getPhoneNumberDiscoverabilityMode() {
+    // The default for existing users is to be discoverable, but new users are set to UNDECIDED in onFirstEverAppLaunch
     return PhoneNumberDiscoverabilityMode.deserialize(getInteger(DISCOVERABILITY_MODE, PhoneNumberDiscoverabilityMode.DISCOVERABLE.serialize()));
   }
 
   public void setPhoneNumberDiscoverabilityMode(@NonNull PhoneNumberDiscoverabilityMode phoneNumberDiscoverabilityMode) {
+    Log.i(TAG, "Setting phone number discoverability to: " + phoneNumberDiscoverabilityMode.name(), new Throwable());
     getStore()
         .beginWrite()
         .putInteger(DISCOVERABILITY_MODE, phoneNumberDiscoverabilityMode.serialize())
         .putLong(DISCOVERABILITY_TIMESTAMP, System.currentTimeMillis())
-        .apply();
+        .commit();
   }
 
   public long getPhoneNumberDiscoverabilityModeTimestamp() {
@@ -121,20 +122,14 @@ public final class PhoneNumberPrivacyValues extends SignalStoreValues {
 
   public enum PhoneNumberDiscoverabilityMode {
     DISCOVERABLE(0),
-    NOT_DISCOVERABLE(1);
+    NOT_DISCOVERABLE(1),
+    /** The user is going through registration and has not yet chosen a discoverability setting */
+    UNDECIDED(2);
 
     private final int code;
 
     PhoneNumberDiscoverabilityMode(int code) {
       this.code = code;
-    }
-
-    public boolean isDiscoverable() {
-      return this == DISCOVERABLE;
-    }
-
-    public boolean isUndiscoverable() {
-      return this == NOT_DISCOVERABLE;
     }
 
     public int serialize() {

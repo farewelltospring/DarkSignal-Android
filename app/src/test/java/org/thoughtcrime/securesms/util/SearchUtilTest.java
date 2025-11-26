@@ -1,11 +1,13 @@
 package org.thoughtcrime.securesms.util;
 
 import org.junit.Test;
-import org.signal.libsignal.protocol.util.Pair;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+
+import kotlin.Pair;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -79,6 +81,60 @@ public class SearchUtilTest {
     List<Pair<Integer, Integer>> result    = SearchUtil.getHighlightRanges(LOCALE, text, highlight);
 
     assertEquals(Arrays.asList(new Pair<>(0, 1)), result);
+  }
+
+  @Test
+  public void getHighlightRanges_singleHighlightTokenMultipleMatches_turkish_text() {
+    String                       text      = "İaİ";
+    String                       highlight = "i";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(List.of(new Pair<>(0, 1), new Pair<>(2, 3)), result);
+  }
+
+  @Test
+  public void getHighlightRanges_singleHighlightTokenMultipleMatches_turkish_both() {
+    String                       text      = "İaİ";
+    String                       highlight = "İaİ";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(List.of(new Pair<>(0, 3)), result);
+  }
+
+  @Test
+  public void getHighlightRanges_singleHighlightTokenMultipleMatches_turkish_highlight() {
+    String                       text      = "iai";
+    String                       highlight = "İaİ";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(Collections.emptyList(), result);
+  }
+
+  @Test
+  public void getStrictHighlightRanges_singleHighlightToken_turkish_text() {
+    String                       text      = "İaİ";
+    String                       highlight = "i";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getStrictHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(List.of(new Pair<>(0, 1)), result);
+  }
+
+  @Test
+  public void getStrictHighlightRanges_singleHighlightToken_turkish_highlight() {
+    String                       text      = "iai";
+    String                       highlight = "İaİ";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getStrictHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(Collections.emptyList(), result);
+  }
+
+  @Test
+  public void getStrictHighlightRanges_singleHighlightToken_turkish_both() {
+    String                       text      = "İaİ";
+    String                       highlight = "İaİ";
+    List<Pair<Integer, Integer>> result    = SearchUtil.getStrictHighlightRanges(LOCALE, text, highlight);
+
+    assertEquals(List.of(new Pair<>(0, 3)), result);
   }
 
   @Test

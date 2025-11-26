@@ -29,9 +29,9 @@ import androidx.annotation.StringDef;
 import androidx.annotation.WorkerThread;
 
 import org.signal.core.util.logging.Log;
-import org.thoughtcrime.securesms.video.videoconverter.exceptions.EncodingException;
 import org.thoughtcrime.securesms.video.interfaces.MediaInput;
 import org.thoughtcrime.securesms.video.interfaces.Muxer;
+import org.thoughtcrime.securesms.video.videoconverter.exceptions.EncodingException;
 import org.thoughtcrime.securesms.video.videoconverter.muxer.StreamingMuxer;
 
 import java.io.File;
@@ -46,6 +46,8 @@ import java.lang.annotation.RetentionPolicy;
 public final class MediaConverter {
     private static final String TAG = "media-converter";
     private static final boolean VERBOSE = false; // lots of logging
+
+    private static final int STUCK_FRAME_THRESHOLD = 100;
 
     // Describes when the annotation will be discarded
     @Retention(RetentionPolicy.SOURCE)
@@ -136,14 +138,19 @@ public final class MediaConverter {
         mAllowAudioRemux = allow;
     }
 
+    /**
+     * @return The total content size of the MP4 mdat box.
+     */
     @WorkerThread
-    @RequiresApi(23)
-    public void convert() throws EncodingException, IOException {
+    public long convert() throws EncodingException, IOException {
         // Exception that may be thrown during release.
         Exception           exception           = null;
         Muxer               muxer               = null;
         VideoTrackConverter videoTrackConverter = null;
         AudioTrackConverter audioTrackConverter = null;
+
+        long mdatContentLength = 0;
+        boolean muxerStopped = false;
 
         try {
             muxer = mOutput.createMuxer();
@@ -159,6 +166,9 @@ public final class MediaConverter {
                     videoTrackConverter,
                     audioTrackConverter,
                     muxer);
+
+            mdatContentLength = muxer.stop();
+            muxerStopped = true;
 
         } catch (EncodingException | IOException e) {
             Log.e(TAG, "error converting", e);
@@ -194,7 +204,9 @@ public final class MediaConverter {
             }
             try {
                 if (muxer != null) {
-                    muxer.stop();
+                    if (!muxerStopped) {
+                        muxer.stop();
+                    }
                     muxer.release();
                 }
             } catch (Exception e) {
@@ -207,6 +219,8 @@ public final class MediaConverter {
         if (exception != null) {
             throw new EncodingException("Transcode failed", exception);
         }
+
+        return mdatContentLength;
     }
 
     /**
@@ -217,6 +231,8 @@ public final class MediaConverter {
             final @Nullable AudioTrackConverter audioTrackConverter,
             final @NonNull Muxer muxer) throws IOException, TranscodingException {
 
+        MediaConverterState oldState = null;
+        int stuckFrames = 0;
         boolean muxing = false;
         int percentProcessed = 0;
         long inputDuration = Math.max(
@@ -227,11 +243,19 @@ public final class MediaConverter {
                 ((videoTrackConverter != null && !videoTrackConverter.mVideoEncoderDone) ||
                  (audioTrackConverter != null &&!audioTrackConverter.mAudioEncoderDone))) {
 
+            final MediaConverterState currentState = new MediaConverterState(videoTrackConverter != null ? videoTrackConverter.dumpState() : null, audioTrackConverter != null ? audioTrackConverter.dumpState() : null, muxing);
+
             if (VERBOSE) {
-                Log.d(TAG, "loop: " +
-                        (videoTrackConverter == null ? "" : videoTrackConverter.dumpState()) +
-                        (audioTrackConverter == null ? "" : audioTrackConverter.dumpState()) +
-                        " muxing:" + muxing);
+                Log.d(TAG, "loop: " + currentState);
+            }
+
+            if (currentState.equals(oldState)) {
+                if (++stuckFrames >= STUCK_FRAME_THRESHOLD) {
+                    mCancelled = true;
+                }
+            } else {
+                oldState = currentState;
+                stuckFrames = 0;
             }
 
             if (videoTrackConverter != null && (audioTrackConverter == null || audioTrackConverter.mAudioExtractorDone || videoTrackConverter.mMuxingVideoPresentationTime <= audioTrackConverter.mMuxingAudioPresentationTime)) {

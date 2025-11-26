@@ -7,12 +7,15 @@ package org.thoughtcrime.securesms.service.webrtc.links
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.signal.core.util.Base64
+import org.signal.core.util.Hex
 import org.signal.core.util.Serializer
 import org.signal.ringrtc.CallLinkRootKey
 
+@Serializable
 @Parcelize
 class CallLinkRoomId private constructor(private val roomId: ByteArray) : Parcelable {
   fun serialize(): String = DatabaseSerializer.serialize(this)
@@ -34,8 +37,11 @@ class CallLinkRoomId private constructor(private val roomId: ByteArray) : Parcel
     return roomId.contentHashCode()
   }
 
+  /**
+   * Prints call link room id as a hex string, explicitly for logging.
+   */
   override fun toString(): String {
-    return DatabaseSerializer.serialize(this)
+    return Hex.toStringCondensed(roomId)
   }
 
   object DatabaseSerializer : Serializer<CallLinkRoomId, String> {

@@ -136,16 +136,40 @@ public class TextSecureSessionStore implements SignalServiceSessionStore {
     try (SignalSessionLock.Lock unused = ReentrantSessionLock.INSTANCE.acquire()) {
       Recipient recipient = Recipient.resolved(recipientId);
 
-      if (recipient.hasAci()) {
+      if (recipient.getHasAci()) {
         archiveSession(new SignalProtocolAddress(recipient.requireAci().toString(), deviceId));
       }
 
-      if (recipient.hasPni()) {
+      if (recipient.getHasPni()) {
         archiveSession(new SignalProtocolAddress(recipient.requirePni().toString(), deviceId));
       }
 
-      if (recipient.hasE164()) {
+      if (recipient.getHasE164()) {
         archiveSession(new SignalProtocolAddress(recipient.requireE164(), deviceId));
+      }
+    }
+  }
+
+  public void archiveSessions(@NonNull RecipientId recipientId) {
+    try (SignalSessionLock.Lock unused = ReentrantSessionLock.INSTANCE.acquire()) {
+      Recipient recipient = Recipient.resolved(recipientId);
+
+      if (recipient.getHasAci()) {
+        SignalProtocolAddress address = new SignalProtocolAddress(recipient.requireAci().toString(), 1);
+        archiveSiblingSessions(address);
+        archiveSession(address);
+      }
+
+      if (recipient.getHasPni()) {
+        SignalProtocolAddress address = new SignalProtocolAddress(recipient.requirePni().toString(), 1);
+        archiveSiblingSessions(address);
+        archiveSession(address);
+      }
+
+      if (recipient.getHasE164()) {
+        SignalProtocolAddress address = new SignalProtocolAddress(recipient.requireE164(), 1);
+        archiveSiblingSessions(address);
+        archiveSession(address);
       }
     }
   }

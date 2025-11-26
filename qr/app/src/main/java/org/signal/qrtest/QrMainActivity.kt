@@ -2,7 +2,6 @@ package org.signal.qrtest
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -27,7 +26,7 @@ class QrMainActivity : AppCompatActivity() {
   @SuppressLint("NewApi", "SetTextI18n")
   override fun onCreate(savedInstanceState: Bundle?) {
     Log.initialize(
-      AndroidLogger(),
+      AndroidLogger,
       object : Log.Logger() {
         override fun v(tag: String, message: String?, t: Throwable?, keepLonger: Boolean) {
           printlnFormatted('v', tag, message, t)
@@ -73,9 +72,7 @@ class QrMainActivity : AppCompatActivity() {
 
     text = findViewById(R.id.log)
 
-    if (Build.VERSION.SDK_INT >= 23) {
-      requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 1)
-    }
+    requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 1)
 
     val scanner = findViewById<QrScannerView>(R.id.scanner)
     scanner.start(this)

@@ -8,6 +8,7 @@ import org.whispersystems.signalservice.api.push.DistributionId
 import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.push.SyncMessage
+import org.whispersystems.signalservice.internal.util.Util
 
 /**
  * Represents a list of, or update to a list of, who can access a story through what
@@ -42,16 +43,19 @@ data class SentStorySyncManifest(
 
   fun toRecipientsSet(): Set<SignalServiceStoryMessageRecipient> {
     val recipients = Recipient.resolvedList(entries.map { it.recipientId })
-    return recipients.map { recipient ->
-      val serviceId = recipient.requireServiceId()
-      val entry = entries.first { it.recipientId == recipient.id }
+    return recipients
+      .filter { it.hasServiceId }
+      .map { recipient ->
+        val serviceId = recipient.requireServiceId()
+        val entry = entries.first { it.recipientId == recipient.id }
 
-      SignalServiceStoryMessageRecipient(
-        SignalServiceAddress(serviceId),
-        entry.distributionLists.map { it.toString() },
-        entry.allowedToReply
-      )
-    }.toSet()
+        SignalServiceStoryMessageRecipient(
+          SignalServiceAddress(serviceId),
+          entry.distributionLists.map { it.toString() },
+          entry.allowedToReply
+        )
+      }
+      .toSet()
   }
 
   fun flattenToRows(distributionIdToMessageIdMap: Map<DistributionId, Long>): Set<Row> {
@@ -85,9 +89,9 @@ data class SentStorySyncManifest(
     }
 
     fun fromRecipientsSet(recipients: List<SyncMessage.Sent.StoryMessageRecipient>): SentStorySyncManifest {
-      val entries = recipients.toSet().filter { it.destinationServiceId != null }.map { recipient ->
+      val entries = recipients.toSet().filter { Util.anyNotNull(it.destinationServiceId, it.destinationServiceIdBinary) }.map { recipient ->
         Entry(
-          recipientId = RecipientId.from(ServiceId.parseOrThrow(recipient.destinationServiceId!!)),
+          recipientId = RecipientId.from(ServiceId.parseOrThrow(recipient.destinationServiceId, recipient.destinationServiceIdBinary)),
           allowedToReply = recipient.isAllowedToReply!!,
           distributionLists = recipient.distributionListIds.map { DistributionId.from(it) }
         )

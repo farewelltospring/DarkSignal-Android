@@ -14,6 +14,7 @@ import org.thoughtcrime.securesms.events.GroupCallRaiseHandEvent
 import org.thoughtcrime.securesms.events.GroupCallReactionEvent
 import org.thoughtcrime.securesms.events.WebRtcViewModel
 import org.thoughtcrime.securesms.groups.ui.GroupMemberEntry
+import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.ringrtc.CameraState
 import org.thoughtcrime.securesms.service.webrtc.collections.ParticipantCollection
@@ -49,18 +50,17 @@ data class CallParticipantsState(
   val allRemoteParticipants: List<CallParticipant> = remoteParticipants.allParticipants
   val isFolded: Boolean = foldableState.isFolded
   val isLargeVideoGroup: Boolean = allRemoteParticipants.size > SMALL_GROUP_MAX && !isInPipMode && !isFolded
-  val isIncomingRing: Boolean = callState == WebRtcViewModel.State.CALL_INCOMING
+  val hideAvatar: Boolean = callState.isIncomingOrHandledElsewhere
 
   val raisedHands: List<GroupCallRaiseHandEvent>
     get() {
       val results = allRemoteParticipants.asSequence()
         .filter { it.isHandRaised }
-        .distinctBy { it.recipient }
-        .map { GroupCallRaiseHandEvent(it.recipient, it.handRaisedTimestamp) }
+        .map { GroupCallRaiseHandEvent(it, it.handRaisedTimestamp) }
         .sortedBy { it.timestamp }
         .toMutableList()
       if (localParticipant.isHandRaised) {
-        results.add(GroupCallRaiseHandEvent(localParticipant.recipient, localParticipant.handRaisedTimestamp))
+        results.add(GroupCallRaiseHandEvent(localParticipant, localParticipant.handRaisedTimestamp))
       }
       return results.toImmutableList()
     }
@@ -79,7 +79,7 @@ data class CallParticipantsState(
       } else {
         listParticipants.addAll(remoteParticipants.listParticipants)
       }
-      if (foldableState.isFlat) {
+      if (foldableState.isFlat && !SignalStore.internal.newCallingUi) {
         listParticipants.add(CallParticipant.EMPTY)
       }
       listParticipants.reverse()
@@ -151,7 +151,7 @@ data class CallParticipantsState(
   fun getIncomingRingingGroupDescription(context: Context): String? {
     if (callState == WebRtcViewModel.State.CALL_INCOMING &&
       groupCallState == WebRtcViewModel.GroupCallState.RINGING &&
-      ringerRecipient.hasServiceId()
+      ringerRecipient.hasServiceId
     ) {
       val ringerName = ringerRecipient.getShortDisplayName(context)
       val membersWithoutYouOrRinger: List<GroupMemberEntry.FullMember> = groupMembers.filterNot { it.member.isSelf || ringerRecipient.requireServiceId() == it.member.serviceId.orElse(null) }
@@ -195,7 +195,7 @@ data class CallParticipantsState(
   }
 
   companion object {
-    private const val SMALL_GROUP_MAX = 6
+    const val SMALL_GROUP_MAX = 6
 
     @JvmField
     val MAX_OUTGOING_GROUP_RING_DURATION = TimeUnit.MINUTES.toMillis(1)
@@ -261,7 +261,13 @@ data class CallParticipantsState(
 
     @JvmStatic
     fun setExpanded(oldState: CallParticipantsState, expanded: Boolean): CallParticipantsState {
-      val localRenderState: WebRtcLocalRenderState = determineLocalRenderMode(oldState = oldState, isExpanded = expanded)
+      val localRenderState: WebRtcLocalRenderState = determineLocalRenderMode(oldState = oldState, isLocalParticipantExpanded = expanded)
+
+      return oldState.copy(localRenderState = localRenderState)
+    }
+
+    fun setFocusLocalParticipant(oldState: CallParticipantsState, focused: Boolean): CallParticipantsState {
+      val localRenderState: WebRtcLocalRenderState = determineLocalRenderMode(oldState = oldState, isLocalParticipantFocused = focused)
 
       return oldState.copy(localRenderState = localRenderState)
     }
@@ -304,12 +310,15 @@ data class CallParticipantsState(
       callState: WebRtcViewModel.State = oldState.callState,
       numberOfRemoteParticipants: Int = oldState.allRemoteParticipants.size,
       isViewingFocusedParticipant: Boolean = oldState.isViewingFocusedParticipant,
-      isExpanded: Boolean = oldState.localRenderState == WebRtcLocalRenderState.EXPANDED
+      isLocalParticipantExpanded: Boolean = oldState.localRenderState == WebRtcLocalRenderState.EXPANDED,
+      isLocalParticipantFocused: Boolean = oldState.localRenderState == WebRtcLocalRenderState.FOCUSED
     ): WebRtcLocalRenderState {
       val displayLocal: Boolean = (numberOfRemoteParticipants == 0 || !isInPip) && (isNonIdleGroupCall || localParticipant.isVideoEnabled)
       var localRenderState: WebRtcLocalRenderState = WebRtcLocalRenderState.GONE
 
-      if (!isInPip && isExpanded && localParticipant.isVideoEnabled) {
+      if (!isInPip && isLocalParticipantFocused && localParticipant.isVideoEnabled) {
+        return WebRtcLocalRenderState.FOCUSED
+      } else if (!isInPip && isLocalParticipantExpanded && localParticipant.isVideoEnabled) {
         return WebRtcLocalRenderState.EXPANDED
       } else if (displayLocal || showVideoForOutgoing) {
         if (callState == WebRtcViewModel.State.CALL_CONNECTED || callState == WebRtcViewModel.State.CALL_RECONNECTING) {
@@ -375,6 +384,7 @@ data class CallParticipantsState(
   }
 
   enum class SelectedPage {
-    GRID, FOCUSED
+    GRID,
+    FOCUSED
   }
 }

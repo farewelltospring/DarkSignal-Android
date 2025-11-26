@@ -1,11 +1,10 @@
 /*
- * Copyright 2023 Signal Messenger, LLC
+ * Copyright 2024 Signal Messenger, LLC
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 package org.thoughtcrime.securesms.components.webrtc.controls
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandIn
@@ -27,11 +26,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rxjava3.subscribeAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,16 +42,22 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import io.reactivex.rxjava3.core.BackpressureStrategy
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import org.signal.core.ui.theme.SignalTheme
+import kotlinx.coroutines.flow.map
+import org.signal.ringrtc.GroupCall
 import org.thoughtcrime.securesms.R
-import org.thoughtcrime.securesms.components.webrtc.WebRtcCallViewModel
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.components.webrtc.v2.WebRtcCallViewModel
+import org.thoughtcrime.securesms.compose.SignalTheme
+import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.events.CallParticipant
 import org.thoughtcrime.securesms.events.GroupCallRaiseHandEvent
+import org.thoughtcrime.securesms.events.GroupCallSpeechEvent
 import org.thoughtcrime.securesms.recipients.Recipient
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * This is a UI element to display the status of one or more people with raised hands in a group call.
@@ -65,31 +69,52 @@ object RaiseHandSnackbar {
 
   @Composable
   fun View(webRtcCallViewModel: WebRtcCallViewModel, showCallInfoListener: () -> Unit, modifier: Modifier = Modifier) {
-    var expansionState by remember { mutableStateOf(ExpansionState(shouldExpand = false, forced = false)) }
+    val raisedHandsState: List<GroupCallRaiseHandEvent> by remember {
+      webRtcCallViewModel.callParticipantsState
+        .map { state ->
+          val raisedHands = state.raisedHands.sortedBy {
+            if (it.sender.isSelf) {
+              if (it.sender.isPrimary) {
+                0
+              } else {
+                1
+              }
+            } else {
+              it.timestamp.inWholeMilliseconds
+            }
+          }
 
-    val webRtcState by webRtcCallViewModel.callParticipantsState
-      .toFlowable(BackpressureStrategy.LATEST)
-      .map { state ->
-        val raisedHands = state.raisedHands.sortedByDescending { it.timestamp }
-        val shouldExpand = RaiseHandState.shouldExpand(raisedHands)
-        if (!expansionState.forced) {
-          expansionState = ExpansionState(shouldExpand, false)
+          raisedHands
         }
-        raisedHands
-      }.subscribeAsState(initial = emptyList())
+    }.collectAsState(initial = emptyList())
 
-    val state by remember {
-      derivedStateOf {
-        RaiseHandState(raisedHands = webRtcState, expansionState = expansionState)
+    val speechEvent: GroupCallSpeechEvent? by webRtcCallViewModel.groupCallSpeechEvents.collectAsStateWithLifecycle()
+
+    View(raisedHandsState, speechEvent, showCallInfoListener, modifier)
+  }
+
+  @Composable
+  fun View(raisedHandsState: List<GroupCallRaiseHandEvent>, speechEvent: GroupCallSpeechEvent?, showCallInfoListener: () -> Unit, modifier: Modifier = Modifier) {
+    var expansionState by remember { mutableStateOf(ExpansionState(shouldExpand = false, forced = false, collapseTimestamp = Duration.ZERO)) }
+
+    val state = remember(raisedHandsState, speechEvent, expansionState) {
+      RaiseHandState(raisedHands = raisedHandsState, expansionState = expansionState, speechEvent = speechEvent)
+    }
+
+    LaunchedEffect(raisedHandsState, speechEvent) {
+      val maxCollapseTimestamp = RaiseHandState.getMaxCollapseTimestamp(raisedHandsState, speechEvent)
+      if (!expansionState.forced) {
+        val shouldExpand = System.currentTimeMillis().milliseconds < maxCollapseTimestamp
+        expansionState = ExpansionState(shouldExpand, false, maxCollapseTimestamp)
       }
     }
 
     LaunchedEffect(expansionState) {
       delay(COLLAPSE_DELAY_MS)
-      expansionState = ExpansionState(shouldExpand = false, forced = false)
+      expansionState = ExpansionState(shouldExpand = false, forced = false, collapseTimestamp = expansionState.collapseTimestamp)
     }
 
-    RaiseHand(state, modifier, { expansionState = ExpansionState(shouldExpand = true, forced = true) }, showCallInfoListener = showCallInfoListener)
+    RaiseHand(state, modifier, { expansionState = ExpansionState(shouldExpand = true, forced = true, collapseTimestamp = expansionState.collapseTimestamp) }, showCallInfoListener = showCallInfoListener)
   }
 }
 
@@ -97,7 +122,7 @@ object RaiseHandSnackbar {
 @Composable
 private fun RaiseHandSnackbarPreview() {
   RaiseHand(
-    state = RaiseHandState(listOf(GroupCallRaiseHandEvent(Recipient.UNKNOWN, System.currentTimeMillis())))
+    state = RaiseHandState(listOf(GroupCallRaiseHandEvent(CallParticipant(recipient = Recipient(isResolving = false, systemContactName = "Miles Morales")), System.currentTimeMillis())))
   )
 }
 
@@ -111,19 +136,20 @@ private fun RaiseHand(
   AnimatedVisibility(
     visible = state.raisedHands.isNotEmpty(),
     enter = fadeIn() + expandIn(expandFrom = Alignment.CenterEnd),
-    exit = shrinkOut(shrinkTowards = Alignment.CenterEnd) + fadeOut()
+    exit = shrinkOut(shrinkTowards = Alignment.CenterEnd) + fadeOut(),
+    modifier = modifier
   ) {
     SignalTheme(
       isDarkMode = true
     ) {
       Surface(
-        modifier = modifier
+        modifier = Modifier
           .padding(horizontal = 16.dp)
           .clip(shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 16.dp))
           .background(SignalTheme.colors.colorSurface1)
           .animateContentSize()
       ) {
-        val boxModifier = modifier
+        val boxModifier = Modifier
           .padding(horizontal = 16.dp)
           .clickable(
             !state.isExpanded,
@@ -143,7 +169,9 @@ private fun RaiseHand(
             Icon(
               imageVector = ImageVector.vectorResource(id = R.drawable.symbol_raise_hand_24),
               contentDescription = null,
-              modifier = Modifier.align(Alignment.CenterVertically).padding(vertical = 8.dp)
+              modifier = Modifier
+                .align(Alignment.CenterVertically)
+                .padding(vertical = 8.dp)
             )
 
             Text(
@@ -156,11 +184,10 @@ private fun RaiseHand(
                 .padding(vertical = 16.dp)
             )
             if (state.isExpanded) {
-              if (state.raisedHands.first().sender.isSelf) {
-                val context = LocalContext.current
+              if (state.raisedHands.any { it.sender.isSelf && it.sender.isPrimary }) {
                 TextButton(
                   onClick = {
-                    showLowerHandDialog(context)
+                    AppDependencies.signalCallManager.raiseHand(false)
                   },
                   modifier = Modifier.wrapContentWidth(Alignment.End)
                 ) {
@@ -182,45 +209,67 @@ private fun RaiseHand(
   }
 }
 
-private fun showLowerHandDialog(context: Context) {
-  MaterialAlertDialogBuilder(context)
-    .setTitle(R.string.CallOverflowPopupWindow__lower_your_hand)
-    .setPositiveButton(
-      R.string.CallOverflowPopupWindow__lower_hand
-    ) { _, _ -> ApplicationDependencies.getSignalCallManager().raiseHand(false) }
-    .setNegativeButton(R.string.CallOverflowPopupWindow__cancel, null)
-    .show()
-}
-
 @Composable
 private fun getSnackbarText(state: RaiseHandState): String {
   if (state.isEmpty) {
     return ""
   }
+
+  val shouldDisplayLowerYourHand = remember(state) {
+    val now = System.currentTimeMillis().milliseconds
+    val hasUnexpiredSelf = state.raisedHands.any { it.sender.isSelf && it.sender.isPrimary && it.getCollapseTimestamp() >= now }
+    val expiration = state.speechEvent?.getCollapseTimestamp() ?: Duration.ZERO
+    val isUnexpired = expiration >= now
+
+    state.speechEvent?.speechEvent == GroupCall.SpeechEvent.LOWER_HAND_SUGGESTION && isUnexpired && hasUnexpiredSelf
+  }
+
+  if (shouldDisplayLowerYourHand && state.isExpanded) {
+    return stringResource(id = R.string.CallRaiseHandSnackbar__lower_your_hand)
+  }
+
+  val displayedName = getShortDisplayName(raisedHands = state.raisedHands)
+  val additionalHandsCount = state.raisedHands.size - 1
   return if (!state.isExpanded) {
-    pluralStringResource(id = R.plurals.CallRaiseHandSnackbar_raised_hands, count = state.raisedHands.size, getShortDisplayName(state.raisedHands), state.raisedHands.size - 1)
-  } else {
-    if (state.raisedHands.size == 1 && state.raisedHands.first().sender.isSelf) {
-      stringResource(id = R.string.CallOverflowPopupWindow__you_raised_your_hand)
+    if (state.raisedHands.size == 1) {
+      if (state.raisedHands.first().sender.isSelf) {
+        stringResource(id = R.string.CallRaiseHandSnackbar__collapsed_second_person_raised_hand_single, displayedName)
+      } else {
+        stringResource(id = R.string.CallRaiseHandSnackbar__collapsed_third_person_raised_hands_singular, displayedName)
+      }
     } else {
-      pluralStringResource(id = R.plurals.CallOverflowPopupWindow__raised_a_hand, count = state.raisedHands.size, state.raisedHands.first().sender.getShortDisplayName(LocalContext.current), state.raisedHands.size - 1)
+      if (state.raisedHands.first().sender.isSelf) {
+        pluralStringResource(id = R.plurals.CallRaiseHandSnackbar__collapsed_second_person_raised_hands_multiple, count = additionalHandsCount, displayedName, additionalHandsCount)
+      } else {
+        pluralStringResource(id = R.plurals.CallRaiseHandSnackbar__collapsed_third_person_raised_hands_multiple, count = additionalHandsCount, displayedName, additionalHandsCount)
+      }
+    }
+  } else {
+    if (state.raisedHands.size == 1) {
+      if (state.raisedHands.first().sender.isSelf) {
+        stringResource(id = R.string.CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_single, displayedName)
+      } else {
+        stringResource(id = R.string.CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_single, displayedName)
+      }
+    } else {
+      if (state.raisedHands.first().sender.isSelf) {
+        pluralStringResource(id = R.plurals.CallRaiseHandSnackbar__expanded_second_person_raised_a_hand_multiple, count = additionalHandsCount, displayedName, additionalHandsCount)
+      } else {
+        pluralStringResource(id = R.plurals.CallRaiseHandSnackbar__expanded_third_person_raised_a_hand_multiple, count = additionalHandsCount, displayedName, additionalHandsCount)
+      }
     }
   }
 }
 
 @Composable
 private fun getShortDisplayName(raisedHands: List<GroupCallRaiseHandEvent>): String {
-  val recipient = raisedHands.first().sender
-  return if (recipient.isSelf) {
-    stringResource(id = R.string.CallParticipant__you)
-  } else {
-    recipient.getShortDisplayName(LocalContext.current)
-  }
+  return raisedHands.first().sender.getShortRecipientDisplayName(LocalContext.current)
 }
 
 private data class RaiseHandState(
   val raisedHands: List<GroupCallRaiseHandEvent> = emptyList(),
-  val expansionState: ExpansionState = ExpansionState(shouldExpand = false, forced = false)
+  val expansionState: ExpansionState = ExpansionState(shouldExpand = false, forced = false, collapseTimestamp = Duration.ZERO),
+  val speechEvent: GroupCallSpeechEvent? = null
 ) {
   val isExpanded = expansionState.shouldExpand && raisedHands.isNotEmpty()
 
@@ -228,14 +277,15 @@ private data class RaiseHandState(
 
   companion object {
     @JvmStatic
-    fun shouldExpand(raisedHands: List<GroupCallRaiseHandEvent>): Boolean {
-      val now = System.currentTimeMillis()
-      return raisedHands.any { it.getCollapseTimestamp() > now }
+    fun getMaxCollapseTimestamp(raisedHands: List<GroupCallRaiseHandEvent>, speechEvent: GroupCallSpeechEvent?): Duration {
+      val maxRaisedHandTimestamp = raisedHands.maxByOrNull { it.getCollapseTimestamp() }?.getCollapseTimestamp() ?: Duration.ZERO
+      return max(maxRaisedHandTimestamp.inWholeMilliseconds, (speechEvent?.getCollapseTimestamp() ?: Duration.ZERO).inWholeMilliseconds).milliseconds
     }
   }
 }
 
 private data class ExpansionState(
   val shouldExpand: Boolean,
-  val forced: Boolean
+  val forced: Boolean,
+  val collapseTimestamp: Duration
 )

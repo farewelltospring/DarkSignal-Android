@@ -12,8 +12,6 @@ import org.thoughtcrime.securesms.database.RecipientTable
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.recipients.RecipientId
-import org.thoughtcrime.securesms.util.FeatureFlags
-import org.thoughtcrime.securesms.util.FeatureFlagsAccessor
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
 import org.whispersystems.signalservice.api.push.ServiceId.PNI
 import org.whispersystems.signalservice.api.storage.SignalContactRecord
@@ -26,10 +24,9 @@ class ContactRecordProcessorTest {
 
   @Before
   fun setup() {
-    SignalStore.account().setE164(E164_SELF)
-    SignalStore.account().setAci(ACI_SELF)
-    SignalStore.account().setPni(PNI_SELF)
-    FeatureFlagsAccessor.forceValue(FeatureFlags.PHONE_NUMBER_PRIVACY, true)
+    SignalStore.account.setE164(E164_SELF)
+    SignalStore.account.setAci(ACI_SELF)
+    SignalStore.account.setPni(PNI_SELF)
   }
 
   @Test
