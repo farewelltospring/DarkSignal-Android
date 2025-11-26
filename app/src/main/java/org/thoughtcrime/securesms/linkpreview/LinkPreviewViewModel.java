@@ -13,7 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import org.signal.core.util.ThreadUtil;
 import org.thoughtcrime.securesms.attachments.AttachmentId;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.net.RequestController;
 import org.thoughtcrime.securesms.util.Debouncer;
@@ -109,7 +109,7 @@ public class LinkPreviewViewModel extends ViewModel {
     }
   }
 
-  public void onTextChanged(@NonNull Context context, @NonNull String text, int cursorStart, int cursorEnd) {
+  public void onTextChanged(@NonNull String text, int cursorStart, int cursorEnd) {
     if (!enabled && !enablePlaceholder) return;
 
     debouncer.publish(() -> {
@@ -124,7 +124,7 @@ public class LinkPreviewViewModel extends ViewModel {
       Optional<Link> link = LinkPreviewUtil.findValidPreviewUrls(text)
                                            .findFirst();
 
-      if (link.isPresent() && link.get().getUrl().equals(activeUrl)) {
+      if (link.isPresent() && link.get().url.equals(activeUrl)) {
         return;
       }
 
@@ -139,9 +139,9 @@ public class LinkPreviewViewModel extends ViewModel {
         return;
       }
 
-      linkPreviewState.setValue(LinkPreviewState.forLoading());
+      linkPreviewState.setValue(LinkPreviewState.forLoading(link.get()));
 
-      activeUrl     = link.get().getUrl();
+      activeUrl     = link.get().url;
       activeRequest = enabled ? performRequest(activeUrl) : createPlaceholder(activeUrl);
     });
   }
@@ -186,11 +186,11 @@ public class LinkPreviewViewModel extends ViewModel {
       return true;
     }
 
-    if (text.endsWith(link.getUrl()) && cursorStart == link.getPosition() + link.getUrl().length()) {
+    if (text.endsWith(link.url) && cursorStart == link.position + link.url.length()) {
       return true;
     }
 
-    return cursorStart < link.getPosition() || cursorStart > link.getPosition() + link.getUrl().length();
+    return cursorStart < link.position || cursorStart > link.position + link.url.length();
   }
 
   private @Nullable RequestController createPlaceholder(String url) {
@@ -210,7 +210,7 @@ public class LinkPreviewViewModel extends ViewModel {
   }
 
   private @Nullable RequestController performRequest(String url) {
-    return repository.getLinkPreview(ApplicationDependencies.getApplication(), url, new LinkPreviewRepository.Callback() {
+    return repository.getLinkPreview(AppDependencies.getApplication(), url, new LinkPreviewRepository.Callback() {
       @Override
       public void onSuccess(@NonNull LinkPreview linkPreview) {
         ThreadUtil.runOnMain(() -> {

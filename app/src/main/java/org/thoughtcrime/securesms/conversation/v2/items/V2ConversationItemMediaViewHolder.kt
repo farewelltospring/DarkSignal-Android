@@ -72,19 +72,24 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
 
     val quoteView = binding.quoteStub.get()
     quoteView.setOnClickListener {
-      conversationContext.clickListener.onQuoteClicked(record)
+      if (conversationContext.selectedItems.isEmpty()) {
+        conversationContext.clickListener.onQuoteClicked(record)
+      } else {
+        conversationContext.clickListener.onItemClick(getMultiselectPartForLatestTouch())
+      }
     }
 
     binding.quoteStub.visibility = View.VISIBLE
     quoteView.setQuote(
-      conversationContext.glideRequests,
+      conversationContext.requestManager,
       quote.id,
       Recipient.live(quote.author).get(),
       quote.displayText,
       quote.isOriginalMissing,
       quote.attachment,
       if (conversationMessage.messageRecord.isStoryReaction()) conversationMessage.messageRecord.body else null,
-      quote.quoteType
+      quote.quoteType,
+      false
     )
 
     quoteView.setMessageType(
@@ -97,7 +102,7 @@ class V2ConversationItemMediaViewHolder<Model : MappingModel<Model>>(
     )
 
     quoteView.setWallpaperEnabled(conversationContext.hasWallpaper())
-    quoteView.setTextSize(TypedValue.COMPLEX_UNIT_SP, SignalStore.settings().getMessageQuoteFontSize(context).toFloat())
+    quoteView.setTextSize(TypedValue.COMPLEX_UNIT_SP, SignalStore.settings.getMessageQuoteFontSize(context).toFloat())
 
     val isOutgoing = conversationMessage.messageRecord.isOutgoing
     when (shape) {

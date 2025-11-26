@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.database
 import android.content.Context
 import androidx.core.content.contentValuesOf
 import org.signal.core.util.delete
+import org.signal.core.util.deleteAll
 import org.signal.core.util.exists
 import org.signal.core.util.logging.Log
 import org.signal.core.util.update
@@ -117,14 +118,16 @@ class PendingPniSignatureMessageTable(context: Context, databaseHelper: SignalDa
    * Deletes all record of pending PNI verification messages. Should only be called after the user changes their number.
    */
   fun deleteAll() {
-    writableDatabase.delete(TABLE_NAME).run()
+    writableDatabase.deleteAll(TABLE_NAME)
   }
 
-  override fun remapRecipient(oldId: RecipientId, newId: RecipientId) {
-    writableDatabase
+  override fun remapRecipient(fromId: RecipientId, toId: RecipientId) {
+    val count = writableDatabase
       .update(TABLE_NAME)
-      .values(RECIPIENT_ID to newId.serialize())
-      .where("$RECIPIENT_ID = ?", oldId)
+      .values(RECIPIENT_ID to toId.serialize())
+      .where("$RECIPIENT_ID = ?", fromId)
       .run()
+
+    Log.d(TAG, "Remapped $fromId to $toId. count: $count")
   }
 }

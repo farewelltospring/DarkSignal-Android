@@ -171,6 +171,22 @@ public final class SqlUtilTest {
   }
 
   @Test
+  public void buildFastCollectionQuery_single() {
+    SqlUtil.Query updateQuery = SqlUtil.buildFastCollectionQuery("a", Arrays.asList(1));
+
+    assertEquals("a IN (SELECT e.value FROM json_each(?) e)", updateQuery.getWhere());
+    assertArrayEquals(new String[] { "[\"1\"]" }, updateQuery.getWhereArgs());
+  }
+
+  @Test
+  public void buildFastCollectionQuery_multiple() {
+    SqlUtil.Query updateQuery = SqlUtil.buildFastCollectionQuery("a", Arrays.asList(1, 2, 3));
+
+    assertEquals("a IN (SELECT e.value FROM json_each(?) e)", updateQuery.getWhere());
+    assertArrayEquals(new String[] { "[\"1\",\"2\",\"3\"]" }, updateQuery.getWhereArgs());
+  }
+
+  @Test
   public void buildCustomCollectionQuery_single_singleBatch() {
     List<String[]> args = new ArrayList<>();
     args.add(SqlUtil.buildArgs(1, 2));
@@ -222,10 +238,28 @@ public final class SqlUtilTest {
 
     contentValues.add(cv1);
 
-    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues);
+    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues, null);
 
     assertEquals(1, output.size());
     assertEquals("INSERT INTO mytable (a, b) VALUES (?, ?)", output.get(0).getWhere());
+    assertArrayEquals(new String[] { "1", "2" }, output.get(0).getWhereArgs());
+  }
+
+  @Test
+  public void buildBulkInsert_single_singleBatch_containsNulls() {
+    List<ContentValues> contentValues = new ArrayList<>();
+
+    ContentValues cv1 = new ContentValues();
+    cv1.put("a", 1);
+    cv1.put("b", 2);
+    cv1.put("c", (String) null);
+
+    contentValues.add(cv1);
+
+    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b", "c"}, contentValues, null);
+
+    assertEquals(1, output.size());
+    assertEquals("INSERT INTO mytable (a, b, c) VALUES (?, ?, null)", output.get(0).getWhere());
     assertArrayEquals(new String[] { "1", "2" }, output.get(0).getWhereArgs());
   }
 
@@ -244,7 +278,7 @@ public final class SqlUtilTest {
     contentValues.add(cv1);
     contentValues.add(cv2);
 
-    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues);
+    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues, null);
 
     assertEquals(1, output.size());
     assertEquals("INSERT INTO mytable (a, b) VALUES (?, ?), (?, ?)", output.get(0).getWhere());
@@ -271,7 +305,7 @@ public final class SqlUtilTest {
     contentValues.add(cv2);
     contentValues.add(cv3);
 
-    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues, 4);
+    List<SqlUtil.Query> output = SqlUtil.buildBulkInsert("mytable", new String[] { "a", "b"}, contentValues, 4, null);
 
     assertEquals(2, output.size());
 

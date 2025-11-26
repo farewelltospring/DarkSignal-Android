@@ -1,12 +1,15 @@
 package org.thoughtcrime.securesms.messages
 
+import org.signal.core.util.orNull
 import org.signal.ringrtc.CallId
 import org.thoughtcrime.securesms.database.model.IdentityRecord
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
+import org.thoughtcrime.securesms.dependencies.AppDependencies
+import org.thoughtcrime.securesms.jobs.ProfileKeySendJob
 import org.thoughtcrime.securesms.messages.MessageContentProcessor.Companion.log
 import org.thoughtcrime.securesms.messages.MessageContentProcessor.Companion.warn
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
+import org.thoughtcrime.securesms.recipients.RecipientUtil
 import org.thoughtcrime.securesms.ringrtc.RemotePeer
 import org.thoughtcrime.securesms.service.webrtc.WebRtcData.AnswerMetadata
 import org.thoughtcrime.securesms.service.webrtc.WebRtcData.CallMetadata
@@ -36,13 +39,26 @@ object CallMessageProcessor {
   ) {
     val callMessage = content.callMessage!!
 
+    if (metadata.destinationServiceId is ServiceId.PNI) {
+      if (RecipientUtil.isCallRequestAccepted(senderRecipient) && callMessage.offer != null) {
+        log(envelope.timestamp!!, "Received call offer message at our PNI from trusted sender, responding with profile and pni signature")
+        RecipientUtil.shareProfileIfFirstSecureMessage(senderRecipient)
+        ProfileKeySendJob.create(senderRecipient, false)?.let { AppDependencies.jobManager.add(it) }
+      }
+
+      if (callMessage.offer != null) {
+        log(envelope.timestamp!!, "Call message at our PNI is an offer, continuing.")
+      } else {
+        log(envelope.timestamp!!, "Call message at our PNI is not an offer, ignoring.")
+        return
+      }
+    }
+
     when {
       callMessage.offer != null -> handleCallOfferMessage(envelope, metadata, callMessage.offer!!, senderRecipient.id, serverDeliveredTimestamp)
       callMessage.answer != null -> handleCallAnswerMessage(envelope, metadata, callMessage.answer!!, senderRecipient.id)
       callMessage.iceUpdate.isNotEmpty() -> handleCallIceUpdateMessage(envelope, metadata, callMessage.iceUpdate, senderRecipient.id)
-      callMessage.hangup != null || callMessage.legacyHangup != null -> {
-        handleCallHangupMessage(envelope, metadata, callMessage.hangup ?: callMessage.legacyHangup, senderRecipient.id)
-      }
+      callMessage.hangup != null -> handleCallHangupMessage(envelope, metadata, callMessage.hangup!!, senderRecipient.id)
       callMessage.busy != null -> handleCallBusyMessage(envelope, metadata, callMessage.busy!!, senderRecipient.id)
       callMessage.opaque != null -> handleCallOpaqueMessage(envelope, metadata, callMessage.opaque!!, senderRecipient.requireAci(), serverDeliveredTimestamp)
     }
@@ -51,21 +67,22 @@ object CallMessageProcessor {
   private fun handleCallOfferMessage(envelope: Envelope, metadata: EnvelopeMetadata, offer: Offer, senderRecipientId: RecipientId, serverDeliveredTimestamp: Long) {
     log(envelope.timestamp!!, "handleCallOfferMessage...")
 
-    val offerId = if (offer.id != null && offer.type != null && ((offer.opaque != null) xor (offer.sdp != null))) {
+    val offerId = if (offer.id != null && offer.type != null && offer.opaque != null) {
       offer.id!!
     } else {
-      warn(envelope.timestamp!!, "Invalid offer, missing id/type, or invalid combination of opaque/sdp")
+      warn(envelope.timestamp!!, "Invalid offer, missing id, type, or opaque")
       return
     }
 
     val remotePeer = RemotePeer(senderRecipientId, CallId(offerId))
-    val remoteIdentityKey = ApplicationDependencies.getProtocolStore().aci().identities().getIdentityRecord(senderRecipientId).map { (_, identityKey): IdentityRecord -> identityKey.serialize() }.get()
+    val remoteIdentityKey = AppDependencies.protocolStore.get(metadata.destinationServiceId).identities().getIdentityRecord(senderRecipientId).map { (_, identityKey): IdentityRecord -> identityKey.serialize() }.orNull()
 
-    ApplicationDependencies.getSignalCallManager()
+    AppDependencies.signalCallManager
       .receivedOffer(
         CallMetadata(remotePeer, metadata.sourceDeviceId),
-        OfferMetadata(offer.opaque?.toByteArray(), offer.sdp, OfferMessage.Type.fromProto(offer.type!!)),
+        OfferMetadata(offer.opaque?.toByteArray(), OfferMessage.Type.fromProto(offer.type!!)),
         ReceivedOfferMetadata(
+          metadata.destinationServiceId,
           remoteIdentityKey,
           envelope.serverTimestamp!!,
           serverDeliveredTimestamp
@@ -81,20 +98,20 @@ object CallMessageProcessor {
   ) {
     log(envelope.timestamp!!, "handleCallAnswerMessage...")
 
-    val answerId = if (answer.id != null && ((answer.opaque != null) xor (answer.sdp != null))) {
+    val answerId = if (answer.id != null && answer.opaque != null) {
       answer.id!!
     } else {
-      warn(envelope.timestamp!!, "Invalid answer, missing id")
+      warn(envelope.timestamp!!, "Invalid answer, missing id or opaque")
       return
     }
 
     val remotePeer = RemotePeer(senderRecipientId, CallId(answerId))
-    val remoteIdentityKey = ApplicationDependencies.getProtocolStore().aci().identities().getIdentityRecord(senderRecipientId).map { (_, identityKey): IdentityRecord -> identityKey.serialize() }.get()
+    val remoteIdentityKey = AppDependencies.protocolStore.aci().identities().getIdentityRecord(senderRecipientId).map { (_, identityKey): IdentityRecord -> identityKey.serialize() }.get()
 
-    ApplicationDependencies.getSignalCallManager()
+    AppDependencies.signalCallManager
       .receivedAnswer(
         CallMetadata(remotePeer, metadata.sourceDeviceId),
-        AnswerMetadata(answer.opaque?.toByteArray(), answer.sdp),
+        AnswerMetadata(answer.opaque?.toByteArray()),
         ReceivedAnswerMetadata(remoteIdentityKey)
       )
   }
@@ -119,7 +136,7 @@ object CallMessageProcessor {
 
     if (iceCandidates.isNotEmpty()) {
       val remotePeer = RemotePeer(senderRecipientId, CallId(callId))
-      ApplicationDependencies.getSignalCallManager()
+      AppDependencies.signalCallManager
         .receivedIceCandidates(
           CallMetadata(remotePeer, metadata.sourceDeviceId),
           iceCandidates
@@ -145,7 +162,7 @@ object CallMessageProcessor {
     }
 
     val remotePeer = RemotePeer(senderRecipientId, CallId(hangupId))
-    ApplicationDependencies.getSignalCallManager()
+    AppDependencies.signalCallManager
       .receivedCallHangup(
         CallMetadata(remotePeer, metadata.sourceDeviceId),
         HangupMetadata(HangupMessage.Type.fromProto(hangup.type), hangupDeviceId ?: 0)
@@ -163,7 +180,7 @@ object CallMessageProcessor {
     }
 
     val remotePeer = RemotePeer(senderRecipientId, CallId(busyId))
-    ApplicationDependencies.getSignalCallManager().receivedCallBusy(CallMetadata(remotePeer, metadata.sourceDeviceId))
+    AppDependencies.signalCallManager.receivedCallBusy(CallMetadata(remotePeer, metadata.sourceDeviceId))
   }
 
   private fun handleCallOpaqueMessage(envelope: Envelope, metadata: EnvelopeMetadata, opaque: Opaque, senderServiceId: ServiceId, serverDeliveredTimestamp: Long) {
@@ -181,7 +198,7 @@ object CallMessageProcessor {
       messageAgeSeconds = (serverDeliveredTimestamp - envelope.serverTimestamp!!).milliseconds.inWholeSeconds
     }
 
-    ApplicationDependencies.getSignalCallManager()
+    AppDependencies.signalCallManager
       .receivedOpaqueMessage(
         OpaqueMessageMetadata(
           senderServiceId.rawUuid,

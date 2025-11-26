@@ -2,7 +2,6 @@ package org.thoughtcrime.securesms.mediasend.v2.text
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.View
 import android.widget.EditText
 import androidx.constraintlayout.widget.Group
@@ -21,7 +20,7 @@ import org.thoughtcrime.securesms.util.ViewUtil
 import org.thoughtcrime.securesms.util.setIncognitoKeyboardEnabled
 import org.thoughtcrime.securesms.util.visible
 
-class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
+class TextStoryPostLinkEntryFragment(private val shouldPreset: Boolean = false) : KeyboardEntryDialogFragment(
   contentLayoutId = R.layout.stories_text_post_link_entry_fragment
 ) {
 
@@ -35,6 +34,12 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     input = view.findViewById(R.id.input)
+    if (shouldPreset) {
+      viewModel.getLinkInputPreset()?.let {
+        input.text.append(it)
+        linkPreviewViewModel.onTextChanged(it, 0, it.length - 1)
+      }
+    }
 
     val linkPreview: StoryLinkPreviewView = view.findViewById(R.id.link_preview)
     val confirmButton: View = view.findViewById(R.id.confirm_button)
@@ -50,7 +55,7 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
           Triple("$scheme$it", input.selectionStart + scheme.length, input.selectionEnd + scheme.length)
         }
 
-        linkPreviewViewModel.onTextChanged(requireContext(), uriString.toString(), selectionStart, selectionEnd)
+        linkPreviewViewModel.onTextChanged(uriString.toString(), selectionStart, selectionEnd)
       }
     )
 
@@ -58,7 +63,7 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
     confirmButton.setOnClickListener {
       val linkPreviewState = linkPreviewViewModel.linkPreviewState.value
       if (linkPreviewState != null) {
-        val url = linkPreviewState.linkPreview.map { it.url }.orElseGet { linkPreviewState.activeUrlForError }
+        val url = linkPreviewState.url ?: ""
 
         if (LinkUtil.isValidTextStoryPostPreview(url)) {
           viewModel.setLinkPreview(url)
@@ -76,7 +81,7 @@ class TextStoryPostLinkEntryFragment : KeyboardEntryDialogFragment(
     linkPreviewViewModel.linkPreviewState.observe(viewLifecycleOwner) { state ->
       linkPreview.bind(state, useLargeThumbnail = false)
       shareALinkGroup.visible = !state.isLoading && !state.linkPreview.isPresent && (state.error == null && state.activeUrlForError == null)
-      confirmButton.isEnabled = state.linkPreview.isPresent || !TextUtils.isEmpty(state.activeUrlForError)
+      confirmButton.isEnabled = state.url != null
     }
   }
 

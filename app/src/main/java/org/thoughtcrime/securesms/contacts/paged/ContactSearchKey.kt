@@ -34,7 +34,7 @@ sealed class ContactSearchKey {
 
   data class UnknownRecipientKey(val sectionKey: ContactSearchConfiguration.SectionKey, val query: String) : ContactSearchKey() {
     override fun requireSelectedContact(): SelectedContact = when (sectionKey) {
-      ContactSearchConfiguration.SectionKey.USERNAME -> SelectedContact.forPhone(null, query)
+      ContactSearchConfiguration.SectionKey.USERNAME -> SelectedContact.forUsername(null, query)
       ContactSearchConfiguration.SectionKey.PHONE_NUMBER -> SelectedContact.forPhone(null, query)
       else -> error("Unexpected section for unknown recipient: $sectionKey")
     }
@@ -75,6 +75,15 @@ sealed class ContactSearchKey {
    * Search key for a MessageRecord
    */
   data class Message(val messageId: Long) : ContactSearchKey()
+
+  /**
+   * Search key for a ChatType
+   */
+  data class ChatTypeSearchKey(val chatType: ChatType) : ContactSearchKey() {
+    override fun requireSelectedContact(): SelectedContact {
+      return SelectedContact.forChatType(chatType)
+    }
+  }
 
   object Empty : ContactSearchKey()
 }

@@ -75,7 +75,7 @@ public class Util {
     return secret;
   }
 
-  public static byte[] getRandomLengthBytes(int maxSize) {
+  public static byte[] getRandomLengthSecretBytes(int maxSize) {
     SecureRandom secureRandom = new SecureRandom();
     byte[]       result       = new byte[secureRandom.nextInt(maxSize) + 1];
     secureRandom.nextBytes(result);
@@ -163,5 +163,23 @@ public class Util {
     } catch (NumberFormatException e) {
       return defaultValue;
     }
+  }
+
+  public static boolean anyNotNull(Object... values) {
+    for (Object value : values) {
+      if (value != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static boolean allAreNull(Object... values) {
+    for (Object value : values) {
+      if (value != null) {
+        return false;
+      }
+    }
+    return true;
   }
 }

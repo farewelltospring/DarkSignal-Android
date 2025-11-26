@@ -6,17 +6,20 @@ import androidx.core.util.Consumer;
 import com.annimon.stream.Stream;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
+import org.signal.core.util.E164Util;
 import org.signal.core.util.concurrent.SignalExecutors;
 import org.signal.core.util.logging.Log;
+import org.thoughtcrime.securesms.components.settings.app.subscription.InAppPaymentsRepository;
 import org.thoughtcrime.securesms.database.GroupTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.GroupRecord;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.groups.GroupManager;
-import org.thoughtcrime.securesms.keyvalue.SignalStore;
-import org.thoughtcrime.securesms.subscription.Subscriber;
+import org.thoughtcrime.securesms.net.SignalNetwork;
 import org.thoughtcrime.securesms.util.ServiceUtil;
-import org.whispersystems.signalservice.api.util.PhoneNumberFormatter;
+import org.whispersystems.signalservice.api.NetworkResultUtil;
+import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.internal.EmptyResponse;
 import org.whispersystems.signalservice.internal.ServiceResponse;
 
@@ -36,7 +39,7 @@ class DeleteAccountRepository {
   }
 
   @NonNull String getRegionDisplayName(@NonNull String region) {
-    return PhoneNumberFormatter.getRegionDisplayName(region).orElse("");
+    return E164Util.getRegionDisplayName(region).orElse("");
   }
 
   int getRegionCountryCode(@NonNull String region) {
@@ -45,13 +48,13 @@ class DeleteAccountRepository {
 
   void deleteAccount(@NonNull Consumer<DeleteAccountEvent> onDeleteAccountEvent) {
     SignalExecutors.BOUNDED.execute(() -> {
-      if (SignalStore.donationsValues().getSubscriber() != null) {
+      if (InAppPaymentsRepository.getSubscriber(InAppPaymentSubscriberRecord.Type.DONATION) != null) {
         Log.i(TAG, "deleteAccount: attempting to cancel subscription");
         onDeleteAccountEvent.accept(DeleteAccountEvent.CancelingSubscription.INSTANCE);
 
-        Subscriber                     subscriber                 = SignalStore.donationsValues().requireSubscriber();
-        ServiceResponse<EmptyResponse> cancelSubscriptionResponse = ApplicationDependencies.getDonationsService()
-                                                                                           .cancelSubscription(subscriber.getSubscriberId());
+        InAppPaymentSubscriberRecord subscriber = InAppPaymentsRepository.requireSubscriber(InAppPaymentSubscriberRecord.Type.DONATION);
+        ServiceResponse<EmptyResponse> cancelSubscriptionResponse = AppDependencies.getDonationsService()
+                                                                                   .cancelSubscription(subscriber.getSubscriberId());
 
         if (cancelSubscriptionResponse.getExecutionError().isPresent()) {
           Log.w(TAG, "deleteAccount: failed attempt to cancel subscription");
@@ -84,7 +87,7 @@ class DeleteAccountRepository {
         while (groupRecord != null) {
           if (groupRecord.getId().isPush() && groupRecord.isActive()) {
             if (!groupRecord.isV1Group()) {
-              GroupManager.leaveGroup(ApplicationDependencies.getApplication(), groupRecord.getId().requirePush(), true);
+              GroupManager.leaveGroup(AppDependencies.getApplication(), groupRecord.getId().requirePush(), true);
             }
             onDeleteAccountEvent.accept(new DeleteAccountEvent.LeaveGroupsProgress(groups.getCount(), ++groupsLeft));
           }
@@ -103,17 +106,21 @@ class DeleteAccountRepository {
       Log.i(TAG, "deleteAccount: attempting to delete account from server...");
 
       try {
-        ApplicationDependencies.getSignalServiceAccountManager().deleteAccount();
+        NetworkResultUtil.toBasicLegacy(SignalNetwork.account().deleteAccount());
       } catch (IOException e) {
-        Log.w(TAG, "deleteAccount: failed to delete account from signal service", e);
-        onDeleteAccountEvent.accept(DeleteAccountEvent.ServerDeletionFailed.INSTANCE);
-        return;
+        if (e instanceof NonSuccessfulResponseCodeException && ((NonSuccessfulResponseCodeException) e).code == 4401) {
+          Log.i(TAG, "deleteAccount: WebSocket closed with expected status after delete account, moving forward as delete was successful");
+        } else {
+          Log.w(TAG, "deleteAccount: failed to delete account from signal service, bail", e);
+          onDeleteAccountEvent.accept(DeleteAccountEvent.ServerDeletionFailed.INSTANCE);
+          return;
+        }
       }
 
       Log.i(TAG, "deleteAccount: successfully removed account from server");
       Log.i(TAG, "deleteAccount: attempting to delete user data and close process...");
 
-      if (!ServiceUtil.getActivityManager(ApplicationDependencies.getApplication()).clearApplicationUserData()) {
+      if (!ServiceUtil.getActivityManager(AppDependencies.getApplication()).clearApplicationUserData()) {
         Log.w(TAG, "deleteAccount: failed to delete user data");
         onDeleteAccountEvent.accept(DeleteAccountEvent.LocalDataDeletionFailed.INSTANCE);
       }
@@ -121,7 +128,7 @@ class DeleteAccountRepository {
   }
 
   private static @NonNull Country getCountryForRegion(@NonNull String region) {
-    return new Country(PhoneNumberFormatter.getRegionDisplayName(region).orElse(""),
+    return new Country(E164Util.getRegionDisplayName(region).orElse(""),
                        PhoneNumberUtil.getInstance().getCountryCodeForRegion(region),
                        region);
   }

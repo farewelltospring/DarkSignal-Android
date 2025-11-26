@@ -26,6 +26,7 @@ import org.thoughtcrime.securesms.conversation.v2.computed.FormattedDate
 import java.text.DateFormatSymbols
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -60,7 +61,7 @@ object DateUtils : android.text.format.DateUtils() {
   @JvmStatic
   fun getBriefRelativeTimeSpanString(c: Context, locale: Locale, timestamp: Long): String {
     return when {
-      timestamp.isWithin(1.minutes) -> {
+      isNow(timestamp) -> {
         c.getString(R.string.DateUtils_just_now)
       }
       timestamp.isWithin(1.hours) -> {
@@ -89,7 +90,7 @@ object DateUtils : android.text.format.DateUtils() {
   @JvmStatic
   fun getExtendedRelativeTimeSpanString(context: Context, locale: Locale, timestamp: Long): String {
     return when {
-      timestamp.isWithin(1.minutes) -> {
+      isNow(timestamp) -> {
         context.getString(R.string.DateUtils_just_now)
       }
       timestamp.isWithin(1.hours) -> {
@@ -130,15 +131,15 @@ object DateUtils : android.text.format.DateUtils() {
   @JvmStatic
   fun getDatelessRelativeTimeSpanFormattedDate(context: Context, locale: Locale, timestamp: Long): FormattedDate {
     return when {
-      timestamp.isWithin(1.minutes) -> {
-        FormattedDate(true, context.getString(R.string.DateUtils_just_now))
+      isNow(timestamp) -> {
+        FormattedDate(isRelative = true, isNow = true, value = context.getString(R.string.DateUtils_just_now))
       }
       timestamp.isWithin(1.hours) -> {
         val minutes = timestamp.convertDeltaTo(DurationUnit.MINUTES)
-        FormattedDate(true, context.resources.getString(R.string.DateUtils_minutes_ago, minutes))
+        FormattedDate(isRelative = true, isNow = false, value = context.resources.getString(R.string.DateUtils_minutes_ago, minutes))
       }
       else -> {
-        FormattedDate(false, getOnlyTimeString(context, timestamp))
+        FormattedDate(isRelative = false, isNow = false, value = getOnlyTimeString(context, timestamp))
       }
     }
   }
@@ -182,6 +183,33 @@ object DateUtils : android.text.format.DateUtils() {
   }
 
   /**
+   * Given a timestamp, formats as "at time".
+   * Pluralization allows for Romance languages to be translated correctly
+   * eg. at 7:23pm, at 13:20
+   */
+  @JvmStatic
+  fun getOnlyTimeAtString(context: Context, timestamp: Long): String {
+    val time = timestamp.toLocalTime().formatHours(context)
+    val hour = getHour(context, timestamp)
+
+    return context.resources.getQuantityString(R.plurals.DateUtils_time_at, hour, time)
+  }
+
+  /**
+   * Formats the timestamp as a date, without the year, followed by the time.
+   * Pluralization allows for Romance languages to be translated correctly
+   * eg. on Jan 15 at 9:00pm
+   */
+  @JvmStatic
+  fun getDateTimeString(context: Context, locale: Locale, timestamp: Long): String {
+    val date = timestamp.toDateString("MMM d", locale)
+    val time = timestamp.toLocalTime().formatHours(context)
+    val hour = getHour(context, timestamp)
+
+    return context.resources.getQuantityString(R.plurals.DateUtils_date_time_at, hour, date, time)
+  }
+
+  /**
    * Formats the passed timestamp based on the current time at a day precision.
    *
    * For example:
@@ -210,13 +238,7 @@ object DateUtils : android.text.format.DateUtils() {
     return if (isSameDay(System.currentTimeMillis(), timestamp)) {
       context.getString(R.string.DeviceListItem_today)
     } else {
-      val format: String = when {
-        timestamp.isWithin(6.days) -> "EEE "
-        timestamp.isWithin(365.days) -> "MMM d"
-        else -> "MMM d, yyy"
-      }
-
-      timestamp.toDateString(format, locale)
+      timestamp.toDateString("dd/MM/yy", locale)
     }
   }
 
@@ -336,6 +358,16 @@ object DateUtils : android.text.format.DateUtils() {
     }
   }
 
+  /**
+   * This exposes "now" (defined here as a one minute window) to other classes.
+   * This is because certain locales use different linguistic constructions for "modified n minutes ago" and "modified just now",
+   * and therefore the caller will need to load different string resources in these situations.
+   *
+   * @param timestamp a Unix timestamp
+   */
+  @JvmStatic
+  fun isNow(timestamp: Long) = timestamp.isWithin(1.minutes)
+
   private fun Long.isWithin(duration: Duration): Boolean {
     return System.currentTimeMillis() - this <= duration.inWholeMilliseconds
   }
@@ -346,6 +378,16 @@ object DateUtils : android.text.format.DateUtils() {
 
   private fun isYesterday(time: Long): Boolean {
     return isToday(time + TimeUnit.DAYS.toMillis(1))
+  }
+
+  private fun getHour(context: Context, timestamp: Long): Int {
+    val cal = Calendar.getInstance(Locale.getDefault())
+    cal.timeInMillis = timestamp
+    return if (context.is24HourFormat()) {
+      cal[Calendar.HOUR_OF_DAY]
+    } else {
+      cal[Calendar.HOUR]
+    }
   }
 
   private fun Context.is24HourFormat(): Boolean {

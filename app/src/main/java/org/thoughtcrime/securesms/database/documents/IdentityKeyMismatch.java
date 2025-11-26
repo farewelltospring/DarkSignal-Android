@@ -1,9 +1,6 @@
 package org.thoughtcrime.securesms.database.documents;
 
-import android.content.Context;
 import android.text.TextUtils;
-
-import androidx.annotation.NonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -51,11 +48,16 @@ public class IdentityKeyMismatch {
   }
 
   @JsonIgnore
-  public RecipientId getRecipientId(@NonNull Context context) {
+  public RecipientId getRecipientId() {
     if (!TextUtils.isEmpty(recipientId)) {
       return RecipientId.from(recipientId);
     } else {
-      return Recipient.external(context, address).getId();
+      Recipient recipient = Recipient.external(address);
+      if (recipient != null) {
+        return recipient.getId();
+      } else {
+        return RecipientId.UNKNOWN;
+      }
     }
   }
 

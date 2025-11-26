@@ -14,6 +14,7 @@ import org.thoughtcrime.securesms.jobmanager.impl.DecryptionsDrainedConstraint;
 import org.thoughtcrime.securesms.jobmanager.impl.NetworkConstraint;
 import org.thoughtcrime.securesms.messages.GroupSendUtil;
 import org.thoughtcrime.securesms.net.NotPushRegisteredException;
+import org.thoughtcrime.securesms.ratelimit.ProofRequiredExceptionHandler;
 import org.thoughtcrime.securesms.recipients.Recipient;
 import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.recipients.RecipientUtil;
@@ -22,6 +23,7 @@ import org.whispersystems.signalservice.api.crypto.ContentHint;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
 import org.whispersystems.signalservice.api.messages.SendMessageResult;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
+import org.whispersystems.signalservice.api.push.exceptions.ProofRequiredException;
 import org.whispersystems.signalservice.api.push.exceptions.ServerRejectedException;
 
 import java.io.IOException;
@@ -52,6 +54,19 @@ public class ProfileKeySendJob extends BaseJob {
         -1L,
         recipientIds
     );
+  }
+
+  /**
+   * Suitable for a 1:1 conversation or a GV1 group only.
+   *
+   * @param queueLimits True if you only want one of these to be run per person after decryptions
+   *                    are drained, otherwise false.
+   *
+   * @return The job that is created, or null if the threadId provided was invalid.
+   */
+  @WorkerThread
+  public static @Nullable ProfileKeySendJob create(@NonNull Recipient recipient, boolean queueLimits) {
+    return create(SignalDatabase.threads().getOrCreateThreadIdFor(recipient), queueLimits);
   }
 
   /**
@@ -170,12 +185,18 @@ public class ProfileKeySendJob extends BaseJob {
                                                                            .withTimestamp(System.currentTimeMillis())
                                                                            .withProfileKey(Recipient.self().resolve().getProfileKey());
 
-    List<SendMessageResult> results = GroupSendUtil.sendUnresendableDataMessage(context, null, destinations, false, ContentHint.IMPLICIT, dataMessage.build(), false);
+    List<SendMessageResult>    results       = GroupSendUtil.sendUnresendableDataMessage(context, null, destinations, false, ContentHint.IMPLICIT, dataMessage.build(), false, null);
+    ProofRequiredException     proofRequired = Stream.of(results).filter(r -> r.getProofRequiredFailure() != null).findLast().map(SendMessageResult::getProofRequiredFailure).orElse(null);
 
     GroupSendJobHelper.SendResult groupResult = GroupSendJobHelper.getCompletedSends(destinations, results);
 
     for (RecipientId unregistered : groupResult.unregistered) {
       SignalDatabase.recipients().markUnregistered(unregistered);
+    }
+
+    if (proofRequired != null) {
+      Log.d(TAG, "Notifying the user they were rate limited.");
+      ProofRequiredExceptionHandler.handle(context, proofRequired, null, -1L, -1L);
     }
 
     return groupResult.completed;

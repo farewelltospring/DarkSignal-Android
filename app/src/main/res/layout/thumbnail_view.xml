@@ -30,14 +30,15 @@
         android:longClickable="false"
         android:scaleType="centerCrop" />
 
-    <ImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/thumbnail_caption_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/ThumbnailView_Has_a_caption_description"
         android:padding="6dp"
-        android:src="@drawable/ic_caption_28"
+        android:src="@drawable/symbol_caption_24"
         android:visibility="gone"
+        app:tint="@color/core_white"
         tools:visibility="visible" />
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -80,5 +81,15 @@
         android:layout_gravity="center"
         android:background="@color/transparent"
         android:layout="@layout/transfer_controls_stub" />
+
+    <View
+        android:id="@+id/thumbnail_media_archive"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_gravity="top|left"
+        android:layout_margin="8dp"
+        android:background="@drawable/circle_tintable"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
 </merge>

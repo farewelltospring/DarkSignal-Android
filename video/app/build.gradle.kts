@@ -5,6 +5,7 @@
 
 plugins {
   id("signal-sample-app")
+  alias(libs.plugins.compose.compiler)
 }
 
 val signalBuildToolsVersion: String by rootProject.extra
@@ -20,7 +21,7 @@ android {
 
   defaultConfig {
     applicationId = "org.thoughtcrime.video.app"
-    minSdk = signalMinSdkVersion
+    minSdk = 23
     targetSdk = signalTargetSdkVersion
     versionCode = 1
     versionName = "1.0"
@@ -48,7 +49,7 @@ android {
     compose = true
   }
   composeOptions {
-    kotlinCompilerExtensionVersion = "1.4.3"
+    kotlinCompilerExtensionVersion = "1.5.4"
   }
   packaging {
     resources {
@@ -63,6 +64,13 @@ dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(libs.androidx.compose.material3)
   implementation(libs.bundles.media3)
-  debugImplementation(libs.androidx.compose.ui.tooling.core)
-  debugImplementation(libs.androidx.compose.ui.test.manifest)
+  implementation(project(":video"))
+  implementation(project(":core-util"))
+  implementation("androidx.work:work-runtime-ktx:2.9.1")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+  implementation(libs.androidx.compose.ui.tooling.core)
+  implementation(libs.androidx.compose.ui.test.manifest)
+  androidTestImplementation(testLibs.junit.junit)
+  androidTestImplementation(testLibs.androidx.test.runner)
+  androidTestImplementation(testLibs.androidx.test.ext.junit.ktx)
 }

@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.airbnb.lottie.SimpleColorFilter;
+import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import org.signal.core.util.EditTextUtil;
@@ -32,16 +32,14 @@ import org.thoughtcrime.securesms.avatar.Avatars;
 import org.thoughtcrime.securesms.avatar.picker.AvatarPickerFragment;
 import org.thoughtcrime.securesms.databinding.CreateProfileFragmentBinding;
 import org.thoughtcrime.securesms.groups.GroupId;
-import org.thoughtcrime.securesms.groups.ParcelableGroupId;
 import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.mediasend.Media;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.profiles.edit.pnp.WhoCanFindMeByPhoneNumberFragment;
 import org.thoughtcrime.securesms.profiles.manage.EditProfileNameFragment;
 import org.thoughtcrime.securesms.providers.BlobProvider;
 import org.thoughtcrime.securesms.util.CommunicationActions;
-import org.thoughtcrime.securesms.util.FeatureFlags;
+import org.thoughtcrime.securesms.util.RemoteConfig;
 import org.thoughtcrime.securesms.util.ViewUtil;
 import org.thoughtcrime.securesms.util.navigation.SafeNavigation;
 import org.thoughtcrime.securesms.util.text.AfterTextChanged;
@@ -51,6 +49,7 @@ import java.io.InputStream;
 
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.EXCLUDE_SYSTEM;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.GROUP_ID;
+import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.IS_DESCRIPTION_FOCUSED;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.NEXT_BUTTON_TEXT;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.NEXT_INTENT;
 import static org.thoughtcrime.securesms.profiles.edit.CreateProfileActivity.SHOW_TOOLBAR;
@@ -130,7 +129,7 @@ public class CreateProfileFragment extends LoggingFragment {
       if (avatarBytes != null) {
         viewModel.setAvatarMedia(media);
         viewModel.setAvatar(avatarBytes);
-        GlideApp.with(CreateProfileFragment.this)
+        Glide.with(CreateProfileFragment.this)
                 .load(avatarBytes)
                 .skipMemoryCache(true)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -161,17 +160,20 @@ public class CreateProfileFragment extends LoggingFragment {
     boolean isEditingGroup = groupId != null;
 
     this.nextIntent = arguments.getParcelable(NEXT_INTENT);
+    boolean isDescriptionFocused = arguments.getBoolean(IS_DESCRIPTION_FOCUSED);
 
     binding.avatar.setOnClickListener(v -> startAvatarSelection());
     binding.mmsGroupHint.setVisibility(isEditingGroup && groupId.isMms() ? View.VISIBLE : View.GONE);
 
     if (isEditingGroup) {
-      EditTextUtil.addGraphemeClusterLimitFilter(binding.givenName, FeatureFlags.getMaxGroupNameGraphemeLength());
+      EditTextUtil.addGraphemeClusterLimitFilter(binding.givenName, RemoteConfig.getMaxGroupNameGraphemeLength());
       binding.profileDescriptionText.setVisibility(View.GONE);
       binding.whoCanFindMeContainer.setVisibility(View.GONE);
       binding.givenName.addTextChangedListener(new AfterTextChanged(s -> viewModel.setGivenName(s.toString())));
       binding.givenNameWrapper.setHint(R.string.EditProfileFragment__group_name);
-      binding.givenName.requestFocus();
+      if (!isDescriptionFocused) {
+        binding.givenName.requestFocus();
+      }
       binding.toolbar.setTitle(R.string.EditProfileFragment__edit_group);
       binding.namePreview.setVisibility(View.GONE);
 
@@ -182,6 +184,9 @@ public class CreateProfileFragment extends LoggingFragment {
           viewModel.setFamilyName(s.toString());
         }));
         binding.familyNameWrapper.setHint(R.string.EditProfileFragment__group_description);
+        if (isDescriptionFocused) {
+          binding.familyName.requestFocus();
+        }
         binding.familyName.setSingleLine(false);
         binding.familyName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
 
@@ -209,17 +214,15 @@ public class CreateProfileFragment extends LoggingFragment {
       binding.profileDescriptionText.setLinkColor(ContextCompat.getColor(requireContext(), R.color.signal_colorPrimary));
       binding.profileDescriptionText.setOnLinkClickListener(v -> CommunicationActions.openBrowserLink(requireContext(), getString(R.string.EditProfileFragment__support_link)));
 
-      if (FeatureFlags.phoneNumberPrivacy()) {
-        getParentFragmentManager().setFragmentResultListener(WhoCanFindMeByPhoneNumberFragment.REQUEST_KEY, getViewLifecycleOwner(), (requestKey, result) -> {
-          if (WhoCanFindMeByPhoneNumberFragment.REQUEST_KEY.equals(requestKey)) {
-            presentWhoCanFindMeDescription(SignalStore.phoneNumberPrivacy().getPhoneNumberListingMode());
-          }
-        });
+      getParentFragmentManager().setFragmentResultListener(WhoCanFindMeByPhoneNumberFragment.REQUEST_KEY, getViewLifecycleOwner(), (requestKey, result) -> {
+        if (WhoCanFindMeByPhoneNumberFragment.REQUEST_KEY.equals(requestKey)) {
+          presentWhoCanFindMeDescription(SignalStore.phoneNumberPrivacy().getPhoneNumberDiscoverabilityMode());
+        }
+      });
 
-        binding.whoCanFindMeContainer.setVisibility(View.VISIBLE);
-        binding.whoCanFindMeContainer.setOnClickListener(v -> SafeNavigation.safeNavigate(Navigation.findNavController(v), CreateProfileFragmentDirections.actionCreateProfileFragmentToPhoneNumberPrivacy()));
-        presentWhoCanFindMeDescription(SignalStore.phoneNumberPrivacy().getPhoneNumberListingMode());
-      }
+      binding.whoCanFindMeContainer.setVisibility(View.VISIBLE);
+      binding.whoCanFindMeContainer.setOnClickListener(v -> SafeNavigation.safeNavigate(Navigation.findNavController(v), CreateProfileFragmentDirections.actionCreateProfileFragmentToPhoneNumberPrivacy()));
+      presentWhoCanFindMeDescription(SignalStore.phoneNumberPrivacy().getPhoneNumberDiscoverabilityMode());
     }
 
     binding.finishButton.setOnClickListener(v -> {
@@ -252,11 +255,11 @@ public class CreateProfileFragment extends LoggingFragment {
   private void initializeProfileAvatar() {
     viewModel.avatar().observe(getViewLifecycleOwner(), bytes -> {
       if (bytes == null) {
-        GlideApp.with(this).clear(binding.avatar);
+        Glide.with(this).clear(binding.avatar);
         return;
       }
 
-      GlideApp.with(this)
+      Glide.with(this)
               .load(bytes)
               .circleCrop()
               .into(binding.avatar);
@@ -285,12 +288,15 @@ public class CreateProfileFragment extends LoggingFragment {
     }
   }
 
-  private void presentWhoCanFindMeDescription(PhoneNumberPrivacyValues.PhoneNumberListingMode phoneNumberListingMode) {
+  private void presentWhoCanFindMeDescription(PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode phoneNumberListingMode) {
     switch (phoneNumberListingMode) {
-      case LISTED:
+      case DISCOVERABLE:
+      case UNDECIDED:
+        binding.whoCanFindMeIcon.setImageResource(R.drawable.symbol_group_24);
         binding.whoCanFindMeDescription.setText(R.string.PhoneNumberPrivacy_everyone);
         break;
-      case UNLISTED:
+      case NOT_DISCOVERABLE:
+        binding.whoCanFindMeIcon.setImageResource(R.drawable.symbol_lock_24);
         binding.whoCanFindMeDescription.setText(R.string.PhoneNumberPrivacy_nobody);
         break;
     }
@@ -298,8 +304,7 @@ public class CreateProfileFragment extends LoggingFragment {
 
   private void startAvatarSelection() {
     if (viewModel.isGroup()) {
-      Parcelable groupId = ParcelableGroupId.from(viewModel.getGroupId());
-      SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker((ParcelableGroupId) groupId, viewModel.getAvatarMedia()));
+      SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker(viewModel.getGroupId(), viewModel.getAvatarMedia()));
     } else {
       SafeNavigation.safeNavigate(Navigation.findNavController(requireView()), CreateProfileFragmentDirections.actionCreateProfileFragmentToAvatarPicker(null, null));
     }

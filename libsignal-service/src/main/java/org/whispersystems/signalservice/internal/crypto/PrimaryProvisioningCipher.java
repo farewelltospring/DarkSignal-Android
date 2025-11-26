@@ -7,10 +7,12 @@
 package org.whispersystems.signalservice.internal.crypto;
 
 import org.signal.libsignal.protocol.InvalidKeyException;
-import org.signal.libsignal.protocol.ecc.Curve;
 import org.signal.libsignal.protocol.ecc.ECKeyPair;
+import org.signal.libsignal.protocol.ecc.ECPrivateKey;
 import org.signal.libsignal.protocol.ecc.ECPublicKey;
 import org.signal.libsignal.protocol.kdf.HKDF;
+import org.signal.registration.proto.RegistrationProvisionEnvelope;
+import org.signal.registration.proto.RegistrationProvisionMessage;
 import org.whispersystems.signalservice.internal.push.ProvisionEnvelope;
 import org.whispersystems.signalservice.internal.push.ProvisionMessage;
 import org.whispersystems.signalservice.internal.util.Util;
@@ -37,8 +39,8 @@ public class PrimaryProvisioningCipher {
   }
 
   public byte[] encrypt(ProvisionMessage message) throws InvalidKeyException {
-    ECKeyPair ourKeyPair    = Curve.generateKeyPair();
-    byte[]    sharedSecret  = Curve.calculateAgreement(theirPublicKey, ourKeyPair.getPrivateKey());
+    ECKeyPair ourKeyPair    = ECKeyPair.generate();
+    byte[]    sharedSecret  = ourKeyPair.getPrivateKey().calculateAgreement(theirPublicKey);
     byte[]    derivedSecret = HKDF.deriveSecrets(sharedSecret, PROVISIONING_MESSAGE.getBytes(), 64);
     byte[][]  parts         = Util.split(derivedSecret, 32, 32);
 
@@ -52,6 +54,24 @@ public class PrimaryProvisioningCipher {
                                 .body(ByteString.of(body))
                                 .build()
                                 .encode();
+  }
+
+  public byte[] encrypt(RegistrationProvisionMessage message) throws InvalidKeyException {
+    ECKeyPair ourKeyPair    = ECKeyPair.generate();
+    byte[]    sharedSecret  = ourKeyPair.getPrivateKey().calculateAgreement(theirPublicKey);
+    byte[]    derivedSecret = HKDF.deriveSecrets(sharedSecret, PROVISIONING_MESSAGE.getBytes(), 64);
+    byte[][]  parts         = Util.split(derivedSecret, 32, 32);
+
+    byte[] version    = { 0x01 };
+    byte[] ciphertext = getCiphertext(parts[0], message.encode());
+    byte[] mac        = getMac(parts[1], Util.join(version, ciphertext));
+    byte[] body       = Util.join(version, ciphertext, mac);
+
+    return new RegistrationProvisionEnvelope.Builder()
+                                            .publicKey(ByteString.of(ourKeyPair.getPublicKey().serialize()))
+                                            .body(ByteString.of(body))
+                                            .build()
+                                            .encode();
   }
 
   private byte[] getCiphertext(byte[] key, byte[] message) {

@@ -4,7 +4,6 @@ import org.whispersystems.signalservice.api.InvalidMessageStructureException;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemoteId;
 import org.whispersystems.signalservice.internal.push.AttachmentPointer;
-import org.whispersystems.util.FlagUtil;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -28,15 +27,15 @@ public final class AttachmentPointerUtil {
                                               pointer.height != null ? pointer.height : 0,
                                               pointer.digest != null ? Optional.of(pointer.digest.toByteArray()) : Optional.empty(),
                                               pointer.incrementalMac != null ? Optional.of(pointer.incrementalMac.toByteArray()) : Optional.empty(),
-                                              pointer.incrementalMacChunkSize != null ? pointer.incrementalMacChunkSize : 0,
+                                              pointer.chunkSize != null ? pointer.chunkSize : 0,
                                               pointer.fileName != null ? Optional.of(pointer.fileName) : Optional.empty(),
-                                              ((pointer.flags != null ? pointer.flags : 0) & FlagUtil.toBinaryFlag(AttachmentPointer.Flags.VOICE_MESSAGE.getValue())) != 0,
-                                              ((pointer.flags != null ? pointer.flags : 0) & FlagUtil.toBinaryFlag(AttachmentPointer.Flags.BORDERLESS.getValue())) != 0,
-                                              ((pointer.flags != null ? pointer.flags : 0) & FlagUtil.toBinaryFlag(AttachmentPointer.Flags.GIF.getValue())) != 0,
+                                              ((pointer.flags != null ? pointer.flags : 0) & AttachmentPointer.Flags.VOICE_MESSAGE.getValue()) != 0,
+                                              ((pointer.flags != null ? pointer.flags : 0) & AttachmentPointer.Flags.BORDERLESS.getValue()) != 0,
+                                              ((pointer.flags != null ? pointer.flags : 0) & AttachmentPointer.Flags.GIF.getValue()) != 0,
                                               pointer.caption != null ? Optional.of(pointer.caption) : Optional.empty(),
                                               pointer.blurHash != null ? Optional.of(pointer.blurHash) : Optional.empty(),
-                                              pointer.uploadTimestamp != null ? pointer.uploadTimestamp : 0);
-
+                                              pointer.uploadTimestamp != null ? pointer.uploadTimestamp : 0,
+                                              UuidUtil.fromByteStringOrNull(pointer.clientUuid));
   }
 
   public static AttachmentPointer createAttachmentPointer(SignalServiceAttachmentPointer attachment) {
@@ -53,15 +52,15 @@ public final class AttachmentPointerUtil {
     }
 
     if (attachment.getIncrementalMacChunkSize() > 0) {
-      builder.incrementalMacChunkSize(attachment.getIncrementalMacChunkSize());
+      builder.chunkSize(attachment.getIncrementalMacChunkSize());
     }
 
-    if (attachment.getRemoteId().getV2().isPresent()) {
-      builder.cdnId(attachment.getRemoteId().getV2().get());
+    if (attachment.getRemoteId() instanceof SignalServiceAttachmentRemoteId.V2) {
+      builder.cdnId(((SignalServiceAttachmentRemoteId.V2) attachment.getRemoteId()).getCdnId());
     }
 
-    if (attachment.getRemoteId().getV3().isPresent()) {
-      builder.cdnKey(attachment.getRemoteId().getV3().get());
+    if (attachment.getRemoteId() instanceof SignalServiceAttachmentRemoteId.V4) {
+      builder.cdnKey(((SignalServiceAttachmentRemoteId.V4) attachment.getRemoteId()).getCdnKey());
     }
 
     if (attachment.getFileName().isPresent()) {
@@ -83,15 +82,15 @@ public final class AttachmentPointerUtil {
     int flags = 0;
 
     if (attachment.getVoiceNote()) {
-      flags |= FlagUtil.toBinaryFlag(AttachmentPointer.Flags.VOICE_MESSAGE.getValue());
+      flags |= AttachmentPointer.Flags.VOICE_MESSAGE.getValue();
     }
 
     if (attachment.isBorderless()) {
-      flags |= FlagUtil.toBinaryFlag(AttachmentPointer.Flags.BORDERLESS.getValue());
+      flags |= AttachmentPointer.Flags.BORDERLESS.getValue();
     }
 
     if (attachment.isGif()) {
-      flags |= FlagUtil.toBinaryFlag(AttachmentPointer.Flags.GIF.getValue());
+      flags |= AttachmentPointer.Flags.GIF.getValue();
     }
 
     builder.flags(flags);
@@ -102,6 +101,10 @@ public final class AttachmentPointerUtil {
 
     if (attachment.getBlurHash().isPresent()) {
       builder.blurHash(attachment.getBlurHash().get());
+    }
+
+    if (attachment.getUuid() != null) {
+      builder.clientUuid(UuidUtil.toByteString(attachment.getUuid()));
     }
 
     return builder.build();

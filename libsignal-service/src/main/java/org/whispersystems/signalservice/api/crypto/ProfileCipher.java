@@ -14,7 +14,10 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.Optional;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -103,7 +106,7 @@ public class ProfileCipher {
   /**
    * Encrypts a string's UTF bytes representation.
    */
-  public byte[] encryptString(String input, int paddedLength) {
+  public byte[] encryptString(@Nonnull String input, int paddedLength) {
     return encrypt(input.getBytes(StandardCharsets.UTF_8), paddedLength);
   }
 
@@ -125,6 +128,22 @@ public class ProfileCipher {
     System.arraycopy(paddedPlaintext, 0, plaintext, 0, plaintextLength);
 
     return new String(plaintext);
+  }
+
+  public byte[] encryptBoolean(boolean input) {
+    byte[] value = new byte[1];
+    value[0] = (byte) (input ? 1 : 0);
+
+    return encrypt(value, value.length);
+  }
+
+  public Optional<Boolean> decryptBoolean(@Nullable byte[] input) throws InvalidCiphertextException {
+    if (input == null) {
+      return Optional.empty();
+    }
+
+    byte[] paddedPlaintext = decrypt(input);
+    return Optional.of(paddedPlaintext[0] != 0);
   }
 
   /**

@@ -9,13 +9,15 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.signal.libsignal.protocol.util.Pair;
+import com.bumptech.glide.RequestManager;
+
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.keyboard.sticker.KeyboardStickerListAdapter;
-import org.thoughtcrime.securesms.mms.GlideRequests;
 import org.thoughtcrime.securesms.util.ViewUtil;
 
 import java.lang.ref.WeakReference;
+
+import kotlin.Pair;
 
 public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchListener {
   private final StickerPreviewPopup      popup;
@@ -26,13 +28,13 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
   private boolean             hoverMode;
 
   public StickerRolloverTouchListener(@NonNull Context context,
-                                      @NonNull GlideRequests glideRequests,
+                                      @NonNull RequestManager requestManager,
                                       @NonNull RolloverEventListener eventListener,
                                       @NonNull RolloverStickerRetriever stickerRetriever)
   {
     this.eventListener    = eventListener;
     this.stickerRetriever = stickerRetriever;
-    this.popup            = new StickerPreviewPopup(context, glideRequests);
+    this.popup            = new StickerPreviewPopup(context, requestManager);
     this.currentView      = new WeakReference<>(null);
 
     popup.setAnimationStyle(R.style.StickerPopupAnimation);
@@ -40,6 +42,9 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
 
   @Override
   public boolean onInterceptTouchEvent(@NonNull RecyclerView recyclerView, @NonNull MotionEvent motionEvent) {
+    if (hoverMode && motionEvent.getAction() == MotionEvent.ACTION_UP)
+      exitHoverMode();
+
     return hoverMode;
   }
 
@@ -48,10 +53,7 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
     switch (motionEvent.getAction()) {
       case MotionEvent.ACTION_UP:
       case MotionEvent.ACTION_CANCEL:
-        hoverMode = false;
-        popup.dismiss();
-        eventListener.onStickerPopupEnded();
-        currentView.clear();
+        exitHoverMode();
         break;
       default:
         for (int i = 0, len = recyclerView.getChildCount(); i < len; i++) {
@@ -80,14 +82,21 @@ public class StickerRolloverTouchListener implements RecyclerView.OnItemTouchLis
 
   public void enterHoverMode(@NonNull RecyclerView recyclerView, @NonNull KeyboardStickerListAdapter.Sticker sticker) {
     this.hoverMode = true;
-    showSticker(recyclerView, sticker.getUri(), sticker.getStickerRecord().getEmoji());
+    showSticker(recyclerView, sticker.getUri(), sticker.getStickerRecord().emoji);
+  }
+
+  private void exitHoverMode() {
+    hoverMode = false;
+    popup.dismiss();
+    eventListener.onStickerPopupEnded();
+    currentView.clear();
   }
 
   private void showStickerForView(@NonNull RecyclerView recyclerView, @NonNull View view) {
     Pair<Object, String> stickerData = stickerRetriever.getStickerDataFromView(view);
 
     if (stickerData != null) {
-      showSticker(recyclerView, stickerData.first(), stickerData.second());
+      showSticker(recyclerView, stickerData.getFirst(), stickerData.getSecond());
     }
   }
 

@@ -38,6 +38,10 @@ class UsernameShareBottomSheet : DSLSettingsBottomSheetFragment() {
     ShareButton.register(adapter)
 
     lifecycleDisposable += Recipient.observable(Recipient.self().id).subscribe {
+      if (context == null) {
+        return@subscribe
+      }
+
       adapter.submitList(getConfiguration(it).toMappingModelList())
     }
   }
@@ -71,7 +75,7 @@ class UsernameShareBottomSheet : DSLSettingsBottomSheetFragment() {
 
       customPref(
         CopyButton.Model(
-          text = getString(R.string.signal_me_username_url, Base64.encodeUrlSafeWithoutPadding(Username.hash(username))),
+          text = getString(R.string.signal_me_username_url, Base64.encodeUrlSafeWithoutPadding(Username(username).hash)),
           onClick = {
             copyToClipboard(it)
           }
@@ -82,7 +86,7 @@ class UsernameShareBottomSheet : DSLSettingsBottomSheetFragment() {
 
       customPref(
         ShareButton.Model(
-          text = getString(R.string.signal_me_username_url, Base64.encodeUrlSafeWithoutPadding(Username.hash(username))),
+          text = getString(R.string.signal_me_username_url, Base64.encodeUrlSafeWithoutPadding(Username(username).hash)),
           onClick = {
             openShareSheet(it.text)
           }

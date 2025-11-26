@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,11 +75,13 @@ import static org.mp4parser.tools.CastUtils.l2i;
 final class Mp4Writer extends DefaultBoxes implements SampleSink {
 
   private static final String TAG = "Mp4Writer";
+  private static final Long UInt32_MAX = (1L << 32) - 1;
 
   private final WritableByteChannel  sink;
   private final List<StreamingTrack> source;
   private final Date                 creationTime = new Date();
 
+  private boolean hasWrittenMdat = false;
 
   /**
    * Contains the start time of the next segment in line that will be created.
@@ -105,6 +108,8 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
   private final Map<StreamingTrack, Long>                  sampleNumbers            = new HashMap<>();
   private       long                                       bytesWritten             = 0;
 
+  private long mMDatTotalContentLength = 0;
+  
   Mp4Writer(final @NonNull List<StreamingTrack> source, final @NonNull WritableByteChannel sink) throws IOException {
     this.source = new ArrayList<>(source);
     this.sink   = sink;
@@ -151,6 +156,11 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
       streamingTrack.close();
     }
     write(sink, createMoov());
+    hasWrittenMdat = false;
+  }
+
+  public long getTotalMdatContentLength() {
+    return mMDatTotalContentLength;
   }
 
   private Box createMoov() {
@@ -165,14 +175,24 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
       final MediaHeaderBox mdhd = Path.getPath(tb, "mdia[0]/mdhd[0]");
       mdhd.setCreationTime(creationTime);
       mdhd.setModificationTime(creationTime);
-      mdhd.setDuration(Objects.requireNonNull(nextSampleStartTime.get(streamingTrack)));
+      final Long mediaHeaderDuration = Objects.requireNonNull(nextSampleStartTime.get(streamingTrack));
+      if (mediaHeaderDuration >= UInt32_MAX) {
+        mdhd.setVersion(1);
+      }
+      mdhd.setDuration(mediaHeaderDuration);
       mdhd.setTimescale(streamingTrack.getTimescale());
       mdhd.setLanguage(streamingTrack.getLanguage());
       movieBox.addBox(tb);
 
       final TrackHeaderBox tkhd     = Path.getPath(tb, "tkhd[0]");
-      final double         duration = (double) Objects.requireNonNull(nextSampleStartTime.get(streamingTrack)) / streamingTrack.getTimescale();
-      tkhd.setDuration((long) (mvhd.getTimescale() * duration));
+      final double         duration = (double) mediaHeaderDuration / streamingTrack.getTimescale();
+      tkhd.setCreationTime(creationTime);
+      tkhd.setModificationTime(creationTime);
+      final long trackHeaderDuration = (long) (mvhd.getTimescale() * duration);
+      if (trackHeaderDuration >= UInt32_MAX) {
+        tkhd.setVersion(1);
+      }
+      tkhd.setDuration(trackHeaderDuration);
     }
 
     // metadata here
@@ -206,8 +226,38 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
     }
 
 
-    mvhd.setTimescale(Mp4Math.lcm(timescales));
-    mvhd.setDuration((long) (Mp4Math.lcm(timescales) * duration));
+    long chosenTimescale = Mp4Math.lcm(timescales);
+    Log.d(TAG, "chosenTimescale = " + chosenTimescale);
+    final long MAX_UNSIGNED_INT = 0xFFFFFFFFL;
+    if (chosenTimescale > MAX_UNSIGNED_INT) {
+      int nRatio = (int)(chosenTimescale / MAX_UNSIGNED_INT);
+      Log.d(TAG, "chosenTimescale exceeds 32-bit range " + nRatio + " times !");
+      int nDownscaleFactor = 1;
+      if (nRatio < 10) {
+        nDownscaleFactor = 10;
+      } else if (nRatio < 100) {
+        nDownscaleFactor = 100;
+      } else if (nRatio < 1000) {
+        nDownscaleFactor = 1000;
+      } else if (nRatio < 10000) {
+        nDownscaleFactor = 10000;
+      }
+      chosenTimescale /= nDownscaleFactor;
+      Log.d(TAG, "chosenTimescale is scaled down by factor of " + nDownscaleFactor + " to value " + chosenTimescale);
+    }
+
+    double fDurationTicks = chosenTimescale * duration;
+    Log.d(TAG, "fDurationTicks = chosenTimescale * duration = " + fDurationTicks);
+    final double MAX_UNSIGNED_64_BIT_VALUE = 18446744073709551615.0;
+    if (fDurationTicks > MAX_UNSIGNED_64_BIT_VALUE) {
+      // Highly unlikely, as duration (number of seconds)
+      // would need to be larger than MAX_UNSIGNED_INT
+      // to produce fDuration = chosenTimescale * duration
+      // which whould exceed 64-bit storage
+      Log.d(TAG, "Numeric overflow !!!");
+    }
+    mvhd.setTimescale(chosenTimescale);
+    mvhd.setDuration((long) (fDurationTicks));
     // find the next available trackId
     mvhd.setNextTrackId(maxTrackId + 1);
     return mvhd;
@@ -241,15 +291,49 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
   private void writeChunkContainer(ChunkContainer chunkContainer) throws IOException {
     final TrackBox       tb   = trackBoxes.get(chunkContainer.streamingTrack);
     final ChunkOffsetBox stco = Objects.requireNonNull(Path.getPath(tb, "mdia[0]/minf[0]/stbl[0]/stco[0]"));
-    stco.setChunkOffsets(Mp4Arrays.copyOfAndAppend(stco.getChunkOffsets(), bytesWritten + 8));
+    final int extraChunkOffset = hasWrittenMdat ? 0 : 8;
+    stco.setChunkOffsets(Mp4Arrays.copyOfAndAppend(stco.getChunkOffsets(), bytesWritten + extraChunkOffset));
+    chunkContainer.mdat.includeHeader = !hasWrittenMdat;
     write(sink, chunkContainer.mdat);
+
+    mMDatTotalContentLength += chunkContainer.mdat.getSize();
+
+    if (!hasWrittenMdat) {
+      hasWrittenMdat = true;
+    }
   }
 
   public void acceptSample(
           final @NonNull StreamingSample streamingSample,
           final @NonNull StreamingTrack streamingTrack) throws IOException
   {
-
+    if (streamingSample.getContent().limit() == 0) {
+      //
+      // For currently unknown reason, the STSZ table of AAC audio stream
+      // related to the very last chunk comes with the extra table elements
+      // whose value is zero.
+      //
+      // The ISO MP4 spec does not absolutely prohibit such a case, but strongly
+      // stipulates that the stream has to have the inner logic to support
+      // the zero length audio frames (QCELP happens to be one such example).
+      //
+      // Spec excerpt:
+      // ----------------------------------------------------------------------
+      // 8.7.3 Sample Size Boxes
+      // 8.7.3.1 Definition
+      // ...
+      // NOTE A sample size of zero is not prohibited in general, but it
+      // must be valid and defined for the coding system, as defined by
+      // the sample entry, that the sample belongs to
+      // ----------------------------------------------------------------------
+      //
+      // In all other cases, having zero STSZ table values is very illogical
+      // and may pose the problems down the road. Here we will eliminate such
+      // samples from all the related bookkeeping
+      //
+      Log.d(TAG, "skipping zero-sized sample");
+      return;
+    }
     TrackBox tb = trackBoxes.get(streamingTrack);
     if (tb == null) {
       tb = new TrackBox();
@@ -378,13 +462,24 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
     return mdhd;
   }
 
+  @Override
+  protected Box createTkhd(StreamingTrack streamingTrack) {
+    TrackHeaderBox tkhd = (TrackHeaderBox) super.createTkhd(streamingTrack);
+    tkhd.setEnabled(true);
+    tkhd.setInMovie(true);
+    return tkhd;
+  }
+
   private class Mdat implements Box {
     final ArrayList<StreamingSample> samples;
     long size;
 
+    boolean includeHeader;
+
     Mdat(final @NonNull List<StreamingSample> samples) {
       this.samples = new ArrayList<>(samples);
       size         = 8;
+
       for (StreamingSample sample : samples) {
         size += sample.getContent().limit();
       }
@@ -397,19 +492,23 @@ final class Mp4Writer extends DefaultBoxes implements SampleSink {
 
     @Override
     public long getSize() {
-      return size;
+      if (includeHeader) {
+        return size;
+      } else {
+        return size - 8;
+      }
     }
 
     @Override
     public void getBox(WritableByteChannel writableByteChannel) throws IOException {
-      writableByteChannel.write(ByteBuffer.wrap(new byte[]{
-              (byte) ((size & 0xff000000) >> 24),
-              (byte) ((size & 0xff0000) >> 16),
-              (byte) ((size & 0xff00) >> 8),
-              (byte) ((size & 0xff)),
-              109, 100, 97, 116, // mdat
+      if (includeHeader) {
+        // When we include the header, we specify the declared size as 1, indicating the size is from here until the end of the file
+        writableByteChannel.write(ByteBuffer.wrap(new byte[] {
+            0, 0, 0, 0, // size (4 bytes)
+            109, 100, 97, 116, // 'm' 'd' 'a' 't'
+        }));
+      }
 
-      }));
       for (StreamingSample sample : samples) {
         writableByteChannel.write((ByteBuffer) sample.getContent().rewind());
       }

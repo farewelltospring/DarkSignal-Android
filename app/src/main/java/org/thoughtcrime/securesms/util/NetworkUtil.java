@@ -43,8 +43,8 @@ public final class NetworkUtil {
   }
 
   public static @NonNull CallManager.DataMode getCallingDataMode(@NonNull Context context, @NonNull PeerConnection.AdapterType networkAdapter) {
-    if (SignalStore.internalValues().callingDataMode() != CallManager.DataMode.NORMAL) {
-      return SignalStore.internalValues().callingDataMode();
+    if (SignalStore.internal().getCallingDataMode() != CallManager.DataMode.NORMAL) {
+      return SignalStore.internal().getCallingDataMode();
     }
 
     return useLowDataCalling(context, networkAdapter) ? CallManager.DataMode.LOW : CallManager.DataMode.NORMAL;
@@ -89,17 +89,13 @@ public final class NetworkUtil {
   public static @NonNull NetworkStatus getNetworkStatus(@NonNull Context context) {
     ConnectivityManager connectivityManager = ServiceUtil.getConnectivityManager(context);
 
-    if (Build.VERSION.SDK_INT >= 23) {
-      Network             network      = connectivityManager.getActiveNetwork();
-      NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
+    Network             network      = connectivityManager.getActiveNetwork();
+    NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
 
-      boolean onVpn        = capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
-      boolean isNotMetered = capabilities == null || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+    boolean onVpn        = capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+    boolean isNotMetered = capabilities == null || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
 
-      return new NetworkStatus(onVpn, !isNotMetered);
-    } else {
-      return new NetworkStatus(false, false);
-    }
+    return new NetworkStatus(onVpn, !isNotMetered);
   }
 
   private static boolean useLowDataCalling(@NonNull Context context, @NonNull PeerConnection.AdapterType networkAdapter) {

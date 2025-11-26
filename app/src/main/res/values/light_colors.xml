@@ -138,9 +138,8 @@
 
     <color name="reactions_pill_text_color">@color/signal_colorOnSurfaceVariant</color>
     <color name="reactions_pill_selected_text_color">@color/core_grey_75</color>
-    <color name="reactions_screen_dark_shade_color">@color/transparent_black_70</color>
-    <color name="reactions_screen_light_shade_color">@color/transparent_white_87</color>
-    <color name="reactions_status_bar_shade">#4d4d4d</color>
+    <color name="reactions_screen_dark_shade_color">#6670747D</color>
+    <color name="reactions_screen_light_shade_color">@color/transparent_white_20</color>
     <color name="reactions_overlay_any_emoji_background">@color/signal_colorSurfaceVariant_16_no_alpha</color>
     <color name="reactions_overlay_any_emoji_foreground">@color/signal_colorOnSurfaceVariant</color>
 
@@ -203,4 +202,6 @@
     <color name="message_request_bar_denyForeground_wallpaper">@color/signal_colorError</color>
     <color name="message_request_bar_acceptForeground_wallpaper">@color/signal_colorNeutralInverse</color>
 
+    <color name="safety_tip_background">@color/core_white</color>
+    <color name="safety_tip_image_background">#99F2F5F9</color>
 </resources>

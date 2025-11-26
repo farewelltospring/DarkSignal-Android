@@ -5,7 +5,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
-import android.util.Pair;
+import kotlin.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,6 +16,7 @@ import org.thoughtcrime.securesms.database.AttachmentTable;
 import org.thoughtcrime.securesms.util.MediaUtil;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * SlideFactory encapsulates logic related to constructing slides from a set of paramaeters as defined
@@ -76,8 +77,8 @@ public final class SlideFactory {
 
         if (width == 0 || height == 0) {
           Pair<Integer, Integer> dimens = MediaUtil.getDimensions(context, mimeType, uri);
-          width  = dimens.first;
-          height = dimens.second;
+          width  = dimens.getFirst();
+          height = dimens.getSecond();
         }
 
         if (mediaType == null) {
@@ -124,8 +125,8 @@ public final class SlideFactory {
 
     if (width == 0 || height == 0) {
       Pair<Integer, Integer> dimens = MediaUtil.getDimensions(context, mimeType, uri);
-      width  = dimens.first;
-      height = dimens.second;
+      width  = dimens.getFirst();
+      height = dimens.getSecond();
     }
 
     if (mediaType == null) {
@@ -171,7 +172,7 @@ public final class SlideFactory {
       case IMAGE:    return new ImageSlide(context, uri, mimeType, dataSize, width, height, false, null, blurHash, transformProperties);
       case GIF:      return new GifSlide(context, uri, dataSize, width, height);
       case AUDIO:    return new AudioSlide(context, uri, dataSize, false);
-      case VIDEO:    return new VideoSlide(context, uri, dataSize, gif);
+      case VIDEO:    return new VideoSlide(context, uri, dataSize, gif, null, AttachmentTable.TransformProperties.forSentMediaQuality(transformProperties != null ? transformProperties.sentMediaQuality : SentMediaQuality.STANDARD.getCode()));
       case VCARD:
       case DOCUMENT: return new DocumentSlide(context, uri, mimeType, dataSize, fileName);
       default:       throw  new AssertionError("unrecognized enum");

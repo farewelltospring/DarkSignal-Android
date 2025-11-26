@@ -7,6 +7,8 @@ import android.media.MediaMuxer;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import org.thoughtcrime.securesms.video.interfaces.Muxer;
+
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -31,8 +33,9 @@ final class AndroidMuxer implements Muxer {
     }
 
     @Override
-    public void stop() {
+    public long stop() {
         muxer.stop();
+        return 0;
     }
 
     @Override
@@ -48,5 +51,10 @@ final class AndroidMuxer implements Muxer {
     @Override
     public void release() {
         muxer.release();
+    }
+
+    @Override
+    public boolean supportsAudioRemux() {
+        return false;
     }
 }

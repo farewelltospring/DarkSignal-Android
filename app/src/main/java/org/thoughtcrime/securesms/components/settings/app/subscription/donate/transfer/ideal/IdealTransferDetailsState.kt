@@ -6,21 +6,39 @@
 package org.thoughtcrime.securesms.components.settings.app.subscription.donate.transfer.ideal
 
 import org.signal.donations.StripeApi
+import org.thoughtcrime.securesms.components.settings.app.subscription.donate.transfer.BankDetailsValidator
+import org.thoughtcrime.securesms.database.InAppPaymentTable
 
 data class IdealTransferDetailsState(
-  val idealBank: IdealBank? = null,
+  val inAppPayment: InAppPaymentTable.InAppPayment? = null,
   val name: String = "",
-  val email: String = ""
+  val nameFocusState: FocusState = FocusState.NOT_FOCUSED,
+  val email: String = "",
+  val emailFocusState: FocusState = FocusState.NOT_FOCUSED
 ) {
+
+  fun showNameError(): Boolean {
+    return nameFocusState == FocusState.LOST_FOCUS && !BankDetailsValidator.validName(name)
+  }
+
+  fun showEmailError(): Boolean {
+    return emailFocusState == FocusState.LOST_FOCUS && !BankDetailsValidator.validEmail(email)
+  }
+
   fun asIDEALData(): StripeApi.IDEALData {
     return StripeApi.IDEALData(
-      bank = idealBank!!.code,
       name = name.trim(),
       email = email.trim()
     )
   }
 
   fun canProceed(): Boolean {
-    return idealBank != null && name.isNotBlank() && email.isNotBlank()
+    return BankDetailsValidator.validName(name) && (inAppPayment?.type?.recurring != true || BankDetailsValidator.validEmail(email))
+  }
+
+  enum class FocusState {
+    NOT_FOCUSED,
+    FOCUSED,
+    LOST_FOCUS
   }
 }

@@ -9,7 +9,10 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
+import androidx.annotation.RequiresApi
 import androidx.core.app.ServiceCompat
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.jobs.ForegroundServiceUtil
@@ -29,17 +32,19 @@ abstract class SafeForegroundService : Service() {
     private val TAG = Log.tag(SafeForegroundService::class.java)
 
     private const val ACTION_START = "start"
+    private const val ACTION_UPDATE = "update"
     private const val ACTION_STOP = "stop"
+    private const val ACTION_TIMEOUT = "timeout"
 
     private var states: MutableMap<Class<out SafeForegroundService>, State> = mutableMapOf()
     private val stateLock = ReentrantLock()
 
     /**
-     * Safety starts the target foreground service.
+     * Safely starts the target foreground service.
      * @return False if we tried to start the service but failed, otherwise true.
      */
     @CheckReturnValue
-    fun start(context: Context, serviceClass: Class<out SafeForegroundService>): Boolean {
+    fun start(context: Context, serviceClass: Class<out SafeForegroundService>, extras: Bundle = Bundle.EMPTY): Boolean {
       stateLock.withLock {
         val state = currentState(serviceClass)
 
@@ -57,7 +62,10 @@ abstract class SafeForegroundService : Service() {
             try {
               ForegroundServiceUtil.startWhenCapable(
                 context = context,
-                intent = Intent(context, serviceClass).apply { action = ACTION_START }
+                intent = Intent(context, serviceClass).apply {
+                  action = ACTION_START
+                  putExtras(extras)
+                }
               )
               true
             } catch (e: UnableToStartException) {
@@ -79,39 +87,88 @@ abstract class SafeForegroundService : Service() {
      * Safely stops the service by starting it with an action to stop itself.
      * This is done to prevent scenarios where you stop the service while
      * a start is pending, preventing the posting of a foreground notification.
+     *
+     * @param fromTimeout - Whether we are stopping due to system timeout (limit is 6hr in 24hr)
+     * @return true if service was running previously
      */
-    fun stop(context: Context, serviceClass: Class<out SafeForegroundService>) {
+    fun stop(context: Context, serviceClass: Class<out SafeForegroundService>, fromTimeout: Boolean = false): Boolean {
       stateLock.withLock {
         val state = currentState(serviceClass)
 
         Log.d(TAG, "[stop] Current state: $state")
 
-        when (state) {
+        return when (state) {
           State.STARTING -> {
             Log.d(TAG, "[stop] Stopping service.")
             states[serviceClass] = State.STOPPING
+            val stopAction = if (fromTimeout) ACTION_TIMEOUT else ACTION_STOP
             try {
               ForegroundServiceUtil.startWhenCapable(
                 context = context,
-                intent = Intent(context, serviceClass).apply { action = ACTION_STOP }
+                intent = Intent(context, serviceClass).apply { action = stopAction }
               )
             } catch (e: UnableToStartException) {
               Log.w(TAG, "Failed to start service class $serviceClass", e)
               states[serviceClass] = State.STOPPED
             }
+            true
           }
 
           State.STOPPED,
           State.STOPPING -> {
             Log.d(TAG, "[stop] No need to stop the service. Current state: $state")
+            false
           }
 
           State.NEEDS_RESTART -> {
             Log.i(TAG, "[stop] Clearing pending restart.")
             states[serviceClass] = State.STOPPING
+            false
           }
         }
       }
+    }
+
+    /**
+     * Safely updates the target foreground service if it is already starting.
+     *
+     * @return True if we updated a started service, otherwise false.
+     */
+    @CheckReturnValue
+    fun update(context: Context, serviceClass: Class<out SafeForegroundService>, extras: Bundle = Bundle.EMPTY): Boolean {
+      stateLock.withLock {
+        val state = currentState(serviceClass)
+
+        Log.d(TAG, "[update] Current state: $state")
+
+        return when (state) {
+          State.STARTING -> {
+            Log.d(TAG, "[update] Updating service.")
+            try {
+              ForegroundServiceUtil.startWhenCapable(
+                context = context,
+                intent = Intent(context, serviceClass).apply {
+                  action = ACTION_UPDATE
+                  putExtras(extras)
+                }
+              )
+              true
+            } catch (e: UnableToStartException) {
+              Log.w(TAG, "Failed to update service class $serviceClass", e)
+              false
+            }
+          }
+
+          else -> {
+            Log.d(TAG, "[update] Service cannot be updated. Current state: $state")
+            false
+          }
+        }
+      }
+    }
+
+    fun isStopping(intent: Intent): Boolean {
+      return intent.action == ACTION_STOP
     }
 
     private fun currentState(clazz: Class<out SafeForegroundService>): State {
@@ -129,16 +186,26 @@ abstract class SafeForegroundService : Service() {
 
     Log.d(tag, "[onStartCommand] action: ${intent.action}")
 
-    startForeground(notificationId, getForegroundNotification(intent))
+    if (intent.action == ACTION_TIMEOUT) {
+      Log.i(TAG, "Time limit for foreground services has been met. Skipping starting a foreground.")
+    } else if (Build.VERSION.SDK_INT >= 30 && serviceType != 0) {
+      startForeground(notificationId, getForegroundNotification(intent), serviceType)
+    } else {
+      startForeground(notificationId, getForegroundNotification(intent))
+    }
 
     when (val action = intent.action) {
       ACTION_START -> {
         onServiceStartCommandReceived(intent)
       }
+      ACTION_TIMEOUT,
       ACTION_STOP -> {
         onServiceStopCommandReceived(intent)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
+      }
+      ACTION_UPDATE -> {
+        onServiceUpdateCommandReceived(intent)
       }
       else -> Log.w(tag, "Unknown action: $action")
     }
@@ -179,6 +246,10 @@ abstract class SafeForegroundService : Service() {
   /** Notification ID to use when posting the foreground notification */
   abstract val notificationId: Int
 
+  /** Special service type to use when calling start service if needed */
+  @RequiresApi(30)
+  open val serviceType: Int = 0
+
   /** Notification to post as our foreground notification. */
   abstract fun getForegroundNotification(intent: Intent): Notification
 
@@ -187,6 +258,9 @@ abstract class SafeForegroundService : Service() {
 
   /** Event listener for when the service is stopped via an intent. */
   open fun onServiceStopCommandReceived(intent: Intent) = Unit
+
+  /** Event listener for when the service is updated via an intent. */
+  open fun onServiceUpdateCommandReceived(intent: Intent) = Unit
 
   private enum class State {
     /** The service is not running. */

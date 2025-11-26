@@ -11,18 +11,18 @@ import android.graphics.YuvImage;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.util.Pair;
+import kotlin.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 import androidx.exifinterface.media.ExifInterface;
 
+import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import org.signal.core.util.ThreadUtil;
 import org.signal.core.util.logging.Log;
-import org.thoughtcrime.securesms.mms.GlideApp;
 import org.thoughtcrime.securesms.mms.MediaConstraints;
 
 import java.io.BufferedInputStream;
@@ -113,7 +113,7 @@ public class BitmapUtil {
       int    attempts = 0;
       byte[] bytes;
 
-      Bitmap scaledBitmap = GlideApp.with(context.getApplicationContext())
+      Bitmap scaledBitmap = Glide.with(context.getApplicationContext())
                                     .asBitmap()
                                     .load(model)
                                     .skipMemoryCache(true)
@@ -179,7 +179,7 @@ public class BitmapUtil {
       throws BitmapDecodingException
   {
     try {
-      return GlideApp.with(context.getApplicationContext())
+      return Glide.with(context.getApplicationContext())
                      .asBitmap()
                      .load(model)
                      .centerInside()
@@ -271,7 +271,7 @@ public class BitmapUtil {
 
   public static Pair<Integer, Integer> getDimensions(InputStream inputStream) throws BitmapDecodingException {
     BitmapFactory.Options options = getImageDimensions(inputStream);
-    return new Pair<>(options.outWidth, options.outHeight);
+    return new Pair(options.outWidth, options.outHeight);
   }
 
   public static ByteArrayInputStream toCompressedJpeg(Bitmap bitmap) {

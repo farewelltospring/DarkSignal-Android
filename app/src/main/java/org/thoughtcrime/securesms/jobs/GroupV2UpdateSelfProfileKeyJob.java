@@ -9,7 +9,7 @@ import org.signal.core.util.logging.Log;
 import org.signal.storageservice.protos.groups.local.DecryptedMember;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.database.model.GroupRecord;
-import org.thoughtcrime.securesms.dependencies.ApplicationDependencies;
+import org.thoughtcrime.securesms.dependencies.AppDependencies;
 import org.thoughtcrime.securesms.groups.GroupChangeBusyException;
 import org.thoughtcrime.securesms.groups.GroupChangeFailedException;
 import org.thoughtcrime.securesms.groups.GroupId;
@@ -88,6 +88,11 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
       return;
     }
 
+    if (SignalStore.account().isLinkedDevice()) {
+      Log.i(TAG, "Linked device, skipping");
+      return;
+    }
+
     byte[] rawProfileKey = Recipient.self().getProfileKey();
 
     if (rawProfileKey == null) {
@@ -119,16 +124,17 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
         }
 
         ByteString      selfUuidBytes = Recipient.self().requireAci().toByteString();
+        boolean         isActive      = group.get().isActive();
         DecryptedMember selfMember    = group.get().requireV2GroupProperties().getDecryptedGroup().members
                                                                                                   .stream()
                                                                                                   .filter(m -> m.aciBytes.equals(selfUuidBytes))
                                                                                                   .findFirst()
                                                                                                   .orElse(null);
 
-        if (selfMember != null && !selfMember.profileKey.equals(selfProfileKey)) {
+        if (isActive && selfMember != null && !selfMember.profileKey.equals(selfProfileKey)) {
           Log.w(TAG, "Profile key mismatch for group " + id + " -- enqueueing job");
           foundMismatch = true;
-          ApplicationDependencies.getJobManager().add(GroupV2UpdateSelfProfileKeyJob.withQueueLimits(id));
+          AppDependencies.getJobManager().add(GroupV2UpdateSelfProfileKeyJob.withQueueLimits(id));
         }
       }
 
@@ -159,6 +165,11 @@ public final class GroupV2UpdateSelfProfileKeyJob extends BaseJob {
   public void onRun()
       throws IOException, GroupNotAMemberException, GroupChangeFailedException, GroupInsufficientRightsException, GroupChangeBusyException
   {
+    if (SignalStore.account().isLinkedDevice()) {
+      Log.i(TAG, "Linked device, skipping");
+      return;
+    }
+
     Log.i(TAG, "Ensuring profile key up to date on group " + groupId);
     GroupManager.updateSelfProfileKeyInGroup(context, groupId);
   }

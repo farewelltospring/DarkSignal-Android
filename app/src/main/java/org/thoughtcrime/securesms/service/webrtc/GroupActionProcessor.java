@@ -49,12 +49,12 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
     this.actionProcessorFactory = actionProcessorFactory;
   }
 
-  protected @NonNull WebRtcServiceState handleReceivedOffer(@NonNull WebRtcServiceState currentState,
-                                                            @NonNull WebRtcData.CallMetadata callMetadata,
-                                                            @NonNull WebRtcData.OfferMetadata offerMetadata,
-                                                            @NonNull WebRtcData.ReceivedOfferMetadata receivedOfferMetadata)
+  protected @NonNull WebRtcServiceState handleValidatedReceivedOffer(@NonNull WebRtcServiceState currentState,
+                                                                     @NonNull WebRtcData.CallMetadata callMetadata,
+                                                                     @NonNull WebRtcData.OfferMetadata offerMetadata,
+                                                                     @NonNull WebRtcData.ReceivedOfferMetadata receivedOfferMetadata)
   {
-    Log.i(tag, "handleReceivedOffer(): id: " + callMetadata.getCallId().format(callMetadata.getRemoteDevice()));
+    Log.i(tag, "handleValidatedReceivedOffer(): id: " + callMetadata.getCallId().format(callMetadata.getRemoteDevice()));
 
     Log.i(tag, "In a group call, send busy back to 1:1 call offer.");
     currentState.getActionProcessor().handleSendBusy(currentState, callMetadata, true);
@@ -91,9 +91,9 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
     seen.add(Recipient.self());
 
     for (GroupCall.RemoteDeviceState device : remoteDeviceStates) {
-      Recipient                   recipient         = Recipient.externalPush(ACI.from(device.getUserId()));
-      CallParticipantId           callParticipantId = new CallParticipantId(device.getDemuxId(), recipient.getId());
-      CallParticipant             callParticipant   = participants.get(callParticipantId);
+      Recipient         recipient         = Recipient.externalPush(ACI.from(device.getUserId()));
+      CallParticipantId callParticipantId = new CallParticipantId(device.getDemuxId(), recipient.getId());
+      CallParticipant   callParticipant   = participants.get(callParticipantId);
 
       BroadcastVideoSink videoSink;
       VideoTrack         videoTrack = device.getVideoTrack();
@@ -108,6 +108,8 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
         videoSink = new BroadcastVideoSink();
       }
 
+      long handRaisedTimestamp = callParticipant != null ? callParticipant.getHandRaisedTimestamp() : CallParticipant.HAND_LOWERED;
+
       builder.putParticipant(callParticipantId,
                              CallParticipant.createRemote(callParticipantId,
                                                           recipient,
@@ -116,6 +118,7 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
                                                           device.getForwardingVideo() == null || device.getForwardingVideo(),
                                                           Boolean.FALSE.equals(device.getAudioMuted()),
                                                           Boolean.FALSE.equals(device.getVideoMuted()),
+                                                          handRaisedTimestamp,
                                                           device.getSpeakerTime(),
                                                           device.getMediaKeysReceived(),
                                                           device.getAddedTime(),
@@ -201,7 +204,7 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
       BroadcastVideoSink               videoSink = entry.getValue().getVideoSink();
       BroadcastVideoSink.RequestedSize maxSize   = videoSink.getMaxRequestingSize();
 
-      resolutionRequests.add(new GroupCall.VideoRequest(entry.getKey().getDemuxId(), maxSize.getWidth(), maxSize.getHeight(), null));
+      resolutionRequests.add(new GroupCall.VideoRequest(entry.getKey().demuxId, maxSize.getWidth(), maxSize.getHeight(), null));
       videoSink.setCurrentlyRequestedMaxSize(maxSize);
     }
 
@@ -322,10 +325,25 @@ public class GroupActionProcessor extends DeviceAwareActionProcessor {
                                .changeCallInfoState()
                                .callState(WebRtcViewModel.State.CALL_DISCONNECTED)
                                .groupCallState(WebRtcViewModel.GroupCallState.DISCONNECTED)
+                               .setGroupCallEndReason(groupCallEndReason)
                                .build();
 
     webRtcInteractor.postStateUpdate(currentState);
 
     return terminateGroupCall(currentState);
+  }
+
+  @Override
+  protected @NonNull WebRtcServiceState handleResendMediaKeys(@NonNull WebRtcServiceState currentState) {
+    GroupCall groupCall = currentState.getCallInfoState().getGroupCall();
+    if (groupCall != null) {
+      try {
+        currentState.getCallInfoState().getGroupCall().resendMediaKeys();
+      } catch (CallException e) {
+        return groupCallFailure(currentState, "Unable to resend media keys", e);
+      }
+    }
+
+    return currentState;
   }
 }
