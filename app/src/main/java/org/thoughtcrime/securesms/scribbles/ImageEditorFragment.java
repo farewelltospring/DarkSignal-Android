@@ -390,6 +390,8 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   public void onTextStyleToggle() {
     if (currentSelection != null && currentSelection.getRenderer() instanceof MultiLineTextRenderer) {
       ((MultiLineTextRenderer) currentSelection.getRenderer()).nextMode();
+      // TODO: notify imageEditorView's edit session to reset scale and x-coord for Snapchat text
+      imageEditorView.maybeResetElement(currentSelection);
     }
   }
 
@@ -408,7 +410,7 @@ public final class ImageEditorFragment extends Fragment implements ImageEditorHu
   protected void addText() {
     String                initialText = "";
     int                   color       = imageEditorHud.getActiveColor();
-    MultiLineTextRenderer renderer    = new MultiLineTextRenderer(initialText, color, MultiLineTextRenderer.Mode.REGULAR);
+    MultiLineTextRenderer renderer    = new MultiLineTextRenderer(initialText, color, MultiLineTextRenderer.Mode.SNAPCHAT);
     EditorElement         element     = new EditorElement(renderer, EditorModel.Z_TEXT);
 
     imageEditorView.getModel().addElementCentered(element, 1);

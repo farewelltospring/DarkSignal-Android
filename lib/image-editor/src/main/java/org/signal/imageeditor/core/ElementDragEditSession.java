@@ -1,11 +1,13 @@
 package org.signal.imageeditor.core;
 
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.PointF;
 
 import androidx.annotation.NonNull;
 
 import org.signal.imageeditor.core.model.EditorElement;
+import org.signal.imageeditor.core.renderers.MultiLineTextRenderer;
 
 final class ElementDragEditSession extends ElementEditSession {
 
@@ -25,8 +27,18 @@ final class ElementDragEditSession extends ElementEditSession {
 
   @Override
   public void movePoint(int p, @NonNull PointF point) {
+    if (selected.getRenderer() instanceof MultiLineTextRenderer) {
+      boolean isSnapchatText = ((MultiLineTextRenderer) selected.getRenderer()).getMode() == MultiLineTextRenderer.Mode.SNAPCHAT;
+      if (isSnapchatText) {
+        // Moving Snapchat text can only be done vertically
+        PointF newPoint = new PointF(startPointElement[0].x, point.y);
+        setScreenEndPoint(p, newPoint);
+        selected.getEditorMatrix()
+                .setTranslate(0, endPointElement[0].y - startPointElement[0].y);
+        return;
+      }
+    }
     setScreenEndPoint(p, point);
-
     selected.getEditorMatrix()
             .setTranslate(endPointElement[0].x - startPointElement[0].x, endPointElement[0].y - startPointElement[0].y);
   }
