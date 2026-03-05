@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.conversation.colors
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
+import org.signal.core.ui.util.ThemeUtil
 import org.thoughtcrime.securesms.avatar.Avatars
 import org.signal.core.ui.R as CoreUiR
 
