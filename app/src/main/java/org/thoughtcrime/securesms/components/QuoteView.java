@@ -317,8 +317,7 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
 
     QuoteViewColorTheme colorTheme      = getColorTheme();
     int                 foregroundColor = colorTheme.getForegroundColor(getContext());
-    authorView.setSender(name, foregroundColor);
-    authorView.setLabel(memberLabel, foregroundColor, colorTheme.getLabelBackgroundColor(getContext()));
+    authorView.bind(name, foregroundColor, memberLabel, foregroundColor, colorTheme.getLabelBackgroundColor(getContext()));
   }
 
   private boolean isStoryReply() {
@@ -463,6 +462,7 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
 
     if (TextUtils.isEmpty(quoteTargetContentType)) {
       thumbnailView.setVisibility(GONE);
+      attachmentVideoOVerlayStub.setVisibility(GONE);
       attachmentNameViewStub.setVisibility(GONE);
 
       if (dismissStub.resolved()) {
