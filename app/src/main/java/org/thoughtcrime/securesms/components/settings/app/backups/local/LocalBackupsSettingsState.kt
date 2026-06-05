@@ -21,5 +21,7 @@ data class LocalBackupsSettingsState(
   val scheduleTimeLabel: String? = null,
   val frequencyV1: BackupFrequencyV1 = BackupFrequencyV1.NEVER,
   val progress: LocalBackupCreationProgress = LocalBackupCreationProgress(idle = LocalBackupCreationProgress.Idle()),
-  val isDeleting: Boolean = false
+  val isDeleting: Boolean = false,
+  val deleteCompleted: Int = 0,
+  val deleteTotal: Int = 0
 )
