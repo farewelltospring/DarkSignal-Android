@@ -21,6 +21,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.compose.ui.platform.ComposeView;
 import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -79,6 +80,8 @@ public class BackupsPreferenceFragment extends Fragment {
 
   private final NumberFormat formatter = NumberFormat.getInstance();
 
+  private BackupsPreferenceViewModel viewModel;
+
   @Override
   public @Nullable View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     return inflater.inflate(R.layout.fragment_backups, container, false);
@@ -115,6 +118,15 @@ public class BackupsPreferenceFragment extends Fragment {
 
     EventBus.getDefault().register(this);
 
+    viewModel = new ViewModelProvider(this).get(BackupsPreferenceViewModel.class);
+    viewModel.getBackupsEnabled().observe(getViewLifecycleOwner(), enabled -> {
+      if (enabled) {
+        setBackupsEnabled();
+      } else {
+        setBackupsDisabled();
+      }
+    });
+
     updateToggle();
   }
 
@@ -122,7 +134,7 @@ public class BackupsPreferenceFragment extends Fragment {
   public void onResume() {
     super.onResume();
 
-    setBackupStatus();
+    viewModel.refreshBackupStatus();
     setBackupSummary();
     setInfo();
     setUpdateState();
@@ -182,21 +194,6 @@ public class BackupsPreferenceFragment extends Fragment {
       progressSummary.setVisibility(View.GONE);
       setBackupSummary();
       ThreadUtil.runOnMainDelayed(this::setBackupSummary, 100);
-    }
-  }
-
-  private void setBackupStatus() {
-    if (SignalStore.settings().isBackupEnabled()) {
-      if (BackupUtil.canUserAccessBackupDirectory(requireContext())) {
-        setBackupsEnabled();
-      } else {
-        Log.w(TAG, "Cannot access backup directory. Disabling backups.");
-
-        BackupUtil.disableBackups(requireContext());
-        setBackupsDisabled();
-      }
-    } else {
-      setBackupsDisabled();
     }
   }
 
