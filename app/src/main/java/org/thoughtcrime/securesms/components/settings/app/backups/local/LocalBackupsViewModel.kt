@@ -106,6 +106,7 @@ class LocalBackupsViewModel : ViewModel(), BackupKeyCredentialManagerHandler {
         canTurnOn = canTurnOn,
         scheduleTimeLabel = backupTime,
         frequencyV1 = backupFrequency,
+        optimizeStorageEnabled = SignalStore.backup.optimizeStorage
       )
     }
   }

@@ -12,7 +12,7 @@ import androidx.lifecycle.LiveData;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.dependencies.AppDependencies;
-import org.thoughtcrime.securesms.mms.SentMediaQuality;
+import org.signal.mediasend.SentMediaQuality;
 import org.thoughtcrime.securesms.preferences.BackupFrequencyV1;
 import org.thoughtcrime.securesms.preferences.widgets.NotificationPrivacyPreference;
 import org.thoughtcrime.securesms.util.Environment;
@@ -47,7 +47,6 @@ public final class SettingsValues extends SignalStoreValues {
   public static final  String PREFER_SYSTEM_EMOJI                     = "settings.use.system.emoji";
   public static final  String ENTER_KEY_SENDS                         = "settings.enter.key.sends";
   public static final  String BACKUPS_ENABLED                         = "settings.backups.enabled";
-  public static final  String BACKUPS_SCHEDULE_FREQUENCY              = "settings.backups.schedule.frequency";
   public static final  String BACKUPS_SCHEDULE_HOUR                   = "settings.backups.schedule.hour";
   public static final  String BACKUPS_SCHEDULE_MINUTE                 = "settings.backups.schedule.minute";
   public static final  String SIGNAL_BACKUPS_SCHEDULE_HOUR            = "settings.signal.backups.schedule.hour";
