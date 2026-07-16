@@ -84,6 +84,7 @@ class LocalBackupsViewModel : ViewModel(), BackupKeyCredentialManagerHandler {
   fun refreshSettingsState() {
     val context = AppDependencies.application
     val backupTime = LocalTime.of(SignalStore.settings.backupHour, SignalStore.settings.backupMinute).formatHours(context)
+    val backupFrequency = SignalStore.settings.backupFrequency
 
     val userUnregistered = TextSecurePreferences.isUnauthorizedReceived(context) || !SignalStore.account.isRegistered
     val clientDeprecated = SignalStore.misc.isClientDeprecated
@@ -104,6 +105,7 @@ class LocalBackupsViewModel : ViewModel(), BackupKeyCredentialManagerHandler {
       it.copy(
         canTurnOn = canTurnOn,
         scheduleTimeLabel = backupTime,
+        frequencyV1 = backupFrequency,
         optimizeStorageEnabled = SignalStore.backup.optimizeStorage
       )
     }

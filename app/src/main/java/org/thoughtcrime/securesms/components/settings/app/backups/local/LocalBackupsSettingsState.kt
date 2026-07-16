@@ -4,6 +4,7 @@
  */
 package org.thoughtcrime.securesms.components.settings.app.backups.local
 
+import org.thoughtcrime.securesms.preferences.BackupFrequencyV1
 import org.thoughtcrime.securesms.keyvalue.protos.LocalBackupCreationProgress
 
 /**
@@ -19,6 +20,7 @@ data class LocalBackupsSettingsState(
   val lastBackupLabel: String? = null,
   val folderDisplayName: String? = null,
   val scheduleTimeLabel: String? = null,
+  val frequencyV1: BackupFrequencyV1 = BackupFrequencyV1.NEVER,
   val progress: LocalBackupCreationProgress = LocalBackupCreationProgress(idle = LocalBackupCreationProgress.Idle()),
   val isDeleting: Boolean = false,
   val deleteCompleted: Int = 0,

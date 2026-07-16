@@ -89,6 +89,13 @@ public final class LocalBackupJob extends BaseJob {
     jobManager.add(new LocalPlaintextArchiveJob(destinationUri, includeMedia, parameters.build()));
   }
 
+  /** Sends a cancellation signal to all ongoing backup jobs. */
+  public static void cancelRunningJobs() {
+    JobManager jobManager = AppDependencies.getJobManager();
+    jobManager.cancelAllInQueue(QUEUE);
+  }
+
+
   private LocalBackupJob(@NonNull Job.Parameters parameters) {
     super(parameters);
   }
