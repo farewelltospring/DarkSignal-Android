@@ -12,9 +12,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -33,6 +35,7 @@ import org.thoughtcrime.securesms.components.emoji.EmojiImageView;
 import org.thoughtcrime.securesms.components.emoji.EmojiTextView;
 import org.thoughtcrime.securesms.components.mention.MentionAnnotation;
 import org.thoughtcrime.securesms.components.quotes.QuoteViewColorTheme;
+import org.thoughtcrime.securesms.conversation.colors.ChatColors;
 import org.thoughtcrime.securesms.conversation.MessageStyler;
 import org.thoughtcrime.securesms.conversation.v2.items.SenderNameWithLabelView;
 import org.thoughtcrime.securesms.database.model.Mention;
@@ -48,6 +51,7 @@ import org.thoughtcrime.securesms.recipients.RecipientForeverObserver;
 import org.thoughtcrime.securesms.stories.StoryTextPostModel;
 import org.thoughtcrime.securesms.util.MediaUtil;
 import org.thoughtcrime.securesms.util.Projection;
+import org.thoughtcrime.securesms.util.ViewUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -106,6 +110,7 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
   private           QuoteModel.Type quoteType;
   private           boolean         isWallpaperEnabled;
   @Nullable private MemberLabel     memberLabel;
+  private ChatColors      chatColors;
 
   private int thumbHeight;
   private int thumbWidth;
@@ -210,6 +215,23 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
                        boolean composeMode,
                        @Nullable MemberLabel memberLabel)
   {
+    setQuote(requestManager, id, author, body, originalMissing, attachments,
+             storyReaction, quoteType, composeMode, memberLabel, /* chatColors= */ null);
+
+  }
+
+  public void setQuote(RequestManager requestManager,
+                       long id,
+                       @NonNull Recipient author,
+                       @Nullable CharSequence body,
+                       boolean originalMissing,
+                       @NonNull SlideDeck attachments,
+                       @Nullable String storyReaction,
+                       @NonNull QuoteModel.Type quoteType,
+                       boolean composeMode,
+                       @Nullable MemberLabel memberLabel,
+                       @Nullable ChatColors chatColors)
+  {
     if (this.author != null) this.author.removeForeverObserver(this);
 
     this.id          = id;
@@ -218,6 +240,8 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
     this.attachments = attachments;
     this.quoteType   = quoteType;
     this.memberLabel = memberLabel;
+    this.chatColors  = chatColors;
+
 
     this.author.observeForever(this);
 
@@ -271,6 +295,10 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
   @Override
   public void onRecipientChanged(@NonNull Recipient recipient) {
     setQuoteAuthor(recipient);
+  }
+
+  public @NonNull Projection getProjection(@NonNull ViewGroup parent) {
+    return Projection.relativeToParent(parent, this, getCorners());
   }
 
   public @NonNull Projection.Corners getCorners() {
@@ -503,6 +531,10 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
     return id;
   }
 
+  public boolean hasAuthor() {
+    return author != null;
+  }
+
   public Recipient getAuthor() {
     return author.get();
   }
@@ -556,6 +588,11 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
         quoteViewColorTheme.getForegroundColor(getContext()),
         quoteViewColorTheme.getLabelBackgroundColor(getContext())
     );
+/*
+farewelltospring:
+quoteBarView.setBackgroundColor(0x80ffffff);
+authorView.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
+*/
     bodyView.setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
 
     if (attachmentNameViewStub.resolved()) {
@@ -567,11 +604,69 @@ public class QuoteView extends ConstraintLayout implements RecipientForeverObser
       missingLinkTextStub.get().setTextColor(quoteViewColorTheme.getForegroundColor(getContext()));
       missingLinkTextStub.get().setBackgroundColor(quoteViewColorTheme.getBackgroundColor(getContext()));
     }
+
+    if (author != null && chatColors != null) {
+      @ColorInt int preBackground;
+      if (getAuthor().isSelf() && chatColors.isGradient()) {
+        // Quote author is me and my chat bubble is a gradient color.
+        // Make it transparent. The hole-punch method will take care of the rest.
+        //this.getBackground().setColorFilter(chatColors.getChatBubbleColorFilter());
+        preBackground = 0x0;
+      } else if (getAuthor().isSelf() && !chatColors.isGradient()) {
+        // Quote author is me and my chat bubble is a solid color.
+        preBackground = chatColors.asSingleColor();
+      } else {
+        // Quote author is the other person.
+        preBackground = getDefaultBubbleColor(isWallpaperEnabled);
+      }
+
+      @ColorInt int canonicalBackground = quoteViewColorTheme.getBackgroundColor(getContext());
+      @ColorInt int realBackground;
+      if ((preBackground >> 24 & 0xff) == 0) {
+        // If we're hole-punching then we need the partial opacity
+        realBackground = canonicalBackground;
+      } else {
+        // V2 QuoteView layout only has one background so we can't do the semi-transparent layers hack.
+        // We will have to compose the final color ourselves.
+        realBackground = mergeLayers(preBackground, canonicalBackground);
+      }
+      setBackgroundColor(realBackground);
+    }
   }
 
   private @NonNull QuoteViewColorTheme getColorTheme() {
     boolean isOutgoing = messageType != MessageType.INCOMING && messageType != MessageType.STORY_REPLY_INCOMING;
     boolean isPreview  = messageType == MessageType.PREVIEW || messageType == MessageType.STORY_REPLY_PREVIEW;
     return QuoteViewColorTheme.resolveTheme(isOutgoing, isPreview, isWallpaperEnabled);
+  }
+
+  /** Returns the color of the bubble of the person I'm talking to. */
+  private @ColorInt int getDefaultBubbleColor(boolean hasWallpaper) {
+    int defaultBubbleColor             = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_normal);
+    int defaultBubbleColorForWallpaper = ContextCompat.getColor(getContext(), R.color.conversation_item_recv_bubble_color_wallpaper);
+    return hasWallpaper ? defaultBubbleColorForWallpaper : defaultBubbleColor;
+  }
+
+  /** Returns the resulting color you get when you put a translucent layer over a solid one and merge them.
+   *
+   * @param bottom Opaque layer. This function assumes that the opacity here is 100%.
+   * @param top Translucent layer
+   */
+  private static int mergeLayers(@ColorInt int bottom, @ColorInt int top) {
+    int bottomA = (bottom >> 24) & 0xff;
+    int bottomR = (bottom >> 16) & 0xff;
+    int bottomG = (bottom >> 8) & 0xff;
+    int bottomB = (bottom) & 0xff;
+
+    float topA = ((top >> 24) & 0xff) / 255.0f;
+    int   topR = (top >> 16) & 0xff;
+    int   topG = (top >> 8) & 0xff;
+    int   topB = (top) & 0xff;
+
+    int newR = (int) (bottomR * (1 - topA) + (topR * topA));
+    int newG = (int) (bottomG * (1 - topA) + (topG * topA));
+    int newB = (int) (bottomB * (1 - topA) + (topB * topA));
+
+    return (bottomA << 24) | (newR << 16) | (newG << 8) | newB;
   }
 }
