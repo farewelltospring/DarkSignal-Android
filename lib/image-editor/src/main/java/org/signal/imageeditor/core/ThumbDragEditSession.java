@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 
 import org.signal.imageeditor.core.model.EditorElement;
 import org.signal.imageeditor.core.model.ThumbRenderer;
+import org.signal.imageeditor.core.renderers.MultiLineTextRenderer;
 
 class ThumbDragEditSession extends ElementEditSession {
 
@@ -44,6 +45,13 @@ class ThumbDragEditSession extends ElementEditSession {
 
   @Override
   public void movePoint(int p, @NonNull PointF point) {
+    if (selected.getRenderer() instanceof MultiLineTextRenderer) {
+      boolean isSnapchatText = ((MultiLineTextRenderer) selected.getRenderer()).getMode() == MultiLineTextRenderer.Mode.SNAPCHAT;
+      if (isSnapchatText) {
+        // Scaling Snapchat text cannot be done
+        return;
+      }
+    }
     setScreenEndPoint(p, point);
 
     Matrix editorMatrix = selected.getEditorMatrix();

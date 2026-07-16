@@ -6,6 +6,7 @@ import android.graphics.PointF;
 import androidx.annotation.NonNull;
 
 import org.signal.imageeditor.core.model.EditorElement;
+import org.signal.imageeditor.core.renderers.MultiLineTextRenderer;
 
 final class ElementScaleEditSession extends ElementEditSession {
 
@@ -25,6 +26,13 @@ final class ElementScaleEditSession extends ElementEditSession {
 
   @Override
   public void movePoint(int p, @NonNull PointF point) {
+    if (selected.getRenderer() instanceof MultiLineTextRenderer) {
+      boolean isSnapchatText = ((MultiLineTextRenderer) selected.getRenderer()).getMode() == MultiLineTextRenderer.Mode.SNAPCHAT;
+      if (isSnapchatText) {
+        // Scaling Snapchat text cannot be done
+        return;
+      }
+    }
     setScreenEndPoint(p, point);
     Matrix editorMatrix = selected.getEditorMatrix();
 
