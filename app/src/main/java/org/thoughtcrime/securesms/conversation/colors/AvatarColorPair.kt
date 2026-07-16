@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.conversation.colors
 import android.content.Context
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
+import org.signal.core.ui.util.ThemeUtil
 import org.thoughtcrime.securesms.avatar.Avatars
 import org.signal.core.ui.R as CoreUiR
 
@@ -26,6 +27,13 @@ class AvatarColorPair private constructor(
           foregroundColor = Avatars.getForegroundColor(avatarColor).colorInt,
           backgroundColor = avatarColor.colorInt()
         )
+      }.let {
+        if (ThemeUtil.isDarkTheme(context))
+          // Dark mode avatars need to have a dark background and light text. To accomplish
+          // this, just invert the foreground/background colours on the basic avatar.
+          AvatarColorPair(it.backgroundColor, it.foregroundColor)
+        else
+          it
       }
     }
   }

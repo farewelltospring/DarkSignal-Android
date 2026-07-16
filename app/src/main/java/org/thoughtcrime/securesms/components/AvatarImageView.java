@@ -30,6 +30,7 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
 
+import org.signal.core.ui.util.ThemeUtil;
 import org.signal.core.util.ContextUtil;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
@@ -93,6 +94,7 @@ public final class AvatarImageView extends AppCompatImageView {
     if (attrs != null) {
       TypedArray typedArray = context.getTheme().obtainStyledAttributes(attrs, R.styleable.AvatarImageView, 0, 0);
       inverted = typedArray.getBoolean(R.styleable.AvatarImageView_inverted, false);
+      inverted = ThemeUtil.isDarkTheme(context);
       size     = typedArray.getInt(R.styleable.AvatarImageView_fallbackImageSize, SIZE_LARGE);
       typedArray.recycle();
     }
