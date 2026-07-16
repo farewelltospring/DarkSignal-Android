@@ -38,6 +38,7 @@ sealed interface LocalBackupsSettingsCallback {
   fun onLearnMoreClick()
   fun onLaunchBackupLocationPickerClick()
   fun onTurnOffAndDeleteConfirmed()
+  fun onViewOptimizeStorageSettingClick()
 
   object Empty : LocalBackupsSettingsCallback {
     override fun onNavigationClick() = Unit
@@ -49,6 +50,7 @@ sealed interface LocalBackupsSettingsCallback {
     override fun onLearnMoreClick() = Unit
     override fun onLaunchBackupLocationPickerClick() = Unit
     override fun onTurnOffAndDeleteConfirmed() = Unit
+    override fun onViewOptimizeStorageSettingClick() = Unit
   }
 }
 
@@ -157,6 +159,10 @@ class DefaultLocalBackupsSettingsCallback(
 
   override fun onTurnOffAndDeleteConfirmed() {
     viewModel.turnOffAndDelete(fragment.requireContext())
+  }
+
+  override fun onViewOptimizeStorageSettingClick() {
+    fragment.findNavController().safeNavigate(R.id.action_direct_to_storagePreferenceFragment)
   }
 
   /** Update the settings on disk and then schedule a backup.
