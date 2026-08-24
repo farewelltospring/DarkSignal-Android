@@ -27,7 +27,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.Browser
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.text.Editable
@@ -57,7 +56,7 @@ import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.os.bundleOf
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.doOnPreDraw
@@ -110,6 +109,7 @@ import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.signal.core.models.database.StickerRecord
 import org.signal.core.models.media.Media
 import org.signal.core.models.media.TransformProperties
 import org.signal.core.ui.BottomSheetUtil
@@ -129,12 +129,14 @@ import org.signal.core.util.concurrent.LifecycleDisposable
 import org.signal.core.util.concurrent.ListenableFuture
 import org.signal.core.util.concurrent.addTo
 import org.signal.core.util.dp
+import org.signal.core.util.encourageNewBrowserTab
 import org.signal.core.util.logging.Log
 import org.signal.core.util.orNull
 import org.signal.core.util.requireDrawable
 import org.signal.core.util.requireParcelableCompat
 import org.signal.core.util.setActionItemTint
 import org.signal.donations.InAppPaymentType
+import org.signal.emoji.EmojiEventListener
 import org.signal.ringrtc.CallLinkRootKey
 import org.thoughtcrime.securesms.BlockUnblockDialog
 import org.thoughtcrime.securesms.MainActivity
@@ -164,8 +166,6 @@ import org.thoughtcrime.securesms.components.SendButton
 import org.thoughtcrime.securesms.components.SignalProgressDialog
 import org.thoughtcrime.securesms.components.ViewBinderDelegate
 import org.thoughtcrime.securesms.components.compose.ActionModeTopBarView
-import org.thoughtcrime.securesms.components.compose.DeleteSyncEducationDialog
-import org.thoughtcrime.securesms.components.emoji.EmojiEventListener
 import org.thoughtcrime.securesms.components.emoji.MediaKeyboard
 import org.thoughtcrime.securesms.components.emoji.RecentEmojiPageModel
 import org.thoughtcrime.securesms.components.location.SignalPlace
@@ -244,6 +244,7 @@ import org.thoughtcrime.securesms.conversation.ui.inlinequery.InlineQueryViewMod
 import org.thoughtcrime.securesms.conversation.v2.computed.ConversationMessageComputeWorkers
 import org.thoughtcrime.securesms.conversation.v2.data.AvatarDownloadStateCache
 import org.thoughtcrime.securesms.conversation.v2.data.ConversationMessageElement
+import org.thoughtcrime.securesms.conversation.v2.data.DeletedMessageTombstoneCache
 import org.thoughtcrime.securesms.conversation.v2.groups.ConversationGroupCallViewModel
 import org.thoughtcrime.securesms.conversation.v2.groups.ConversationGroupViewModel
 import org.thoughtcrime.securesms.conversation.v2.items.ChatColorsDrawable
@@ -257,7 +258,6 @@ import org.thoughtcrime.securesms.database.model.MessageId
 import org.thoughtcrime.securesms.database.model.MessageRecord
 import org.thoughtcrime.securesms.database.model.MmsMessageRecord
 import org.thoughtcrime.securesms.database.model.Quote
-import org.thoughtcrime.securesms.database.model.StickerRecord
 import org.thoughtcrime.securesms.database.model.databaseprotos.BodyRangeList
 import org.thoughtcrime.securesms.databinding.V2ConversationFragmentBinding
 import org.thoughtcrime.securesms.dependencies.AppDependencies
@@ -303,7 +303,7 @@ import org.thoughtcrime.securesms.main.MainNavigationViewModel
 import org.thoughtcrime.securesms.main.MainSnackbarHostKey
 import org.thoughtcrime.securesms.mediaoverview.MediaOverviewActivity
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory
-import org.thoughtcrime.securesms.mediapreview.MediaPreviewV2Activity
+import org.thoughtcrime.securesms.mediapreview.MediaPreviewActivity
 import org.thoughtcrime.securesms.mediasend.MediaSendActivityResult
 import org.thoughtcrime.securesms.messagerequests.MessageRequestRepository
 import org.thoughtcrime.securesms.mms.AttachmentManager
@@ -367,6 +367,7 @@ import org.thoughtcrime.securesms.util.PlayStoreUtil
 import org.thoughtcrime.securesms.util.RemoteConfig
 import org.thoughtcrime.securesms.util.SignalLocalMetrics
 import org.thoughtcrime.securesms.util.TextSecurePreferences
+import org.thoughtcrime.securesms.util.UriUtil
 import org.thoughtcrime.securesms.util.ViewUtil
 import org.thoughtcrime.securesms.util.atMidnight
 import org.thoughtcrime.securesms.util.atUTC
@@ -391,6 +392,7 @@ import org.thoughtcrime.securesms.wallpaper.ChatWallpaperDimLevelUtil
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.Locale
 import java.util.Optional
 import java.util.concurrent.ExecutionException
@@ -537,8 +539,6 @@ class ConversationFragment :
   private val inlineQueryViewModel: InlineQueryViewModelV2 by viewModel {
     InlineQueryViewModelV2(conversationRecipientRepository)
   }
-
-  private val shareDataTimestampViewModel: ShareDataTimestampViewModel by activityViewModels()
 
   private val mainNavigationViewModel: MainNavigationViewModel by activityViewModels { MainNavigationViewModel.Factory() }
 
@@ -757,7 +757,11 @@ class ConversationFragment :
         }
         val uri = clip.getItemAt(0).uri
         if (uri != null) {
-          mediaListener.onMediaSelected(uri, mimeType)
+          if (UriUtil.isValidExternalUri(requireContext(), uri)) {
+            mediaListener.onMediaSelected(uri, mimeType)
+          } else {
+            Log.w(TAG, "Ignoring received content with a non-external URI.")
+          }
         }
       }
 
@@ -879,6 +883,7 @@ class ConversationFragment :
 
     if (!requireActivity().isChangingConfigurations) {
       (requireActivity().supportFragmentManager.findFragmentByTag(MESSAGE_DETAILS_TAG) as? DialogFragment)?.dismissAllowingStateLoss()
+      DeletedMessageTombstoneCache.clearThread(args.threadId)
     }
 
     super.onDestroyView()
@@ -893,10 +898,6 @@ class ConversationFragment :
   }
 
   override fun startActivity(intent: Intent) {
-    if (intent.getStringArrayExtra(Browser.EXTRA_APPLICATION_ID) != null) {
-      intent.removeExtra(Browser.EXTRA_APPLICATION_ID)
-    }
-
     try {
       super.startActivity(intent)
     } catch (e: ActivityNotFoundException) {
@@ -906,6 +907,10 @@ class ConversationFragment :
         toastDuration = Toast.LENGTH_LONG
       )
     }
+  }
+
+  private fun openLink(url: String) {
+    startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).encourageNewBrowserTab())
   }
 
   //endregion
@@ -1443,7 +1448,7 @@ class ConversationFragment :
       .inputReadyState
       .take(1)
       .flatMapMaybe { inputReadyState ->
-        draftViewModel.loadShareOrDraftData(shareDataTimestampViewModel.timestamp)
+        draftViewModel.loadShareOrDraftData()
           .map { inputReadyState to it }
       }
       .subscribeBy { (inputReadyState, data) -> handleShareOrDraftData(inputReadyState, data) }
@@ -2158,8 +2163,6 @@ class ConversationFragment :
   }
 
   private fun handleShareOrDraftData(inputReadyState: InputReadyState, data: ShareOrDraftData) {
-    shareDataTimestampViewModel.setTimestampFromConversationArgs(args)
-
     if (inputReadyState.isAnnouncementGroup == true && inputReadyState.isAdmin == false) {
       Toast.makeText(requireContext(), R.string.MultiselectForwardFragment__only_admins_can_send_messages_to_this_group, Toast.LENGTH_SHORT).show()
       draftViewModel.clearDraft()
@@ -2910,7 +2913,10 @@ class ConversationFragment :
         messageRequestViewModel
           .onReportSpam()
           .doOnSubscribe { disabledInput.showBusy() }
-          .doOnTerminate { disabledInput.hideBusy() }
+          .doOnTerminate {
+            disabledInput.hideBusy()
+            viewModel.refreshInputReadyState()
+          }
           .subscribeBy {
             Log.d(TAG, "report spam complete")
             toast(R.string.ConversationFragment_reported_as_spam)
@@ -2924,7 +2930,10 @@ class ConversationFragment :
           messageRequestViewModel
             .onBlockAndReportSpam()
             .doOnSubscribe { disabledInput.showBusy() }
-            .doOnTerminate { disabledInput.hideBusy() }
+            .doOnTerminate {
+              disabledInput.hideBusy()
+              viewModel.refreshInputReadyState()
+            }
             .subscribeBy { result ->
               when (result) {
                 is Result.Success -> {
@@ -3003,7 +3012,10 @@ class ConversationFragment :
   private fun Single<Result<Unit, GroupChangeFailureReason>>.subscribeWithShowProgress(logMessage: String): Disposable {
     val disabledInput = binding.conversationDisabledInput
     return doOnSubscribe { disabledInput.showBusy() }
-      .doOnTerminate { disabledInput.hideBusy() }
+      .doOnTerminate {
+        disabledInput.hideBusy()
+        viewModel.refreshInputReadyState()
+      }
       .subscribeBy { result ->
         when (result) {
           is Result.Success -> Log.d(TAG, "$logMessage complete")
@@ -3143,15 +3155,6 @@ class ConversationFragment :
   }
 
   private fun handleDeleteMessages(messageParts: Set<MultiselectPart>) {
-    if (DeleteSyncEducationDialog.shouldShow()) {
-      DeleteSyncEducationDialog
-        .show(childFragmentManager)
-        .subscribe { handleDeleteMessages(messageParts) }
-        .addTo(disposables)
-
-      return
-    }
-
     val records = messageParts.map(MultiselectPart::getMessageRecord).toSet()
 
     disposables += DeleteDialog.show(
@@ -3538,8 +3541,8 @@ class ConversationFragment :
     }
 
     override fun onLinkPreviewClicked(linkPreview: LinkPreview) {
-      val activity = activity ?: return
-      CommunicationActions.openBrowserLink(activity, linkPreview.url)
+      activity ?: return
+      openLink(linkPreview.url)
     }
 
     override fun onQuotedIndicatorClicked(messageRecord: MessageRecord) {
@@ -3928,8 +3931,14 @@ class ConversationFragment :
     override fun onScheduledIndicatorClicked(view: View, conversationMessage: ConversationMessage) = Unit
 
     override fun onUrlClicked(url: String): Boolean {
-      return CommunicationActions.handlePotentialGroupLinkUrl(requireActivity(), url) ||
+      if (CommunicationActions.handlePotentialGroupLinkUrl(requireActivity(), url) ||
         CommunicationActions.handlePotentialProxyLinkUrl(requireActivity(), url)
+      ) {
+        return true
+      }
+
+      openLink(url)
+      return true
     }
 
     override fun onViewGiftBadgeClicked(messageRecord: MessageRecord) {
@@ -3971,9 +3980,9 @@ class ConversationFragment :
 
       container.hideAll(composeText)
 
-      sharedElement.transitionName = MediaPreviewV2Activity.SHARED_ELEMENT_TRANSITION_NAME
+      sharedElement.transitionName = MediaPreviewActivity.SHARED_ELEMENT_TRANSITION_NAME
       requireActivity().setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-      val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), sharedElement, MediaPreviewV2Activity.SHARED_ELEMENT_TRANSITION_NAME)
+      val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), sharedElement, MediaPreviewActivity.SHARED_ELEMENT_TRANSITION_NAME)
       requireActivity().startActivity(MediaIntentFactory.create(requireActivity(), args), options.toBundle())
     }
 
@@ -5086,6 +5095,10 @@ class ConversationFragment :
             },
             onComplete = {
               sendKeyboardImage(uri, contentType!!, null)
+            },
+            onError = {
+              Log.w(TAG, "Failed to read details for the keyboard image. Continuing without them.", it)
+              sendKeyboardImage(uri, contentType!!, null)
             }
           )
       } else if (MediaUtil.isVideoType(contentType)) {
@@ -5171,9 +5184,7 @@ class ConversationFragment :
 
   private object MediaKeyboardFragmentCreator : InputAwareConstraintLayout.FragmentCreator {
     override val id: Int = MEDIA_KEYBOARD_FRAGMENT_CREATOR_ID
-    override fun create(): Fragment = KeyboardPagerFragment().apply {
-      arguments = bundleOf(KeyboardPagerFragment.ARG_SET_NAV_COLOR to false)
-    }
+    override fun create(): Fragment = KeyboardPagerFragment()
   }
 
   private inner class KeyboardEvents :
@@ -5304,7 +5315,7 @@ class ConversationFragment :
         datePicker.addOnPositiveButtonClickListener { selectedDate ->
           if (selectedDate != null) {
             val localMidnightTimestamp = Instant.ofEpochMilli(selectedDate)
-              .atZone(ZoneId.systemDefault())
+              .atZone(ZoneOffset.UTC)
               .toLocalDate()
               .atStartOfDay(ZoneId.systemDefault())
               .toInstant()
