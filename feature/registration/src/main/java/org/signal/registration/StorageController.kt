@@ -28,6 +28,7 @@ import org.signal.registration.util.IdentityKeyPairParceler
 import org.signal.registration.util.KyberPreKeyRecordParceler
 import org.signal.registration.util.PNIParceler
 import org.signal.registration.util.SignedPreKeyRecordParceler
+import org.whispersystems.signalservice.api.push.UsernameLinkComponents
 
 /**
  * The set of methods that the registration module needs to persist data to disk.
@@ -105,6 +106,12 @@ interface StorageController {
   suspend fun onRegistrationFlowFinished()
 
   /**
+   * Records that the account has at least one two-factor method, learned by having to present one to log in. The app
+   * uses this to decide whether to remind the user to verify a method later on.
+   */
+  suspend fun markHasTwoFactorMethods()
+
+  /**
    * Persists the terminal [RestoreDecision] the user reached during registration directly to permanent app state,
    * so the rest of the app knows whether we're a fresh account, skipped a restore, or successfully restored data.
    */
@@ -167,6 +174,12 @@ interface StorageController {
    * @return A list of [LocalBackupInfo] sorted by date descending (most recent first).
    */
   suspend fun scanLocalBackupFolder(folderUri: Uri): List<LocalBackupInfo>
+
+  /**
+   * Persists a username that was confirmed on the service (see [NetworkController.confirmUsername]), along with the
+   * components of its shareable link, and arranges for it to be synced wherever the app needs it to be.
+   */
+  suspend fun saveUsername(username: String, usernameLink: UsernameLinkComponents)
 
   /**
    * Reads any profile data already on disk for the locally-registered account. May return data when
