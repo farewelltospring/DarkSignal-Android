@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.signal.core.models.recipients.RecipientId
 import org.thoughtcrime.securesms.database.RecipientTable.NotificationSetting
 import org.thoughtcrime.securesms.database.SignalDatabase
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientForeverObserver
-import org.thoughtcrime.securesms.recipients.RecipientId
 
 class SoundsAndNotificationsSettingsViewModel(
   private val recipientId: RecipientId
@@ -45,7 +45,8 @@ class SoundsAndNotificationsSettingsViewModel(
         callNotificationSetting = recipient.callNotificationSetting,
         replyNotificationSetting = recipient.replyNotificationSetting,
         hasMentionsSupport = recipient.isPushV2Group,
-        hasCustomNotificationSettings = recipient.notificationChannel != null || !NotificationChannels.supported()
+        hasCustomNotificationSettings = recipient.notificationChannel != null || !NotificationChannels.supported(),
+        unreadReminders = recipient.unreadReminderSetting
       )
     }
   }
@@ -58,11 +59,9 @@ class SoundsAndNotificationsSettingsViewModel(
     when (event) {
       is SoundsAndNotificationsEvent.SetMuteUntil -> applySetMuteUntil(event.muteUntil)
       is SoundsAndNotificationsEvent.Unmute -> applySetMuteUntil(0L)
-      is SoundsAndNotificationsEvent.SetMentionSetting -> applySetMentionSetting(event.setting)
-      is SoundsAndNotificationsEvent.SetCallNotificationSetting -> applySetCallNotificationSetting(event.setting)
-      is SoundsAndNotificationsEvent.SetReplyNotificationSetting -> applySetReplyNotificationSetting(event.setting)
       is SoundsAndNotificationsEvent.NavigateToCustomNotifications -> Unit // Navigation handled by UI
       is SoundsAndNotificationsEvent.NavigateToMutedNotifications -> Unit // Navigation handled by UI
+      is SoundsAndNotificationsEvent.SetUnreadReminder -> applySetUnreadReminder(event.setting)
     }
   }
 
@@ -72,21 +71,9 @@ class SoundsAndNotificationsSettingsViewModel(
     }
   }
 
-  private fun applySetMentionSetting(setting: NotificationSetting) {
+  private fun applySetUnreadReminder(setting: NotificationSetting) {
     viewModelScope.launch(Dispatchers.Default) {
-      SignalDatabase.recipients.setMentionSetting(recipientId, setting)
-    }
-  }
-
-  private fun applySetCallNotificationSetting(setting: NotificationSetting) {
-    viewModelScope.launch(Dispatchers.Default) {
-      SignalDatabase.recipients.setCallNotificationSetting(recipientId, setting)
-    }
-  }
-
-  private fun applySetReplyNotificationSetting(setting: NotificationSetting) {
-    viewModelScope.launch(Dispatchers.Default) {
-      SignalDatabase.recipients.setReplyNotificationSetting(recipientId, setting)
+      SignalDatabase.recipients.setUnreadReminder(recipientId, setting)
     }
   }
 
