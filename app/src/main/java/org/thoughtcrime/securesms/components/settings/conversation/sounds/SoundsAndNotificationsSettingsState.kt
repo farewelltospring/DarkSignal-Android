@@ -1,8 +1,8 @@
 package org.thoughtcrime.securesms.components.settings.conversation.sounds
 
+import org.signal.core.models.recipients.RecipientId
 import org.thoughtcrime.securesms.database.RecipientTable.NotificationSetting
 import org.thoughtcrime.securesms.recipients.Recipient
-import org.thoughtcrime.securesms.recipients.RecipientId
 
 data class SoundsAndNotificationsSettingsState(
   val recipientId: RecipientId = Recipient.UNKNOWN.id,
@@ -13,7 +13,7 @@ data class SoundsAndNotificationsSettingsState(
   val hasCustomNotificationSettings: Boolean = false,
   val hasMentionsSupport: Boolean = false,
   val channelConsistencyCheckComplete: Boolean = false,
-  val unreadReminders: Boolean = false
+  val unreadReminders: NotificationSetting = NotificationSetting.ALWAYS_NOTIFY
 ) {
   val isMuted = muteUntil > 0
 }

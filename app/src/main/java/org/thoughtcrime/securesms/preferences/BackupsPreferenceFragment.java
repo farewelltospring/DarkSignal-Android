@@ -27,13 +27,12 @@ import androidx.navigation.Navigation;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 import org.signal.core.ui.permissions.Permissions;
 import org.signal.core.ui.util.StorageUtil;
 import org.signal.core.util.NoExternalStorageException;
 import org.signal.core.util.ThreadUtil;
+import org.signal.core.util.eventbus.EventBus;
+import org.signal.core.util.eventbus.ThreadMode;
 import org.signal.core.util.logging.Log;
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.backup.BackupDialog;
@@ -45,8 +44,7 @@ import org.thoughtcrime.securesms.preferences.widgets.UpgradeLocalBackupCard;
 import org.thoughtcrime.securesms.service.LocalBackupListener;
 import org.thoughtcrime.securesms.util.BackupUtil;
 import org.thoughtcrime.securesms.util.Environment;
-import org.thoughtcrime.securesms.util.JavaTimeExtensionsKt;
-import org.thoughtcrime.securesms.util.TextSecurePreferences;
+import org.thoughtcrime.securesms.util.LocalTimeExtensionsKt;
 
 import java.text.NumberFormat;
 import java.time.LocalTime;
@@ -81,6 +79,7 @@ public class BackupsPreferenceFragment extends Fragment {
   private final NumberFormat formatter = NumberFormat.getInstance();
 
   private BackupsPreferenceViewModel viewModel;
+  private EventBus.Subscription      backupEventSubscription;
 
   @Override
   public @Nullable View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -116,7 +115,7 @@ public class BackupsPreferenceFragment extends Fragment {
     formatter.setMinimumFractionDigits(1);
     formatter.setMaximumFractionDigits(1);
 
-    EventBus.getDefault().register(this);
+    backupEventSubscription = EventBus.getDefault().subscribe(BackupEvent.class, ThreadMode.MAIN, this::onBackupEvent);
 
     viewModel = new ViewModelProvider(this).get(BackupsPreferenceViewModel.class);
     viewModel.getBackupsEnabled().observe(getViewLifecycleOwner(), enabled -> {
@@ -143,7 +142,7 @@ public class BackupsPreferenceFragment extends Fragment {
   @Override
   public void onDestroyView() {
     super.onDestroyView();
-    EventBus.getDefault().unregister(this);
+    backupEventSubscription.unsubscribe();
   }
 
   @Override
@@ -168,8 +167,7 @@ public class BackupsPreferenceFragment extends Fragment {
     }
   }
 
-  @Subscribe(threadMode = ThreadMode.MAIN)
-  public void onEvent(BackupEvent event) {
+  private void onBackupEvent(BackupEvent event) {
     if (event.getType() == BackupEvent.Type.PROGRESS || event.getType() == BackupEvent.Type.PROGRESS_VERIFYING) {
       create.setEnabled(false);
       summary.setText(getString(event.getType() == BackupEvent.Type.PROGRESS ? R.string.BackupsPreferenceFragment__in_progress
@@ -311,7 +309,7 @@ public class BackupsPreferenceFragment extends Fragment {
       int minute = timePickerFragment.getMinute();
       applyNewBackupScheduleSetting(frequency, hour, minute);
       updateTimeLabel();
-      TextSecurePreferences.setNextBackupTime(requireContext(), 0);
+      SignalStore.settings().setLocalBackupNextTime(0);
       LocalBackupListener.schedule(requireContext());
     });
     timePickerFragment.show(getChildFragmentManager(), "TIME_PICKER");
@@ -347,7 +345,7 @@ public class BackupsPreferenceFragment extends Fragment {
                                  .map(BackupUtil.BackupInfo::getTimestamp)
                                  .orElse(0L);
       } catch (NoExternalStorageException ignored) {}
-      TextSecurePreferences.setNextBackupTime(requireContext(), lastBackupTime + frequency.getDays() * 24 * 60 * 60 * 1000L);
+      SignalStore.settings().setLocalBackupNextTime(lastBackupTime + frequency.getDays() * 24 * 60 * 60 * 1000L);
       LocalBackupListener.schedule(requireContext());
     }
   }
@@ -368,7 +366,7 @@ public class BackupsPreferenceFragment extends Fragment {
     final int backupHour   = SignalStore.settings().getBackupHour();
     final int backupMinute = SignalStore.settings().getBackupMinute();
     LocalTime time         = LocalTime.of(backupHour, backupMinute);
-    timeLabel.setText(JavaTimeExtensionsKt.formatHours(time, requireContext()));
+    timeLabel.setText(LocalTimeExtensionsKt.formatHours(time, requireContext()));
   }
 
   private void updateDateLabel() {
@@ -376,7 +374,7 @@ public class BackupsPreferenceFragment extends Fragment {
   }
 
   private void updateToggle() {
-    boolean userUnregistered          = TextSecurePreferences.isUnauthorizedReceived(AppDependencies.getApplication()) || !SignalStore.account().isRegistered();
+    boolean userUnregistered          = SignalStore.account().isUnauthorizedReceived() || !SignalStore.account().isRegistered();
     boolean clientDeprecated          = SignalStore.misc().isClientDeprecated();
     boolean legacyLocalBackupsEnabled = SignalStore.settings().isBackupEnabled() && BackupUtil.canUserAccessBackupDirectory(AppDependencies.getApplication());
 

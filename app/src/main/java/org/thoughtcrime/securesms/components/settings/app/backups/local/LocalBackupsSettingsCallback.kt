@@ -25,7 +25,6 @@ import org.thoughtcrime.securesms.preferences.BackupFrequencyV1
 import org.thoughtcrime.securesms.service.LocalBackupListener
 import org.thoughtcrime.securesms.util.BackupUtil
 import org.thoughtcrime.securesms.util.CommunicationActions
-import org.thoughtcrime.securesms.util.TextSecurePreferences
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
 
 sealed interface LocalBackupsSettingsCallback {
@@ -150,7 +149,11 @@ class DefaultLocalBackupsSettingsCallback(
   }
 
   override fun onViewBackupKeyClick() {
-    fragment.findNavController().safeNavigate(R.id.action_backupsPreferenceFragment_to_backupKeyDisplayFragment)
+    if (SignalStore.account.isPhoneNumberless) {
+      fragment.findNavController().safeNavigate(R.id.action_localBackupsFragment_to_settingsSignalLoginDetailsFragment)
+    } else {
+      fragment.findNavController().safeNavigate(R.id.action_backupsPreferenceFragment_to_backupKeyDisplayFragment)
+    }
   }
 
   override fun onLearnMoreClick() {
@@ -179,7 +182,7 @@ class DefaultLocalBackupsSettingsCallback(
       // last backup. This should only kick off a new backup to be created immediately if the
       // last backup was long enough ago (or doesn't exist at all).
       val lastBackupTime = try { BackupUtil.getLatestBackup()?.timestamp ?: 0L } catch (_: NoExternalStorageException) { 0L }
-      TextSecurePreferences.setNextBackupTime(fragment.requireContext(), lastBackupTime + frequency.days * 24 * 60 * 60 * 1000L)
+      SignalStore.settings.localBackupNextTime = lastBackupTime + frequency.days * 24 * 60 * 60 * 1000L
       LocalBackupListener.schedule(fragment.requireContext())
     }
   }

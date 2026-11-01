@@ -5,12 +5,10 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import org.signal.core.util.JavaTimeExtensionsKt;
 import org.thoughtcrime.securesms.jobs.LocalBackupJob;
 import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.preferences.BackupFrequencyV1;
-import org.thoughtcrime.securesms.util.JavaTimeExtensionsKt;
-import org.thoughtcrime.securesms.util.TextSecurePreferences;
-
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +24,7 @@ public class LocalBackupListener extends PersistentAlarmManagerListener {
 
   @Override
   protected long getNextScheduledExecutionTime(Context context) {
-    return TextSecurePreferences.getNextBackupTime(context);
+    return SignalStore.settings().getLocalBackupNextTime();
   }
 
   @Override
@@ -60,7 +58,7 @@ public class LocalBackupListener extends PersistentAlarmManagerListener {
     BackupFrequencyV1 freq = SignalStore.settings().getBackupFrequency();
 
     if (freq == BackupFrequencyV1.NEVER) {
-      TextSecurePreferences.setNextBackupTime(context, -1);
+      SignalStore.settings().setLocalBackupNextTime(-1);
       return -1;
     }
 
@@ -72,7 +70,7 @@ public class LocalBackupListener extends PersistentAlarmManagerListener {
     next = next.plusDays(freq.getDays());
     long nextTime = JavaTimeExtensionsKt.toMillis(next);
 
-    TextSecurePreferences.setNextBackupTime(context, nextTime);
+    SignalStore.settings().setLocalBackupNextTime(nextTime);
 
     return nextTime;
   }
