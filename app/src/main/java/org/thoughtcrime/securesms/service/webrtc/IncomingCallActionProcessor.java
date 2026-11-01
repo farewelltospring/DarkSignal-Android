@@ -7,6 +7,7 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.signal.core.models.recipients.RecipientId;
 import org.signal.core.util.logging.Log;
 import org.signal.ringrtc.CallException;
 import org.signal.ringrtc.CallId;
@@ -20,7 +21,6 @@ import org.thoughtcrime.securesms.keyvalue.SignalStore;
 import org.thoughtcrime.securesms.notifications.DoNotDisturbUtil;
 import org.thoughtcrime.securesms.notifications.NotificationChannels;
 import org.thoughtcrime.securesms.recipients.Recipient;
-import org.thoughtcrime.securesms.recipients.RecipientId;
 import org.thoughtcrime.securesms.ringrtc.CallState;
 import org.thoughtcrime.securesms.ringrtc.OutgoingVideoSourceRouter;
 import org.thoughtcrime.securesms.ringrtc.RemotePeer;
@@ -215,6 +215,14 @@ public class IncomingCallActionProcessor extends DeviceAwareActionProcessor {
     try {
       webRtcInteractor.rejectIncomingCall(activePeer.getId());
       webRtcInteractor.getCallManager().hangup();
+
+      currentState = currentState.builder()
+                                 .changeCallInfoState()
+                                 .callState(WebRtcViewModel.State.CALL_DISCONNECTED)
+                                 .build();
+
+      webRtcInteractor.postStateUpdate(currentState);
+
       return terminate(currentState, activePeer);
     } catch (CallException e) {
       return callFailure(currentState, "hangup() failed: ", e);
