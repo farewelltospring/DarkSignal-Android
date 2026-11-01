@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -30,47 +33,43 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.preference.PreferenceManager
-import kotlinx.coroutines.launch
+import org.signal.appsettings.routes.AppSettingsNavigationEvent
+import org.signal.appsettings.routes.AppSettingsRoute
+import org.signal.appsettings.routes.AppSettingsRouter
+import org.signal.appsettings.routes.navigateTo
 import org.signal.core.ui.BottomSheetUtil
 import org.signal.core.ui.compose.ComposeFragment
 import org.signal.core.ui.compose.DayNightPreviews
+import org.signal.core.ui.compose.Dialogs
 import org.signal.core.ui.compose.Dividers
 import org.signal.core.ui.compose.Previews
 import org.signal.core.ui.compose.Rows
 import org.signal.core.ui.compose.Scaffolds
 import org.signal.core.ui.compose.SignalIcons
 import org.signal.core.ui.compose.Texts
+import org.signal.core.ui.viewModel
+import org.signal.core.util.collectFlowOnViewLifecycle
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.components.PromptBatterySaverDialogFragment
-import org.thoughtcrime.securesms.components.settings.app.routes.AppSettingsRoute
-import org.thoughtcrime.securesms.components.settings.app.routes.AppSettingsRouter
 import org.thoughtcrime.securesms.components.settings.models.Banner
-import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.notifications.NotificationChannels
 import org.thoughtcrime.securesms.notifications.TurnOnNotificationsBottomSheet
-import org.thoughtcrime.securesms.util.RemoteConfig
 import org.thoughtcrime.securesms.util.RingtoneUtil
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
-import org.thoughtcrime.securesms.util.viewModel
+import org.signal.core.ui.R as CoreUiR
 
 class NotificationsSettingsFragment : ComposeFragment() {
 
   private val viewModel: NotificationsSettingsViewModel by viewModel {
-    val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-
-    NotificationsSettingsViewModel.Factory(sharedPreferences).create(NotificationsSettingsViewModel::class.java)
+    NotificationsSettingsViewModel.Factory().create(NotificationsSettingsViewModel::class.java)
   }
 
-  private val appSettingsRouter: AppSettingsRouter by viewModel {
-    AppSettingsRouter()
-  }
+  private val appSettingsRouter: AppSettingsRouter by viewModels()
 
   private lateinit var callbacks: DefaultNotificationsSettingsCallbacks
 
@@ -79,20 +78,19 @@ class NotificationsSettingsFragment : ComposeFragment() {
 
     callbacks = DefaultNotificationsSettingsCallbacks(requireActivity(), viewModel, appSettingsRouter, DefaultNotificationsSettingsCallbacks.ActivityResultRegisterer.ForFragment(this))
 
-    viewLifecycleOwner.lifecycleScope.launch {
-      repeatOnLifecycle(Lifecycle.State.RESUMED) {
-        appSettingsRouter.currentRoute.collect {
-          when (it) {
-            AppSettingsRoute.NotificationsRoute.NotificationProfiles -> {
-              findNavController().safeNavigate(R.id.action_notificationsSettingsFragment_to_notificationProfilesFragment)
-            }
-
-            AppSettingsRoute.NotificationsRoute.MutedNotifications -> {
-              findNavController().safeNavigate(R.id.action_notificationsSettingsFragment_to_mutedNotificationsFragment)
-            }
-
-            else -> error("Unexpected route: ${it.javaClass.name}")
+    collectFlowOnViewLifecycle(appSettingsRouter.events, Lifecycle.State.RESUMED) { event ->
+      when (event) {
+        AppSettingsNavigationEvent.NavigateBack -> requireActivity().onBackPressedDispatcher.onBackPressed()
+        is AppSettingsNavigationEvent.NavigateToScreen -> when (event.route) {
+          AppSettingsRoute.NotificationsRoute.NotificationProfiles -> {
+            findNavController().safeNavigate(R.id.action_notificationsSettingsFragment_to_notificationProfilesFragment)
           }
+
+          AppSettingsRoute.NotificationsRoute.MutedNotifications -> {
+            findNavController().safeNavigate(R.id.action_notificationsSettingsFragment_to_mutedNotificationsFragment)
+          }
+
+          else -> error("Unexpected route: ${event.route.javaClass.name}")
         }
       }
     }
@@ -219,7 +217,7 @@ open class DefaultNotificationsSettingsCallbacks(
   }
 
   override fun setMessageNotificationVibration(enabled: Boolean) {
-    viewModel.setMessageNotificationsEnabled(enabled)
+    viewModel.setMessageNotificationVibration(enabled)
   }
 
   override fun setMessasgeNotificationLedColor(selection: String) {
@@ -263,7 +261,7 @@ open class DefaultNotificationsSettingsCallbacks(
   }
 
   override fun onNavigationProfilesClick() {
-    appSettingsRouter.navigateTo(AppSettingsRoute.NotificationsRoute.NotificationProfiles)
+    appSettingsRouter::onEvent.navigateTo(AppSettingsRoute.NotificationsRoute.NotificationProfiles)
   }
 
   override fun setNotifyWhenContactJoinsSignal(enabled: Boolean) {
@@ -271,11 +269,19 @@ open class DefaultNotificationsSettingsCallbacks(
   }
 
   override fun onMutedClicked() {
-    appSettingsRouter.navigateTo(AppSettingsRoute.NotificationsRoute.MutedNotifications)
+    appSettingsRouter::onEvent.navigateTo(AppSettingsRoute.NotificationsRoute.MutedNotifications)
   }
 
   override fun setReactionNotificationEnabled(enabled: Boolean) {
     viewModel.setReactionNotificationEnabled(enabled)
+  }
+
+  override fun setUnreadReminderEnabled(enabled: Boolean) {
+    viewModel.setUnreadReminderEnabled(enabled)
+  }
+
+  override fun onReset() {
+    viewModel.resetSettings()
   }
 }
 
@@ -302,6 +308,8 @@ interface NotificationsSettingsCallbacks {
   fun setNotifyWhenContactJoinsSignal(enabled: Boolean) = Unit
   fun onMutedClicked() = Unit
   fun setReactionNotificationEnabled(enabled: Boolean) = Unit
+  fun setUnreadReminderEnabled(enabled: Boolean) = Unit
+  fun onReset() = Unit
 
   object Empty : NotificationsSettingsCallbacks
 }
@@ -312,6 +320,20 @@ fun NotificationsSettingsScreen(
   callbacks: NotificationsSettingsCallbacks,
   deviceState: DeviceState = remember { DeviceState() }
 ) {
+  var showDialog by remember { mutableStateOf(false) }
+
+  if (showDialog) {
+    Dialogs.SimpleAlertDialog(
+      title = "",
+      body = stringResource(R.string.NotificationsSettingsFragment__reset_body),
+      dismiss = stringResource(android.R.string.cancel),
+      onDismiss = { showDialog = false },
+      confirm = stringResource(R.string.NotificationsSettingsFragment__reset_confirm),
+      onConfirm = callbacks::onReset,
+      confirmColor = MaterialTheme.colorScheme.error
+    )
+  }
+
   Scaffolds.Settings(
     title = stringResource(R.string.preferences__notifications),
     onNavigationClick = callbacks::onNavigationClick,
@@ -350,28 +372,34 @@ fun NotificationsSettingsScreen(
         )
       }
 
-      if (RemoteConfig.internalUser) {
-        item {
-          Rows.TextRow(
-            text = stringResource(R.string.preferences_notifications__while_muted),
-            label = getWhileMutedString(),
-            enabled = state.messageNotificationsState.notificationsEnabled,
-            onClick = callbacks::onMutedClicked
-          )
-        }
-
-        item {
-          Rows.ToggleRow(
-            text = stringResource(R.string.preferences_notifications__reaction),
-            label = stringResource(R.string.preferences_notifications__notify_reaction),
-            enabled = state.messageNotificationsState.canEnableNotifications,
-            checked = state.messageNotificationsState.reactionNotificationEnabled,
-            onCheckChanged = callbacks::setReactionNotificationEnabled
-          )
-        }
+      item {
+        Rows.TextRow(
+          text = stringResource(R.string.preferences_notifications__while_muted),
+          label = getWhileMutedString(state),
+          enabled = state.messageNotificationsState.notificationsEnabled,
+          onClick = callbacks::onMutedClicked
+        )
       }
 
-      // TODO(michelle): Implement unread reminders here
+      item {
+        Rows.ToggleRow(
+          text = stringResource(R.string.preferences_notifications__reaction),
+          label = stringResource(R.string.preferences_notifications__notify_reaction),
+          enabled = state.messageNotificationsState.canEnableNotifications,
+          checked = state.messageNotificationsState.reactionNotificationEnabled,
+          onCheckChanged = callbacks::setReactionNotificationEnabled
+        )
+      }
+
+      item {
+        Rows.ToggleRow(
+          text = stringResource(R.string.preferences_notifications__unread),
+          label = stringResource(R.string.preferences_notifications__notify_unread),
+          enabled = state.messageNotificationsState.canEnableNotifications,
+          checked = state.messageNotificationsState.unreadReminderEnabled,
+          onCheckChanged = callbacks::setUnreadReminderEnabled
+        )
+      }
 
       item {
         Rows.ToggleRow(
@@ -428,7 +456,7 @@ fun NotificationsSettingsScreen(
             text = stringResource(R.string.preferences__vibrate),
             checked = state.messageNotificationsState.vibrateEnabled,
             enabled = state.messageNotificationsState.notificationsEnabled,
-            onCheckChanged = callbacks::setMessageNotificationsEnabled
+            onCheckChanged = callbacks::setMessageNotificationVibration
           )
         }
 
@@ -555,9 +583,21 @@ fun NotificationsSettingsScreen(
 
       item {
         Rows.TextRow(
-          text = stringResource(R.string.NotificationsSettingsFragment__profiles),
+          text = stringResource(R.string.NotificationsSettingsFragment__notification_profiles),
           label = stringResource(R.string.NotificationsSettingsFragment__create_a_profile_to_receive_notifications_only_from_people_and_groups_you_choose),
           onClick = callbacks::onNavigationProfilesClick
+        )
+      }
+
+      item {
+        Dividers.Default()
+      }
+
+      item {
+        Rows.TextRow(
+          text = stringResource(R.string.NotificationsSettingsFragment__reset),
+          label = stringResource(R.string.NotificationsSettingsFragment__reset_notifications),
+          onClick = { showDialog = true }
         )
       }
     }
@@ -565,21 +605,21 @@ fun NotificationsSettingsScreen(
 }
 
 @Composable
-private fun getWhileMutedString(): String {
+private fun getWhileMutedString(state: NotificationsSettingsState): String {
   val body = mutableListOf<String>()
-  if (SignalStore.settings.allowCallsWhileMuted) {
+  if (state.messageNotificationsState.allowCallsWhileMuted) {
     body.add(stringResource(R.string.MutedNotificationsFragment__calls))
   }
-  if (SignalStore.settings.allowMentionsWhileMuted) {
+  if (state.messageNotificationsState.allowMentionsWhileMuted) {
     body.add(stringResource(R.string.MutedNotificationsFragment__mentions))
   }
-  if (SignalStore.settings.allowRepliesWhileMuted) {
+  if (state.messageNotificationsState.allowRepliesWhileMuted) {
     body.add(stringResource(R.string.MutedNotificationsFragment__replies))
   }
   return if (body.isNotEmpty()) {
     body.joinToString(", ")
   } else {
-    stringResource(R.string.preferences__none)
+    stringResource(CoreUiR.string.preferences__none)
   }
 }
 
@@ -647,7 +687,11 @@ private fun rememberTestState(): NotificationsSettingsState = remember {
       messagePrivacy = "",
       priority = 1,
       troubleshootNotifications = true,
-      reactionNotificationEnabled = true
+      reactionNotificationEnabled = true,
+      unreadReminderEnabled = true,
+      allowCallsWhileMuted = false,
+      allowMentionsWhileMuted = true,
+      allowRepliesWhileMuted = true
     ),
     callNotificationsState = CallNotificationsState(
       notificationsEnabled = true,

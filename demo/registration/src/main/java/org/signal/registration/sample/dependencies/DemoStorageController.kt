@@ -52,6 +52,7 @@ import org.signal.registration.screens.remotebackuprestore.RemoteBackupRestorePr
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver
 import org.whispersystems.signalservice.api.messages.AttachmentTransferProgress
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
+import org.whispersystems.signalservice.api.push.UsernameLinkComponents
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
 import org.whispersystems.signalservice.internal.util.StaticCredentialsProvider
 import java.io.File
@@ -85,6 +86,12 @@ class DemoStorageController(private val context: Context) : StorageController {
       avatar = RegistrationPreferences.profileAvatar,
       discoverableByPhoneNumber = RegistrationPreferences.profileDiscoverableByPhoneNumber
     )
+  }
+
+  override suspend fun saveUsername(username: String, usernameLink: UsernameLinkComponents) = withContext(Dispatchers.IO) {
+    RegistrationPreferences.username = username
+    RegistrationPreferences.usernameLinkEntropy = usernameLink.entropy
+    RegistrationPreferences.usernameLinkServerId = usernameLink.serverId.toString()
   }
 
   override suspend fun clearAllData() = withContext(Dispatchers.IO) {
@@ -209,10 +216,11 @@ class DemoStorageController(private val context: Context) : StorageController {
       RegistrationPreferences.saveProvisioningData(
         NetworkController.ProvisioningMessage(
           accountEntropyPool = data.accountEntropyPool,
-          e164 = accountData.e164.orEmpty(),
+          aci = ACI.parseOrThrow(accountData.aci),
+          e164 = accountData.e164?.takeIf { it.isNotEmpty() },
           pin = data.pin.ifEmpty { null },
           aciIdentityKeyPair = IdentityKeyPair(accountData.aciIdentityKeyPair.toByteArray()),
-          pniIdentityKeyPair = IdentityKeyPair(accountData.pniIdentityKeyPair.toByteArray()),
+          pniIdentityKeyPair = accountData.pniIdentityKeyPair.takeIf { it.size > 0 }?.let { IdentityKeyPair(it.toByteArray()) },
           platform = when (prov.platform) {
             ProvisioningData.Platform.ANDROID -> NetworkController.ProvisioningMessage.Platform.ANDROID
             ProvisioningData.Platform.IOS -> NetworkController.ProvisioningMessage.Platform.IOS
@@ -235,6 +243,8 @@ class DemoStorageController(private val context: Context) : StorageController {
   }
 
   override suspend fun onRegistrationFlowFinished() = Unit
+
+  override suspend fun markHasTwoFactorMethods() = Unit
 
   override suspend fun setRestoreDecision(decision: RestoreDecision) = withContext(Dispatchers.IO) {
     Log.i(TAG, "[setRestoreDecision] Recording restore decision: $decision")
