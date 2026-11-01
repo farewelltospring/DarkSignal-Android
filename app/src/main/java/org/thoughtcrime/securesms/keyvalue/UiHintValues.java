@@ -1,11 +1,17 @@
 package org.thoughtcrime.securesms.keyvalue;
 
+import android.content.Context;
+
 import androidx.annotation.NonNull;
+
+import org.signal.core.util.logging.Log;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class UiHintValues extends SignalStoreValues {
+
+  private static final String TAG = Log.tag(UiHintValues.class);
 
   private static final int NEVER_DISPLAY_PULL_TO_FILTER_TIP_THRESHOLD = 3;
   private static final int HAS_SEEN_PINNED_MESSAGE_SHEET_THRESHOLD    = 3;
@@ -33,9 +39,36 @@ public class UiHintValues extends SignalStoreValues {
   private static final String HAS_SEEN_VERIFY_AUTO_SHEET                        = "uihints.has_seen_verify_auto_sheet";
   private static final String HAS_DISMISSED_MEMBER_LABEL_ABOUT_OVERRIDE_WARNING = "uihints.has_dismissed_member_label_about_override_warning";
   private static final String HAS_SEEN_ADMIN_DELETE_EDUCATION_DIALOG            = "uihints.has_seen_admin_delete_education_dialog";
+  private static final String DISMISSED_SET_UP_USERNAME_BANNER                  = "uihints.dismissed_set_up_username_banner";
+  private static final String HAS_PROMPTED_OPTIMIZE_DOZE                        = "uihints.has_prompted_optimize_doze";
+  private static final String TWO_FACTOR_LAST_VERIFIED_TIME                     = "uihints.two_factor_last_verified_time";
+  private static final String HAS_VERIFIED_TWO_FACTOR_BEFORE                    = "uihints.has_verified_two_factor_before";
+  private static final String HAS_SNOOZED_TWO_FACTOR_REMINDER                   = "uihints.has_snoozed_two_factor_reminder";
+  private static final String SIGNAL_LOGIN_LAST_VERIFIED_TIME                   = "uihints.signal_login_last_verified_time";
+  private static final String HAS_VERIFIED_SIGNAL_LOGIN_BEFORE                  = "uihints.has_verified_signal_login_before";
+  private static final String HAS_SNOOZED_SIGNAL_LOGIN_REMINDER                 = "uihints.has_snoozed_signal_login_reminder";
 
-  UiHintValues(@NonNull KeyValueStore store) {
+  UiHintValues(@NonNull KeyValueStore store, @NonNull Context context) {
     super(store);
+
+    if (!store.containsKey(HAS_PROMPTED_OPTIMIZE_DOZE)) {
+      migrateFromSharedPrefsV1(context);
+    }
+  }
+
+  /** Do not alter. If you need to migrate more stuff, create a new method. */
+  private void migrateFromSharedPrefsV1(@NonNull Context context) {
+    Log.i(TAG, "[V1] Migrating ui hint values from shared prefs.");
+
+    putBoolean(HAS_PROMPTED_OPTIMIZE_DOZE, LegacySharedPrefs.INSTANCE.getBoolean(context, "pref_prompted_optimize_doze", false));
+  }
+
+  public boolean hasPromptedOptimizeDoze() {
+    return getBoolean(HAS_PROMPTED_OPTIMIZE_DOZE, false);
+  }
+
+  public void setHasPromptedOptimizeDoze(boolean value) {
+    putBoolean(HAS_PROMPTED_OPTIMIZE_DOZE, value);
   }
 
   @Override
@@ -70,6 +103,14 @@ public class UiHintValues extends SignalStoreValues {
 
   public boolean hasConfirmedDeleteForEveryoneOnce() {
     return getBoolean(HAS_CONFIRMED_DELETE_FOR_EVERYONE_ONCE, false);
+  }
+
+  public void markHasDismissedSetUpUsernameBanner() {
+    putBoolean(DISMISSED_SET_UP_USERNAME_BANNER, true);
+  }
+
+  public boolean hasDismissedSetUpUsernameBanner() {
+    return getBoolean(DISMISSED_SET_UP_USERNAME_BANNER, false);
   }
 
   public boolean hasSetOrSkippedUsernameCreation() {
@@ -249,5 +290,62 @@ public class UiHintValues extends SignalStoreValues {
 
   public void setHasSeenAdminDeleteEducationDialog() {
     putBoolean(HAS_SEEN_ADMIN_DELETE_EDUCATION_DIALOG, true);
+  }
+
+  /** When the user last proved they still hold a two-factor method, or when we first learned the account had one. */
+  public long getTwoFactorLastVerifiedTime() {
+    return getLong(TWO_FACTOR_LAST_VERIFIED_TIME, 0);
+  }
+
+  public void setTwoFactorLastVerifiedTime(long time) {
+    putLong(TWO_FACTOR_LAST_VERIFIED_TIME, time);
+  }
+
+  /** Whether the user has ever completed the two-factor reminder's verification, which spaces later reminders out further. */
+  public boolean hasVerifiedTwoFactorBefore() {
+    return getBoolean(HAS_VERIFIED_TWO_FACTOR_BEFORE, false);
+  }
+
+  public void setHasVerifiedTwoFactorBefore(boolean verified) {
+    putBoolean(HAS_VERIFIED_TWO_FACTOR_BEFORE, verified);
+  }
+
+  /** Whether the user has snoozed the current two-factor reminder, which they only get to do once per reminder. */
+  public boolean hasSnoozedTwoFactorReminder() {
+    return getBoolean(HAS_SNOOZED_TWO_FACTOR_REMINDER, false);
+  }
+
+  public void setHasSnoozedTwoFactorReminder(boolean snoozed) {
+    putBoolean(HAS_SNOOZED_TWO_FACTOR_REMINDER, snoozed);
+  }
+
+  /**
+   * When the user last proved they know their Signal Login, whether by logging in with it or through the reminder. Zero
+   * until the app first notices the account has one.
+   */
+  public long getSignalLoginLastVerifiedTime() {
+    return getLong(SIGNAL_LOGIN_LAST_VERIFIED_TIME, 0);
+  }
+
+  public void setSignalLoginLastVerifiedTime(long time) {
+    putLong(SIGNAL_LOGIN_LAST_VERIFIED_TIME, time);
+  }
+
+  /** Whether the user has ever completed the Signal Login reminder's verification, which spaces later reminders out further. */
+  public boolean hasVerifiedSignalLoginBefore() {
+    return getBoolean(HAS_VERIFIED_SIGNAL_LOGIN_BEFORE, false);
+  }
+
+  public void setHasVerifiedSignalLoginBefore(boolean verified) {
+    putBoolean(HAS_VERIFIED_SIGNAL_LOGIN_BEFORE, verified);
+  }
+
+  /** Whether the user has snoozed the current Signal Login reminder, which they only get to do once per reminder. */
+  public boolean hasSnoozedSignalLoginReminder() {
+    return getBoolean(HAS_SNOOZED_SIGNAL_LOGIN_REMINDER, false);
+  }
+
+  public void setHasSnoozedSignalLoginReminder(boolean snoozed) {
+    putBoolean(HAS_SNOOZED_SIGNAL_LOGIN_REMINDER, snoozed);
   }
 }
